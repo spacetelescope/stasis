@@ -1,0 +1,6 @@
+build
+cmake-*
+.idea
+*.so
+*.dylib
+*.dll
