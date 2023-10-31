@@ -370,14 +370,14 @@ char *git_describe(const char *path) {
 #define OMC_COLOR_WHITE "\e[1;97m"
 #define OMC_COLOR_RESET "\e[0;37m\e[0m"
 
-int msg(unsigned type, char *fmt, ...) {
+void msg(unsigned type, char *fmt, ...) {
     FILE *stream = NULL;
     char header[255];
     char status[255];
 
     if (type & OMC_MSG_NOP) {
         // quiet mode
-        return 0;
+        return;
     }
 
     memset(header, 0, sizeof(header));
@@ -414,4 +414,11 @@ int msg(unsigned type, char *fmt, ...) {
     printf("%s", OMC_COLOR_RESET);
     printf("%s", OMC_COLOR_RESET);
     va_end(args);
+}
+
+void debug_shell() {
+    msg(OMC_MSG_L1 | OMC_MSG_WARN, "ENTERING OMC DEBUG SHELL\n" OMC_COLOR_RESET);
+    system("/bin/bash -c 'PS1=\"(OMC DEBUG) \\W $ \" bash --norc --noprofile'");
+    msg(OMC_MSG_L1 | OMC_MSG_WARN, "EXITING OMC DEBUG SHELL\n" OMC_COLOR_RESET);
+    exit(255);
 }

@@ -13,10 +13,12 @@
 #define PATH_ENV_VAR "path"
 #define DIR_SEP "\\"
 #define PATH_SEP ";"
+#define LINE_SEP "\r\n"
 #else
 #define PATH_ENV_VAR "PATH"
 #define DIR_SEP "/"
 #define PATH_SEP ":"
+#define LINE_SEP "\n"
 #endif
 
 typedef int (ReaderFn)(size_t line, char **);
@@ -32,12 +34,14 @@ int touch(const char *filename);
 int git_clone(struct Process *proc, char *url, char *destdir, char *gitref);
 char *git_describe(const char *path);
 
+#define OMC_MSG_SUCCESS 0
 #define OMC_MSG_NOP 1 << 0
 #define OMC_MSG_ERROR 1 << 1
 #define OMC_MSG_WARN 1 << 2
 #define OMC_MSG_L1 1 << 3
 #define OMC_MSG_L2 1 << 4
 #define OMC_MSG_L3 1 << 5
-int msg(unsigned type, char *fmt, ...);
+void msg(unsigned type, char *fmt, ...);
+void debug_shell();
 
 #endif //OHMYCAL_UTILS_H
