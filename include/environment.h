@@ -16,7 +16,7 @@ RuntimeEnv *runtime_copy(char **env);
 int runtime_replace(RuntimeEnv **dest, char **src);
 char *runtime_get(RuntimeEnv *env, const char *key);
 void runtime_set(RuntimeEnv *env, const char *_key, const char *_value);
-char *runtime_expand_var(RuntimeEnv *env, const char *input);
+char *runtime_expand_var(RuntimeEnv *env, char *input);
 void runtime_export(RuntimeEnv *env, char **keys);
 void runtime_apply(RuntimeEnv *env);
 void runtime_free(RuntimeEnv *env);
