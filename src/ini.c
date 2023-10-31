@@ -4,71 +4,6 @@
 #include <ctype.h>
 #include "ohmycal.h"
 #include "ini.h"
-/*
-char *strip(char *s) {
-    size_t len = strlen(s) + 1;
-    while (--len) {
-        if (isalnum(s[len])) {
-            break;
-        }
-        if (isblank(s[len])) {
-            s[len] = '\0';
-        }
-    }
-    return s;
-}
- */
-
-/*
-char *lstrip(char *s) {
-    size_t i = 0;
-    char *end = NULL;
-    do {
-        end = &s[i];
-        if (!isblank(*end)) {
-            break;
-        }
-        i++;
-    } while (1);
-    if (i) {
-        size_t len = strlen(end);
-        memmove(s, end, len);
-        if (strlen(s)) {
-            s[len] = '\0';
-        }
-    }
-    return s;
-}
- */
-
-/*
-int startswith(const char *s1, char *s2) {
-    size_t i;
-    for (i = 0; i < strlen(s2); i++) {
-        if (s1[i] != s2[i]) {
-            return 0;
-        }
-    }
-    return 1;
-}
-*/
-
-/*
-int endswith(const char *s1, char *s2) {
-    size_t s2x, s1x;
-    for (s2x = strlen(s2), s1x = strlen(s1); s2x >= 0; s2x--, s1x--) {
-        char *s1p = &s1[s1x];
-        char *s2p = &s2[s2x];
-        if (s1[s1x] != s2[s2x]) {
-            return 0;
-        }
-        if (s2x == 0) {
-            break;
-        }
-    }
-    return 1;
-}
- */
 
 struct INIFILE *ini_init() {
     struct INIFILE *ini;
@@ -374,7 +309,9 @@ struct INIFILE *ini_open(const char *filename) {
             key = strndup(line, key_len);
             key_last = key;
             strcpy(value, &operator[1]);
-            value[strlen(value) - 1] = '\0';
+            if (strlen(value)) {
+                value[strlen(value) - 1] = '\0';
+            }
         } else if (!key && !strlen(value) && ! (startswith(line, " ") || startswith(line, "\t"))) {
             fprintf(stderr, "NO OPERATOR OR INDENT: %zu:'%s'\n", i, line);
             struct INISection *section = ini_section_search(&ini, current_section);
@@ -391,7 +328,9 @@ struct INIFILE *ini_open(const char *filename) {
             key = key_last;
             strcpy(value, line);
             if (endswith(value, "\n")) {
-                value[strlen(value) - 1] = '\n';
+                if (strlen(value)) {
+                    value[strlen(value) - 1] = '\n';
+                }
             }
         }
 
