@@ -15,6 +15,7 @@ int python_exec(const char *args);
 int pip_exec(const char *args);
 int conda_exec(const char *args);
 int conda_activate(const char *root, const char *env_name);
+void conda_setup_headless();
 void conda_env_create_from_uri(char *name, char *uri);
 void conda_env_create(char *name, char *python_version, char *packages);
 void conda_env_remove(char *name);

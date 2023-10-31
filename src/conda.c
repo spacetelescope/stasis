@@ -111,7 +111,6 @@ int conda_activate(const char *root, const char *env_name) {
         perror(logfile);
         return -1;
     }
-    static char buf[1024];
     int i = 0;
     while (!feof(fp)) {
         char buf[BUFSIZ] = {0};
@@ -151,6 +150,21 @@ int conda_activate(const char *root, const char *env_name) {
     fclose(fp);
     remove(logfile);
     return 0;
+}
+
+void conda_setup_headless() {
+    // Configure conda for headless CI
+    conda_exec("config --system --set auto_update_conda false");
+    conda_exec("config --system --set always_yes true");
+    conda_exec("config --system --set quiet true");
+    conda_exec("config --system --set rollback_enabled false");
+    conda_exec("config --system --set report_errors false");
+
+    // make this configurable
+    //if (conda_exec("update --all")) {
+    //    fprintf(stderr, "conda update was unsuccessful\n");
+    //    exit(1);
+    //}
 }
 
 void conda_env_create_from_uri(char *name, char *uri) {
