@@ -1,4 +1,5 @@
 build
+docs/output
 cmake-*
 .idea
 *.so
