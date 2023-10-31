@@ -54,6 +54,8 @@ struct Delivery {
         int rc;
         // version of python to use
         char *python;
+        // shortened python identifier
+        char *python_compact;
         // URL to previous final configuration
         char *based_on;
         // hst, jwst, roman
@@ -66,12 +68,21 @@ struct Delivery {
         bool continue_on_error;
     } meta;
 
+    struct Info {
+        // The fully combined release string
+        char *release_name;
+        struct tm *time_info;
+        time_t time_now;
+    } info;
+
     struct Conda {
         char *installer_baseurl;
         char *installer_name;
         char *installer_version;
         char *installer_platform;
         char *installer_arch;
+        char *tool_version;
+        char *tool_build_version;
         // packages to install
         struct StrList *conda_packages;
         // conda recipes to be built
