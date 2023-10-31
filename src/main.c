@@ -151,6 +151,10 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
+    // TODO: extract version from tool output
+    ctx.conda.tool_version = NULL;
+    ctx.conda.tool_build_version = NULL;
+
     if (pip_exec("install build")) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "'build' tool installation failed");
         exit(1);
