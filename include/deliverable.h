@@ -12,6 +12,7 @@
 #include "str.h"
 #include "ini.h"
 #include "environment.h"
+#include "conda.h"
 
 #define DELIVERY_DIR "delivery"
 #define DELIVERY_PLATFORM_MAX 4
@@ -25,6 +26,9 @@
 #define INSTALL_PKG_CONDA_DEFERRED 1 << 2
 #define INSTALL_PKG_PIP 1 << 3
 #define INSTALL_PKG_PIP_DEFERRED 1 << 4
+
+#define DEFER_CONDA 0
+#define DEFER_PIP 1
 
 struct Delivery {
     struct System {
@@ -126,5 +130,8 @@ void delivery_get_installer_url(struct Delivery *delivery, char *result);
 void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList *manifest[]);
 int delivery_index_conda_artifacts(struct Delivery *ctx);
 void delivery_tests_run(struct Delivery *ctx);
+void delivery_defer_packages(struct Delivery *ctx, int type);
+void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir);
+void delivery_install_conda(char *install_script, char *conda_install_dir);
 
 #endif //OHMYCAL_DELIVERABLE_H

@@ -102,6 +102,10 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     struct INIData *rtdata;
     union INIVal val;
 
+    // Record timestamp used for release
+    time(&ctx->info.time_now);
+    ctx->info.time_info = localtime(&ctx->info.time_now);
+
     if (cfg) {
         getter(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR);
         conv_str(ctx, storage.conda_staging_dir);
@@ -205,6 +209,27 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             z++;
         }
     }
+
+    char env_name[NAME_MAX];
+    char env_date[NAME_MAX];
+    ctx->meta.python_compact = to_short_version(ctx->meta.python);
+
+    if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
+        memset(env_date, 0, sizeof(env_date));
+        strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", ctx->info.time_info);
+        sprintf(env_name, "%s_%s_rc%d", ctx->meta.name, env_date, ctx->meta.rc);
+    } else if (!strcasecmp(ctx->meta.mission, "hst")) {
+        sprintf(env_name, "%s_%s_%s_%s_rc%d", ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact, ctx->meta.rc);
+    } else if (!strcasecmp(ctx->meta.mission, "jwst") && ctx->meta.final) {
+        sprintf(env_name, "%s_%s_final", ctx->meta.name, ctx->meta.version);
+    } else if (!strcasecmp(ctx->meta.mission, "jwst")) {
+        sprintf(env_name, "%s_%s_rc%d", ctx->meta.name, ctx->meta.version, ctx->meta.rc);
+    }
+
+    if (strlen(env_name)) {
+        ctx->info.release_name = strdup(env_name);
+    }
+
     return 0;
 }
 
@@ -227,9 +252,6 @@ void delivery_meta_show(struct Delivery *ctx) {
 }
 
 void delivery_conda_show(struct Delivery *ctx) {
-    char data[BUFSIZ];
-    char *datap = data;
-
     printf("====CONDA====\n");
     printf("%-20s %-10s\n", "Installer:", ctx->conda.installer_baseurl);
 
@@ -265,8 +287,8 @@ void delivery_tests_show(struct Delivery *ctx) {
 }
 
 int delivery_build_recipes(struct Delivery *ctx) {
-    char *recipe_dir = NULL;
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+        char *recipe_dir = NULL;
         if (ctx->tests[i].build_recipe) { // build a conda recipe
             int recipe_type;
             int status;
@@ -325,6 +347,9 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
                 popd();
             }
+        }
+        if (recipe_dir) {
+            free(recipe_dir);
         }
     }
     return 0;
@@ -412,7 +437,7 @@ void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, ch
             // Activate the requested environment
             printf("Activating: %s\n", env_name);
             conda_activate(conda_install_dir, env_name);
-            //runtime_replace(&ctx->runtime.environ, __environ);
+            runtime_replace(&ctx->runtime.environ, __environ);
         }
     }
 
@@ -576,6 +601,102 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     }
     return 0;
 }
+
+void delivery_install_conda(char *install_script, char *conda_install_dir) {
+    struct Process proc;
+    memset(&proc, 0, sizeof(proc));
+
+    if (!access(conda_install_dir, F_OK)) {
+        if (rmtree(conda_install_dir)) {
+            perror("unable to remove previous installation");
+            exit(1);
+        }
+    }
+
+    // -b = batch mode
+    if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
+        fprintf(stderr, "conda installation failed\n");
+        exit(1);
+    }
+}
+
+void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
+    if (conda_activate(conda_install_dir, "base")) {
+        fprintf(stderr, "conda activation failed\n");
+        exit(1);
+    }
+
+    if (runtime_replace(&ctx->runtime.environ, __environ)) {
+        perror("unable to replace runtime environment after activating conda");
+        exit(1);
+    }
+
+    conda_setup_headless();
+}
+void delivery_defer_packages(struct Delivery *ctx, int type) {
+    struct StrList *dataptr = NULL;
+    struct StrList *deferred = NULL;
+    char *name = NULL;
+    char cmd[PATH_MAX];
+
+    memset(cmd, 0, sizeof(cmd));
+
+    char mode[10];
+    if (DEFER_CONDA == type) {
+        dataptr = ctx->conda.conda_packages;
+        deferred = ctx->conda.conda_packages_defer;
+        strcpy(mode, "conda");
+    } else if (DEFER_PIP == type) {
+        dataptr = ctx->conda.pip_packages;
+        deferred = ctx->conda.pip_packages_defer;
+        strcpy(mode, "pip");
+    }
+    msg(OMC_MSG_L2, "Filtering %s packages by test definition...\n", mode);
+
+    struct StrList *filtered = NULL;
+    filtered = strlist_init();
+    for (size_t i = 0, z = 0; i < strlist_count(dataptr); i++) {
+        name = strlist_item(dataptr, i);
+        if (!strlen(name) || isblank(*name) || isspace(*name)) {
+            continue;
+        }
+        msg(OMC_MSG_L3, "package '%s': ", name);
+        int ignore_pkg = 0;
+        for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
+            if (ctx->tests[x].name) {
+                if (startswith(ctx->tests[x].name, name)) {
+                    ignore_pkg = 1;
+                    z++;
+                    break;
+                }
+            }
+        }
+
+        if (ignore_pkg) {
+            printf("BUILD FOR HOST\n");
+            strlist_append(deferred, name);
+        } else {
+            printf("USE EXISTING\n");
+            strlist_append(filtered, name);
+        }
+    }
+
+    if (!strlist_count(deferred)) {
+        msg(OMC_MSG_WARN, "No packages were filtered by test definitions");
+    } else {
+        if (DEFER_CONDA == type) {
+            strlist_free(ctx->conda.conda_packages);
+            ctx->conda.conda_packages = strlist_copy(filtered);
+        } else if (DEFER_PIP == type) {
+            strlist_free(ctx->conda.pip_packages);
+            ctx->conda.pip_packages = strlist_copy(filtered);
+        }
+    }
+    if (filtered) {
+        strlist_free(filtered);
+    }
+}
+
 char *delivery_get_spec_header(struct Delivery *ctx) {
     char output[BUFSIZ];
     char stamp[100];
