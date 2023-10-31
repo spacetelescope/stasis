@@ -332,14 +332,8 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 char command[PATH_MAX];
                 sprintf(command, "build --python=%s .", ctx->meta.python);
                 status = conda_exec(command);
-                if (status) {
-                    fprintf(stderr, "failed to build deployment artifact: %s\n", ctx->tests[i].build_recipe);
-                    msg(OMC_MSG_WARN | OMC_MSG_L1, "ENTERING DEBUG SHELL\n");
-                    system("bash --noprofile --norc");
-                    exit(1);
-                    if (!ctx->meta.continue_on_error) {
-                        return -1;
-                    }
+                if (status && !ctx->meta.continue_on_error) {
+                    return -1;
                 }
 
                 if (RECIPE_TYPE_GENERIC != recipe_type) {
