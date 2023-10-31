@@ -274,7 +274,7 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
  * @param input String to parse
  * @return success=expanded string, failure=`NULL`
  */
-char *runtime_expand_var(RuntimeEnv *env, const char *input) {
+char *runtime_expand_var(RuntimeEnv *env, char *input) {
     const char delim = '$';
     const char *delim_literal = "$$";
     char *expanded = NULL;
@@ -412,8 +412,7 @@ void runtime_set(RuntimeEnv *env, const char *_key, const char *_value) {
 
     if (key_offset < 0) {
         strlist_append(env, now);
-    }
-    else {
+    } else {
         strlist_set(env, key_offset, now);
     }
     free(now);
@@ -427,7 +426,7 @@ void runtime_set(RuntimeEnv *env, const char *_key, const char *_value) {
  */
 void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
-        char **pair = split(strlist_item(env, i), "=", 0);
+        char **pair = split(strlist_item(env, i), "=", 1);
         setenv(pair[0], pair[1], 1);
         split_free(pair);
     }
