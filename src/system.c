@@ -96,6 +96,7 @@ int shell2(struct Process *proc, char *args) {
     fprintf(tp, "#!/bin/bash\n%s\n", args);
     fflush(tp);
     fclose(tp);
+    close(fd);
     chmod(t_name, 0755);
 
     pid = fork();
@@ -123,6 +124,10 @@ int shell2(struct Process *proc, char *args) {
         }
 
         retval = execl("/bin/bash", "bash", "-c", t_name, (char *) NULL);
+        if (!access(t_name, F_OK)) {
+            remove(t_name);
+        }
+
         if (proc != NULL && strlen(proc->stdout)) {
             if (fp_out != NULL) {
                 fflush(fp_out);
@@ -154,7 +159,9 @@ int shell2(struct Process *proc, char *args) {
         }
     }
 
-    remove(t_name);
+    if (!access(t_name, F_OK)) {
+        remove(t_name);
+    }
 
     if (proc != NULL) {
         proc->returncode = status;
