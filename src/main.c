@@ -222,7 +222,10 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L1, "Cleaning up\n");
     ini_free(&ini);
-    ini_free(&cfg);
+    if (cfg) {
+        ini_free(&cfg);
+    }
+    delivery_free(&ctx);
 
     msg(OMC_MSG_L1, "Done!\n");
     return 0;
