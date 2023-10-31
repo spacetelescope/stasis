@@ -25,122 +25,6 @@ const char *BANNER = "----------------------------------------------------------
                      "Copyright (C) 2023 %s,\n"
                      "Association of Universities for Research in Astronomy (AURA)\n";
 
-
-void conda_setup_headless() {
-    // Configure conda for headless CI
-    conda_exec("config --system --set auto_update_conda false");
-    conda_exec("config --system --set always_yes true");
-    conda_exec("config --system --set quiet true");
-    conda_exec("config --system --set rollback_enabled false");
-    conda_exec("config --system --set report_errors false");
-
-    if (conda_exec("update --all")) {
-        perror("update base");
-        exit(1);
-    }
-}
-
-void delivery_install_conda(char *install_script, char *conda_install_dir) {
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
-
-    if (!access(conda_install_dir, F_OK)) {
-        if (rmtree(conda_install_dir)) {
-            perror("unable to remove previous installation");
-            exit(1);
-        }
-    }
-
-    // -b = batch mode
-    if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
-        fprintf(stderr, "conda installation failed\n");
-        exit(1);
-    }
-}
-
-void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
-    if (conda_activate(conda_install_dir, "base")) {
-        fprintf(stderr, "conda activation failed\n");
-        exit(1);
-    }
-
-    if (runtime_replace(&ctx->runtime.environ, __environ)) {
-        perror("unable to replace runtime environment after activating conda");
-        exit(1);
-    }
-
-    conda_setup_headless();
-}
-
-#define DEFER_CONDA 0
-#define DEFER_PIP 1
-void delivery_defer_packages(struct Delivery *ctx, int type) {
-    struct StrList *dataptr = NULL;
-    struct StrList *deferred = NULL;
-    char *name = NULL;
-    char cmd[PATH_MAX];
-
-    memset(cmd, 0, sizeof(cmd));
-
-    char mode[10];
-    if (DEFER_CONDA == type) {
-        dataptr = ctx->conda.conda_packages;
-        deferred = ctx->conda.conda_packages_defer;
-        strcpy(mode, "conda");
-    } else if (DEFER_PIP == type) {
-        dataptr = ctx->conda.pip_packages;
-        deferred = ctx->conda.pip_packages_defer;
-        strcpy(mode, "pip");
-    }
-    msg(OMC_MSG_L2, "Filtering %s packages by test definition...\n", mode);
-
-    struct StrList *filtered = NULL;
-    filtered = strlist_init();
-    for (size_t i = 0, z = 0; i < strlist_count(dataptr); i++) {
-        name = strlist_item(dataptr, i);
-        if (!strlen(name) || isblank(*name) || isspace(*name)) {
-            continue;
-        }
-        msg(OMC_MSG_L3, "package '%s': ", name);
-        int ignore_pkg = 0;
-        for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
-            if (ctx->tests[x].name) {
-                if (startswith(ctx->tests[x].name, name)) {
-                    ignore_pkg = 1;
-                    z++;
-                    break;
-                }
-            }
-        }
-
-        if (ignore_pkg) {
-            printf("BUILD FOR HOST\n");
-            strlist_append(deferred, name);
-        } else {
-            printf("USE EXISTING\n");
-            strlist_append(filtered, name);
-        }
-    }
-
-    if (!strlist_count(deferred)) {
-        msg(OMC_MSG_WARN, "No packages were filtered by test definitions");
-    } else {
-        if (DEFER_CONDA == type) {
-            strlist_free(ctx->conda.conda_packages);
-            ctx->conda.conda_packages = strlist_copy(filtered);
-        } else if (DEFER_PIP == type) {
-            strlist_free(ctx->conda.pip_packages);
-            ctx->conda.pip_packages = strlist_copy(filtered);
-        }
-    }
-}
-
-void testfunc(struct Delivery *ctx, char *env_name) {
-    struct Wheel *wheel;
-    wheel = get_wheel_file(ctx->storage.wheel_artifact_dir, "drizzlepac", (char *[]) {"cp310", "x86_64", NULL});
-    return;
-}
-
 int main(int argc, char *argv[], char *arge[]) {
     struct INIFILE *cfg = NULL;
     struct INIFILE *ini = NULL;
@@ -150,12 +34,8 @@ int main(int argc, char *argv[], char *arge[]) {
             .stderr = "",
             .redirect_stderr = 0,
     };
-    struct tm *tm_info;
-    time_t timenow;
-    char env_date[100];
     char env_name[PATH_MAX];
     char env_name_testing[PATH_MAX];
-    char env_pyver[10];
     char *delivery_input = argv[1];
     char *config_input = argv[2];
     char installer_url[PATH_MAX];
@@ -243,28 +123,6 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
     delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
-
-    // Generate release and/or environment name
-    memset(env_pyver, 0, sizeof(env_pyver));
-    char *tmp_pyver = to_short_version(ctx.meta.python);
-    sprintf(env_pyver, "py%s", tmp_pyver);
-    free(tmp_pyver);
-    tmp_pyver = NULL;
-
-    msg(OMC_MSG_L1, "Generating release string\n");
-    if (!strcasecmp(ctx.meta.mission, "hst") && ctx.meta.final) {
-        memset(env_date, 0, sizeof(env_date));
-        strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", tm_info);
-        sprintf(env_name, "%s_%s_rc%d", ctx.meta.name, env_date, ctx.meta.rc);
-    } else if (!strcasecmp(ctx.meta.mission, "hst")) {
-        sprintf(env_name, "%s_%s_%s_%s_rc%d", ctx.meta.name, ctx.meta.codename, ctx.system.platform[DELIVERY_PLATFORM_RELEASE], env_pyver, ctx.meta.rc);
-    } else if (!strcasecmp(ctx.meta.mission, "jwst") && ctx.meta.final) {
-        sprintf(env_name, "%s_%s_rc%d", ctx.meta.name, ctx.meta.version, ctx.meta.rc);
-    } else if (!strcasecmp(ctx.meta.mission, "jwst")) {
-        sprintf(env_name, "%s_%s_final", ctx.meta.name, ctx.meta.version);
-    }
-    msg(OMC_MSG_L2, "%s\n", env_name);
-    sprintf(env_name_testing, "%s_test", env_name);
 
     msg(OMC_MSG_L1, "Creating release environment(s)\n");
     if (ctx.meta.based_on && strlen(ctx.meta.based_on)) {
