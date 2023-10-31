@@ -95,7 +95,7 @@ int conda_activate(const char *root, const char *env_name) {
 
     // Fully activate conda and record its effect on the runtime environment
     char command[PATH_MAX];
-    snprintf(command, sizeof(command) - 1, "source %s; source %s; conda activate %s &>/dev/null; printenv", path_conda, path_mamba, env_name);
+    snprintf(command, sizeof(command) - 1, "source %s; source %s; conda activate %s &>/dev/null; printenv -0", path_conda, path_mamba, env_name);
     int retval = shell2(&proc, command);
     if (retval) {
         // it didn't work; drop out for cleanup
@@ -113,19 +113,39 @@ int conda_activate(const char *root, const char *env_name) {
     }
     static char buf[1024];
     int i = 0;
-    while (fgets(buf, sizeof(buf) -1, fp) != NULL) {
-        buf[strlen(buf) - 1] = 0;
+    while (!feof(fp)) {
+        char buf[BUFSIZ] = {0};
+        int ch = 0;
+        int z = 0;
+        while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
+            if (ch == EOF) {
+                ch = 0;
+                break;
+            }
+            buf[z] = (char) ch;
+            z++;
+        }
+        buf[strlen(buf)] = 0;
+
         if (!strlen(buf)) {
             continue;
         }
-        //printf("[%d] %s\n", i, buf);
-        char *eq = strchr(buf, '=');
-        if (eq) {
-            *eq = '\0';
+        //printf("\e[0m[%d] %s\e[0m\n", i, buf);
+        char **part = split(buf, "=", 1);
+        if (!part) {
+            perror("unable to split environment variable buffer");
+            return -1;
         }
-        char *key = buf;
-        char *val = &eq[1];
-        setenv(key, val, 1);
+        if (!part[0]) {
+            msg(OMC_MSG_WARN | OMC_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
+            i++;
+        } else if (!part[1]) {
+            msg(OMC_MSG_WARN | OMC_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
+            i++;
+        } else {
+            setenv(part[0], part[1], 1);
+        }
+        split_free(part);
         i++;
     }
     fclose(fp);
