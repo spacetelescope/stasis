@@ -16,12 +16,13 @@
 
 #define conv_int(X, DEST) X->DEST = val.as_int;
 #define conv_str(X, DEST) X->DEST = runtime_expand_var(NULL, val.as_char_p);
-#define conv_str_noexpand(X, DEST) X->DEST = val.as_char_p;
+#define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
 #define conv_strlist(X, DEST, TOK) { \
-    runtime_expand_var(NULL, val.as_char_p); \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
     if (!X->DEST)               \
         X->DEST = strlist_init(); \
-    strlist_append_tokenize(X->DEST, val.as_char_p, TOK); \
+    strlist_append_tokenize(X->DEST, rtevnop, TOK);    \
+    free(rtevnop);\
 }
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
 
