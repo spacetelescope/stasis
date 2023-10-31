@@ -15,9 +15,13 @@ void strlist_free(struct StrList *pStrList) {
         return;
     }
     for (size_t i = 0; i < pStrList->num_inuse; i++) {
-        free(pStrList->data[i]);
+        if (pStrList->data[i]) {
+            free(pStrList->data[i]);
+        }
     }
-    free(pStrList->data);
+    if (pStrList->data) {
+        free(pStrList->data);
+    }
     free(pStrList);
 }
 
@@ -164,6 +168,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
          for (size_t i = 0; token[i] != NULL; i++) {
              strlist_append(pStrList, token[i]);
          }
+         split_free(token);
      }
  }
 
