@@ -576,6 +576,21 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     }
     return 0;
 }
+char *delivery_get_spec_header(struct Delivery *ctx) {
+    char output[BUFSIZ];
+    char stamp[100];
+    const char *header = "# delivery_name: %s\n"
+                         "# creation_time: %s\n"
+                         "# conda_version: %s\n"
+                         "# condabuild_version: %s\n";
+    strftime(stamp, sizeof(stamp) - 1, "%c", ctx->info.time_info);
+    sprintf(output, header,
+            ctx->info.release_name,
+            stamp,
+            ctx->conda.tool_version,
+            ctx->conda.tool_build_version);
+    return strdup(output);
+}
 
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     char *package_name = NULL;

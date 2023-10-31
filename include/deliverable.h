@@ -117,6 +117,7 @@ void delivery_tests_show(struct Delivery *ctx);
 int delivery_build_recipes(struct Delivery *ctx);
 struct StrList *delivery_build_wheels(struct Delivery *ctx);
 int delivery_index_wheel_artifacts(struct Delivery *ctx);
+char *delivery_get_spec_header(struct Delivery *ctx);
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename);
 int delivery_copy_wheel_artifacts(struct Delivery *ctx);
 int delivery_copy_conda_artifacts(struct Delivery *ctx);
