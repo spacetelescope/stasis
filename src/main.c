@@ -100,6 +100,9 @@ int main(int argc, char *argv[], char *arge[]) {
 
     delivery_init(&ctx, ini, cfg);
     runtime_apply(ctx.runtime.environ);
+    sprintf(env_name, "%s", ctx.info.release_name);
+    sprintf(env_name_testing, "%s_test", env_name);
+
     msg(OMC_MSG_L1, "Overview\n");
     delivery_meta_show(&ctx);
     delivery_conda_show(&ctx);
