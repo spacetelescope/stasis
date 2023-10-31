@@ -110,6 +110,7 @@ struct Delivery {
 };
 
 int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg);
+void delivery_free(struct Delivery *ctx);
 void delivery_meta_show(struct Delivery *ctx);
 void delivery_conda_show(struct Delivery *ctx);
 void delivery_tests_show(struct Delivery *ctx);

@@ -25,6 +25,54 @@
     free(rtevnop);\
 }
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
+#define guard_runtime_free(X) if (X) { runtime_free(X); X = NULL; }
+#define guard_strlist_free(X) if (X) { strlist_free(X); X = NULL; }
+#define guard_free(X) if (X) { free(X); X = NULL; }
+
+void delivery_free(struct Delivery *ctx) {
+    guard_free(ctx->system.arch);
+    guard_free(ctx->meta.name)
+    guard_free(ctx->meta.version)
+    guard_free(ctx->meta.codename)
+    guard_free(ctx->meta.mission)
+    guard_free(ctx->meta.python)
+    guard_free(ctx->meta.mission)
+    guard_free(ctx->meta.python_compact);
+    guard_runtime_free(ctx->runtime.environ)
+    guard_free(ctx->storage.delivery_dir)
+    guard_free(ctx->storage.conda_install_prefix)
+    guard_free(ctx->storage.conda_artifact_dir)
+    guard_free(ctx->storage.conda_staging_dir)
+    guard_free(ctx->storage.conda_staging_url)
+    guard_free(ctx->storage.wheel_artifact_dir)
+    guard_free(ctx->storage.wheel_staging_dir)
+    guard_free(ctx->storage.wheel_staging_url)
+    guard_free(ctx->storage.build_dir)
+    guard_free(ctx->storage.build_recipes_dir)
+    guard_free(ctx->storage.build_sources_dir)
+    guard_free(ctx->storage.build_testing_dir)
+    guard_free(ctx->conda.installer_baseurl)
+    guard_free(ctx->conda.installer_name)
+    guard_free(ctx->conda.installer_version)
+    guard_free(ctx->conda.installer_platform)
+    guard_free(ctx->conda.installer_arch)
+    guard_free(ctx->conda.tool_version);
+    guard_free(ctx->conda.tool_build_version);
+    guard_strlist_free(ctx->conda.conda_packages)
+    guard_strlist_free(ctx->conda.conda_packages_defer)
+    guard_strlist_free(ctx->conda.pip_packages)
+    guard_strlist_free(ctx->conda.pip_packages_defer)
+
+    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+        guard_free(ctx->tests[i].name)
+        guard_free(ctx->tests[i].version)
+        guard_free(ctx->tests[i].repository)
+        guard_free(ctx->tests[i].script)
+        guard_free(ctx->tests[i].build_recipe)
+        // test-specific runtime variables
+        guard_runtime_free(ctx->tests[i].runtime.environ)
+    }
+}
 
 void delivery_init_dirs(struct Delivery *ctx) {
     mkdir("build", 0755);
