@@ -7,7 +7,7 @@
 #include <time.h>
 #include <sys/utsname.h>
 #include "ohmycal.h"
-#include "wheel.h"
+//#include "wheel.h"
 
 const char *VERSION = "1.0.0";
 const char *AUTHOR = "Joseph Hunkeler";
@@ -94,7 +94,6 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L2, "Reading OMC delivery configuration: %s\n", delivery_input);
     ini = ini_open(delivery_input);
-    //ini_show(ini);
 
     printf(BANNER, VERSION, AUTHOR);
 
@@ -156,9 +155,6 @@ int main(int argc, char *argv[], char *arge[]) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "'build' tool installation failed");
         exit(1);
     }
-
-    time(&timenow);
-    tm_info = localtime(&timenow);
 
     // Execute configuration-defined tests
     msg(OMC_MSG_L1, "Begin test execution\n");
