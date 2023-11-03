@@ -1,8 +1,8 @@
 /**
  * @file str.h
  */
-#ifndef SPM_STR_H
-#define SPM_STR_H
+#ifndef OHMYCAL_STR_H
+#define OHMYCAL_STR_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,10 +11,10 @@
 #include <ctype.h>
 #include "ohmycal.h"
 
-#define SPM_SORT_ALPHA 1 << 0
-#define SPM_SORT_NUMERIC 1 << 1
-#define SPM_SORT_LEN_ASCENDING 1 << 2
-#define SPM_SORT_LEN_DESCENDING 1 << 3
+#define OHMYCAL_SORT_ALPHA 1 << 0
+#define OHMYCAL_SORT_NUMERIC 1 << 1
+#define OHMYCAL_SORT_LEN_ASCENDING 1 << 2
+#define OHMYCAL_SORT_LEN_DESCENDING 1 << 3
 
 int num_chars(const char *sptr, int ch);
 int startswith(const char *sptr, const char *pattern);
@@ -44,4 +44,4 @@ int isdigit_s(const char *s);
 char *tolower_s(char *s);
 char *to_short_version(const char *s);
 
-#endif //SPM_STR_H
+#endif //OHMYCAL_STR_H

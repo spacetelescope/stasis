@@ -1,8 +1,8 @@
 /**
  * @file environment.h
  */
-#ifndef SPM_ENVIRONMENT_H
-#define SPM_ENVIRONMENT_H
+#ifndef OHMYCAL_ENVIRONMENT_H
+#define OHMYCAL_ENVIRONMENT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,4 +20,4 @@ char *runtime_expand_var(RuntimeEnv *env, char *input);
 void runtime_export(RuntimeEnv *env, char **keys);
 void runtime_apply(RuntimeEnv *env);
 void runtime_free(RuntimeEnv *env);
-#endif //SPM_ENVIRONMENT_H
+#endif //OHMYCAL_ENVIRONMENT_H
