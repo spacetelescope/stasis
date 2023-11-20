@@ -5,7 +5,7 @@
 #include "utils.h"
 #include "strlist.h"
 
-extern char **__environ;
+//extern char **__environ;
 
 /**
  * Print a shell-specific listing of environment variables to `stdout`
@@ -203,7 +203,7 @@ int runtime_replace(RuntimeEnv **dest, char **src) {
  */
 ssize_t runtime_contains(RuntimeEnv *env, const char *key) {
     ssize_t result = -1;
-    for (size_t i = 0; i < strlist_count(env); i++) {
+    for (ssize_t i = 0; i < (ssize_t) strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 0);
         if (pair == NULL) {
             break;
@@ -401,7 +401,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
  * @param _key Environment variable to set
  * @param _value New environment variable value
  */
-void runtime_set(RuntimeEnv *env, const char *_key, const char *_value) {
+void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     if (_key == NULL) {
         return;
     }
