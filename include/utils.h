@@ -1,5 +1,5 @@
-#ifndef OHMYCAL_UTILS_H
-#define OHMYCAL_UTILS_H
+#ifndef OMC_UTILS_H
+#define OMC_UTILS_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -44,4 +44,4 @@ char *git_describe(const char *path);
 void msg(unsigned type, char *fmt, ...);
 void debug_shell();
 
-#endif //OHMYCAL_UTILS_H
+#endif //OMC_UTILS_H

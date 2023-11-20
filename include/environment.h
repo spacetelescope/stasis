@@ -1,8 +1,8 @@
 /**
  * @file environment.h
  */
-#ifndef OHMYCAL_ENVIRONMENT_H
-#define OHMYCAL_ENVIRONMENT_H
+#ifndef OMC_ENVIRONMENT_H
+#define OMC_ENVIRONMENT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,4 +20,4 @@ char *runtime_expand_var(RuntimeEnv *env, char *input);
 void runtime_export(RuntimeEnv *env, char **keys);
 void runtime_apply(RuntimeEnv *env);
 void runtime_free(RuntimeEnv *env);
-#endif //OHMYCAL_ENVIRONMENT_H
+#endif //OMC_ENVIRONMENT_H

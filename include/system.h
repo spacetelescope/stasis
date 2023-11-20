@@ -2,8 +2,8 @@
 // Created by jhunk on 10/4/23.
 //
 
-#ifndef OHMYCAL_SYSTEM_H
-#define OHMYCAL_SYSTEM_H
+#ifndef OMC_SYSTEM_H
+#define OMC_SYSTEM_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,4 +25,4 @@ int shell(struct Process *proc, char *args[]);
 int shell2(struct Process *proc, char *args);
 int shell_safe(struct Process *proc, char *args[]);
 
-#endif //OHMYCAL_SYSTEM_H
+#endif //OMC_SYSTEM_H

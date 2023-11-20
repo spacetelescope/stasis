@@ -2,12 +2,12 @@
 // Created by jhunk on 5/14/23.
 //
 
-#ifndef OHMYCAL_CONDA_H
-#define OHMYCAL_CONDA_H
+#ifndef OMC_CONDA_H
+#define OMC_CONDA_H
 
 #include <stdio.h>
 #include <string.h>
-#include "ohmycal.h"
+#include "omc.h"
 
 #define CONDA_INSTALL_PREFIX "conda"
 
@@ -21,4 +21,4 @@ void conda_env_create(char *name, char *python_version, char *packages);
 void conda_env_remove(char *name);
 void conda_env_export(char *name, char *output_dir, char *output_filename);
 int conda_index(const char *path);
-#endif //OHMYCAL_CONDA_H
+#endif //OMC_CONDA_H

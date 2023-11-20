@@ -3,6 +3,7 @@
 //
 
 #include "system.h"
+#include "omc.h"
 
 int shell(struct Process *proc, char *args[]) {
     FILE *fp_out, *fp_err;

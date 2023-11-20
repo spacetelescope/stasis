@@ -1,7 +1,7 @@
 /// @file ini.h
 
-#ifndef OHMYCAL_INI_H
-#define OHMYCAL_INI_H
+#ifndef OMC_INI_H
+#define OMC_INI_H
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -178,4 +178,4 @@ void ini_show(struct INIFILE *ini);
  * @param ini
  */
 void ini_free(struct INIFILE **ini);
-#endif //OHMYCAL_INI_H
+#endif //OMC_INI_H

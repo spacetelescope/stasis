@@ -1,7 +1,7 @@
 /// @file deliverable.h
 
-#ifndef OHMYCAL_DELIVERABLE_H
-#define OHMYCAL_DELIVERABLE_H
+#ifndef OMC_DELIVERABLE_H
+#define OMC_DELIVERABLE_H
 
 #include <string.h>
 #include <stdbool.h>
@@ -276,4 +276,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir);
  */
 void delivery_install_conda(char *install_script, char *conda_install_dir);
 
-#endif //OHMYCAL_DELIVERABLE_H
+// helper function
+void delivery_gather_tool_versions(struct Delivery *ctx);
+
+#endif //OMC_DELIVERABLE_H

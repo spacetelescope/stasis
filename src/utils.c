@@ -1,5 +1,7 @@
 #include <stdarg.h>
-#include "ohmycal.h"
+#include "omc.h"
+
+extern struct OMC_GLOBAL globals;
 
 char *dirstack[1024];
 const size_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);

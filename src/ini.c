@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "ohmycal.h"
+#include "omc.h"
 #include "ini.h"
 
 struct INIFILE *ini_init() {

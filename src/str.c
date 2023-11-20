@@ -488,13 +488,13 @@ void strsort(char **arr, unsigned int sort_mode) {
     // Default mode is alphabetic sort
     compar fn = _strsort_alpha_compare;
 
-    if (sort_mode == OHMYCAL_SORT_LEN_DESCENDING) {
+    if (sort_mode == OMC_SORT_LEN_DESCENDING) {
         fn = _strsort_dsc_compare;
-    } else if (sort_mode == OHMYCAL_SORT_LEN_ASCENDING) {
+    } else if (sort_mode == OMC_SORT_LEN_ASCENDING) {
         fn = _strsort_asc_compare;
-    } else if (sort_mode == OHMYCAL_SORT_ALPHA) {
+    } else if (sort_mode == OMC_SORT_ALPHA) {
         fn = _strsort_alpha_compare; // ^ still selectable though ^
-    } else if (sort_mode == OHMYCAL_SORT_NUMERIC) {
+    } else if (sort_mode == OMC_SORT_NUMERIC) {
         fn = _strsort_numeric_compare;
     }
 
