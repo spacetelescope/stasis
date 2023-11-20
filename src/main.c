@@ -17,8 +17,8 @@ const char *BANNER = "----------------------------------------------------------
                      "╚██████╔╝██║  ██║    ██║ ╚═╝ ██║   ██║       ╚██████╗██║  ██║███████╗\n"
                      " ╚═════╝ ╚═╝  ╚═╝    ╚═╝     ╚═╝   ╚═╝        ╚═════╝╚═╝  ╚═╝╚══════╝\n"
                      "---------------------------------------------------------------------\n"
-                     "                     Delivery Generator                              \n"
-                     "                           v%s\n"
+                     "                          Delivery Generator                         \n"
+                     "                                v%s                                  \n"
                      "---------------------------------------------------------------------\n"
                      "Copyright (C) 2023 %s,\n"
                      "Association of Universities for Research in Astronomy (AURA)\n";
@@ -180,7 +180,7 @@ int main(int argc, char *argv[], char *arge[]) {
     uname(&uts);
 
     msg(OMC_MSG_L2, "Setting architecture\n");
-    char archsuffix[255];
+    char archsuffix[20];
     ctx.system.arch = strdup(uts.machine);
     if (!strcmp(ctx.system.arch, "x86_64")) {
         strcpy(archsuffix, "64");
