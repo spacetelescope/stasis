@@ -15,4 +15,5 @@ add_executable(omc
         recipe.c
         relocation.c
         wheel.c
+        copy.c
 )
