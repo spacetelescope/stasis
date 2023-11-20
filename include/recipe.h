@@ -2,8 +2,8 @@
 // Created by jhunk on 10/7/23.
 //
 
-#ifndef OHMYCAL_RECIPE_H
-#define OHMYCAL_RECIPE_H
+#ifndef OMC_RECIPE_H
+#define OMC_RECIPE_H
 
 #include "str.h"
 #include "utils.h"
@@ -17,4 +17,4 @@
 int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result);
 int recipe_get_type(char *repopath);
 
-#endif //OHMYCAL_RECIPE_H
+#endif //OMC_RECIPE_H

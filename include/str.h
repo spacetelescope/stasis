@@ -1,20 +1,20 @@
 /**
  * @file str.h
  */
-#ifndef OHMYCAL_STR_H
-#define OHMYCAL_STR_H
+#ifndef OMC_STR_H
+#define OMC_STR_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "ohmycal.h"
+#include "omc.h"
 
-#define OHMYCAL_SORT_ALPHA 1 << 0
-#define OHMYCAL_SORT_NUMERIC 1 << 1
-#define OHMYCAL_SORT_LEN_ASCENDING 1 << 2
-#define OHMYCAL_SORT_LEN_DESCENDING 1 << 3
+#define OMC_SORT_ALPHA 1 << 0
+#define OMC_SORT_NUMERIC 1 << 1
+#define OMC_SORT_LEN_ASCENDING 1 << 2
+#define OMC_SORT_LEN_DESCENDING 1 << 3
 
 int num_chars(const char *sptr, int ch);
 int startswith(const char *sptr, const char *pattern);
@@ -44,4 +44,4 @@ int isdigit_s(const char *s);
 char *tolower_s(char *s);
 char *to_short_version(const char *s);
 
-#endif //OHMYCAL_STR_H
+#endif //OMC_STR_H
