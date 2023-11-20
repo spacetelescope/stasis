@@ -13,6 +13,7 @@ struct OMC_GLOBAL {
     unsigned char verbose;
     unsigned char always_update_base_environment;
     unsigned char continue_on_error;
+    char *tmpdir;
 };
 
 #include "utils.h"

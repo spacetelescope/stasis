@@ -204,15 +204,23 @@ int shell_safe(struct Process *proc, char *args[]) {
     return result;
 }
 
-char *shell_output(const char *command) {
+char *shell_output(const char *command, int *status) {
     const size_t initial_size = OMC_BUFSIZ;
     size_t current_size = initial_size;
     char *result = NULL;
     char line[OMC_BUFSIZ];
     FILE *pp;
+
+    errno = 0;
+    *status = 0;
     pp = popen(command, "r");
     if (!pp) {
+        *status = -1;
         return NULL;
+    }
+
+    if (errno) {
+        *status = 1;
     }
     result = calloc(initial_size, sizeof(result));
     while (fgets(line, sizeof(line) - 1, pp) != NULL) {

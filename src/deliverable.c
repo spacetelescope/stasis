@@ -898,12 +898,14 @@ void delivery_tests_run(struct Delivery *ctx) {
 }
 
 void delivery_gather_tool_versions(struct Delivery *ctx) {
+    int status = 0;
+
     // Extract version from tool output
-    ctx->conda.tool_version = shell_output("conda --version");
+    ctx->conda.tool_version = shell_output("conda --version", &status);
     if (ctx->conda.tool_version)
         strip(ctx->conda.tool_version);
 
-    ctx->conda.tool_build_version = shell_output("conda build --version");
+    ctx->conda.tool_build_version = shell_output("conda build --version", &status);
     if (ctx->conda.tool_build_version)
         strip(ctx->conda.tool_version);
 }

@@ -73,7 +73,7 @@ int conda_activate(const char *root, const char *env_name) {
     // Set the path to our stdout log
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
     // the file handle at all. We'll open it as a FILE stream soon enough.
-    strcpy(logfile, "/tmp/shell_XXXXXX");
+    sprintf(logfile, "%s/%s", globals.tmpdir, "shell_XXXXXX");
     fd = mkstemp(logfile);
     if (fd < 0) {
        perror(logfile);
@@ -87,11 +87,13 @@ int conda_activate(const char *root, const char *env_name) {
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
         perror(path_conda);
+        remove(logfile);
         return -1;
     }
 
     if (access(path_mamba, F_OK) < 0) {
         perror(path_mamba);
+        remove(logfile);
         return -1;
     }
 
@@ -101,6 +103,7 @@ int conda_activate(const char *root, const char *env_name) {
     int retval = shell2(&proc, command);
     if (retval) {
         // it didn't work; drop out for cleanup
+        remove(logfile);
         return retval;
     }
 

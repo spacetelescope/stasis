@@ -431,7 +431,7 @@ void debug_shell() {
 
 char *xmkstemp(FILE **fp) {
     char t_name[PATH_MAX];
-    strcpy(t_name, "/tmp/OMC.XXXXXX");
+    sprintf(t_name, "%s/%s", globals.tmpdir, "OMC.XXXXXX");
     int fd = mkstemp(t_name);
 
     *fp = fdopen(fd, "w");

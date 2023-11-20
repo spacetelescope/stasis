@@ -1,11 +1,13 @@
-#define GNU_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <sys/utsname.h>
 #include <getopt.h>
+#include <sys/statvfs.h>
 #include "omc.h"
+#include "copy.h"
 
 const char *VERSION = "1.0.0";
 const char *AUTHOR = "Joseph Hunkeler";
@@ -104,6 +106,38 @@ static void usage(char *progname) {
     }
 }
 
+char *get_tmpdir(int *usable) {
+    char *tmpdir_env = NULL;
+    char *x = NULL;
+    *usable = 0;
+    x = getenv("TMPDIR");
+
+    if (x) {
+        tmpdir_env = strdup(x);
+    } else {
+        tmpdir_env = strdup("/tmp");
+    }
+
+    if (access(tmpdir_env, F_OK) < 0) {
+        if (mkdirs(tmpdir_env, 0755) < 0) {
+            free(tmpdir_env);
+            tmpdir_env = NULL;
+        }
+    }
+
+    struct statvfs st;
+    if (statvfs(tmpdir_env, &st) < 0) {
+        free(tmpdir_env);
+        return NULL;
+    }
+
+    if (!(st.f_flag & ST_NOEXEC) || !(st.f_flag & ST_RDONLY)) {
+        *usable = 1;
+    }
+
+    return tmpdir_env;
+}
+
 int main(int argc, char *argv[], char *arge[]) {
     struct INIFILE *cfg = NULL;
     struct INIFILE *ini = NULL;
@@ -121,6 +155,17 @@ int main(int argc, char *argv[], char *arge[]) {
     char python_override_version[NAME_MAX];
     unsigned char arg_continue_on_error = 0;
     unsigned char arg_always_update_base_environment = 0;
+    int tmpdir_usable = 0;
+
+    globals.tmpdir = get_tmpdir(&tmpdir_usable);
+    if (!tmpdir_usable) {
+        fprintf(stderr, "%s cannot be used due to restrictive mount options.\n"
+                        "Please set $TMPDIR to a path other than %s",
+                        globals.tmpdir, globals.tmpdir);
+        if (globals.tmpdir)
+            free(globals.tmpdir);
+        exit(1);
+    }
 
     int c;
     while (1) {
