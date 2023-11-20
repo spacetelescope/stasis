@@ -78,25 +78,22 @@ void delivery_free(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs(struct Delivery *ctx) {
-    mkdir("build", 0755);
-    mkdir("build/recipes", 0755);
-    mkdir("build/sources", 0755);
-    mkdir("build/testing", 0755);
+    mkdirs("build/recipes", 0755);
+    mkdirs("build/sources", 0755);
+    mkdirs("build/testing", 0755);
     ctx->storage.build_dir = realpath("build", NULL);
     ctx->storage.build_recipes_dir = realpath("build/recipes", NULL);
     ctx->storage.build_sources_dir = realpath("build/sources", NULL);
     ctx->storage.build_testing_dir = realpath("build/testing", NULL);
 
-    mkdir("output", 0755);
-    mkdir("output/omc", 0755);
-    mkdir("output/packages", 0755);
-    mkdir("output/packages/conda", 0755);
-    mkdir("output/packages/wheels", 0755);
+    mkdirs("output/omc", 0755);
+    mkdirs("output/packages/conda", 0755);
+    mkdirs("output/packages/wheels", 0755);
     ctx->storage.delivery_dir = realpath("output/omc", NULL);
     ctx->storage.conda_artifact_dir = realpath("output/packages/conda", NULL);
     ctx->storage.wheel_artifact_dir = realpath("output/packages/wheels", NULL);
 
-    mkdir(CONDA_INSTALL_PREFIX, 0755);
+    mkdirs(CONDA_INSTALL_PREFIX, 0755);
     ctx->storage.conda_install_prefix = realpath(CONDA_INSTALL_PREFIX, NULL);
 }
 
