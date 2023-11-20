@@ -113,7 +113,7 @@ int conda_activate(const char *root, const char *env_name) {
     }
     int i = 0;
     while (!feof(fp)) {
-        char buf[BUFSIZ] = {0};
+        char buf[OMC_BUFSIZ] = {0};
         int ch = 0;
         int z = 0;
         while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {

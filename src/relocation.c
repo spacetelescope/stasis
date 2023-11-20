@@ -20,7 +20,7 @@
  * @param replacement string value
  */
 void replace_text(char *original, const char *target, const char *replacement) {
-    char buffer[OHMYCAL_BUFSIZ];
+    char buffer[OMC_BUFSIZ];
     char *tmp = original;
 
     memset(buffer, 0, sizeof(buffer));
@@ -62,7 +62,7 @@ void file_replace_text(const char* filename, const char* target, const char* rep
         return;
     }
 
-    char buffer[OHMYCAL_BUFSIZ];
+    char buffer[OMC_BUFSIZ];
     char tempfilename[] = "tempfileXXXXXX";
     FILE *tfp = fopen(tempfilename, "w");
 

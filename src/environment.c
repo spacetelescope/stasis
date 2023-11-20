@@ -70,7 +70,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             NULL,
     };
 
-    char output[BUFSIZ];
+    char output[OMC_BUFSIZ];
     char export_command[7]; // export=6 and setenv=6... convenient
     char *_sh = getenv("SHELL");
     char *sh = path_basename(_sh);
@@ -289,7 +289,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
         return strdup(input);
     }
 
-    expanded = calloc(BUFSIZ, sizeof(char));
+    expanded = calloc(OMC_BUFSIZ, sizeof(char));
     if (expanded == NULL) {
         perror("could not allocate runtime_expand_var buffer");
         fprintf(SYSERROR);

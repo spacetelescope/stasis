@@ -69,7 +69,7 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
 
 int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, union INIVal *result) {
     char *token = NULL;
-    char tbuf[BUFSIZ];
+    char tbuf[OMC_BUFSIZ];
     char *tbufp = tbuf;
     struct INIData *data;
     data = ini_data_get(ini, section_name, key);
@@ -234,8 +234,8 @@ void ini_free(struct INIFILE **ini) {
 
 struct INIFILE *ini_open(const char *filename) {
     FILE *fp;
-    char line[BUFSIZ] = {0};
-    char current_section[BUFSIZ] = {0};
+    char line[OMC_BUFSIZ] = {0};
+    char current_section[OMC_BUFSIZ] = {0};
     char *key_last = NULL;
     struct INIFILE *ini = ini_init();
 
@@ -296,7 +296,7 @@ struct INIFILE *ini_open(const char *filename) {
         }
 
         char *key = NULL;
-        char *value = malloc(BUFSIZ);
+        char *value = malloc(OMC_BUFSIZ);
         char *operator = strchr(line, '=');
 
         // continuation line

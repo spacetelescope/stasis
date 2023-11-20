@@ -122,7 +122,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     // keys in the configuration
     rt = runtime_copy(__environ);
     while ((rtdata = ini_getall(ini, "runtime")) != NULL) {
-        char rec[BUFSIZ];
+        char rec[OMC_BUFSIZ];
         sprintf(rec, "%s=%s", lstrip(strip(rtdata->key)), lstrip(strip(rtdata->value)));
         runtime_set(rt, rtdata->key, rtdata->value);
     }
@@ -422,7 +422,7 @@ static char *requirement_from_test(struct Delivery *ctx, const char *name) {
 
 void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char cmd[PATH_MAX];
-    char pkgs[BUFSIZ];
+    char pkgs[OMC_BUFSIZ];
     char *env_current = getenv("CONDA_DEFAULT_ENV");
 
     if (env_current) {

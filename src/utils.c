@@ -192,7 +192,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // Allocate buffer
-    if ((buffer = calloc(BUFSIZ, sizeof(char))) == NULL) {
+    if ((buffer = calloc(OMC_BUFSIZ, sizeof(char))) == NULL) {
         perror("line buffer");
         fprintf(SYSERROR);
         if (!use_stdin) {
@@ -202,7 +202,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // count number the of lines in the file
-    while ((fgets(buffer, BUFSIZ - 1, fp)) != NULL) {
+    while ((fgets(buffer, OMC_BUFSIZ - 1, fp)) != NULL) {
         lines++;
     }
 
@@ -239,7 +239,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
             continue;
         }
 
-        if (fgets(buffer, BUFSIZ - 1, fp) == NULL) {
+        if (fgets(buffer, OMC_BUFSIZ - 1, fp) == NULL) {
             break;
         }
 
@@ -256,7 +256,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
             }
         }
         result[i] = strdup(buffer);
-        memset(buffer, '\0', BUFSIZ);
+        memset(buffer, '\0', OMC_BUFSIZ);
     }
 
     free(buffer);
