@@ -6,6 +6,9 @@
 #include "str.h"
 #include "strlist.h"
 #include "wheel.h"
+#include "copy.h"
+
+extern struct OMC_GLOBAL globals;
 
 #define getter(XINI, SECTION_NAME, KEY, TYPE) \
     { \
@@ -115,6 +118,11 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         conv_str(ctx, storage.wheel_staging_dir);
         getter(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR);
         conv_str(ctx, storage.wheel_staging_url);
+        // Below can also be toggled by command-line arguments
+        getter(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL)
+        globals.continue_on_error = val.as_bool;
+        getter(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL);
+        globals.always_update_base_environment = val.as_bool;
     }
     delivery_init_dirs(ctx);
 

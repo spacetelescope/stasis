@@ -41,6 +41,8 @@ char *git_describe(const char *path);
 #define OMC_MSG_L1 1 << 3
 #define OMC_MSG_L2 1 << 4
 #define OMC_MSG_L3 1 << 5
+#define OMC_MSG_RESTRICT 1 << 6     ///< Restrict to verbose mode
+
 void msg(unsigned type, char *fmt, ...);
 void debug_shell();
 

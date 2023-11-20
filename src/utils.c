@@ -382,6 +382,11 @@ void msg(unsigned type, char *fmt, ...) {
         return;
     }
 
+    if (!globals.verbose && type & OMC_MSG_RESTRICT) {
+        // Verbose mode is not active
+        return;
+    }
+
     memset(header, 0, sizeof(header));
     memset(status, 0, sizeof(status));
 
