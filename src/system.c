@@ -84,20 +84,16 @@ int shell2(struct Process *proc, char *args) {
     status = 0;
     errno = 0;
 
-    char t_name[PATH_MAX];
-    strcpy(t_name, "/tmp/ohmycal.XXXXXX");
-    int fd = mkstemp(t_name);
-
-    FILE *tp;
-    tp = fdopen(fd, "w");
-    if (!tp) {
+    FILE *tp = NULL;
+    char *t_name;
+    t_name = xmkstemp(&tp);
+    if (!t_name || !tp) {
         return -1;
     }
 
     fprintf(tp, "#!/bin/bash\n%s\n", args);
     fflush(tp);
     fclose(tp);
-    close(fd);
     chmod(t_name, 0755);
 
     pid = fork();
@@ -205,5 +201,37 @@ int shell_safe(struct Process *proc, char *args[]) {
             fp = NULL;
         }
     }
+    return result;
+}
+
+char *shell_output(const char *command) {
+    const size_t initial_size = OMC_BUFSIZ;
+    size_t current_size = initial_size;
+    char *result = NULL;
+    char line[OMC_BUFSIZ];
+    FILE *pp;
+    pp = popen(command, "r");
+    if (!pp) {
+        return NULL;
+    }
+    result = calloc(initial_size, sizeof(result));
+    while (fgets(line, sizeof(line) - 1, pp) != NULL) {
+        size_t result_len = strlen(result);
+        size_t need_realloc = (result_len + strlen(line)) > current_size;
+        if (need_realloc) {
+            current_size += initial_size;
+            char *tmp = realloc(result, sizeof(*result) * current_size);
+            if (!tmp) {
+                return NULL;
+            } else if (tmp != result) {
+                result = tmp;
+            } else {
+                fprintf(SYSERROR);
+                return NULL;
+            }
+        }
+        strcat(result, line);
+    }
+    pclose(pp);
     return result;
 }

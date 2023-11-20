@@ -24,5 +24,6 @@ struct Process {
 int shell(struct Process *proc, char *args[]);
 int shell2(struct Process *proc, char *args);
 int shell_safe(struct Process *proc, char *args[]);
+char *shell_output(const char *command);
 
 #endif //OMC_SYSTEM_H
