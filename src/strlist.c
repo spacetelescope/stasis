@@ -66,7 +66,6 @@ static int reader_strlist_append_file(size_t lineno, char **line) {
  */
 int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerFn) {
     int retval = 0;
-    int is_remote = 0;
     char *path = NULL;
     char *filename = NULL;
     char *from_file_tmpdir = NULL;
@@ -249,12 +248,9 @@ int strlist_cmp(struct StrList *a, struct StrList *b) {
  * @param mode Available modes: `STRLIST_DEFAULT` (alphabetic), `STRLIST_ASC` (ascending), `STRLIST_DSC` (descending)
  */
 void strlist_sort(struct StrList *pStrList, unsigned int mode) {
-    void *fn = NULL;
-
     if (pStrList == NULL) {
         return;
     }
-
     strsort(pStrList->data, mode);
 }
 
