@@ -12,8 +12,13 @@ extern struct OMC_GLOBAL globals;
 
 #define getter(XINI, SECTION_NAME, KEY, TYPE) \
     { \
+        ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val); \
+    }
+#define getter_required(XINI, SECTION_NAME, KEY, TYPE) \
+    { \
         if (ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val)) { \
-            fprintf(stderr, "%s:%s not defined\n", SECTION_NAME, KEY); \
+            fprintf(stderr, "%s:%s is required but not defined\n", SECTION_NAME, KEY); \
+            return -1;\
         } \
     }
 
@@ -22,10 +27,15 @@ extern struct OMC_GLOBAL globals;
 #define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
 #define conv_strlist(X, DEST, TOK) { \
     char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
-    if (!X->DEST)               \
+    if (!X->DEST) \
         X->DEST = strlist_init(); \
-    strlist_append_tokenize(X->DEST, rtevnop, TOK);    \
-    free(rtevnop);\
+    if (rtevnop) {                   \
+        strip(rtevnop); \
+        strlist_append_tokenize(X->DEST, rtevnop, TOK); \
+        free(rtevnop); \
+    } else { \
+        rtevnop = NULL; \
+    } \
 }
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
 #define guard_runtime_free(X) if (X) { runtime_free(X); X = NULL; }
@@ -152,7 +162,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         ctx->meta.version = NULL;
     }
 
-    getter(ini, "meta", "name", INIVAL_TYPE_STR)
+    getter_required(ini, "meta", "name", INIVAL_TYPE_STR)
     conv_str(ctx, meta.name)
 
     getter(ini, "meta", "rc", INIVAL_TYPE_INT)
@@ -161,28 +171,25 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter(ini, "meta", "final", INIVAL_TYPE_BOOL)
     conv_bool(ctx, meta.final)
 
-    getter(ini, "meta", "continue_on_error", INIVAL_TYPE_BOOL)
-    conv_bool(ctx, meta.continue_on_error)
-
     getter(ini, "meta", "based_on", INIVAL_TYPE_STR)
     conv_str(ctx, meta.based_on)
 
     getter(ini, "meta", "python", INIVAL_TYPE_STR)
     conv_str(ctx, meta.python)
 
-    getter(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR)
+    getter_required(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_baseurl)
 
-    getter(ini, "conda", "installer_name", INIVAL_TYPE_STR)
+    getter_required(ini, "conda", "installer_name", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_name)
 
-    getter(ini, "conda", "installer_version", INIVAL_TYPE_STR)
+    getter_required(ini, "conda", "installer_version", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_version)
 
-    getter(ini, "conda", "installer_platform", INIVAL_TYPE_STR)
+    getter_required(ini, "conda", "installer_platform", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_platform)
 
-    getter(ini, "conda", "installer_arch", INIVAL_TYPE_STR)
+    getter_required(ini, "conda", "installer_arch", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_arch)
 
     getter(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY)
@@ -222,13 +229,17 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
         memset(env_date, 0, sizeof(env_date));
         strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", ctx->info.time_info);
-        sprintf(env_name, "%s_%s_rc%d", ctx->meta.name, env_date, ctx->meta.rc);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_py%s_final",
+                 ctx->meta.name, env_date, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact);
     } else if (!strcasecmp(ctx->meta.mission, "hst")) {
-        sprintf(env_name, "%s_%s_%s_%s_rc%d", ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact, ctx->meta.rc);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_py%s_rc%d",
+                 ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact, ctx->meta.rc);
     } else if (!strcasecmp(ctx->meta.mission, "jwst") && ctx->meta.final) {
-        sprintf(env_name, "%s_%s_final", ctx->meta.name, ctx->meta.version);
+        snprintf(env_name, sizeof(env_name), "%s_%s_%s_py%s_final",
+                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact);
     } else if (!strcasecmp(ctx->meta.mission, "jwst")) {
-        sprintf(env_name, "%s_%s_rc%d", ctx->meta.name, ctx->meta.version, ctx->meta.rc);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_py%s_rc%d",
+                 ctx->meta.name, ctx->meta.version, ctx->meta.python_compact, ctx->meta.rc);
     }
 
     if (strlen(env_name)) {
@@ -269,7 +280,7 @@ void delivery_conda_show(struct Delivery *ctx) {
         printf("%21s%s\n", "", token);
     }
 
-    puts("PyPi Packages:");
+    puts("Python Packages:");
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
         char *token = strlist_item(ctx->conda.pip_packages, i);
         if (isempty(token) || isblank(*token) || startswith(token, "-")) {
@@ -337,7 +348,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 char command[PATH_MAX];
                 sprintf(command, "build --python=%s .", ctx->meta.python);
                 status = conda_exec(command);
-                if (status && !ctx->meta.continue_on_error) {
+                if (status) {
                     return -1;
                 }
 
@@ -379,11 +390,9 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             {
                 if (python_exec("-m build -w ")) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
-                    if (!ctx->meta.continue_on_error) {
-                        strlist_free(result);
-                        result = NULL;
-                        return NULL;
-                    }
+                    strlist_free(result);
+                    result = NULL;
+                    return NULL;
                 } else {
                     DIR *dp;
                     struct dirent *rec;
@@ -618,13 +627,15 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
     memset(&proc, 0, sizeof(proc));
 
     if (!access(conda_install_dir, F_OK)) {
+        // directory exists so remove it
         if (rmtree(conda_install_dir)) {
             perror("unable to remove previous installation");
             exit(1);
         }
     }
 
-    // -b = batch mode
+    // Proceed with the installation
+    // -b = batch mode (non-interactive)
     if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
         fprintf(stderr, "conda installation failed\n");
         exit(1);
@@ -637,6 +648,12 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
+    // Setting the CONDARC environment variable appears to be the only consistent
+    // way to make sure the file is used. Not setting this variable leads to strange
+    // behavior, especially if a conda environment is already active when OMC is loaded.
+    char rcpath[PATH_MAX];
+    sprintf(rcpath, "%s/%s", conda_install_dir, ".condarc");
+    setenv("CONDARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
         perror("unable to replace runtime environment after activating conda");
         exit(1);
@@ -667,12 +684,16 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     struct StrList *filtered = NULL;
     filtered = strlist_init();
     for (size_t i = 0, z = 0; i < strlist_count(dataptr); i++) {
+        int ignore_pkg = 0;
+
         name = strlist_item(dataptr, i);
         if (!strlen(name) || isblank(*name) || isspace(*name)) {
+            // no data
             continue;
         }
         msg(OMC_MSG_L3, "package '%s': ", name);
-        int ignore_pkg = 0;
+
+        // Compile a list of packages that are *also* to be tested.
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
             if (ctx->tests[x].name) {
                 if (startswith(ctx->tests[x].name, name)) {
@@ -693,7 +714,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 
     if (!strlist_count(deferred)) {
-        msg(OMC_MSG_WARN, "No packages were filtered by test definitions");
+        msg(OMC_MSG_WARN | OMC_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
     } else {
         if (DEFER_CONDA == type) {
             strlist_free(ctx->conda.conda_packages);
@@ -708,15 +729,16 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 }
 
-char *delivery_get_spec_header(struct Delivery *ctx) {
-    char output[BUFSIZ];
+const char *release_header = "# delivery_name: %s\n"
+                     "# creation_time: %s\n"
+                     "# conda_ident: %s\n"
+                     "# conda_build_ident: %s\n";
+
+char *delivery_get_release_header(struct Delivery *ctx) {
+    char output[OMC_BUFSIZ];
     char stamp[100];
-    const char *header = "# delivery_name: %s\n"
-                         "# creation_time: %s\n"
-                         "# conda_version: %s\n"
-                         "# condabuild_version: %s\n";
     strftime(stamp, sizeof(stamp) - 1, "%c", ctx->info.time_info);
-    sprintf(output, header,
+    sprintf(output, release_header,
             ctx->info.release_name,
             stamp,
             ctx->conda.tool_version,
@@ -743,13 +765,49 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     }
     fprintf(tp, "%s", header);
 
+    // Read the original file
+    char **contents = file_readlines(filename, 0, 0, NULL);
+    if (!contents) {
+        msg(OMC_MSG_ERROR, "%s: unable to read %s", filename);
+        exit(1);
+    }
+
+    // Write temporary data
+    for (size_t i = 0; contents[i] != NULL; i++) {
+        if (startswith(contents[i], "prefix:")) {
+            // quick hack: prefixes are written at the bottom of the file
+            // so strip it off
+            break;
+        }
+        fprintf(tp, "%s", contents[i]);
+    }
+
+    for (size_t i = 0; contents[i] != NULL; i++) {
+        free(contents[i]);
+    }
+    free(contents);
+    contents = NULL;
+    free(header);
+    header = NULL;
+    fflush(tp);
+    fclose(tp);
+
+    // Replace the original file with our temporary data
+    if (copy2(tempfile, filename, CT_PERM) < 0) {
+        fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
+        exit(1);
+    }
+
+    // Replace "local" channel with the staging URL
     sprintf(output, "  - %s", ctx->storage.conda_staging_url);
     file_replace_text(filename, "  - local", output);
+
+    // Rewrite tested packages to point to tested code, at a defined verison
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages_defer); i++) {
         package_name = strlist_item(ctx->conda.pip_packages_defer, i);
         char target[PATH_MAX];
         char replacement[PATH_MAX];
-        struct Wheel *wheelfile;
+        //struct Wheel *wheelfile;
 
         memset(target, 0, sizeof(target));
         memset(replacement, 0, sizeof(replacement));
@@ -798,7 +856,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     } else {
         for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
             if (!ctx->tests[i].name && !ctx->tests[i].repository && !ctx->tests[i].script) {
-                // unused entry
+                // skip unused test records
                 continue;
             }
             msg(OMC_MSG_L2, "%s %s\n", ctx->tests[i].name, ctx->tests[i].version);
