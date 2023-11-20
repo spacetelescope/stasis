@@ -6,8 +6,8 @@
 #include <limits.h>
 #include <time.h>
 #include <sys/utsname.h>
-#include "ohmycal.h"
-//#include "wheel.h"
+#include <getopt.h>
+#include "omc.h"
 
 const char *VERSION = "1.0.0";
 const char *AUTHOR = "Joseph Hunkeler";
@@ -25,6 +25,87 @@ const char *BANNER = "----------------------------------------------------------
                      "Copyright (C) 2023 %s,\n"
                      "Association of Universities for Research in Astronomy (AURA)\n";
 
+struct OMC_GLOBAL globals = {
+    .verbose = 0,
+    .continue_on_error = 0,
+    .always_update_base_environment = 0,
+};
+
+#define OPT_ALWAYS_UPDATE_BASE 1000
+static struct option long_options[] = {
+        {"help", no_argument, 0, 'h'},
+        {"version", no_argument, 0, 'V'},
+        {"continue-on-error", no_argument, 0, 'C'},
+        {"config", optional_argument, 0, 'c'},
+        {"python", optional_argument, 0, 'p'},
+        {"verbose", no_argument, 0, 'v'},
+        {"update-base", optional_argument, 0, OPT_ALWAYS_UPDATE_BASE},
+        {0, 0, 0, 0},
+};
+
+const char *long_options_help[] = {
+        "Display this usage statement",
+        "Display program version",
+        "Allow tests to fail",
+        "Read configuration file",
+        "Override version of Python in configuration",
+        "Increase output verbosity",
+        "Update conda installation prior to OMC environment creation",
+        NULL,
+};
+
+static int get_option_max_width(struct option option[]) {
+    int i = 0;
+    int max = 0;
+    while (option[i].name != 0) {
+        int len = (int) strlen(option[i].name);
+        if (option[i].has_arg) {
+            len += 4;
+        }
+        if (len > max) {
+            max = len;
+        }
+        i++;
+    }
+    return max;
+}
+
+static void usage(char *progname) {
+    printf("usage: %s ", progname);
+    printf("[-");
+    for (int x = 0; long_options[x].val != 0; x++) {
+        if (long_options[x].has_arg == no_argument) {
+            putchar(long_options[x].val);
+        }
+    }
+    printf("] {DELIVERY_FILE}\n");
+
+    int width = get_option_max_width(long_options);
+    for (int x = 0; long_options[x].name != 0; x++) {
+        char tmp[255] = {0};
+        char output[sizeof(tmp)] = {0};
+        char opt_long[50] = {0};        // --? [ARG]?
+        char opt_short[3] = {0};        // -?
+
+        strcat(opt_long, "--");
+        strcat(opt_long, long_options[x].name);
+        if (long_options[x].has_arg) {
+            strcat(opt_long, " ARG");
+        }
+
+        if (long_options[x].val <= 'z') {
+            strcat(opt_short, "-");
+            opt_short[1] = (char) long_options[x].val;
+        } else {
+            strcat(opt_short, "  ");
+        }
+
+        sprintf(tmp, "\t%%-%ds\t%%s\t\t%%s", width + 4);
+        sprintf(output, tmp, opt_long, opt_short, long_options_help[x]);
+        puts(output);
+    }
+}
+
 int main(int argc, char *argv[], char *arge[]) {
     struct INIFILE *cfg = NULL;
     struct INIFILE *ini = NULL;
@@ -39,12 +120,60 @@ int main(int argc, char *argv[], char *arge[]) {
     char *delivery_input = argv[1];
     char *config_input = argv[2];
     char installer_url[PATH_MAX];
+    char python_override_version[NAME_MAX];
+    unsigned char arg_continue_on_error = 0;
+    unsigned char arg_always_update_base_environment = 0;
+
+    int c;
+    while (1) {
+        int option_index;
+        c = getopt_long(argc, argv, "hVCc:p:v", long_options, &option_index);
+        if (c == -1) {
+            break;
+        }
+        switch (c) {
+            case 'h':
+                usage(path_basename(argv[0]));
+                exit(0);
+            case 'V':
+                puts(VERSION);
+                exit(0);
+            case 'c':
+                config_input = strdup(optarg);
+                break;
+            case 'C':
+                arg_continue_on_error = 1;
+                break;
+            case 'p':
+                strcpy(python_override_version, optarg);
+                break;
+            case OPT_ALWAYS_UPDATE_BASE:
+                arg_always_update_base_environment = 1;
+                break;
+            case 'v':
+                globals.verbose = 1;
+                break;
+            case '?':
+                break;
+            default:
+                printf("unknown option: %c\n", c);
+        }
+    }
+
+    if (optind < argc) {
+        while (optind < argc) {
+            // use first positional argument
+            delivery_input = argv[optind];
+            break;
+        }
+    }
 
     memset(&proc, 0, sizeof(proc));
     memset(&ctx, 0, sizeof(ctx));
 
     if (!delivery_input) {
-        fprintf(stderr, "Missing *.ini file\n");
+        fprintf(stderr, "error: a DELIVERY_FILE is required\n");
+        usage(path_basename(argv[0]));
         exit(1);
     }
 
