@@ -4,8 +4,9 @@
 extern struct OMC_GLOBAL globals;
 
 char *dirstack[1024];
-const size_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);
-size_t dirstack_len = 0;
+const ssize_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);
+ssize_t dirstack_len = 0;
+
 int pushd(const char *path) {
     if (dirstack_len + 1 > dirstack_max) {
         return -1;
@@ -309,7 +310,6 @@ int touch(const char *filename) {
         perror(filename);
         return 1;
     }
-    fprintf(stderr, "");
     fclose(fp);
     return 0;
 }
@@ -375,7 +375,7 @@ char *git_describe(const char *path) {
 void msg(unsigned type, char *fmt, ...) {
     FILE *stream = NULL;
     char header[255];
-    char status[255];
+    char status[20];
 
     if (type & OMC_MSG_NOP) {
         // quiet mode
@@ -418,8 +418,7 @@ void msg(unsigned type, char *fmt, ...) {
 
     fprintf(stream, "%s", header);
     vfprintf(stream, fmt, args);
-    printf("%s", OMC_COLOR_RESET);
-    printf("%s", OMC_COLOR_RESET);
+    fprintf(stream, "%s", OMC_COLOR_RESET);
     va_end(args);
 }
 
@@ -428,4 +427,20 @@ void debug_shell() {
     system("/bin/bash -c 'PS1=\"(OMC DEBUG) \\W $ \" bash --norc --noprofile'");
     msg(OMC_MSG_L1 | OMC_MSG_WARN, "EXITING OMC DEBUG SHELL\n" OMC_COLOR_RESET);
     exit(255);
+}
+
+char *xmkstemp(FILE **fp) {
+    char t_name[PATH_MAX];
+    strcpy(t_name, "/tmp/OMC.XXXXXX");
+    int fd = mkstemp(t_name);
+
+    *fp = fdopen(fd, "w");
+    if (!*fp) {
+        if (fd > 0)
+            close(fd);
+        *fp = NULL;
+        return NULL;
+    }
+    char *path = strdup(t_name);
+    return path;
 }

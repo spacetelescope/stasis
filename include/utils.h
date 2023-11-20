@@ -45,5 +45,14 @@ char *git_describe(const char *path);
 
 void msg(unsigned type, char *fmt, ...);
 void debug_shell();
+/**
+ * Creates a temporary file returning an open file pointer via @a fp, and the
+ * path to the file. The caller is responsible for closing @a fp and
+ * free()ing the returned file path.
+ * @param fp pointer to FILE (to be initialized)
+ * @return system path to the temporary file
+ * @return NULL on failure
+ */
+char *xmkstemp(FILE **fp);
 
 #endif //OMC_UTILS_H
