@@ -220,7 +220,7 @@ char** split(char *_sptr, const char* delim, size_t max)
     size_t x = max;
     char *token = NULL;
     while((token = strsep(&sptr, delim)) != NULL) {
-        result[i] = calloc(BUFSIZ, sizeof(char));
+        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
         if (x < max) {
             strcat(result[i], strstr(orig, delim) + 1);
             break;
@@ -477,7 +477,12 @@ static int _strsort_dsc_compare(const void *a, const void *b) {
 
 /**
  * Sort an array of strings
- * @param arr
+ * @param arr a NULL terminated array of strings
+ * @param sort_mode
+ *     - OMC_SORT_LEN_DESCENDING
+ *     - OMC_SORT_LEN_ASCENDING
+ *     - OMC_SORT_ALPHA
+ *     - OMC_SORT_NUMERIC
  */
 void strsort(char **arr, unsigned int sort_mode) {
     if (arr == NULL) {
@@ -587,7 +592,7 @@ char *lstrip(char *sptr) {
         return NULL;
     }
 
-    while (isblank(*tmp) || isspace(*tmp)) {
+    while (strlen(tmp) > 1 && (isblank(*tmp) || isspace(*tmp))) {
         bytes++;
         tmp++;
     }
