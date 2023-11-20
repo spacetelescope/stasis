@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include "conda.h"
 
+extern struct OMC_GLOBAL globals;
+
 int python_exec(const char *args) {
     char command[PATH_MAX];
     memset(command, 0, sizeof(command));
@@ -104,7 +106,7 @@ int conda_activate(const char *root, const char *env_name) {
 
     // Parse the log file:
     // 1. Extract the environment keys and values from the sub-shell
-    // 2. Apply it to ohmycal's runtime environment
+    // 2. Apply it to OMC's runtime environment
     // 3. Now we're ready to execute conda commands anywhere
     fp = fopen(proc.stdout, "r");
     if (!fp) {
@@ -115,7 +117,7 @@ int conda_activate(const char *root, const char *env_name) {
     while (!feof(fp)) {
         char buf[OMC_BUFSIZ] = {0};
         int ch = 0;
-        int z = 0;
+        size_t z = 0;
         while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
             if (ch == EOF) {
                 ch = 0;
@@ -160,47 +162,50 @@ void conda_setup_headless() {
     conda_exec("config --system --set rollback_enabled false");
     conda_exec("config --system --set report_errors false");
 
-    // make this configurable
-    //if (conda_exec("update --all")) {
-    //    fprintf(stderr, "conda update was unsuccessful\n");
-    //    exit(1);
-    //}
+    if (globals.verbose) {
+        char *rcfile = getenv("CONDARC");
+        if (rcfile) {
+            msg(OMC_MSG_L1, "Dump %s\n", rcfile);
+            char **condarc_contents = file_readlines(rcfile, 0, 0, NULL);
+            for (size_t i = 0; condarc_contents[i] != NULL; i++) {
+                msg(OMC_MSG_L2, "%s", condarc_contents[i]);
+                free(condarc_contents[i]);
+            }
+            free(condarc_contents);
+        }
+
+    }
+
+    if (globals.always_update_base_environment) {
+        if (conda_exec("update --all")) {
+            fprintf(stderr, "conda update was unsuccessful\n");
+            exit(1);
+        }
+    }
 }
 
-void conda_env_create_from_uri(char *name, char *uri) {
+int conda_env_create_from_uri(char *name, char *uri) {
     char env_command[PATH_MAX];
     sprintf(env_command, "env create -n %s -f %s", name, uri);
-    if (conda_exec(env_command)) {
-        fprintf(stderr, "derived environment creation failed\n");
-        exit(1);
-    }
+    return conda_exec(env_command);
 }
 
-void conda_env_create(char *name, char *python_version, char *packages) {
+int conda_env_create(char *name, char *python_version, char *packages) {
     char env_command[PATH_MAX];
     sprintf(env_command, "create -n %s python=%s %s", name, python_version, packages ? packages : "");
-    if (conda_exec(env_command)) {
-        fprintf(stderr, "conda environment creation failed\n");
-        exit(1);
-    }
+    return conda_exec(env_command);
 }
 
-void conda_env_remove(char *name) {
+int conda_env_remove(char *name) {
     char env_command[PATH_MAX];
     sprintf(env_command, "env remove -n %s", name);
-    if (conda_exec(env_command)) {
-        fprintf(stderr, "conda environment removal failed\n");
-        exit(1);
-    }
+    return conda_exec(env_command);
 }
 
-void conda_env_export(char *name, char *output_dir, char *output_filename) {
+int conda_env_export(char *name, char *output_dir, char *output_filename) {
     char env_command[PATH_MAX];
     sprintf(env_command, "env export -n %s -f %s/%s.yml", name, output_dir, output_filename);
-    if (conda_exec(env_command)) {
-        fprintf(stderr, "conda environment export failed\n");
-        exit(1);
-    }
+    return conda_exec(env_command);
 }
 
 int conda_index(const char *path) {

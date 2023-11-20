@@ -420,7 +420,7 @@ static char *requirement_from_test(struct Delivery *ctx, const char *name) {
     return result;
 }
 
-void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
+int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char cmd[PATH_MAX];
     char pkgs[OMC_BUFSIZ];
     char *env_current = getenv("CONDA_DEFAULT_ENV");
@@ -458,6 +458,9 @@ void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, ch
         for (size_t p = 0; p < strlist_count(manifest[x]); p++) {
             name = strlist_item(manifest[x], p);
             strip(name);
+            if (!strlen(name)) {
+                continue;
+            }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
                 //DIR *dp;
                 //struct dirent *rec;
@@ -499,11 +502,12 @@ void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, ch
                 }
             }
         }
-        if (runner(cmd)) {
-            fprintf(stderr, "failed to install package: %s\n", name);
-            exit(1);
+        int status = runner(cmd);
+        if (status) {
+            return status;
         }
     }
+    return 0;
 }
 
 void delivery_get_installer_url(struct Delivery *delivery, char *result) {
@@ -524,13 +528,18 @@ void delivery_get_installer_url(struct Delivery *delivery, char *result) {
 
 }
 
-void delivery_get_installer(char *installer_url) {
-    if (access(path_basename(installer_url), F_OK)) {
-        if (download(installer_url, path_basename(installer_url))) {
-            fprintf(stderr, "download failed: %s\n", installer_url);
-            exit(1);
+int delivery_get_installer(char *installer_url) {
+    char *script = path_basename(installer_url);
+    if (access(script, F_OK)) {
+        // Script doesn't exist
+        if (download(installer_url, script)) {
+            // download failed
+            return -1;
         }
+    } else {
+        msg(OMC_MSG_RESTRICT | OMC_MSG_L3, "Skipped, installer already exists\n", script);
     }
+    return 0;
 }
 
 int delivery_copy_conda_artifacts(struct Delivery *ctx) {
@@ -542,8 +551,11 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
     memset(subdir, 0, sizeof(subdir));
 
     sprintf(conda_build_dir, "%s/%s", ctx->storage.conda_install_prefix, "conda-bld");
+    // One must run conda build at least once to create the "conda-bld" directory.
+    // When this directory is missing there can be no build artifacts.
     if (access(conda_build_dir, F_OK) < 0) {
-        // Conda build was never executed
+        msg(OMC_MSG_RESTRICT | OMC_MSG_WARN | OMC_MSG_L3,
+            "Skipped: 'conda build' has never been executed.\n");
         return 0;
     }
 
@@ -710,6 +722,21 @@ char *delivery_get_spec_header(struct Delivery *ctx) {
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     char *package_name = NULL;
     char output[PATH_MAX];
+    char *header = NULL;
+    char *tempfile = NULL;
+    FILE *tp = NULL;
+
+    header = delivery_get_release_header(ctx);
+    if (!header) {
+        msg(OMC_MSG_ERROR, "failed to generate release header string\n", filename);
+        exit(1);
+    }
+    tempfile = xmkstemp(&tp);
+    if (!tempfile || !tp) {
+        msg(OMC_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
+        exit(1);
+    }
+    fprintf(tp, "%s", header);
 
     sprintf(output, "  - %s", ctx->storage.conda_staging_url);
     file_replace_text(filename, "  - local", output);
@@ -782,16 +809,21 @@ void delivery_tests_run(struct Delivery *ctx) {
             msg(OMC_MSG_L3, "Cloning %s\n", ctx->tests[i].repository);
             git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version);
 
-            if (pushd(destdir) && !ctx->meta.continue_on_error) {
-                fprintf(stderr, "unable to enter repository directory\n");
-                exit(1);
+            if (pushd(destdir)) {
+                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to enter repository directory\n");
             } else {
 #if 1
-                msg(OMC_MSG_L3, "Running\n");
+                int status;
+                char cmd[PATH_MAX];
+                msg(OMC_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
-                if (shell2(&proc, ctx->tests[i].script) && !ctx->meta.continue_on_error) {
-                    fprintf(stderr, "continue on error is not enabled. aborting.\n");
-                    exit(1);
+
+                // enable trace mode before executing each test script
+                memset(cmd, 0, sizeof(cmd));
+                sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
+                status = shell2(&proc, cmd);
+                if (status) {
+                    COE_CHECK_ABORT(!globals.continue_on_error, "Test failure");
                 }
                 popd();
 #else
@@ -800,6 +832,15 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
         }
     }
+}
 
+void delivery_gather_tool_versions(struct Delivery *ctx) {
+    // Extract version from tool output
+    ctx->conda.tool_version = shell_output("conda --version");
+    if (ctx->conda.tool_version)
+        strip(ctx->conda.tool_version);
 
+    ctx->conda.tool_build_version = shell_output("conda build --version");
+    if (ctx->conda.tool_build_version)
+        strip(ctx->conda.tool_version);
 }

@@ -72,7 +72,6 @@ struct Delivery {
         char *mission;             ///< hst, jwst, roman
         char *codename;            ///< HST uses codenames
         bool final;                ///< is this a final release?
-        bool continue_on_error;    ///< keep going, or don't
     } meta;
 
     /*! \struct Info
@@ -187,7 +186,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx);
  * @return header on success
  * @return NULL on error
  */
-char *delivery_get_spec_header(struct Delivery *ctx);
+char *delivery_get_release_header(struct Delivery *ctx);
 
 /**
  * Finalizes a delivery artifact for distribution
@@ -216,7 +215,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx);
  * Retrieve Conda installer
  * @param installer_url URL to installation script
  */
-void delivery_get_installer(char *installer_url);
+int delivery_get_installer(char *installer_url);
 
 /**
  * Generate URL based on Delivery context
@@ -237,7 +236,7 @@ void delivery_get_installer_url(struct Delivery *delivery, char *result);
  * @param type INSTALL_PKG_PIP_DEFERRED
  * @param manifest pointer to array of StrList (package list(s))
  */
-void delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList *manifest[]);
+int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList *manifest[]);
 
 /**
  * Update "conda index" on Conda artifact storage

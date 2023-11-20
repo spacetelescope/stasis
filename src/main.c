@@ -1,10 +1,8 @@
-#define GNU_SOURCE 1
+#define GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <limits.h>
-#include <time.h>
 #include <sys/utsname.h>
 #include <getopt.h>
 #include "omc.h"
@@ -115,10 +113,10 @@ int main(int argc, char *argv[], char *arge[]) {
             .stderr = "",
             .redirect_stderr = 0,
     };
-    char env_name[PATH_MAX];
-    char env_name_testing[PATH_MAX];
-    char *delivery_input = argv[1];
-    char *config_input = argv[2];
+    char env_name[255] = {0};
+    char env_name_testing[255] = {0};
+    char *delivery_input = NULL; // = argv[1];
+    char *config_input = NULL; // = argv[2];
     char installer_url[PATH_MAX];
     char python_override_version[NAME_MAX];
     unsigned char arg_continue_on_error = 0;
@@ -218,18 +216,38 @@ int main(int argc, char *argv[], char *arge[]) {
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
         cfg = ini_open(config_input);
-        //ini_show(cfg);
+        if (!cfg) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s", delivery_input, strerror(errno));
+            exit(1);
+        }
     }
 
     msg(OMC_MSG_L2, "Reading OMC delivery configuration: %s\n", delivery_input);
     ini = ini_open(delivery_input);
+    if (!ini) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read delivery file: %s, %s", delivery_input, strerror(errno));
+        exit(1);
+    }
 
     printf(BANNER, VERSION, AUTHOR);
 
-    delivery_init(&ctx, ini, cfg);
+    if (delivery_init(&ctx, ini, cfg)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Failed to initialize delivery context\n");
+        exit(1);
+    }
+
+    globals.always_update_base_environment = arg_always_update_base_environment;
+    globals.continue_on_error = arg_continue_on_error;
+
+    // Override Python version from command-line, if any
+    if (strlen(python_override_version) && ctx.meta.python) {
+        free(ctx.meta.python);
+        ctx.meta.python = strdup(python_override_version);
+    }
+
     runtime_apply(ctx.runtime.environ);
-    sprintf(env_name, "%s", ctx.info.release_name);
-    sprintf(env_name_testing, "%s_test", env_name);
+    snprintf(env_name, sizeof(env_name_testing) - 1, "%s", ctx.info.release_name);
+    snprintf(env_name_testing, sizeof(env_name) - 1, "%s_test", env_name);
 
     msg(OMC_MSG_L1, "Overview\n");
     delivery_meta_show(&ctx);
@@ -239,7 +257,10 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L1, "Conda setup\n");
     delivery_get_installer_url(&ctx, installer_url);
     msg(OMC_MSG_L2, "Downloading: %s\n", installer_url);
-    delivery_get_installer(installer_url);
+    if (delivery_get_installer(installer_url)) {
+        msg(OMC_MSG_ERROR, "download failed: %s\n", installer_url);
+        exit(1);
+    }
 
     // Unlikely to occur: this should help prevent rmtree() from destroying your entire filesystem
     // if path is "/" then, die
@@ -255,16 +276,51 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
     delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
 
+    char *pathvar = NULL;
+    pathvar = getenv("PATH");
+    if (!pathvar) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "PATH variable is not set. Cannot continue.\n");
+        exit(1);
+    } else {
+        char pathvar_tmp[OMC_BUFSIZ];
+        sprintf(pathvar_tmp, "%s/bin:%s", ctx.storage.conda_install_prefix, pathvar);
+        setenv("PATH", pathvar_tmp, 1);
+    }
+
+    msg(OMC_MSG_L2, "Installing build tools\n");
+    if (conda_exec("install boa conda-build conda-verify")) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "conda-build installation failed\n");
+        exit(1);
+    }
     msg(OMC_MSG_L1, "Creating release environment(s)\n");
     if (ctx.meta.based_on && strlen(ctx.meta.based_on)) {
-        conda_env_remove(env_name);
-        conda_env_create_from_uri(env_name, ctx.meta.based_on);
+        if (conda_env_remove(env_name)) {
+           msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed to remove release environment: %s\n", env_name_testing);
+           exit(1);
+        }
+        msg(OMC_MSG_L2, "Based on release: %s\n", ctx.meta.based_on);
+        if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "unable to install release environment using configuration file\n");
+            exit(1);
+        }
 
-        conda_env_remove(env_name_testing);
-        conda_env_create_from_uri(env_name_testing, ctx.meta.based_on);
+        if (conda_env_remove(env_name_testing)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed to remove testing environment\n");
+            exit(1);
+        }
+        if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "unable to install testing environment using configuration file\n");
+            exit(1);
+        }
     } else {
-        conda_env_create(env_name, ctx.meta.python, NULL);
-        conda_env_create(env_name_testing, ctx.meta.python, NULL);
+        if (conda_env_create(env_name, ctx.meta.python, NULL)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed to create release environment\n");
+            exit(1);
+        }
+        if (conda_env_create(env_name_testing, ctx.meta.python, NULL)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed to create release environment\n");
+            exit(1);
+        }
     }
 
     // Activate test environment
@@ -274,15 +330,15 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
-    msg(OMC_MSG_L2, "Installing build tools\n");
-    if (conda_exec("install boa conda-build conda-verify")) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "conda-build installation failed");
+    delivery_gather_tool_versions(&ctx);
+    if (!ctx.conda.tool_version) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Could not determine conda version\n");
         exit(1);
     }
-
-    // TODO: extract version from tool output
-    ctx.conda.tool_version = NULL;
-    ctx.conda.tool_build_version = NULL;
+    if (!ctx.conda.tool_build_version) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Could not determine conda-build version\n");
+        exit(1);
+    }
 
     if (pip_exec("install build")) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "'build' tool installation failed");
@@ -311,7 +367,7 @@ int main(int argc, char *argv[], char *arge[]) {
     //    }
     //}
 
-    if (ctx.conda.conda_packages_defer) {
+    if (ctx.conda.conda_packages_defer && strlist_count(ctx.conda.conda_packages_defer)) {
         msg(OMC_MSG_L2, "Building Conda recipe(s)\n");
         if (delivery_build_recipes(&ctx)) {
             exit(1);
@@ -328,11 +384,18 @@ int main(int argc, char *argv[], char *arge[]) {
 
     // Populate the release environment
     msg(OMC_MSG_L1, "Populating release environment\n");
-
     msg(OMC_MSG_L2, "Installing conda packages\n");
-    delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL});
-    msg(OMC_MSG_L3, "Installing deferred conda packages\n");
-    delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA | INSTALL_PKG_CONDA_DEFERRED, (struct StrList *[]) {ctx.conda.conda_packages_defer, NULL});
+    if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL})) {
+        exit(1);
+    }
+    if (strlist_count(ctx.conda.conda_packages_defer)) {
+        msg(OMC_MSG_L3, "Installing deferred conda packages\n");
+        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA | INSTALL_PKG_CONDA_DEFERRED, (struct StrList *[]) {ctx.conda.conda_packages_defer, NULL})) {
+            exit(1);
+        }
+    } else {
+        msg(OMC_MSG_L3, "No deferred conda packages\n");
+    }
     msg(OMC_MSG_L2, "Installing pip packages\n");
     delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL});
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
@@ -342,10 +405,16 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L1, "Creating release\n");
     msg(OMC_MSG_L2, "Exporting %s\n", env_name_testing);
-    conda_env_export(env_name_testing, ctx.storage.delivery_dir, env_name_testing);
+    if (conda_env_export(env_name_testing, ctx.storage.delivery_dir, env_name_testing)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed %s\n", env_name_testing);
+        exit(1);
+    }
 
     msg(OMC_MSG_L2, "Exporting %s\n", env_name);
-    conda_env_export(env_name, ctx.storage.delivery_dir, env_name);
+    if (conda_env_export(env_name, ctx.storage.delivery_dir, env_name)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed %s\n", env_name);
+        exit(1);
+    }
 
     // Rewrite release environment output (i.e. set package origin(s) to point to the deployment server, etc.)
     char specfile[PATH_MAX];

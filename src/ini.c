@@ -56,7 +56,7 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
     static size_t i = 0;
 
     section = ini_section_search(&ini, section_name);
-    if (section->data[i]) {
+    if (section->data_count) {
         result = section->data[i];
         i++;
     } else {
@@ -138,8 +138,7 @@ int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *v
 
     struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
     if (!tmp) {
-        perror(__FUNCTION__);
-        exit(1);
+        return 1;
     }
     section->data = tmp;
     if (!ini_data_get((*ini), section_name, key)) {
@@ -157,7 +156,7 @@ int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *v
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
             perror(__FUNCTION__ );
-            exit(1);
+            return -1;
         }
         data->value = value_tmp;
          */
@@ -170,13 +169,19 @@ int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *v
 void ini_section_record(struct INIFILE **ini, char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof((*ini)->section));
     if (!tmp) {
-        perror(__FUNCTION__);
-        exit(1);
+        return 1;
     }
     (*ini)->section = tmp;
     (*ini)->section[(*ini)->section_count] = calloc(1, sizeof(*(*ini)->section[0]));
+    if (!(*ini)->section[(*ini)->section_count]) {
+        return -1;
+    }
     (*ini)->section[(*ini)->section_count]->key = strdup(key);
+    if (!(*ini)->section[(*ini)->section_count]->key) {
+        return -1;
+    }
     (*ini)->section_count++;
+    return 0;
 }
 
 void ini_show(struct INIFILE *ini) {
@@ -238,6 +243,9 @@ struct INIFILE *ini_open(const char *filename) {
     char current_section[OMC_BUFSIZ] = {0};
     char *key_last = NULL;
     struct INIFILE *ini = ini_init();
+    if (ini == NULL) {
+        return NULL;
+    }
 
     ini_section_init(&ini);
 
@@ -249,8 +257,9 @@ struct INIFILE *ini_open(const char *filename) {
     // Open the configuration file for reading
     fp = fopen(filename, "r");
     if (!fp) {
-        perror(filename);
-        exit(1);
+        ini_free(&ini);
+        ini = NULL;
+        return NULL;
     }
 
     // Read file
