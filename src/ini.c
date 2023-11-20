@@ -130,7 +130,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, uni
     return 0;
 }
 
-int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *value) {
+int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value) {
     struct INISection *section = ini_section_search(ini, section_name);
     if (section == NULL) {
         return 1;
@@ -143,15 +143,14 @@ int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *v
     section->data = tmp;
     if (!ini_data_get((*ini), section_name, key)) {
         section->data[section->data_count] = calloc(1, sizeof(*section->data[0]));
-        section->data[section->data_count]->key = key; //strdup(key);
-        section->data[section->data_count]->value = value; //strdup(value);
+        section->data[section->data_count]->key = key;
+        section->data[section->data_count]->value = value;
         section->data_count++;
     } else {
         struct INIData *data = ini_data_get(*ini, section_name, key);
         size_t value_len_old = strlen(data->value);
         size_t value_len = strlen(value);
         size_t value_len_new = value_len_old + value_len;
-        /*
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
@@ -159,14 +158,12 @@ int ini_data_record(struct INIFILE **ini, char *section_name, char *key, char *v
             return -1;
         }
         data->value = value_tmp;
-         */
-        //strcat(data->value, " ");
         strcat(data->value, value);
     }
     return 0;
 }
 
-void ini_section_record(struct INIFILE **ini, char *key) {
+int ini_section_record(struct INIFILE **ini, char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof((*ini)->section));
     if (!tmp) {
         return 1;
@@ -242,6 +239,8 @@ struct INIFILE *ini_open(const char *filename) {
     char line[OMC_BUFSIZ] = {0};
     char current_section[OMC_BUFSIZ] = {0};
     char *key_last = NULL;
+    char reading_value = 0;
+
     struct INIFILE *ini = ini_init();
     if (ini == NULL) {
         return NULL;
@@ -252,7 +251,6 @@ struct INIFILE *ini_open(const char *filename) {
     // Create an implicit section. [default] does not need to be present in the INI config
     ini_section_record(&ini, "default");
     strcpy(current_section, "default");
-    //ini_data_init(&ini, "default");
 
     // Open the configuration file for reading
     fp = fopen(filename, "r");
@@ -262,27 +260,31 @@ struct INIFILE *ini_open(const char *filename) {
         return NULL;
     }
 
+    int long_data = 0;
+    int no_data = 0;
+
     // Read file
     for (size_t i = 0; fgets(line, sizeof(line), fp) != NULL; i++) {
-        // Find pointer to first comment character
-        char *comment = strpbrk(line, ";#");
-        if (comment) {
-            // Remove comment from line (standalone and inline comments)
-            if (!(comment - line > 0 && (*(comment - 1) == '\\') || (*comment - 1) == '#')) {
-                *comment = '\0';
+        if (no_data && long_data) {
+            if (!isempty(line)) {
+                no_data = 0;
             } else {
-                // Handle escaped comment characters. Remove the escape character '\'
-                memmove(comment - 1, comment, strlen(comment));
-                comment[strlen(comment) - 1] = '\0';
+                long_data = 0;
             }
         }
-
-        // Removing comments could have reduced the line's length, so calculate it now
-        size_t len = strlen(line);
-
-        // Ignore empty lines
-        if (!len || line[0] == '\n') {
-            continue;
+        // Find pointer to first comment character
+        if (!reading_value) {
+            char *comment = strpbrk(line, ";#");
+            if (comment) {
+                // Remove comment from line (standalone and inline comments)
+                if (!((comment - line > 0 && (*(comment - 1) == '\\')) || (*comment - 1) == '#')) {
+                    *comment = '\0';
+                } else {
+                    // Handle escaped comment characters. Remove the escape character '\'
+                    memmove(comment - 1, comment, strlen(comment));
+                    comment[strlen(comment) - 1] = '\0';
+                }
+            }
         }
 
         // Test for section header: [string]
@@ -297,7 +299,6 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Create new named section
             ini_section_record(&ini, &line[1]);
-            //ini_data_init(&ini, &line[1]);
 
             // Record the name of the section. This is used until another section is found.
             strcpy(current_section, &line[1]);
@@ -308,8 +309,16 @@ struct INIFILE *ini_open(const char *filename) {
         char *value = malloc(OMC_BUFSIZ);
         char *operator = strchr(line, '=');
 
-        // continuation line
-        if (startswith(line, " ") || startswith(line, "\t")) {
+        // no data, skip
+        if (!reading_value && isempty(line)) {
+            free(value);
+            value = NULL;
+            continue;
+        }
+
+        // a value continuation line
+        if (long_data && (startswith(line, " ") || startswith(line, "\t"))) {
+            //printf("operator is NULL\n");
             operator = NULL;
         }
 
@@ -317,30 +326,20 @@ struct INIFILE *ini_open(const char *filename) {
             size_t key_len = operator - line;
             key = strndup(line, key_len);
             key_last = key;
+            reading_value = 1;
             strcpy(value, &operator[1]);
-            if (strlen(value)) {
-                value[strlen(value) - 1] = '\0';
+            if (isempty(value)) {
+                //printf("%s is probably long raw data\n", key);
+                long_data = 1;
+                no_data = 1;
+            } else {
+                //printf("%s is probably short data\n", key);
+                long_data = 0;
             }
-        } else if (!key && !strlen(value) && ! (startswith(line, " ") || startswith(line, "\t"))) {
-            fprintf(stderr, "NO OPERATOR OR INDENT: %zu:'%s'\n", i, line);
-            struct INISection *section = ini_section_search(&ini, current_section);
-            struct INIData *data = NULL;
-            //key = key_last;
-            free(value);
-            value = NULL;
+            strip(value);
         } else {
-            struct INISection *section = ini_section_search(&ini, current_section);
-            struct INIData *data = section->data[section->data_count - 1];
-            if (strlen(data->value)) {
-                data->value[strlen(data->value) - 1] = '\n';
-            }
             key = key_last;
             strcpy(value, line);
-            if (endswith(value, "\n")) {
-                if (strlen(value)) {
-                    value[strlen(value) - 1] = '\n';
-                }
-            }
         }
 
         // Store key value pair in section's data array
@@ -349,7 +348,14 @@ struct INIFILE *ini_open(const char *filename) {
             strip(key);
             unquote(value);
             lstrip(value);
-            ini_data_record(&ini, current_section, key, value);
+            if (!long_data) {
+                strip(value);
+                reading_value = 0;
+                ini_data_append(&ini, current_section, key, value);
+                continue;
+            }
+            ini_data_append(&ini, current_section, key, value);
+            reading_value = 1;
         }
     }
 
