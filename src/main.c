@@ -182,8 +182,8 @@ int main(int argc, char *argv[], char *arge[]) {
 
     globals.tmpdir = get_tmpdir(&tmpdir_usable);
     if (!tmpdir_usable) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s: Sjet $TMPDIR to a location other than %s\n",
-                        strerror(errno), globals.tmpdir, globals.tmpdir);
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n",
+                        globals.tmpdir, globals.tmpdir);
         if (globals.tmpdir)
             free(globals.tmpdir);
         exit(1);
