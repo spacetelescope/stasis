@@ -273,9 +273,9 @@ struct INIFILE *ini_open(const char *filename) {
             }
         }
         // Find pointer to first comment character
-        if (!reading_value) {
-            char *comment = strpbrk(line, ";#");
-            if (comment) {
+        char *comment = strpbrk(line, ";#");
+        if (comment) {
+            if (!reading_value || line - comment == 0) {
                 // Remove comment from line (standalone and inline comments)
                 if (!((comment - line > 0 && (*(comment - 1) == '\\')) || (*comment - 1) == '#')) {
                     *comment = '\0';
