@@ -107,35 +107,58 @@ static void usage(char *progname) {
 }
 
 char *get_tmpdir(int *usable) {
-    char *tmpdir_env = NULL;
+    char *tmpdir = NULL;
     char *x = NULL;
-    *usable = 0;
+
+    *usable = 1;
+    errno = 0;
+
     x = getenv("TMPDIR");
-
     if (x) {
-        tmpdir_env = strdup(x);
+        tmpdir = strdup(x);
     } else {
-        tmpdir_env = strdup("/tmp");
+        tmpdir = strdup("/tmp");
     }
 
-    if (access(tmpdir_env, F_OK) < 0) {
-        if (mkdirs(tmpdir_env, 0755) < 0) {
-            free(tmpdir_env);
-            tmpdir_env = NULL;
-        }
-    }
-
-    struct statvfs st;
-    if (statvfs(tmpdir_env, &st) < 0) {
-        free(tmpdir_env);
+    if (!tmpdir) {
+        // memory error
         return NULL;
     }
 
-    if (!(st.f_flag & ST_NOEXEC) || !(st.f_flag & ST_RDONLY)) {
-        *usable = 1;
+    // If the directory doesn't exist, create it
+    if (access(tmpdir, F_OK) < 0) {
+        if (mkdirs(tmpdir, 0755) < 0) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
+            goto get_tmpdir_fatal;
+        }
     }
 
-    return tmpdir_env;
+    // If we can't read, write, or execute, then die
+    if (access(tmpdir, R_OK | W_OK | X_OK) < 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s requires at least 0755 permissions.\n");
+        goto get_tmpdir_fatal;
+    }
+
+    struct statvfs st;
+    if (statvfs(tmpdir, &st) < 0) {
+        goto get_tmpdir_fatal;
+    }
+
+    // If we can't execute programs, or write data to the file system at all, then die
+    if ((st.f_flag & ST_NOEXEC) != 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted with noexec\n", tmpdir);
+        *usable = 0;
+    }
+    if ((st.f_flag & ST_RDONLY) != 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
+        *usable = 0;
+    }
+
+    return tmpdir;
+
+    get_tmpdir_fatal:
+        *usable = 0;
+        return tmpdir;
 }
 
 int main(int argc, char *argv[], char *arge[]) {
@@ -159,9 +182,8 @@ int main(int argc, char *argv[], char *arge[]) {
 
     globals.tmpdir = get_tmpdir(&tmpdir_usable);
     if (!tmpdir_usable) {
-        fprintf(stderr, "%s cannot be used due to restrictive mount options.\n"
-                        "Please set $TMPDIR to a path other than %s",
-                        globals.tmpdir, globals.tmpdir);
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s: Sjet $TMPDIR to a location other than %s\n",
+                        strerror(errno), globals.tmpdir, globals.tmpdir);
         if (globals.tmpdir)
             free(globals.tmpdir);
         exit(1);
