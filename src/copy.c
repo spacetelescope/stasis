@@ -102,6 +102,11 @@ int mkdirs(const char *_path, mode_t mode) {
         strcat(result, token);
         strcat(result, "/");
         status = mkdir(result, mode);
+        if (status && errno == EEXIST) {
+            status = 0;
+            errno = 0;
+            continue;
+        }
     }
     return status;
 }
