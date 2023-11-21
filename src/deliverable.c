@@ -37,6 +37,18 @@ extern struct OMC_GLOBAL globals;
         rtevnop = NULL; \
     } \
 }
+#define conv_strlist_stackvar(X, DEST, TOK) { \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    if (!X.DEST) \
+        X.DEST = strlist_init(); \
+    if (rtevnop) {                   \
+        strip(rtevnop); \
+        strlist_append_tokenize(X.DEST, rtevnop, TOK); \
+        free(rtevnop); \
+    } else { \
+        rtevnop = NULL; \
+    } \
+}
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
 #define guard_runtime_free(X) if (X) { runtime_free(X); X = NULL; }
 #define guard_strlist_free(X) if (X) { strlist_free(X); X = NULL; }
@@ -117,19 +129,23 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     ctx->info.time_info = localtime(&ctx->info.time_now);
 
     if (cfg) {
-        getter(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR);
-        conv_str(ctx, storage.conda_staging_dir);
-        getter(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR);
-        conv_str(ctx, storage.conda_staging_url);
-        getter(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR);
-        conv_str(ctx, storage.wheel_staging_dir);
-        getter(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR);
-        conv_str(ctx, storage.wheel_staging_url);
+        getter(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR)
+        conv_str(ctx, storage.conda_staging_dir)
+        getter(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR)
+        conv_str(ctx, storage.conda_staging_url)
+        getter(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR)
+        conv_str(ctx, storage.wheel_staging_dir)
+        getter(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR)
+        conv_str(ctx, storage.wheel_staging_url)
         // Below can also be toggled by command-line arguments
         getter(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL)
         globals.continue_on_error = val.as_bool;
-        getter(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL);
+        getter(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL)
         globals.always_update_base_environment = val.as_bool;
+        getter(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY)
+        conv_strlist_stackvar(globals, conda_packages, "\n")
+        getter(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY)
+        conv_strlist_stackvar(globals, pip_packages, "\n")
     }
     delivery_init_dirs(ctx);
 
@@ -346,7 +362,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
 
                 char command[PATH_MAX];
-                sprintf(command, "build --python=%s .", ctx->meta.python);
+                sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
                 status = conda_exec(command);
                 if (status) {
                     return -1;

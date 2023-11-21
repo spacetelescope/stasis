@@ -9,13 +9,6 @@
 #define SYSERROR stderr, "%s:%s:%d: %s\n", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno)
 #define OMC_BUFSIZ 8192
 
-struct OMC_GLOBAL {
-    unsigned char verbose;
-    unsigned char always_update_base_environment;
-    unsigned char continue_on_error;
-    char *tmpdir;
-};
-
 #include "utils.h"
 #include "ini.h"
 #include "conda.h"
@@ -34,4 +27,14 @@ struct OMC_GLOBAL {
         exit(1); \
     } \
 }
+
+struct OMC_GLOBAL {
+    unsigned char verbose;
+    unsigned char always_update_base_environment;
+    unsigned char continue_on_error;
+    struct StrList *conda_packages;
+    struct StrList *pip_packages;
+    char *tmpdir;
+};
+
 #endif //OMC_OMC_H
