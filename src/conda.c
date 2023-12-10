@@ -157,6 +157,43 @@ int conda_activate(const char *root, const char *env_name) {
     return 0;
 }
 
+int conda_check_required() {
+    int status = 0;
+    char *tools[] = {
+        "boa",
+        "conda-build",
+        "conda-verify",
+        NULL
+    };
+    struct StrList *result = NULL;
+    // TODO: Generate the command based on tools array
+    char *cmd_out = shell_output("conda list '^boa|^conda-build|^conda-verify' | cut -d ' ' -f 1", &status);
+    if (cmd_out) {
+        size_t found = 0;
+        result = strlist_init();
+        strlist_append_tokenize(result, cmd_out, "\n");
+        for (size_t i = 0; i < strlist_count(result); i++) {
+            char *item = strlist_item(result, i);
+            if (isempty(item) || startswith(item, "#")) {
+                continue;
+            }
+
+            for (size_t x = 0; tools[x] != NULL; x++) {
+                if (!strcmp(item, tools[x])) {
+                    found++;
+                }
+            }
+        }
+        if (found < (sizeof(tools) / sizeof(*tools)) - 1) {
+            return 1;
+        }
+    } else {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "The base package requirement check could not be performed\n");
+        return 2;
+    }
+    return 0;
+}
+
 void conda_setup_headless() {
     if (globals.verbose) {
         conda_exec("config --system --set quiet false");
