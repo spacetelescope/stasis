@@ -38,6 +38,9 @@ extern struct OMC_GLOBAL globals;
         rtevnop = NULL; \
     } \
 }
+#define conv_bool(X, DEST) X->DEST = val.as_bool;
+
+#define conv_str_stackvar(X, DEST) X.DEST = runtime_expand_var(NULL, val.as_char_p);
 #define conv_strlist_stackvar(X, DEST, TOK) { \
     char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
     if (!X.DEST) \
