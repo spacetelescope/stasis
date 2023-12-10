@@ -309,10 +309,12 @@ struct INIFILE *ini_open(const char *filename) {
             line[strlen(line) - 2] = '\0';
 
             // Create new named section
-            ini_section_record(&ini, &line[1]);
+            strip(name);
+            ini_section_record(&ini, name);
 
             // Record the name of the section. This is used until another section is found.
-            strcpy(current_section, &line[1]);
+            strcpy(current_section, name);
+            guard_free(name)
             continue;
         }
 
