@@ -23,8 +23,7 @@ int popd() {
     }
     dirstack_len--;
     result = chdir(dirstack[dirstack_len]);
-    free(dirstack[dirstack_len]);
-    dirstack[dirstack_len] = NULL;
+    guard_free(dirstack[dirstack_len])
     return result;
 }
 
@@ -230,7 +229,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     if (!lines) {
-        free(buffer);
+        guard_free(buffer)
         if (!use_stdin) {
             fclose(fp);
         }
@@ -282,7 +281,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
         memset(buffer, '\0', OMC_BUFSIZ);
     }
 
-    free(buffer);
+    guard_free(buffer)
     if (!use_stdin) {
         fclose(fp);
     }
@@ -318,7 +317,7 @@ char *find_program(const char *name) {
         break;
     }
     path = path_orig;
-    free(path);
+    guard_free(path)
     return strlen(result) ? result : NULL;
 }
 
