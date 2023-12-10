@@ -56,6 +56,10 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
     static size_t i = 0;
 
     section = ini_section_search(&ini, section_name);
+    if (i == section->data_count) {
+        i = 0;
+        return NULL;
+    }
     if (section->data_count) {
         result = section->data[i];
         i++;
