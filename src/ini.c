@@ -289,6 +289,13 @@ struct INIFILE *ini_open(const char *filename) {
 
         // Test for section header: [string]
         if (startswith(line, "[")) {
+            key_last = NULL;
+            char *name = substring_between(line, "[]");
+            if (!name) {
+                fprintf(stderr, "error: invalid section syntax, line %zu: '%s'\n", i + 1, line);
+                return NULL;
+            }
+
             // Ignore default section because we already have an implicit one
             if (!strncmp(&line[1], "default", strlen("default"))) {
                 continue;
