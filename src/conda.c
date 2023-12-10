@@ -209,18 +209,57 @@ void conda_setup_headless() {
     conda_exec("config --system --set report_errors false");
     conda_exec("config --system --set solver libmamba");
 
-    if (globals.verbose) {
-        char *rcfile = getenv("CONDARC");
-        if (rcfile) {
-            msg(OMC_MSG_L1, "Dump %s\n", rcfile);
-            char **condarc_contents = file_readlines(rcfile, 0, 0, NULL);
-            for (size_t i = 0; condarc_contents[i] != NULL; i++) {
-                msg(OMC_MSG_L2, "%s", condarc_contents[i]);
-                free(condarc_contents[i]);
+    char cmd[PATH_MAX];
+    size_t total = 0;
+    if (globals.conda_packages && strlist_count(globals.conda_packages)) {
+        memset(cmd, 0, sizeof(cmd));
+        strcpy(cmd, "install ");
+
+        total = strlist_count(globals.conda_packages);
+        for (size_t i = 0; i < total; i++) {
+            char *item = strlist_item(globals.conda_packages, i);
+            if (isempty(item)) {
+                continue;
             }
-            free(condarc_contents);
+            sprintf(cmd + strlen(cmd), "'%s'", item);
+            if (i < total - 1) {
+                strcat(cmd, " ");
+            }
         }
 
+        if (conda_exec(cmd)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to install user-defined base packages (conda)\n");
+            exit(1);
+        }
+    }
+
+    if (globals.pip_packages && strlist_count(globals.pip_packages)) {
+        memset(cmd, 0, sizeof(cmd));
+        strcpy(cmd, "install ");
+
+        total = strlist_count(globals.pip_packages);
+        for (size_t i = 0; i < total; i++) {
+            char *item = strlist_item(globals.pip_packages, i);
+            if (isempty(item)) {
+                continue;
+            }
+            sprintf(cmd + strlen(cmd), "'%s'", item);
+            if (i < total - 1) {
+                strcat(cmd, " ");
+            }
+        }
+
+        if (pip_exec(cmd)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to install user-defined base packages (pip)\n");
+            exit(1);
+        }
+    }
+
+    if (conda_check_required()) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Your OMC configuration lacks the bare"
+                                                  " minimum software required to build conda packages."
+                                                  " Please fix it.\n");
+        exit(1);
     }
 
     if (globals.always_update_base_environment) {
