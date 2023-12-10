@@ -16,7 +16,8 @@ extern struct OMC_GLOBAL globals;
     }
 #define getter_required(XINI, SECTION_NAME, KEY, TYPE) \
     { \
-        if (ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val)) { \
+        int status = ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val); \
+        if (status || isempty(val.as_char_p)) { \
             fprintf(stderr, "%s:%s is required but not defined\n", SECTION_NAME, KEY); \
             return -1;\
         } \
