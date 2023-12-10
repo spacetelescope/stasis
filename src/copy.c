@@ -88,13 +88,13 @@ int copy2(const char *src, const char *dest, unsigned int op) {
 int mkdirs(const char *_path, mode_t mode) {
     int status;
     char *token;
-    char pathbuf[1024] = {0};
+    char pathbuf[PATH_MAX] = {0};
     char *path;
     path = pathbuf;
     strcpy(path, _path);
     errno = 0;
 
-    char result[1024] = {0};
+    char result[PATH_MAX] = {0};
     status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
         if (token[0] == '.')
@@ -154,8 +154,8 @@ int copytree(const char *srcdir, const char *destdir, unsigned int op) {
 
     memset(&st, 0, sizeof(st));
     while ((d = readdir(dir)) != NULL) {
-        char src[1024] = {0};
-        char dest[1024] = {0};
+        char src[PATH_MAX] = {0};
+        char dest[PATH_MAX] = {0};
         if (strcmp(d->d_name, ".") == 0 || strcmp(d->d_name, "..") == 0) {
             continue;
         }
