@@ -116,7 +116,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             sprintf(output, "%s %s=\"%s\"", export_command, key, value ? value : "");
             puts(output);
         }
-        free(value);
+        guard_free(value)
         split_free(pair);
     }
 }
@@ -351,7 +351,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
             // Append expanded environment variable to output
             strncat(expanded, tmp, strlen(tmp));
             if (env) {
-                free(tmp);
+                guard_free(tmp)
             }
         }
 
@@ -415,9 +415,9 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     } else {
         strlist_set(env, key_offset, now);
     }
-    free(now);
-    free(key);
-    free(value);
+    guard_free(now)
+    guard_free(key)
+    guard_free(value)
 }
 
 /**
