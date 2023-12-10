@@ -1,13 +1,9 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <sys/utsname.h>
 #include <getopt.h>
-#include <sys/statvfs.h>
 #include "omc.h"
-#include "copy.h"
 
 const char *VERSION = "1.0.0";
 const char *AUTHOR = "Joseph Hunkeler";
@@ -26,9 +22,14 @@ const char *BANNER = "----------------------------------------------------------
                      "Association of Universities for Research in Astronomy (AURA)\n";
 
 struct OMC_GLOBAL globals = {
-    .verbose = 0,
-    .continue_on_error = 0,
-    .always_update_base_environment = 0,
+    .verbose = false,
+    .continue_on_error = false,
+    .always_update_base_environment = false,
+    .conda_fresh_start = true,
+    .conda_install_prefix = NULL,
+    .conda_packages = NULL,
+    .pip_packages = NULL,
+    .tmpdir = NULL,
 };
 
 #define OPT_ALWAYS_UPDATE_BASE 1000
@@ -82,7 +83,7 @@ static void usage(char *progname) {
 
     int width = get_option_max_width(long_options);
     for (int x = 0; long_options[x].name != 0; x++) {
-        char tmp[255] = {0};
+        char tmp[OMC_NAME_MAX] = {0};
         char output[sizeof(tmp)] = {0};
         char opt_long[50] = {0};        // --? [ARG]?
         char opt_short[3] = {0};        // -?
@@ -106,59 +107,10 @@ static void usage(char *progname) {
     }
 }
 
-char *get_tmpdir(int *usable) {
-    char *tmpdir = NULL;
-    char *x = NULL;
-
-    *usable = 1;
-    errno = 0;
-
-    x = getenv("TMPDIR");
-    if (x) {
-        tmpdir = strdup(x);
-    } else {
-        tmpdir = strdup("/tmp");
-    }
-
-    if (!tmpdir) {
-        // memory error
-        return NULL;
-    }
-
-    // If the directory doesn't exist, create it
-    if (access(tmpdir, F_OK) < 0) {
-        if (mkdirs(tmpdir, 0755) < 0) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
-            goto get_tmpdir_fatal;
-        }
-    }
-
-    // If we can't read, write, or execute, then die
-    if (access(tmpdir, R_OK | W_OK | X_OK) < 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s requires at least 0755 permissions.\n");
-        goto get_tmpdir_fatal;
-    }
-
-    struct statvfs st;
-    if (statvfs(tmpdir, &st) < 0) {
-        goto get_tmpdir_fatal;
-    }
-
-    // If we can't execute programs, or write data to the file system at all, then die
-    if ((st.f_flag & ST_NOEXEC) != 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted with noexec\n", tmpdir);
-        *usable = 0;
-    }
-    if ((st.f_flag & ST_RDONLY) != 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
-        *usable = 0;
-    }
-
-    return tmpdir;
-
-    get_tmpdir_fatal:
-        *usable = 0;
-        return tmpdir;
+void globals_free() {
+    guard_free(globals.tmpdir)
+    guard_strlist_free(globals.conda_packages)
+    guard_strlist_free(globals.pip_packages)
 }
 
 int main(int argc, char *argv[], char *arge[]) {
@@ -170,24 +122,14 @@ int main(int argc, char *argv[], char *arge[]) {
             .stderr = "",
             .redirect_stderr = 0,
     };
-    char env_name[255] = {0};
-    char env_name_testing[255] = {0};
-    char *delivery_input = NULL; // = argv[1];
-    char *config_input = NULL; // = argv[2];
+    char env_name[OMC_NAME_MAX] = {0};
+    char env_name_testing[OMC_NAME_MAX] = {0};
+    char *delivery_input = NULL;
+    char *config_input = NULL;
     char installer_url[PATH_MAX];
-    char python_override_version[NAME_MAX];
+    char python_override_version[OMC_NAME_MAX];
     unsigned char arg_continue_on_error = 0;
     unsigned char arg_always_update_base_environment = 0;
-    int tmpdir_usable = 0;
-
-    globals.tmpdir = get_tmpdir(&tmpdir_usable);
-    if (!tmpdir_usable) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n",
-                        globals.tmpdir, globals.tmpdir);
-        if (globals.tmpdir)
-            free(globals.tmpdir);
-        exit(1);
-    }
 
     int c;
     while (1) {
@@ -243,42 +185,6 @@ int main(int argc, char *argv[], char *arge[]) {
     }
 
     msg(OMC_MSG_L1, "Initializing\n");
-    struct utsname uts;
-    uname(&uts);
-
-    msg(OMC_MSG_L2, "Setting architecture\n");
-    char archsuffix[20];
-    ctx.system.arch = strdup(uts.machine);
-    if (!strcmp(ctx.system.arch, "x86_64")) {
-        strcpy(archsuffix, "64");
-    } else {
-        strcpy(archsuffix, ctx.system.arch);
-    }
-
-    msg(OMC_MSG_L2, "Setting platform\n");
-    strcpy(ctx.system.platform[DELIVERY_PLATFORM], uts.sysname);
-    if (!strcmp(ctx.system.platform[DELIVERY_PLATFORM], "Darwin")) {
-        sprintf(ctx.system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX");
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_RELEASE], "macos");
-    } else if (!strcmp(ctx.system.platform[DELIVERY_PLATFORM], "Linux")) {
-        sprintf(ctx.system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "linux-%s", archsuffix);
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux");
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_RELEASE], "linux");
-    } else {
-        // Not explicitly supported systems
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx.system.platform[DELIVERY_PLATFORM]);
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx.system.platform[DELIVERY_PLATFORM]);
-        strcpy(ctx.system.platform[DELIVERY_PLATFORM_RELEASE], ctx.system.platform[DELIVERY_PLATFORM]);
-        tolower_s(ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
-    }
-
-    msg(OMC_MSG_L2, "Setting up runtime environment...\n");
-    setenv("OMC_ARCH", ctx.system.arch, 1);
-    setenv("OMC_PLATFORM", ctx.system.platform[DELIVERY_PLATFORM], 1);
-    setenv("OMC_CONDA_ARCH", ctx.system.arch, 1);
-    setenv("OMC_CONDA_PLATFORM", ctx.system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
-    setenv("OMC_CONDA_PLATFORM_SUBDIR", ctx.system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
 
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
@@ -308,8 +214,14 @@ int main(int argc, char *argv[], char *arge[]) {
 
     // Override Python version from command-line, if any
     if (strlen(python_override_version) && ctx.meta.python) {
-        free(ctx.meta.python);
+        guard_free(ctx.meta.python)
         ctx.meta.python = strdup(python_override_version);
+    }
+
+
+    if (delivery_init_artifactory(&ctx)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "FAILED\n");
+        exit(1);
     }
 
     runtime_apply(ctx.runtime.environ);
@@ -320,6 +232,9 @@ int main(int argc, char *argv[], char *arge[]) {
     delivery_meta_show(&ctx);
     delivery_conda_show(&ctx);
     delivery_tests_show(&ctx);
+    if (globals.verbose) {
+        delivery_runtime_show(&ctx);
+    }
 
     msg(OMC_MSG_L1, "Conda setup\n");
     delivery_get_installer_url(&ctx, installer_url);
@@ -354,11 +269,6 @@ int main(int argc, char *argv[], char *arge[]) {
         setenv("PATH", pathvar_tmp, 1);
     }
 
-    msg(OMC_MSG_L2, "Installing build tools\n");
-    if (conda_exec("install boa conda-build conda-verify")) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "conda-build installation failed\n");
-        exit(1);
-    }
     msg(OMC_MSG_L1, "Creating release environment(s)\n");
     if (ctx.meta.based_on && strlen(ctx.meta.based_on)) {
         if (conda_env_remove(env_name)) {
@@ -463,6 +373,7 @@ int main(int argc, char *argv[], char *arge[]) {
     } else {
         msg(OMC_MSG_L3, "No deferred conda packages\n");
     }
+
     msg(OMC_MSG_L2, "Installing pip packages\n");
     delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL});
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
@@ -486,8 +397,11 @@ int main(int argc, char *argv[], char *arge[]) {
     // Rewrite release environment output (i.e. set package origin(s) to point to the deployment server, etc.)
     char specfile[PATH_MAX];
     sprintf(specfile, "%s/%s.yml", ctx.storage.delivery_dir, env_name);
-    msg(OMC_MSG_L3, "Rewriting release file %s\n", path_basename(specfile));
+    msg(OMC_MSG_L3, "Rewriting release spec file %s\n", path_basename(specfile));
     delivery_rewrite_spec(&ctx, specfile);
+
+    msg(OMC_MSG_L1, "Uploading artifacts\n");
+    delivery_artifact_upload(&ctx);
 
     msg(OMC_MSG_L1, "Cleaning up\n");
     ini_free(&ini);
@@ -495,6 +409,7 @@ int main(int argc, char *argv[], char *arge[]) {
         ini_free(&cfg);
     }
     delivery_free(&ctx);
+    globals_free();
 
     msg(OMC_MSG_L1, "Done!\n");
     return 0;
