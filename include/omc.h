@@ -1,10 +1,12 @@
 #ifndef OMC_OMC_H
 #define OMC_OMC_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include <time.h>
 
 #define SYSERROR stderr, "%s:%s:%d: %s\n", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno)
 #define OMC_BUFSIZ 8192
