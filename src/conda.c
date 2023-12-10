@@ -158,10 +158,16 @@ int conda_activate(const char *root, const char *env_name) {
 }
 
 void conda_setup_headless() {
+    if (globals.verbose) {
+        conda_exec("config --system --set quiet false");
+    } else {
+        // Not verbose, so squelch conda's noise
+        conda_exec("config --system --set quiet true");
+    }
+
     // Configure conda for headless CI
     conda_exec("config --system --set auto_update_conda false");
     conda_exec("config --system --set always_yes true");
-    conda_exec("config --system --set quiet true");
     conda_exec("config --system --set rollback_enabled false");
     conda_exec("config --system --set report_errors false");
 
