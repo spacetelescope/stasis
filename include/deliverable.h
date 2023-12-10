@@ -11,8 +11,8 @@
 #include "ini.h"
 #include "environment.h"
 #include "conda.h"
+#include "artifactory.h"
 
-#define DELIVERY_DIR "delivery"
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65
 #define DELIVERY_PLATFORM 0
@@ -45,7 +45,10 @@ struct Delivery {
      * \brief Storage paths
      */
     struct Storage {
+        char *root;                     ///< Top-level storage area
+        char *tmpdir;                   ///< Temporary storage area (within root)
         char *delivery_dir;             ///< Delivery artifact output directory
+        char *tools_dir;                ///< Tools storage
         char *conda_install_prefix;     ///< Path to install Conda
         char *conda_artifact_dir;       ///< Base path to store compiled conda packages
         char *conda_staging_dir;        ///< Base path to copy compiled conda packages
@@ -155,6 +158,12 @@ void delivery_conda_show(struct Delivery *ctx);
  * @param ctx pointer to Delivery context
  */
 void delivery_tests_show(struct Delivery *ctx);
+
+/**
+ * Print Delivery initial runtime environment
+ * @param ctx  pointner to Delivery context
+ */
+void delivery_runtime_show(struct Delivery *ctx);
 
 /**
  * Build Conda recipes associated with the Delivery
@@ -278,4 +287,10 @@ void delivery_install_conda(char *install_script, char *conda_install_dir);
 // helper function
 void delivery_gather_tool_versions(struct Delivery *ctx);
 
+// helper function
+int delivery_init_tmpdir(struct Delivery *ctx);
+
+int delivery_init_artifactory(struct Delivery *ctx);
+
+int delivery_artifact_upload(struct Delivery *ctx);
 #endif //OMC_DELIVERABLE_H

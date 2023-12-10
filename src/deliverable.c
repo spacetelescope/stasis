@@ -1,7 +1,7 @@
-//
-// Created by jhunk on 10/5/23.
-//
+#define _GNU_SOURCE
 
+#include <sys/statvfs.h>
+#include "omc.h"
 #include "deliverable.h"
 #include "str.h"
 #include "strlist.h"
@@ -33,7 +33,7 @@ extern struct OMC_GLOBAL globals;
     if (rtevnop) {                   \
         strip(rtevnop); \
         strlist_append_tokenize(X->DEST, rtevnop, TOK); \
-        free(rtevnop); \
+        guard_free(rtevnop) \
     } else { \
         rtevnop = NULL; \
     } \
@@ -48,27 +48,84 @@ extern struct OMC_GLOBAL globals;
     if (rtevnop) {                   \
         strip(rtevnop); \
         strlist_append_tokenize(X.DEST, rtevnop, TOK); \
-        free(rtevnop); \
+        guard_free(rtevnop) \
     } else { \
         rtevnop = NULL; \
     } \
 }
-#define conv_bool(X, DEST) X->DEST = val.as_bool;
-#define guard_runtime_free(X) if (X) { runtime_free(X); X = NULL; }
-#define guard_strlist_free(X) if (X) { strlist_free(X); X = NULL; }
-#define guard_free(X) if (X) { free(X); X = NULL; }
+#define conv_bool_stackvar(X, DEST) X.DEST = val.as_bool;
+
+int delivery_init_tmpdir(struct Delivery *ctx) {
+    char *tmpdir = NULL;
+    char *x = NULL;
+    int unusable = 0;
+    errno = 0;
+
+    x = getenv("TMPDIR");
+    if (x) {
+        guard_free(ctx->storage.tmpdir)
+        tmpdir = strdup(x);
+    } else {
+        tmpdir = ctx->storage.tmpdir;
+    }
+
+    if (!tmpdir) {
+        // memory error
+        return -1;
+    }
+
+    // If the directory doesn't exist, create it
+    if (access(tmpdir, F_OK) < 0) {
+        if (mkdirs(tmpdir, 0755) < 0) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
+            goto l_delivery_init_tmpdir_fatal;
+        }
+    }
+
+    // If we can't read, write, or execute, then die
+    if (access(tmpdir, R_OK | W_OK | X_OK) < 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s requires at least 0755 permissions.\n");
+        goto l_delivery_init_tmpdir_fatal;
+    }
+
+    struct statvfs st;
+    if (statvfs(tmpdir, &st) < 0) {
+        goto l_delivery_init_tmpdir_fatal;
+    }
+
+    // If we can't execute programs, or write data to the file system at all, then die
+    if ((st.f_flag & ST_NOEXEC) != 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted with noexec\n", tmpdir);
+        goto l_delivery_init_tmpdir_fatal;
+    }
+    if ((st.f_flag & ST_RDONLY) != 0) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
+        goto l_delivery_init_tmpdir_fatal;
+    }
+
+    ctx->storage.tmpdir = strdup(tmpdir);
+    globals.tmpdir = strdup(tmpdir);
+    return unusable;
+
+    l_delivery_init_tmpdir_fatal:
+    unusable = 1;
+    return unusable;
+}
 
 void delivery_free(struct Delivery *ctx) {
-    guard_free(ctx->system.arch);
+    guard_free(ctx->system.arch)
     guard_free(ctx->meta.name)
     guard_free(ctx->meta.version)
     guard_free(ctx->meta.codename)
     guard_free(ctx->meta.mission)
     guard_free(ctx->meta.python)
     guard_free(ctx->meta.mission)
-    guard_free(ctx->meta.python_compact);
+    guard_free(ctx->meta.python_compact)
     guard_runtime_free(ctx->runtime.environ)
+    guard_free(ctx->storage.root)
+    guard_free(ctx->storage.tmpdir)
     guard_free(ctx->storage.delivery_dir)
+    guard_free(ctx->storage.tools_dir);
     guard_free(ctx->storage.conda_install_prefix)
     guard_free(ctx->storage.conda_artifact_dir)
     guard_free(ctx->storage.conda_staging_dir)
@@ -85,8 +142,8 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->conda.installer_version)
     guard_free(ctx->conda.installer_platform)
     guard_free(ctx->conda.installer_arch)
-    guard_free(ctx->conda.tool_version);
-    guard_free(ctx->conda.tool_build_version);
+    guard_free(ctx->conda.tool_version)
+    guard_free(ctx->conda.tool_build_version)
     guard_strlist_free(ctx->conda.conda_packages)
     guard_strlist_free(ctx->conda.conda_packages_defer)
     guard_strlist_free(ctx->conda.pip_packages)
@@ -104,23 +161,107 @@ void delivery_free(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs(struct Delivery *ctx) {
-    mkdirs("build/recipes", 0755);
-    mkdirs("build/sources", 0755);
-    mkdirs("build/testing", 0755);
-    ctx->storage.build_dir = realpath("build", NULL);
-    ctx->storage.build_recipes_dir = realpath("build/recipes", NULL);
-    ctx->storage.build_sources_dir = realpath("build/sources", NULL);
-    ctx->storage.build_testing_dir = realpath("build/testing", NULL);
+    mkdirs("omc/tmp", 0755);
+    mkdirs("omc/tools/bin", 0755);
+    mkdirs("omc/build", 0755);
+    mkdirs("omc/build/recipes", 0755);
+    mkdirs("omc/build/sources", 0755);
+    mkdirs("omc/build/testing", 0755);
+    mkdirs("omc/output", 0755);
+    mkdirs("omc/output/delivery", 0755);
+    mkdirs("omc/output/packages/conda", 0755);
+    mkdirs("omc/output/packages/wheels", 0755);
+    ctx->storage.root = realpath("omc", NULL);
+    ctx->storage.tmpdir = realpath("omc/tmp", NULL);
+    if (delivery_init_tmpdir(ctx)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
+        if (globals.tmpdir)
+            guard_free(globals.tmpdir)
+        exit(1);
+    }
 
-    mkdirs("output/omc", 0755);
-    mkdirs("output/packages/conda", 0755);
-    mkdirs("output/packages/wheels", 0755);
-    ctx->storage.delivery_dir = realpath("output/omc", NULL);
-    ctx->storage.conda_artifact_dir = realpath("output/packages/conda", NULL);
-    ctx->storage.wheel_artifact_dir = realpath("output/packages/wheels", NULL);
+    ctx->storage.tools_dir = realpath("omc/tools", NULL);
+    ctx->storage.build_dir = realpath("omc/build", NULL);
+    ctx->storage.build_recipes_dir = realpath("omc/build/recipes", NULL);
+    ctx->storage.build_sources_dir = realpath("omc/build/sources", NULL);
+    ctx->storage.build_testing_dir = realpath("omc/build/testing", NULL);
+    ctx->storage.delivery_dir = realpath("omc/output/delivery", NULL);
+    ctx->storage.conda_artifact_dir = realpath("omc/output/packages/conda", NULL);
+    ctx->storage.wheel_artifact_dir = realpath("omc/output/packages/wheels", NULL);
 
-    mkdirs(CONDA_INSTALL_PREFIX, 0755);
-    ctx->storage.conda_install_prefix = realpath(CONDA_INSTALL_PREFIX, NULL);
+    // Override installation prefix using global configuration key
+    if (globals.conda_install_prefix && strlen(globals.conda_install_prefix)) {
+        // user wants a specific path
+        globals.conda_fresh_start = false;
+        /*
+        if (mkdirs(globals.conda_install_prefix, 0755)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create directory: %s: %s\n",
+                strerror(errno), globals.conda_install_prefix);
+            exit(1);
+        }
+         */
+        /*
+        ctx->storage.conda_install_prefix = realpath(globals.conda_install_prefix, NULL);
+        if (!ctx->storage.conda_install_prefix) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L1, "realpath(): Conda installation prefix reassignment failed\n");
+            exit(1);
+        }
+         */
+        ctx->storage.conda_install_prefix = strdup(globals.conda_install_prefix);
+    } else {
+        // install conda under the OMC tree
+        mkdirs("omc/tools/conda", 0755);
+        ctx->storage.conda_install_prefix = realpath("omc/tools/conda", NULL);
+    }
+}
+
+int delivery_init_platform(struct Delivery *ctx) {
+    msg(OMC_MSG_L2, "Setting architecture\n");
+    char archsuffix[20];
+    struct utsname uts;
+    if (uname(&uts)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "uname() failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    ctx->system.arch = strdup(uts.machine);
+    if (!ctx->system.arch) {
+        // memory error
+        return -1;
+    }
+
+    if (!strcmp(ctx->system.arch, "x86_64")) {
+        strcpy(archsuffix, "64");
+    } else {
+        strcpy(archsuffix, ctx->system.arch);
+    }
+
+    msg(OMC_MSG_L2, "Setting platform\n");
+    strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
+    if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
+        sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX");
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos");
+    } else if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
+        sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "linux-%s", archsuffix);
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux");
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux");
+    } else {
+        // Not explicitly supported systems
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM]);
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM]);
+        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM]);
+        tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
+    }
+
+    // Declare some important bits as environment variables
+    setenv("OMC_ARCH", ctx->system.arch, 1);
+    setenv("OMC_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM], 1);
+    setenv("OMC_CONDA_ARCH", ctx->system.arch, 1);
+    setenv("OMC_CONDA_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
+    setenv("OMC_CONDA_PLATFORM_SUBDIR", ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
+
+    return 0;
 }
 
 int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg) {
@@ -141,17 +282,42 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         conv_str(ctx, storage.wheel_staging_dir)
         getter(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR)
         conv_str(ctx, storage.wheel_staging_url)
+        getter(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL)
+        conv_bool_stackvar(globals, conda_fresh_start)
         // Below can also be toggled by command-line arguments
         getter(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL)
-        globals.continue_on_error = val.as_bool;
+        conv_bool_stackvar(globals, continue_on_error)
         getter(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL)
-        globals.always_update_base_environment = val.as_bool;
+        conv_bool_stackvar(globals, always_update_base_environment)
+        getter(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, conda_install_prefix)
         getter(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY)
         conv_strlist_stackvar(globals, conda_packages, "\n")
         getter(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY)
         conv_strlist_stackvar(globals, pip_packages, "\n")
+        // Configure jfrog cli downloader
+        getter(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, jfrog.jfrog_artifactory_base_url)
+        getter(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR);
+        conv_str_stackvar(globals, jfrog.jfrog_artifactory_product)
+        getter(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, jfrog.cli_major_ver)
+        getter(cfg, "jfrog_cli_download", "version", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, jfrog.version)
+        getter(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, jfrog.remote_filename)
     }
+
+    // Configure architecture and platform information
+    delivery_init_platform(ctx);
+
+    // Create OMC directory structure
     delivery_init_dirs(ctx);
+
+    // add tools to PATH
+    char pathvar_tmp[OMC_BUFSIZ];
+    sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+    setenv("PATH", pathvar_tmp, 1);
 
     // Populate runtime variables first they may be interpreted by other
     // keys in the configuration
@@ -224,18 +390,21 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     for (size_t z = 0, i = 0; i < ini->section_count; i++ ) {
         if (startswith(ini->section[i]->key, "test:")) {
             val.as_char_p = strchr(ini->section[i]->key, ':') + 1;
+            if (val.as_char_p && isempty(val.as_char_p)) {
+                return 1;
+            }
             conv_str(ctx, tests[z].name)
 
-            getter(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR)
+            getter_required(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR)
             conv_str(ctx, tests[z].version)
 
-            getter(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR)
+            getter_required(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR)
             conv_str(ctx, tests[z].repository)
 
-            getter(ini, ini->section[i]->key, "script", INIVAL_TYPE_STR)
+            getter_required(ini, ini->section[i]->key, "script", INIVAL_TYPE_STR)
             conv_str_noexpand(ctx, tests[z].script)
 
-            getter(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR);
+            getter(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR)
             conv_str(ctx, tests[z].build_recipe)
 
             z++;
@@ -249,17 +418,17 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
         memset(env_date, 0, sizeof(env_date));
         strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", ctx->info.time_info);
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_py%s_final",
-                 ctx->meta.name, env_date, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_final",
+                 ctx->meta.name, env_date, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact);
     } else if (!strcasecmp(ctx->meta.mission, "hst")) {
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_py%s_rc%d",
-                 ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact, ctx->meta.rc);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_rc%d",
+                 ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
     } else if (!strcasecmp(ctx->meta.mission, "jwst") && ctx->meta.final) {
-        snprintf(env_name, sizeof(env_name), "%s_%s_%s_py%s_final",
-                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->meta.python_compact);
+        snprintf(env_name, sizeof(env_name), "%s_%s_%s_%s_py%s_final",
+                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact);
     } else if (!strcasecmp(ctx->meta.mission, "jwst")) {
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_py%s_rc%d",
-                 ctx->meta.name, ctx->meta.version, ctx->meta.python_compact, ctx->meta.rc);
+        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_rc%d",
+                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
     }
 
     if (strlen(env_name)) {
@@ -270,7 +439,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
 }
 
 void delivery_meta_show(struct Delivery *ctx) {
-    printf("====DELIVERY====\n");
+    printf("\n====DELIVERY====\n");
     printf("%-20s %-10s\n", "Target Python:", ctx->meta.python);
     printf("%-20s %-10s\n", "Name:", ctx->meta.name);
     printf("%-20s %-10s\n", "Mission:", ctx->meta.mission);
@@ -288,8 +457,8 @@ void delivery_meta_show(struct Delivery *ctx) {
 }
 
 void delivery_conda_show(struct Delivery *ctx) {
-    printf("====CONDA====\n");
-    printf("%-20s %-10s\n", "Installer:", ctx->conda.installer_baseurl);
+    printf("\n====CONDA====\n");
+    printf("%-20s %-10s\n", "Prefix:", ctx->storage.conda_install_prefix);
 
     puts("Native Packages:");
     for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
@@ -311,14 +480,35 @@ void delivery_conda_show(struct Delivery *ctx) {
 }
 
 void delivery_tests_show(struct Delivery *ctx) {
-    printf("====TESTS====\n");
+    printf("\n====TESTS====\n");
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         if (!ctx->tests[i].name) {
             continue;
         }
-        printf("%-20s %-10s %s\n", ctx->tests[i].name,
+        printf("%-20s %-20s %s\n", ctx->tests[i].name,
                ctx->tests[i].version,
                ctx->tests[i].repository);
+    }
+}
+
+void delivery_runtime_show(struct Delivery *ctx) {
+    printf("\n====RUNTIME====\n");
+    struct StrList *rt = NULL;
+    rt = strlist_copy(ctx->runtime.environ);
+    if (!rt) {
+        // no data
+        return;
+    }
+    strlist_sort(rt, OMC_SORT_ALPHA);
+    size_t total = strlist_count(rt);
+    for (size_t i = 0; i < total; i++) {
+        char *item = strlist_item(rt, i);
+        if (!item) {
+            // not supposed to occur
+            msg(OMC_MSG_WARN | OMC_MSG_L1, "Encountered unexpected NULL at record %zu of %zu of runtime array.\n", i);
+            return;
+        }
+        printf("%s\n", item);
     }
 }
 
@@ -346,9 +536,13 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 char recipe_git_url[PATH_MAX];
                 char recipe_git_rev[PATH_MAX];
 
-                sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
-                sprintf(recipe_git_url, "  git_url: %s", ctx->tests[i].repository);
-                sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests[i].version);
+                //sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
+                //sprintf(recipe_git_url, "  git_url: %s", ctx->tests[i].repository);
+                //sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests[i].version);
+                // TODO: Conditionally download archives if github.com is the origin. Else, use raw git_* keys ^^^
+                sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].version);
+                sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests[i].repository);
+                strcpy(recipe_git_rev, "");
                 sprintf(recipe_buildno, "  number: 0");
 
                 //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
@@ -361,7 +555,8 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 } else {
                     file_replace_text("meta.yaml", "{% set version = ", recipe_version);
                     file_replace_text("meta.yaml", "  url:", recipe_git_url);
-                    file_replace_text("meta.yaml", "  sha256:", recipe_git_rev);
+                    //file_replace_text("meta.yaml", "  sha256:", recipe_git_rev);
+                    file_replace_text("meta.yaml", "  sha256:", "\n");
                     file_replace_text("meta.yaml", "  number:", recipe_buildno);
                 }
 
@@ -379,7 +574,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
             }
         }
         if (recipe_dir) {
-            free(recipe_dir);
+            guard_free(recipe_dir)
         }
     }
     return 0;
@@ -646,19 +841,23 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
-    if (!access(conda_install_dir, F_OK)) {
-        // directory exists so remove it
-        if (rmtree(conda_install_dir)) {
-            perror("unable to remove previous installation");
-            exit(1);
-        }
-    }
+    if (globals.conda_fresh_start) {
+        if (!access(conda_install_dir, F_OK)) {
+            // directory exists so remove it
+            if (rmtree(conda_install_dir)) {
+                perror("unable to remove previous installation");
+                exit(1);
+            }
 
-    // Proceed with the installation
-    // -b = batch mode (non-interactive)
-    if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
-        fprintf(stderr, "conda installation failed\n");
-        exit(1);
+            // Proceed with the installation
+            // -b = batch mode (non-interactive)
+            if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
+                fprintf(stderr, "conda installation failed\n");
+                exit(1);
+            }
+        }
+    } else {
+        msg(OMC_MSG_L3, "Conda removal disabled by configuration\n");
     }
 }
 
@@ -681,6 +880,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
 
     conda_setup_headless();
 }
+
 void delivery_defer_packages(struct Delivery *ctx, int type) {
     struct StrList *dataptr = NULL;
     struct StrList *deferred = NULL;
@@ -714,9 +914,12 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         msg(OMC_MSG_L3, "package '%s': ", name);
 
         // Compile a list of packages that are *also* to be tested.
+        char *version;
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
+            version = NULL;
             if (ctx->tests[x].name) {
                 if (startswith(ctx->tests[x].name, name)) {
+                    version = ctx->tests[x].version;
                     ignore_pkg = 1;
                     z++;
                     break;
@@ -725,6 +928,12 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         }
 
         if (ignore_pkg) {
+            char build_at[PATH_MAX];
+            if (DEFER_CONDA == type) {
+                sprintf(build_at, "%s=%s", name, version);
+                name = build_at;
+            }
+
             printf("BUILD FOR HOST\n");
             strlist_append(deferred, name);
         } else {
@@ -803,12 +1012,10 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     }
 
     for (size_t i = 0; contents[i] != NULL; i++) {
-        free(contents[i]);
+        guard_free(contents[i])
     }
-    free(contents);
-    contents = NULL;
-    free(header);
-    header = NULL;
+    guard_free(contents)
+    guard_free(header)
     fflush(tp);
     fclose(tp);
 
@@ -817,10 +1024,15 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
         fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
         exit(1);
     }
+    remove(tempfile);
 
     // Replace "local" channel with the staging URL
-    sprintf(output, "  - %s", ctx->storage.conda_staging_url);
-    file_replace_text(filename, "  - local", output);
+    if (ctx->storage.conda_staging_url) {
+        sprintf(output, "  - %s", ctx->storage.conda_staging_url);
+        file_replace_text(filename, "  - local", output);
+    } else {
+        msg(OMC_MSG_WARN, "conda_staging_url is not configured. References to \"local\" channel will not be replaced\n", filename);
+    }
 
     // Rewrite tested packages to point to tested code, at a defined verison
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages_defer); i++) {
@@ -893,7 +1105,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version);
 
             if (pushd(destdir)) {
-                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to enter repository directory\n");
+                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to enter repository directory\n")
             } else {
 #if 1
                 int status;
@@ -906,7 +1118,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
                 status = shell2(&proc, cmd);
                 if (status) {
-                    COE_CHECK_ABORT(!globals.continue_on_error, "Test failure");
+                    COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
                 }
                 popd();
 #else
@@ -928,4 +1140,110 @@ void delivery_gather_tool_versions(struct Delivery *ctx) {
     ctx->conda.tool_build_version = shell_output("conda build --version", &status);
     if (ctx->conda.tool_build_version)
         strip(ctx->conda.tool_version);
+}
+
+int delivery_init_artifactory(struct Delivery *ctx) {
+    char dest[PATH_MAX] = {0};
+    char filepath[PATH_MAX] = {0};
+    snprintf(dest, sizeof(dest) - 1, "%s/bin", ctx->storage.tools_dir);
+    snprintf(filepath, sizeof(dest) - 1, "%s/bin/jf", ctx->storage.tools_dir);
+
+    if (!access(filepath, F_OK)) {
+        // already have it
+        goto delivery_init_artifactory_envsetup;
+    }
+    int status = artifactory_download_cli(dest,
+            globals.jfrog.jfrog_artifactory_base_url,
+            globals.jfrog.jfrog_artifactory_product,
+            globals.jfrog.cli_major_ver,
+            globals.jfrog.version,
+            ctx->system.platform[DELIVERY_PLATFORM],
+            ctx->system.arch,
+            globals.jfrog.remote_filename);
+
+    delivery_init_artifactory_envsetup:
+    // CI (ridiculously generic, why?) disables interactive prompts and progress bar output
+    setenv("CI", "1", 1);
+
+    // JFROG_CLI_HOME_DIR is where .jfrog is stored
+    char path[PATH_MAX] = {0};
+    snprintf(path, sizeof(path) - 1, "%s/.jfrog", ctx->storage.build_dir);
+    setenv("JFROG_CLI_HOME_DIR", path, 1);
+
+    // JFROG_CLI_TEMP_DIR is where the obvious is stored
+    setenv("JFROG_CLI_TEMP_DIR", ctx->storage.tmpdir, 1);
+    return status;
+}
+
+
+int delivery_artifact_upload(struct Delivery *ctx) {
+    struct JFRT_Auth auth_ctx;
+    memset(&auth_ctx, 0, sizeof(auth_ctx));
+    struct JFRT_Upload upload_ctx;
+    jfrt_upload_set_defaults(&upload_ctx);
+
+    char *url = getenv("OMC_JF_ARTIFACTORY_URL");
+    char *user = getenv("OMC_JF_USER");
+    char *access_token = getenv("OMC_JF_ACCESS_TOKEN");
+    char *password = getenv("OMC_JF_PASSWORD");
+    char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
+    char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
+
+    if (!url) {
+        fprintf(stderr, "Artifactory URL is not configured:\n");
+        fprintf(stderr, "please set OMC_JF_ARTIFACTORY_URL\n");
+        return -1;
+    }
+    auth_ctx.url = url;
+
+    if (access_token) {
+        auth_ctx.user = NULL;
+        auth_ctx.access_token = access_token;
+        auth_ctx.password = NULL;
+        auth_ctx.ssh_key_path = NULL;
+    } else if (user && password) {
+        auth_ctx.user = user;
+        auth_ctx.password = password;
+        auth_ctx.access_token = NULL;
+        auth_ctx.ssh_key_path = NULL;
+    } else if (ssh_key_path) {
+        auth_ctx.user = NULL;
+        auth_ctx.ssh_key_path = ssh_key_path;
+        if (ssh_passphrase) {
+            auth_ctx.ssh_passphrase = ssh_passphrase;
+        }
+        auth_ctx.password = NULL;
+        auth_ctx.access_token = NULL;
+    } else {
+        fprintf(stderr, "Artifactory authentication is not configured:\n");
+        fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
+        fprintf(stderr, "set OMC_JF_ACCESS_TOKEN\nor\n");
+        fprintf(stderr, "set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
+        return -1;
+    }
+
+    upload_ctx.workaround_parent_only = true;
+    upload_ctx.build_name = strdup(ctx->info.release_name);
+    upload_ctx.build_number = ctx->info.time_now;
+
+    char files[PATH_MAX];
+    int status = 0;
+
+    if (jfrog_cli_rt_ping(&auth_ctx)) {
+        fprintf(stderr, "Unable to contact artifactory server: %s\n", url);
+        return -1;
+    }
+
+    jfrog_cli_rt_build_collect_env(&auth_ctx, upload_ctx.build_name, upload_ctx.build_number);
+
+    strcpy(files, "omc/sources/**/results.xml");
+    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/delivery/results");
+    strcpy(files, "omc/output/delivery/*.yml");
+    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/delivery/");
+    strcpy(files, "omc/output/packages/*");
+    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/packages/");
+
+    jfrog_cli_rt_build_publish(&auth_ctx, upload_ctx.build_name, upload_ctx.build_number);
+
+    return status;
 }
