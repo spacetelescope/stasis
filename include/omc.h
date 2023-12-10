@@ -21,6 +21,10 @@
 #include "recipe.h"
 #include "relocation.h"
 
+#define guard_runtime_free(X) if (X) { runtime_free(X); X = NULL; }
+#define guard_strlist_free(X) if (X) { strlist_free(X); X = NULL; }
+#define guard_free(X) if (X) { free(X); X = NULL; }
+
 #define COE_CHECK_ABORT(COND, MSG) {\
     if (COND) { \
         msg(OMC_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
