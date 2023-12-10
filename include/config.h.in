@@ -1,0 +1,6 @@
+#ifndef OMC_CONFIG_H
+#define OMC_CONFIG_H
+
+#define OMC_SYSCONFDIR "@SYSCONFDIR@/omc"
+
+#endif // OMC_CONFIG_H

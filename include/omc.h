@@ -13,6 +13,8 @@
 #define OMC_NAME_MAX 255
 #define OMC_DIRSTACK_MAX 1024
 
+#include "config.h"
+#include "template.h"
 #include "utils.h"
 #include "ini.h"
 #include "conda.h"
@@ -45,6 +47,7 @@ struct OMC_GLOBAL {
     struct StrList *pip_packages;
     char *tmpdir;
     char *conda_install_prefix;
+    char *sysconfdir;
     struct Jfrog {
         char *jfrog_artifactory_base_url;
         char *jfrog_artifactory_product;
