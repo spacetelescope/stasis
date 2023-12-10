@@ -35,12 +35,23 @@
 }
 
 struct OMC_GLOBAL {
-    unsigned char verbose;
-    unsigned char always_update_base_environment;
-    unsigned char continue_on_error;
+    bool verbose;
+    bool always_update_base_environment;
+    bool continue_on_error;
+    bool conda_fresh_start;
     struct StrList *conda_packages;
     struct StrList *pip_packages;
     char *tmpdir;
+    char *conda_install_prefix;
+    struct Jfrog {
+        char *jfrog_artifactory_base_url;
+        char *jfrog_artifactory_product;
+        char *cli_major_ver;
+        char *version;
+        char *os;
+        char *arch;
+        char *remote_filename;
+    } jfrog;
 };
 
 #endif //OMC_OMC_H
