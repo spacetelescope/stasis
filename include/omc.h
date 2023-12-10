@@ -8,6 +8,8 @@
 
 #define SYSERROR stderr, "%s:%s:%d: %s\n", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno)
 #define OMC_BUFSIZ 8192
+#define OMC_NAME_MAX 255
+#define OMC_DIRSTACK_MAX 1024
 
 #include "utils.h"
 #include "ini.h"
