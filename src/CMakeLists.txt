@@ -16,4 +16,5 @@ add_executable(omc
         relocation.c
         wheel.c
         copy.c
+        artifactory.c
 )
