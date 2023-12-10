@@ -54,5 +54,6 @@ void debug_shell();
  * @return NULL on failure
  */
 char *xmkstemp(FILE **fp);
+int isempty_dir(const char *path);
 
 #endif //OMC_UTILS_H
