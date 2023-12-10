@@ -10,8 +10,11 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
 }
 
 int download(char *url, const char *filename) {
+    extern char *VERSION;
     CURL *c;
     FILE *fp;
+    char user_agent[20];
+    sprintf(user_agent, "omc/%s", VERSION);
 
     curl_global_init(CURL_GLOBAL_ALL);
     c = curl_easy_init();
@@ -21,8 +24,9 @@ int download(char *url, const char *filename) {
     if (!fp) {
         return 1;
     }
-    //curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
-    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
+    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(c, CURLOPT_USERAGENT, user_agent);
     curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(c, CURLOPT_WRITEDATA, fp);
     curl_easy_perform(c);
