@@ -466,3 +466,22 @@ char *xmkstemp(FILE **fp) {
     char *path = strdup(t_name);
     return path;
 }
+
+int isempty_dir(const char *path) {
+    DIR *dp;
+    struct dirent *rec;
+    size_t count = 0;
+
+    dp = opendir(path);
+    if (!dp) {
+        return -1;
+    }
+    while ((rec = readdir(dp)) != NULL) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        }
+        count++;
+    }
+
+    return count == 0;
+}
