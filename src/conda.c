@@ -170,6 +170,7 @@ void conda_setup_headless() {
     conda_exec("config --system --set always_yes true");
     conda_exec("config --system --set rollback_enabled false");
     conda_exec("config --system --set report_errors false");
+    conda_exec("config --system --set solver libmamba");
 
     if (globals.verbose) {
         char *rcfile = getenv("CONDARC");
