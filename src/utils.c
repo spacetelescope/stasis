@@ -169,6 +169,28 @@ char *path_basename(char *path) {
     return result;
 }
 
+/**
+ * Return parent directory of file, or the parent of a directory
+ *
+ * @param path
+ * @return success=directory, failure=empty string
+ */
+char *path_dirname(char *path) {
+    if (!path) {
+        return "";
+    }
+    if (strlen(path) == 1 && *path == '/') {
+        return "/";
+    }
+    char *pos = strrchr(path, '/');
+    if (!pos) {
+        return ".";
+    }
+    *path = '\0';
+
+    return path;
+}
+
 char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn *readerFn) {
     FILE *fp = NULL;
     char **result = NULL;
