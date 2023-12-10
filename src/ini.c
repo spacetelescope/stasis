@@ -225,17 +225,17 @@ void ini_free(struct INIFILE **ini) {
     for (size_t section = 0; section < (*ini)->section_count; section++) {
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
             if ((*ini)->section[section]->data[data]) {
-                free((*ini)->section[section]->data[data]->key);
-                free((*ini)->section[section]->data[data]->value);
-                free((*ini)->section[section]->data[data]);
+                guard_free((*ini)->section[section]->data[data]->key)
+                guard_free((*ini)->section[section]->data[data]->value)
+                guard_free((*ini)->section[section]->data[data])
             }
         }
-        free((*ini)->section[section]->data);
-        free((*ini)->section[section]->key);
-        free((*ini)->section[section]);
+        guard_free((*ini)->section[section]->data)
+        guard_free((*ini)->section[section]->key)
+        guard_free((*ini)->section[section])
     }
-    free((*ini)->section);
-    free((*ini));
+    guard_free((*ini)->section)
+    guard_free((*ini))
 }
 
 struct INIFILE *ini_open(const char *filename) {
@@ -301,12 +301,10 @@ struct INIFILE *ini_open(const char *filename) {
             }
 
             // Ignore default section because we already have an implicit one
-            if (!strncmp(&line[1], "default", strlen("default"))) {
+            if (!strncmp(name, "default", strlen("default"))) {
+                guard_free(name)
                 continue;
             }
-
-            // Remove section ending: ']'
-            line[strlen(line) - 2] = '\0';
 
             // Create new named section
             strip(name);
@@ -324,14 +322,13 @@ struct INIFILE *ini_open(const char *filename) {
 
         // no data, skip
         if (!reading_value && isempty(line)) {
-            free(value);
+            guard_free(value)
             value = NULL;
             continue;
         }
 
         // a value continuation line
         if (long_data && (startswith(line, " ") || startswith(line, "\t"))) {
-            //printf("operator is NULL\n");
             operator = NULL;
         }
 
