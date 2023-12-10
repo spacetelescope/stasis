@@ -54,4 +54,9 @@ struct OMC_GLOBAL {
     } jfrog;
 };
 
+/**
+ * Free memory allocated in global configuration structure
+ */
+void globals_free();
+
 #endif //OMC_OMC_H
