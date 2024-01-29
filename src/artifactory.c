@@ -199,7 +199,7 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
         strcpy(proc.stdout, "/dev/null");
         strcpy(proc.stderr, "/dev/null");
     }
-    status = shell2(&proc, cmd);
+    status = shell(&proc, cmd);
     return status;
 }
 
@@ -368,7 +368,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
             }
         }
         base = join(&components->data[max_components], "/");
-        guard_free(components->data[max_components]);
+        guard_free(components->data[max_components])
         new_src = join(components->data, "/");
     }
 
