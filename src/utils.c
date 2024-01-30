@@ -347,7 +347,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     sprintf(command, "%s clone --recursive %s", program, url);
     if (destdir && access(destdir, F_OK) < 0) {
         sprintf(command + strlen(command), " %s", destdir);
-        result = shell2(proc, command);
+        result = shell(proc, command);
     }
 
     if (destdir) {
@@ -360,12 +360,12 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     {
         memset(command, 0, sizeof(command));
         sprintf(command, "%s fetch --all", program);
-        result += shell2(proc, command);
+        result += shell(proc, command);
 
         if (gitref != NULL) {
             memset(command, 0, sizeof(command));
             sprintf(command, "%s checkout %s", program, gitref);
-            result += shell2(proc, command);
+            result += shell(proc, command);
         }
         popd();
     }

@@ -103,8 +103,8 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
-    ctx->storage.tmpdir = strdup(tmpdir);
     globals.tmpdir = strdup(tmpdir);
+    ctx->storage.tmpdir = globals.tmpdir;
     return unusable;
 
     l_delivery_init_tmpdir_fatal:
@@ -407,6 +407,8 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             getter(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR)
             conv_str(ctx, tests[z].build_recipe)
 
+            getter(ini, ini->section[i]->key, "runtime", INIVAL_TO_LIST)
+            conv_strlist(ctx, tests[z].runtime.environ, "\n")
             z++;
         }
     }
@@ -438,6 +440,67 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     return 0;
 }
 
+int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
+    size_t fmt_len = strlen(fmt);
+
+    if (!*dest) {
+        *dest = calloc(OMC_NAME_MAX, sizeof(**dest));
+        if (!*dest) {
+            return -1;
+        }
+    }
+
+    for (size_t i = 0; i < fmt_len; i++) {
+        if (fmt[i] == '%' && strlen(&fmt[i])) {
+            i++;
+            switch (fmt[i]) {
+                case 'n':   // name
+                    strcat(*dest, ctx->meta.name);
+                    break;
+                case 'c':   // codename
+                    strcat(*dest, ctx->meta.codename);
+                    break;
+                case 'm':   // mission
+                    strcat(*dest, ctx->meta.mission);
+                    break;
+                case 'r':   // revision
+                    sprintf(*dest + strlen(*dest), "%d", ctx->meta.rc);
+                    break;
+                case 'R':   // "final"-aware revision
+                    if (ctx->meta.final)
+                        strcat(*dest, "final");
+                    else
+                        sprintf(*dest + strlen(*dest), "%d", ctx->meta.rc);
+                    break;
+                case 'v':   // version
+                    strcat(*dest, ctx->meta.version);
+                    break;
+                case 'P':   // python version
+                    strcat(*dest, ctx->meta.python);
+                    break;
+                case 'p':   // python version major/minor
+                    strcat(*dest, ctx->meta.python_compact);
+                    break;
+                case 'a':   // system architecture name
+                    strcat(*dest, ctx->system.arch);
+                    break;
+                case 'o':   // system platform (OS) name
+                    strcat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
+                    break;
+                case 't':   // unix epoch
+                    sprintf(*dest + strlen(*dest), "%ld", ctx->info.time_now);
+                    break;
+                default:    // unknown formatter, write as-is
+                    sprintf(*dest + strlen(*dest), "%c%c", fmt[i - 1], fmt[i]);
+                    break;
+            }
+        } else {    // write non-format text
+            sprintf(*dest + strlen(*dest), "%c", fmt[i]);
+        }
+    }
+    return 0;
+}
+
 void delivery_meta_show(struct Delivery *ctx) {
     printf("\n====DELIVERY====\n");
     printf("%-20s %-10s\n", "Target Python:", ctx->meta.python);
@@ -461,21 +524,29 @@ void delivery_conda_show(struct Delivery *ctx) {
     printf("%-20s %-10s\n", "Prefix:", ctx->storage.conda_install_prefix);
 
     puts("Native Packages:");
-    for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
-        char *token = strlist_item(ctx->conda.conda_packages, i);
-        if (isempty(token) || isblank(*token) || startswith(token, "-")) {
-            continue;
+    if (strlist_count(ctx->conda.conda_packages)) {
+        for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
+            char *token = strlist_item(ctx->conda.conda_packages, i);
+            if (isempty(token) || isblank(*token) || startswith(token, "-")) {
+                continue;
+            }
+            printf("%21s%s\n", "", token);
         }
-        printf("%21s%s\n", "", token);
+    } else {
+       printf("%21s%s\n", "", "N/A");
     }
 
     puts("Python Packages:");
-    for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
-        char *token = strlist_item(ctx->conda.pip_packages, i);
-        if (isempty(token) || isblank(*token) || startswith(token, "-")) {
-            continue;
+    if (strlist_count(ctx->conda.pip_packages)) {
+        for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
+            char *token = strlist_item(ctx->conda.pip_packages, i);
+            if (isempty(token) || isblank(*token) || startswith(token, "-")) {
+                continue;
+            }
+            printf("%21s%s\n", "", token);
         }
-        printf("%21s%s\n", "", token);
+    } else {
+        printf("%21s%s\n", "", "N/A");
     }
 }
 
@@ -851,7 +922,12 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
 
             // Proceed with the installation
             // -b = batch mode (non-interactive)
-            if (shell_safe(&proc, (char *[]) {find_program("bash"), install_script, "-b", "-p", conda_install_dir, NULL})) {
+            char cmd[255] = {0};
+            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+                     find_program("bash"),
+                     install_script,
+                     conda_install_dir);
+            if (shell_safe(&proc, cmd)) {
                 fprintf(stderr, "conda installation failed\n");
                 exit(1);
             }
@@ -1116,7 +1192,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 // enable trace mode before executing each test script
                 memset(cmd, 0, sizeof(cmd));
                 sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
-                status = shell2(&proc, cmd);
+                status = shell(&proc, cmd);
                 if (status) {
                     COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
                 }
@@ -1188,6 +1264,9 @@ int delivery_artifact_upload(struct Delivery *ctx) {
     char *password = getenv("OMC_JF_PASSWORD");
     char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
     char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
+    char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
+    char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
+    char *repo = getenv("OMC_JF_REPO");
 
     if (!url) {
         fprintf(stderr, "Artifactory URL is not configured:\n");
@@ -1214,11 +1293,25 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         }
         auth_ctx.password = NULL;
         auth_ctx.access_token = NULL;
+    } else if (client_cert_key_path && client_cert_path) {
+        auth_ctx.user = NULL;
+        auth_ctx.password = NULL;
+        auth_ctx.access_token = NULL;
+        auth_ctx.ssh_key_path = NULL;
+        auth_ctx.client_cert_key_path = client_cert_key_path;
+        auth_ctx.client_cert_path = client_cert_path;
     } else {
         fprintf(stderr, "Artifactory authentication is not configured:\n");
         fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
-        fprintf(stderr, "set OMC_JF_ACCESS_TOKEN\nor\n");
-        fprintf(stderr, "set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
+        fprintf(stderr, "or, set OMC_JF_ACCESS_TOKEN\n");
+        fprintf(stderr, "or, set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
+        fprintf(stderr, "or, set OMC_JF_CLIENT_CERT_KEY_PATH and OMC_JF_CLIENT_CERT_PATH\n");
+        return -1;
+    }
+
+    if (!repo) {
+        fprintf(stderr, "Artifactory destination reppsitory is not configured:\n");
+        fprintf(stderr, "set OMC_JF_REPO to a remote repository path\n");
         return -1;
     }
 

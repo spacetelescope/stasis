@@ -28,6 +28,12 @@
 #define DEFER_CONDA 0                       ///< Build conda packages
 #define DEFER_PIP 1                         ///< Build python packages
 
+struct Content {
+    unsigned type;
+    char *filename;
+    char *data;
+};
+
 /*! \struct Delivery
  *  \brief A structure describing a full delivery object
  */
@@ -49,6 +55,7 @@ struct Delivery {
         char *tmpdir;                   ///< Temporary storage area (within root)
         char *delivery_dir;             ///< Delivery artifact output directory
         char *tools_dir;                ///< Tools storage
+        char *mission_dir;              ///< Mission data storage
         char *conda_install_prefix;     ///< Path to install Conda
         char *conda_artifact_dir;       ///< Base path to store compiled conda packages
         char *conda_staging_dir;        ///< Base path to copy compiled conda packages
@@ -123,6 +130,12 @@ struct Delivery {
         char *build_recipe;         ///< Conda recipe to build (optional)
         struct Runtime runtime;     ///< Environment variables specific to the test context
     } tests[1000]; ///< An array of tests
+
+    struct Rule {
+        bool enable_final;          ///< true=allow rc value replacement, false=keep rc value even if final release
+        char *release_fmt;          ///< Release generator format string
+        struct Content content[1000];
+    } rules;
 };
 
 /**
@@ -283,6 +296,29 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir);
  * @param conda_install_dir path to install Conda
  */
 void delivery_install_conda(char *install_script, char *conda_install_dir);
+
+/**
+ * Generate a formatted release string
+ *
+ * Formatters:
+ *   %n = Delivery Name
+ *   %c = Delivery Codename (HST mission, only)
+ *   %m = Mission
+ *   %R = Delivery Revision number (or "final")
+ *   %r = Delivery Revision number
+ *   %v = Delivery Version
+ *   %P = Python version (i.e. 3.9.1)
+ *   %p = Compact Python version (i.e. 3.9.1 -> 39)
+ *   %a = System architecture name
+ *   %o = System platform name
+ *   %t = Delivery timestamp (Unix Epoch)
+ *
+ * @param ctx pointer to Delivery context
+ * @param dest NULL pointer to string, or initialized string
+ * @param fmt release format string
+ * @return 0 on success, -1 on error
+ */
+int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt);
 
 // helper function
 void delivery_gather_tool_versions(struct Delivery *ctx);

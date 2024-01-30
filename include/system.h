@@ -21,9 +21,8 @@ struct Process {
     int returncode;
 };
 
-int shell(struct Process *proc, char *args[]);
-int shell2(struct Process *proc, char *args);
-int shell_safe(struct Process *proc, char *args[]);
+int shell(struct Process *proc, char *args);
+int shell_safe(struct Process *proc, char *args);
 char *shell_output(const char *command, int *status);
 
 #endif //OMC_SYSTEM_H

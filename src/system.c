@@ -5,78 +5,7 @@
 #include "system.h"
 #include "omc.h"
 
-int shell(struct Process *proc, char *args[]) {
-    FILE *fp_out, *fp_err;
-    pid_t pid;
-    pid_t status;
-    status = 0;
-    errno = 0;
-
-    pid = fork();
-    if (pid == -1) {
-        fprintf(stderr, "fork failed\n");
-        exit(1);
-    } else if (pid == 0) {
-        int retval;
-        if (proc != NULL) {
-            if (strlen(proc->stdout)) {
-                fp_out = freopen(proc->stdout, "w+", stdout);
-            }
-
-            if (strlen(proc->stderr)) {
-                fp_err = freopen(proc->stderr, "w+", stderr);
-            }
-
-            if (proc->redirect_stderr) {
-                if (fp_err) {
-                    fclose(fp_err);
-                    fclose(stderr);
-                }
-                dup2(fileno(stdout), fileno(stderr));
-            }
-        }
-
-        retval = execv(args[0], args);
-        fprintf(stderr, "# executing: ");
-        for (size_t x = 0; args[x] != NULL; x++) {
-            fprintf(stderr, "%s ", args[x]);
-        }
-
-        if (proc != NULL && strlen(proc->stdout)) {
-            fflush(fp_out);
-            fclose(fp_out);
-            fflush(stdout);
-            fclose(stdout);
-        }
-        if (proc != NULL && strlen(proc->stderr)) {
-            fflush(fp_err);
-            fclose(fp_err);
-            fflush(stderr);
-            fclose(stderr);
-        }
-        exit(retval);
-    } else {
-        if (waitpid(pid, &status, WUNTRACED) > 0) {
-            if (WIFEXITED(status) && WEXITSTATUS(status)) {
-                if (WEXITSTATUS(status) == 127) {
-                    fprintf(stderr, "execv failed\n");
-                }
-            } else if (WIFSIGNALED(status))  {
-                fprintf(stderr, "signal received: %d\n", WIFSIGNALED(status));
-            }
-        } else {
-            fprintf(stderr, "waitpid() failed\n");
-        }
-    }
-
-
-    if (proc != NULL) {
-        proc->returncode = status;
-    }
-    return WEXITSTATUS(status);
-}
-
-int shell2(struct Process *proc, char *args) {
+int shell(struct Process *proc, char *args) {
     FILE *fp_out = NULL;
     FILE *fp_err = NULL;
     pid_t pid;
@@ -166,16 +95,14 @@ int shell2(struct Process *proc, char *args) {
     return WEXITSTATUS(status);
 }
 
-int shell_safe(struct Process *proc, char *args[]) {
+int shell_safe(struct Process *proc, char *args) {
     FILE *fp;
     char buf[1024] = {0};
     int result;
 
-    for (size_t i = 0; args[i] != NULL; i++) {
-        if (strpbrk(args[i], ";&|()")) {
-            args[i] = NULL;
-            break;
-        }
+    char *invalid_ch = strpbrk(args, ";&|()");
+    if (invalid_ch) {
+        args = NULL;
     }
 
     result = shell(proc, args);

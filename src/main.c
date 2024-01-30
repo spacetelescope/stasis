@@ -18,7 +18,7 @@ const char *BANNER = "----------------------------------------------------------
                      "                          Delivery Generator                         \n"
                      "                                v%s                                  \n"
                      "---------------------------------------------------------------------\n"
-                     "Copyright (C) 2023 %s,\n"
+                     "Copyright (C) 2023-2024 %s,\n"
                      "Association of Universities for Research in Astronomy (AURA)\n";
 
 struct OMC_GLOBAL globals = {
@@ -190,7 +190,7 @@ int main(int argc, char *argv[], char *arge[]) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
         cfg = ini_open(config_input);
         if (!cfg) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s", delivery_input, strerror(errno));
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s\n", delivery_input, strerror(errno));
             exit(1);
         }
     }
@@ -198,7 +198,7 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L2, "Reading OMC delivery configuration: %s\n", delivery_input);
     ini = ini_open(delivery_input);
     if (!ini) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read delivery file: %s, %s", delivery_input, strerror(errno));
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read delivery file: %s, %s\n", delivery_input, strerror(errno));
         exit(1);
     }
 
@@ -224,6 +224,58 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
+    // Expose variables for use with the template engine
+    tpl_register("meta.name", ctx.meta.name);
+    tpl_register("meta.version", ctx.meta.version);
+    tpl_register("meta.codename", ctx.meta.codename);
+    tpl_register("meta.mission", ctx.meta.mission);
+    tpl_register("meta.python", ctx.meta.python);
+    tpl_register("meta.python_compact", ctx.meta.python_compact);
+    tpl_register("info.release_name", ctx.info.release_name);
+    tpl_register("conda.installer_baseurl", ctx.conda.installer_baseurl);
+    tpl_register("conda.installer_name", ctx.conda.installer_name);
+    tpl_register("conda.installer_version", ctx.conda.installer_version);
+    tpl_register("conda.installer_arch", ctx.conda.installer_arch);
+    tpl_register("conda.installer_platform", ctx.conda.installer_platform);
+    tpl_register("system.arch", ctx.system.arch);
+    tpl_register("system.platform", ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
+
+    char missionfile[PATH_MAX] = {0};
+    if (getenv("OMC_SYSCONFDIR")) {
+        globals.sysconfdir = calloc(PATH_MAX, sizeof(*globals.sysconfdir));
+    } else {
+        globals.sysconfdir = strdup(OMC_SYSCONFDIR);
+    }
+    if (!globals.sysconfdir) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to allocate memory for system configuration directory path\n");
+        exit(1);
+    }
+    if (getenv("OMC_SYSCONFDIR")) {
+        sprintf(missionfile, "%s/%s/%s/%s.ini", getenv("OMC_SYSCONFDIR"), "mission", ctx.meta.mission, ctx.meta.mission);
+    } else {
+        sprintf(missionfile, "%s/%s/%s/%s.ini", OMC_SYSCONFDIR, "mission", ctx.meta.mission, ctx.meta.mission);
+    }
+
+    struct INIFILE *cfg_mission;
+    cfg_mission = ini_open(missionfile);
+    if (!cfg_mission) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
+        exit(1);
+    }
+
+    /*
+    union INIVal x;
+    ini_getval(cfg_mission, "template:readme.md.in", "destination", INIVAL_TYPE_STR, &x);
+    char *output = tpl_render(x.as_char_p);
+    if (!output) {
+        fprintf(stderr, "Render failed!\n");
+        exit(1);
+    }
+    puts(output);
+    tpl_free();
+
+    exit(0);
+     */
     runtime_apply(ctx.runtime.environ);
     snprintf(env_name, sizeof(env_name_testing) - 1, "%s", ctx.info.release_name);
     snprintf(env_name_testing, sizeof(env_name) - 1, "%s_test", env_name);
@@ -406,10 +458,13 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L1, "Cleaning up\n");
     ini_free(&ini);
     if (cfg) {
+        // optional extras
         ini_free(&cfg);
     }
+    ini_free(&cfg_mission);
     delivery_free(&ctx);
     globals_free();
+    tpl_free();
 
     msg(OMC_MSG_L1, "Done!\n");
     return 0;
