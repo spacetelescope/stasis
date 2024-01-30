@@ -39,7 +39,12 @@ int ini_data_init(struct INIFILE **ini, char *section_name) {
 
 struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key) {
     struct INISection *section = NULL;
+
     section = ini_section_search(&ini, section_name);
+    if (!section) {
+        return NULL;
+    }
+
     for (size_t i = 0; i < section->data_count; i++) {
         if (section->data[i]->key != NULL) {
             if (!strcmp(section->data[i]->key, key)) {
@@ -47,6 +52,7 @@ struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key)
             }
         }
     }
+
     return NULL;
 }
 
@@ -167,7 +173,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
     return 0;
 }
 
-int ini_section_record(struct INIFILE **ini, char *key) {
+int ini_section_create(struct INIFILE **ini, char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof((*ini)->section));
     if (!tmp) {
         return 1;
@@ -196,14 +202,8 @@ void ini_show(struct INIFILE *ini) {
 }
 
 char *unquote(char *s) {
-    int found = 0;
-    if (startswith(s, "'") && endswith(s, "'")) {
-        found = 1;
-    } else if (startswith(s, "\"") && endswith(s, "\"")) {
-        found = 1;
-    }
-
-    if (found) {
+    if ((startswith(s, "'") && endswith(s, "'"))
+        || (startswith(s, "\"") && endswith(s, "\""))) {
         memmove(s, s + 1, strlen(s));
         s[strlen(s) - 1] = '\0';
     }
@@ -253,7 +253,7 @@ struct INIFILE *ini_open(const char *filename) {
     ini_section_init(&ini);
 
     // Create an implicit section. [default] does not need to be present in the INI config
-    ini_section_record(&ini, "default");
+    ini_section_create(&ini, "default");
     strcpy(current_section, "default");
 
     // Open the configuration file for reading
@@ -264,16 +264,16 @@ struct INIFILE *ini_open(const char *filename) {
         return NULL;
     }
 
-    int long_data = 0;
+    int multiline_data = 0;
     int no_data = 0;
 
     // Read file
     for (size_t i = 0; fgets(line, sizeof(line), fp) != NULL; i++) {
-        if (no_data && long_data) {
+        if (no_data && multiline_data) {
             if (!isempty(line)) {
                 no_data = 0;
             } else {
-                long_data = 0;
+                multiline_data = 0;
             }
         }
         // Find pointer to first comment character
@@ -294,25 +294,25 @@ struct INIFILE *ini_open(const char *filename) {
         // Test for section header: [string]
         if (startswith(line, "[")) {
             key_last = NULL;
-            char *name = substring_between(line, "[]");
-            if (!name) {
+            char *section_name = substring_between(line, "[]");
+            if (!section_name) {
                 fprintf(stderr, "error: invalid section syntax, line %zu: '%s'\n", i + 1, line);
                 return NULL;
             }
 
             // Ignore default section because we already have an implicit one
-            if (!strncmp(name, "default", strlen("default"))) {
-                guard_free(name)
+            if (!strncmp(section_name, "default", strlen("default"))) {
+                guard_free(section_name)
                 continue;
             }
 
             // Create new named section
-            strip(name);
-            ini_section_record(&ini, name);
+            strip(section_name);
+            ini_section_create(&ini, section_name);
 
             // Record the name of the section. This is used until another section is found.
-            strcpy(current_section, name);
-            guard_free(name)
+            strcpy(current_section, section_name);
+            guard_free(section_name)
             continue;
         }
 
@@ -328,7 +328,7 @@ struct INIFILE *ini_open(const char *filename) {
         }
 
         // a value continuation line
-        if (long_data && (startswith(line, " ") || startswith(line, "\t"))) {
+        if (multiline_data && (startswith(line, " ") || startswith(line, "\t"))) {
             operator = NULL;
         }
 
@@ -340,11 +340,11 @@ struct INIFILE *ini_open(const char *filename) {
             strcpy(value, &operator[1]);
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
-                long_data = 1;
+                multiline_data = 1;
                 no_data = 1;
             } else {
                 //printf("%s is probably short data\n", key);
-                long_data = 0;
+                multiline_data = 0;
             }
             strip(value);
         } else {
@@ -358,7 +358,7 @@ struct INIFILE *ini_open(const char *filename) {
             strip(key);
             unquote(value);
             lstrip(value);
-            if (!long_data) {
+            if (!multiline_data) {
                 strip(value);
                 reading_value = 0;
                 ini_data_append(&ini, current_section, key, value);
