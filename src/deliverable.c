@@ -137,6 +137,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_recipes_dir)
     guard_free(ctx->storage.build_sources_dir)
     guard_free(ctx->storage.build_testing_dir)
+    guard_free(ctx->storage.mission_dir);
     guard_free(ctx->conda.installer_baseurl)
     guard_free(ctx->conda.installer_name)
     guard_free(ctx->conda.installer_version)
@@ -188,6 +189,21 @@ void delivery_init_dirs(struct Delivery *ctx) {
     ctx->storage.delivery_dir = realpath("omc/output/delivery", NULL);
     ctx->storage.conda_artifact_dir = realpath("omc/output/packages/conda", NULL);
     ctx->storage.wheel_artifact_dir = realpath("omc/output/packages/wheels", NULL);
+
+    // Configure mission directory
+    if (!ctx->storage.mission_dir) {
+        ctx->storage.mission_dir = join(
+                (char *[]) {
+                        globals.sysconfdir,
+                        "mission",
+                        NULL
+                },
+                DIR_SEP);
+    }
+    if (access(ctx->storage.mission_dir, F_OK)) {
+        msg(OMC_MSG_L1, "%s: %s\n", ctx->storage.mission_dir, strerror(errno));
+        exit(1);
+    }
 
     // Override installation prefix using global configuration key
     if (globals.conda_install_prefix && strlen(globals.conda_install_prefix)) {
@@ -501,7 +517,17 @@ int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
     return 0;
 }
 
+void delivery_debug_show(struct Delivery *ctx) {
+    printf("\n====DEBUG====\n");
+    printf("%-20s %-10s\n", "[DEBUG] system configuration directory:", globals.sysconfdir);
+    printf("%-20s %-10s\n", "[DEBUG] mission directory:", ctx->storage.mission_dir);
+}
+
 void delivery_meta_show(struct Delivery *ctx) {
+    if (globals.verbose) {
+        delivery_debug_show(ctx);
+    }
+
     printf("\n====DELIVERY====\n");
     printf("%-20s %-10s\n", "Target Python:", ctx->meta.python);
     printf("%-20s %-10s\n", "Name:", ctx->meta.name);

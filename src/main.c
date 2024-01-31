@@ -186,6 +186,24 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L1, "Initializing\n");
 
+    // Set up PREFIX/etc directory information
+    // The user may manipulate the base directory path with OMC_SYSCONFDIR
+    // environment variable
+    char omc_sysconfdir_tmp[PATH_MAX];
+    if (getenv("OMC_SYSCONFDIR")) {
+        strncpy(omc_sysconfdir_tmp, getenv("OMC_SYSCONFDIR"), sizeof(omc_sysconfdir_tmp));
+    } else {
+        strncpy(omc_sysconfdir_tmp, OMC_SYSCONFDIR, sizeof(omc_sysconfdir_tmp) - 1);
+    }
+
+    globals.sysconfdir = realpath(omc_sysconfdir_tmp, NULL);
+    if (!globals.sysconfdir) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to resolve path to configuration directory: %s\n", omc_sysconfdir_tmp);
+        exit(1);
+    } else {
+        memset(omc_sysconfdir_tmp, 0, sizeof(omc_sysconfdir_tmp));
+    }
+
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
         cfg = ini_open(config_input);
@@ -241,19 +259,13 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("system.platform", ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
 
     char missionfile[PATH_MAX] = {0};
+
     if (getenv("OMC_SYSCONFDIR")) {
-        globals.sysconfdir = calloc(PATH_MAX, sizeof(*globals.sysconfdir));
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                getenv("OMC_SYSCONFDIR"), "mission", ctx.meta.mission, ctx.meta.mission);
     } else {
-        globals.sysconfdir = strdup(OMC_SYSCONFDIR);
-    }
-    if (!globals.sysconfdir) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to allocate memory for system configuration directory path\n");
-        exit(1);
-    }
-    if (getenv("OMC_SYSCONFDIR")) {
-        sprintf(missionfile, "%s/%s/%s/%s.ini", getenv("OMC_SYSCONFDIR"), "mission", ctx.meta.mission, ctx.meta.mission);
-    } else {
-        sprintf(missionfile, "%s/%s/%s/%s.ini", OMC_SYSCONFDIR, "mission", ctx.meta.mission, ctx.meta.mission);
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                globals.sysconfdir, "mission", ctx.meta.mission, ctx.meta.mission);
     }
 
     struct INIFILE *cfg_mission;
