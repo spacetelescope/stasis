@@ -35,7 +35,7 @@ struct JFRT_Upload {
     bool include_dirs;
     char *module;
     bool recursive;
-    char *regexp;
+    bool regexp;
     int retries;
     int retry_wait_time;
     char *spec;
