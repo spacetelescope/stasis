@@ -923,7 +923,7 @@ int delivery_get_installer(char *installer_url) {
     char *script = path_basename(installer_url);
     if (access(script, F_OK)) {
         // Script doesn't exist
-        if (download(installer_url, script)) {
+        if (HTTP_ERROR(download(installer_url, script, NULL))) {
             // download failed
             return -1;
         }
