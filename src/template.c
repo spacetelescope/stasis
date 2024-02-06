@@ -12,12 +12,12 @@
 
 struct tpl_item {
     char *key;
-    char *ptr;
+    char **ptr;
 };
 struct tpl_item *tpl_pool[1024] = {0};
 unsigned tpl_pool_used = 0;
 
-void tpl_register(char *key, char *ptr) {
+void tpl_register(char *key, char **ptr) {
     struct tpl_item *item = NULL;
     item = calloc(1, sizeof(*item));
     if (!item) {
@@ -47,7 +47,7 @@ char *tpl_getval(char *key) {
     for (size_t i = 0; i < tpl_pool_used; i++) {
         if (tpl_pool[i]->key) {
             if (!strcmp(tpl_pool[i]->key, key)) {
-                result = tpl_pool[i]->ptr;
+                result = *tpl_pool[i]->ptr;
                 break;
             }
         }
@@ -78,8 +78,9 @@ char *tpl_render(char *str) {
         return NULL;
     }
     size_t output_bytes = strlen(str);
-    char *output;
-    char *b_close, *pos;
+    char *output = NULL;
+    char *b_close = NULL;
+    char *pos = NULL;
     pos = str;
 
     output = calloc(output_bytes + 1, sizeof(*output));

@@ -188,6 +188,24 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L1, "Initializing\n");
 
+    // Expose variables for use with the template engine
+    // NOTE: These pointers are populated by delivery_init() so please avoid using
+    // tpl_render() until then.
+    tpl_register("meta.name", &ctx.meta.name);
+    tpl_register("meta.version", &ctx.meta.version);
+    tpl_register("meta.codename", &ctx.meta.codename);
+    tpl_register("meta.mission", &ctx.meta.mission);
+    tpl_register("meta.python", &ctx.meta.python);
+    tpl_register("meta.python_compact", &ctx.meta.python_compact);
+    tpl_register("info.release_name", &ctx.info.release_name);
+    tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
+    tpl_register("conda.installer_name", &ctx.conda.installer_name);
+    tpl_register("conda.installer_version", &ctx.conda.installer_version);
+    tpl_register("conda.installer_arch", &ctx.conda.installer_arch);
+    tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
+    tpl_register("system.arch", &ctx.system.arch);
+    tpl_register("system.platform", &ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
+
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with OMC_SYSCONFDIR
     // environment variable
