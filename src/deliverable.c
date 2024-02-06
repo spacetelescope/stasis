@@ -496,6 +496,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     char env_date[NAME_MAX];
     ctx->meta.python_compact = to_short_version(ctx->meta.python);
 
+    /*
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
         memset(env_date, 0, sizeof(env_date));
         strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", ctx->info.time_info);
