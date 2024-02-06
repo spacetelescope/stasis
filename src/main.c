@@ -470,7 +470,21 @@ int main(int argc, char *argv[], char *arge[]) {
     }
 
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
-    delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
+    if (strlist_count(ctx.conda.pip_packages_defer)) {
+        // TODO: wheels would be nice, but can't right now
+        if (!delivery_build_wheels(&ctx)) {
+            exit(1);
+        }
+        if (delivery_copy_wheel_artifacts(&ctx)) {
+            exit(1);
+        }
+        if (delivery_index_wheel_artifacts(&ctx)) {
+            exit(1);
+        }
+
+        delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
+    }
+
 
     conda_exec("list");
 
