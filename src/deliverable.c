@@ -1268,7 +1268,13 @@ void delivery_tests_run(struct Delivery *ctx) {
             char destdir[PATH_MAX];
             sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(ctx->tests[i].repository));
 
-            msg(OMC_MSG_L3, "Cloning %s\n", ctx->tests[i].repository);
+            if (!access(destdir, F_OK)) {
+                msg(OMC_MSG_L3, "Purging repository %s\n", destdir);
+                if (rmtree(destdir)) {
+                    COE_CHECK_ABORT(!globals.continue_on_error, "Unable to remove repository\n")
+                }
+            }
+            msg(OMC_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
             git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version);
 
             if (pushd(destdir)) {
