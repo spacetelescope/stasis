@@ -18,10 +18,17 @@ extern struct OMC_GLOBAL globals;
     }
 
 #define conv_int(X, DEST) X->DEST = val.as_int;
-#define conv_str(X, DEST) X->DEST = runtime_expand_var(NULL, val.as_char_p);
+#define conv_str(X, DEST) { \
+    char *tplop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
+    if (tplop) { \
+        X->DEST = tplop; \
+    } else { \
+        X->DEST = val.as_char_p; \
+    } \
+}
 #define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
 #define conv_strlist(X, DEST, TOK) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *rtevnop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
     if (!X->DEST) \
         X->DEST = strlist_init(); \
     if (rtevnop) {                   \
@@ -34,9 +41,9 @@ extern struct OMC_GLOBAL globals;
 }
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
 
-#define conv_str_stackvar(X, DEST) X.DEST = runtime_expand_var(NULL, val.as_char_p);
+#define conv_str_stackvar(X, DEST) X.DEST = tpl_render(runtime_expand_var(NULL, val.as_char_p));
 #define conv_strlist_stackvar(X, DEST, TOK) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *rtevnop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
     if (!X.DEST) \
         X.DEST = strlist_init(); \
     if (rtevnop) {                   \
