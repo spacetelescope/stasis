@@ -9,7 +9,7 @@
 #include <errno.h>
 #include "system.h"
 
-#if defined(__WIN32__)
+#if defined(OMC_OS_WINDOWS)
 #define PATH_ENV_VAR "path"
 #define DIR_SEP "\\"
 #define PATH_SEP ";"

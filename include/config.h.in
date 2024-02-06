@@ -3,4 +3,22 @@
 
 #define OMC_SYSCONFDIR "@SYSCONFDIR@/omc"
 
+#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
+#define OMC_OS_WINDOWS
+
+#elif defined(__linux__)
+#define OMC_OS_LINUX
+
+#elif defined(unix) || defined(__unix__) || defined(__unix)
+#define OMC_OS_UNIX
+
+#elif defined(__APPLE_) && defined(__MACH__)
+#define OMC_OS_DARWIN
+
+#else
+#define OMC_OS_UNKNOWN
+#error Operating system unknown/unsupported
+
+#endif // OS detection
+
 #endif // OMC_CONFIG_H
