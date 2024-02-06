@@ -15,9 +15,13 @@
 #include <sys/stat.h>
 
 struct Process {
-    char stdout[PATH_MAX];
-    char stderr[PATH_MAX];
+    // Write stdout stream to file
+    char f_stdout[PATH_MAX];
+    // Write stderr stream to file
+    char f_stderr[PATH_MAX];
+    // Combine stderr and stdout (into stdout stream)
     int redirect_stderr;
+    // Exit code from program
     int returncode;
 };
 

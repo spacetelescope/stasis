@@ -82,7 +82,7 @@ int conda_activate(const char *root, const char *env_name) {
     close(fd);
 
     // Configure our process for output to a log file
-    strcpy(proc.stdout, logfile);
+    strcpy(proc.f_stdout, logfile);
 
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
@@ -111,7 +111,7 @@ int conda_activate(const char *root, const char *env_name) {
     // 1. Extract the environment keys and values from the sub-shell
     // 2. Apply it to OMC's runtime environment
     // 3. Now we're ready to execute conda commands anywhere
-    fp = fopen(proc.stdout, "r");
+    fp = fopen(proc.f_stdout, "r");
     if (!fp) {
         perror(logfile);
         return -1;

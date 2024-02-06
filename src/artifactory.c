@@ -198,8 +198,8 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     msg(OMC_MSG_L2, "Executing: %s\n", cmd_redacted);
 
     if (!globals.verbose) {
-        strcpy(proc.stdout, "/dev/null");
-        strcpy(proc.stderr, "/dev/null");
+        strcpy(proc.f_stdout, "/dev/null");
+        strcpy(proc.f_stderr, "/dev/null");
     }
     status = shell(&proc, cmd);
     return status;

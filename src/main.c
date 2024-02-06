@@ -118,8 +118,8 @@ int main(int argc, char *argv[], char *arge[]) {
     struct INIFILE *ini = NULL;
     struct Delivery ctx;
     struct Process proc = {
-            .stdout = "",
-            .stderr = "",
+            .f_stdout = "",
+            .f_stderr = "",
             .redirect_stderr = 0,
     };
     char env_name[OMC_NAME_MAX] = {0};

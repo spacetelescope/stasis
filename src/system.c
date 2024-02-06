@@ -32,12 +32,12 @@ int shell(struct Process *proc, char *args) {
     } else if (pid == 0) {
         int retval;
         if (proc != NULL) {
-            if (strlen(proc->stdout)) {
-                fp_out = freopen(proc->stdout, "w+", stdout);
+            if (strlen(proc->f_stdout)) {
+                fp_out = freopen(proc->f_stdout, "w+", stdout);
             }
 
-            if (strlen(proc->stderr)) {
-                fp_err = freopen(proc->stderr, "w+", stderr);
+            if (strlen(proc->f_stderr)) {
+                fp_err = freopen(proc->f_stderr, "w+", stderr);
             }
 
             if (proc->redirect_stderr) {
