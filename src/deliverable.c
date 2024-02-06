@@ -1410,14 +1410,6 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
 int delivery_artifact_upload(struct Delivery *ctx) {
     jfrt_upload_set_defaults(&ctx->deploy.upload_ctx);
 
-    char *url = getenv("OMC_JF_ARTIFACTORY_URL");
-    char *user = getenv("OMC_JF_USER");
-    char *access_token = getenv("OMC_JF_ACCESS_TOKEN");
-    char *password = getenv("OMC_JF_PASSWORD");
-    char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
-    char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
-    char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
-    char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
     char *repo = getenv("OMC_JF_REPO");
     if (repo) {
         if (!ctx->deploy.repo) {
