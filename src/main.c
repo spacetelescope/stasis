@@ -184,6 +184,8 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
+    printf(BANNER, VERSION, AUTHOR);
+
     msg(OMC_MSG_L1, "Initializing\n");
 
     // Set up PREFIX/etc directory information
