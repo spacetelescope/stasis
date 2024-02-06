@@ -177,8 +177,8 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
             "--access-token=",
             "--ssh-key-path=",
             "--ssh-passphrase=",
-            "--client-cert-key-path",
-            "--client-cert-path",
+            "--client-cert-key-path=",
+            "--client-cert-path=",
             "--password=",
             NULL,
     };
