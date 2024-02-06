@@ -426,8 +426,10 @@ int main(int argc, char *argv[], char *arge[]) {
     // Populate the release environment
     msg(OMC_MSG_L1, "Populating release environment\n");
     msg(OMC_MSG_L2, "Installing conda packages\n");
-    if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL})) {
-        exit(1);
+    if (strlist_count(ctx.conda.conda_packages)) {
+        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL})) {
+            exit(1);
+        }
     }
     if (strlist_count(ctx.conda.conda_packages_defer)) {
         msg(OMC_MSG_L3, "Installing deferred conda packages\n");
@@ -439,7 +441,10 @@ int main(int argc, char *argv[], char *arge[]) {
     }
 
     msg(OMC_MSG_L2, "Installing pip packages\n");
-    delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL});
+    if (strlist_count(ctx.conda.pip_packages)) {
+        delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL});
+    }
+
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
     delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
 
