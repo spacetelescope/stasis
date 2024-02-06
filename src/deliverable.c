@@ -105,7 +105,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     }
 
     globals.tmpdir = strdup(tmpdir);
-    ctx->storage.tmpdir = globals.tmpdir;
+    ctx->storage.tmpdir = strdup(globals.tmpdir);
     return unusable;
 
     l_delivery_init_tmpdir_fatal:
