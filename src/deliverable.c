@@ -451,6 +451,47 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         }
     }
 
+    // Artifactory base configuration
+    getter(ini, "deploy:artifactory", "workaround_parent_only", INIVAL_TYPE_BOOL)
+    //conv_bool(ctx, deploy.upload_ctx->workaround_parent_only)
+    ctx->deploy.upload_ctx.workaround_parent_only = val.as_bool;
+
+    getter(ini, "deploy:artifactory", "exclusions", INIVAL_TYPE_STR)
+    conv_str(ctx, deploy.upload_ctx.exclusions)
+
+    getter(ini, "deploy:artifactory", "explode", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.explode)
+
+    getter(ini, "deploy:artifactory", "recursive", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.recursive)
+
+    getter(ini, "deploy:artifactory", "retries", INIVAL_TYPE_INT)
+    conv_int(ctx, deploy.upload_ctx.retries)
+
+    getter(ini, "deploy:artifactory", "retry_wait_time", INIVAL_TYPE_INT)
+    conv_int(ctx, deploy.upload_ctx.retry_wait_time)
+
+    getter(ini, "deploy:artifactory", "detailed_summary", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.detailed_summary)
+
+    getter(ini, "deploy:artifactory", "quiet", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.quiet)
+
+    getter(ini, "deploy:artifactory", "regexp", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.regexp)
+
+    getter(ini, "deploy:artifactory", "spec", INIVAL_TYPE_STR)
+    conv_str(ctx, deploy.upload_ctx.spec)
+
+    getter(ini, "deploy:artifactory", "flat", INIVAL_TYPE_BOOL)
+    conv_str(ctx, deploy.upload_ctx.flat)
+
+    getter(ini, "deploy:artifactory", "repo", INIVAL_TYPE_STR)
+    conv_str(ctx, deploy.repo)
+
+    getter(ini, "deploy:artifactory", "files", INIVAL_TO_LIST)
+    conv_strlist(ctx, deploy.files, "\n")
+
     char env_name[NAME_MAX];
     char env_date[NAME_MAX];
     ctx->meta.python_compact = to_short_version(ctx->meta.python);
@@ -1275,16 +1316,22 @@ int delivery_init_artifactory(struct Delivery *ctx) {
 
     if (!access(filepath, F_OK)) {
         // already have it
+        msg(OMC_MSG_L3, "Skipped download, %s already exists\n", filepath);
         goto delivery_init_artifactory_envsetup;
     }
-    int status = artifactory_download_cli(dest,
+    int status = 0;
+
+    msg(OMC_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, ctx->system.platform, ctx->system.arch);
+    if ((status = artifactory_download_cli(dest,
             globals.jfrog.jfrog_artifactory_base_url,
             globals.jfrog.jfrog_artifactory_product,
             globals.jfrog.cli_major_ver,
             globals.jfrog.version,
             ctx->system.platform[DELIVERY_PLATFORM],
             ctx->system.arch,
-            globals.jfrog.remote_filename);
+            globals.jfrog.remote_filename))) {
+        remove(filepath);
+    }
 
     delivery_init_artifactory_envsetup:
     // CI (ridiculously generic, why?) disables interactive prompts and progress bar output
@@ -1300,12 +1347,61 @@ int delivery_init_artifactory(struct Delivery *ctx) {
     return status;
 }
 
+int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
+    char *url = getenv("OMC_JF_ARTIFACTORY_URL");
+    char *user = getenv("OMC_JF_USER");
+    char *access_token = getenv("OMC_JF_ACCESS_TOKEN");
+    char *password = getenv("OMC_JF_PASSWORD");
+    char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
+    char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
+    char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
+    char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
+
+    if (!url) {
+        fprintf(stderr, "Artifactory URL is not configured:\n");
+        fprintf(stderr, "please set OMC_JF_ARTIFACTORY_URL\n");
+        return -1;
+    }
+    auth_ctx->url = url;
+
+    if (access_token) {
+        auth_ctx->user = NULL;
+        auth_ctx->access_token = access_token;
+        auth_ctx->password = NULL;
+        auth_ctx->ssh_key_path = NULL;
+    } else if (user && password) {
+        auth_ctx->user = user;
+        auth_ctx->password = password;
+        auth_ctx->access_token = NULL;
+        auth_ctx->ssh_key_path = NULL;
+    } else if (ssh_key_path) {
+        auth_ctx->user = NULL;
+        auth_ctx->ssh_key_path = ssh_key_path;
+        if (ssh_passphrase) {
+            auth_ctx->ssh_passphrase = ssh_passphrase;
+        }
+        auth_ctx->password = NULL;
+        auth_ctx->access_token = NULL;
+    } else if (client_cert_key_path && client_cert_path) {
+        auth_ctx->user = NULL;
+        auth_ctx->password = NULL;
+        auth_ctx->access_token = NULL;
+        auth_ctx->ssh_key_path = NULL;
+        auth_ctx->client_cert_key_path = client_cert_key_path;
+        auth_ctx->client_cert_path = client_cert_path;
+    } else {
+        fprintf(stderr, "Artifactory authentication is not configured:\n");
+        fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
+        fprintf(stderr, "or, set OMC_JF_ACCESS_TOKEN\n");
+        fprintf(stderr, "or, set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
+        fprintf(stderr, "or, set OMC_JF_CLIENT_CERT_KEY_PATH and OMC_JF_CLIENT_CERT_PATH\n");
+        return -1;
+    }
+    return 0;
+}
 
 int delivery_artifact_upload(struct Delivery *ctx) {
-    struct JFRT_Auth auth_ctx;
-    memset(&auth_ctx, 0, sizeof(auth_ctx));
-    struct JFRT_Upload upload_ctx;
-    jfrt_upload_set_defaults(&upload_ctx);
+    jfrt_upload_set_defaults(&ctx->deploy.upload_ctx);
 
     char *url = getenv("OMC_JF_ARTIFACTORY_URL");
     char *user = getenv("OMC_JF_USER");
@@ -1316,76 +1412,42 @@ int delivery_artifact_upload(struct Delivery *ctx) {
     char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
     char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
     char *repo = getenv("OMC_JF_REPO");
-
-    if (!url) {
-        fprintf(stderr, "Artifactory URL is not configured:\n");
-        fprintf(stderr, "please set OMC_JF_ARTIFACTORY_URL\n");
-        return -1;
-    }
-    auth_ctx.url = url;
-
-    if (access_token) {
-        auth_ctx.user = NULL;
-        auth_ctx.access_token = access_token;
-        auth_ctx.password = NULL;
-        auth_ctx.ssh_key_path = NULL;
-    } else if (user && password) {
-        auth_ctx.user = user;
-        auth_ctx.password = password;
-        auth_ctx.access_token = NULL;
-        auth_ctx.ssh_key_path = NULL;
-    } else if (ssh_key_path) {
-        auth_ctx.user = NULL;
-        auth_ctx.ssh_key_path = ssh_key_path;
-        if (ssh_passphrase) {
-            auth_ctx.ssh_passphrase = ssh_passphrase;
+    if (repo) {
+        if (!ctx->deploy.repo) {
+            ctx->deploy.repo = strdup(repo);
         }
-        auth_ctx.password = NULL;
-        auth_ctx.access_token = NULL;
-    } else if (client_cert_key_path && client_cert_path) {
-        auth_ctx.user = NULL;
-        auth_ctx.password = NULL;
-        auth_ctx.access_token = NULL;
-        auth_ctx.ssh_key_path = NULL;
-        auth_ctx.client_cert_key_path = client_cert_key_path;
-        auth_ctx.client_cert_path = client_cert_path;
     } else {
-        fprintf(stderr, "Artifactory authentication is not configured:\n");
-        fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
-        fprintf(stderr, "or, set OMC_JF_ACCESS_TOKEN\n");
-        fprintf(stderr, "or, set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
-        fprintf(stderr, "or, set OMC_JF_CLIENT_CERT_KEY_PATH and OMC_JF_CLIENT_CERT_PATH\n");
-        return -1;
-    }
-
-    if (!repo) {
-        fprintf(stderr, "Artifactory destination reppsitory is not configured:\n");
+        fprintf(stderr, "Artifactory destination repository is not configured:\n");
         fprintf(stderr, "set OMC_JF_REPO to a remote repository path\n");
         return -1;
     }
 
-    upload_ctx.workaround_parent_only = true;
-    upload_ctx.build_name = strdup(ctx->info.release_name);
-    upload_ctx.build_number = ctx->info.time_now;
+    if (jfrt_auth_init(&ctx->deploy.auth_ctx)) {
+        return -1;
+    }
+
+    ctx->deploy.upload_ctx.workaround_parent_only = true;
+    ctx->deploy.upload_ctx.build_name = strdup(ctx->info.release_name);
+    ctx->deploy.upload_ctx.build_number = ctx->info.time_now;
 
     char files[PATH_MAX];
     int status = 0;
 
-    if (jfrog_cli_rt_ping(&auth_ctx)) {
-        fprintf(stderr, "Unable to contact artifactory server: %s\n", url);
+    if (jfrog_cli_rt_ping(&ctx->deploy.auth_ctx)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.auth_ctx.url);
         return -1;
     }
 
-    jfrog_cli_rt_build_collect_env(&auth_ctx, upload_ctx.build_name, upload_ctx.build_number);
+    jfrog_cli_rt_build_collect_env(&ctx->deploy.auth_ctx, ctx->deploy.upload_ctx.build_name, ctx->deploy.upload_ctx.build_number);
 
     strcpy(files, "omc/sources/**/results.xml");
-    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/delivery/results");
+    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/delivery/results");
     strcpy(files, "omc/output/delivery/*.yml");
-    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/delivery/");
+    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/delivery/");
     strcpy(files, "omc/output/packages/*");
-    status += jfrog_cli_rt_upload(&auth_ctx, &upload_ctx, files, "omc/packages/");
+    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/packages/");
 
-    jfrog_cli_rt_build_publish(&auth_ctx, upload_ctx.build_name, upload_ctx.build_number);
+    jfrog_cli_rt_build_publish(&ctx->deploy.auth_ctx, ctx->deploy.upload_ctx.build_name, ctx->deploy.upload_ctx.build_number);
 
     return status;
 }

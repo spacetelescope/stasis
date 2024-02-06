@@ -127,7 +127,15 @@ struct Delivery {
         struct Runtime runtime;     ///< Environment variables specific to the test context
     } tests[1000]; ///< An array of tests
 
+    struct Deploy {
+        struct StrList *files;
+        struct JFRT_Auth auth_ctx;
+        struct JFRT_Upload upload_ctx;
+        char *repo;
+    } deploy;
+
     struct Rule {
+        struct INIFILE *_handle;
         bool enable_final;          ///< true=allow rc value replacement, false=keep rc value even if final release
         char *release_fmt;          ///< Release generator format string
         struct Content content[1000];
