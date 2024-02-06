@@ -54,7 +54,7 @@ int shell(struct Process *proc, char *args) {
             remove(t_name);
         }
 
-        if (proc != NULL && strlen(proc->stdout)) {
+        if (proc != NULL && strlen(proc->f_stdout)) {
             if (fp_out != NULL) {
                 fflush(fp_out);
                 fclose(fp_out);
@@ -62,7 +62,7 @@ int shell(struct Process *proc, char *args) {
             fflush(stdout);
             fclose(stdout);
         }
-        if (proc != NULL && strlen(proc->stderr)) {
+        if (proc != NULL && strlen(proc->f_stderr)) {
             if (fp_err) {
                 fflush(fp_err);
                 fclose(fp_err);
@@ -106,8 +106,8 @@ int shell_safe(struct Process *proc, char *args) {
     }
 
     result = shell(proc, args);
-    if (strlen(proc->stdout)) {
-        fp = fopen(proc->stdout, "r");
+    if (strlen(proc->f_stdout)) {
+        fp = fopen(proc->f_stdout, "r");
         if (fp) {
             while (fgets(buf, sizeof(buf) - 1, fp)) {
                 fprintf(stdout, "%s", buf);
@@ -117,8 +117,8 @@ int shell_safe(struct Process *proc, char *args) {
             fp = NULL;
         }
     }
-    if (strlen(proc->stderr)) {
-        fp = fopen(proc->stderr, "r");
+    if (strlen(proc->f_stderr)) {
+        fp = fopen(proc->f_stderr, "r");
         if (fp) {
             while (fgets(buf, sizeof(buf) - 1, fp)) {
                 fprintf(stderr, "%s", buf);
