@@ -101,7 +101,7 @@ static void usage(char *progname) {
             strcat(opt_short, "  ");
         }
 
-        sprintf(tmp, "\t%%-%ds\t%%s\t\t%%s", width + 4);
+        sprintf(tmp, "  %%-%ds\t%%s\t\t%%s", width + 4);
         sprintf(output, tmp, opt_long, opt_short, long_options_help[x]);
         puts(output);
     }
