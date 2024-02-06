@@ -2,6 +2,7 @@
 // Created by jhunk on 10/5/23.
 //
 
+#include <string.h>
 #include "download.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
@@ -9,9 +10,11 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
     return bytes;
 }
 
-int download(char *url, const char *filename) {
+long download(char *url, const char *filename, char **errmsg) {
     extern char *VERSION;
     CURL *c;
+    CURLcode curl_code;
+    long http_code;
     FILE *fp;
     char user_agent[20];
     sprintf(user_agent, "omc/%s", VERSION);
@@ -29,10 +32,18 @@ int download(char *url, const char *filename) {
     curl_easy_setopt(c, CURLOPT_USERAGENT, user_agent);
     curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(c, CURLOPT_WRITEDATA, fp);
-    curl_easy_perform(c);
+    curl_code = curl_easy_perform(c);
+    if (curl_code != CURLE_OK) {
+        if (errmsg) {
+            strcpy(*errmsg, curl_easy_strerror(curl_code));
+        } else {
+            fprintf(stderr, "CURL ERROR: %s\n", curl_easy_strerror(curl_code));
+        }
+    }
+    curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
     fclose(fp);
 
     curl_easy_cleanup(c);
     curl_global_cleanup();
-    return 0;
+    return http_code;
 }
