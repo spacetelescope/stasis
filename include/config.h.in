@@ -12,7 +12,7 @@
 #elif defined(unix) || defined(__unix__) || defined(__unix)
 #define OMC_OS_UNIX
 
-#elif defined(__APPLE_) && defined(__MACH__)
+#elif defined(__APPLE__) && defined(__MACH__)
 #define OMC_OS_DARWIN
 
 #else
