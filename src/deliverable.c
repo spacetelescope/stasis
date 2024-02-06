@@ -138,7 +138,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_recipes_dir)
     guard_free(ctx->storage.build_sources_dir)
     guard_free(ctx->storage.build_testing_dir)
-    guard_free(ctx->storage.mission_dir);
+    guard_free(ctx->storage.mission_dir)
     guard_free(ctx->conda.installer_baseurl)
     guard_free(ctx->conda.installer_name)
     guard_free(ctx->conda.installer_version)
@@ -401,6 +401,27 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY)
     conv_strlist(ctx, conda.pip_packages, "\n")
 
+    // Delivery metadata consumed
+    // Now populate the rules
+    char missionfile[PATH_MAX] = {0};
+    if (getenv("OMC_SYSCONFDIR")) {
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                getenv("OMC_SYSCONFDIR"), "mission", ctx->meta.mission, ctx->meta.mission);
+    } else {
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                globals.sysconfdir, "mission", ctx->meta.mission, ctx->meta.mission);
+    }
+
+    msg(OMC_MSG_L2, "Reading mission configuration: %s\n", missionfile);
+    ctx->rules._handle = ini_open(missionfile);
+    if (!ctx->rules._handle) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
+        exit(1);
+    }
+
+    getter_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR)
+    conv_str(ctx, rules.release_fmt)
+
     ctx->conda.conda_packages_defer = strlist_init();
     ctx->conda.pip_packages_defer = strlist_init();
 
@@ -449,9 +470,10 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_rc%d",
                  ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
     }
-
-    if (strlen(env_name)) {
-        ctx->info.release_name = strdup(env_name);
+     */
+    if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
+        fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
+        return -1;
     }
 
     return 0;
