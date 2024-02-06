@@ -253,6 +253,8 @@ int main(int argc, char *argv[], char *arge[]) {
     globals.continue_on_error = arg_continue_on_error;
 
     // Override Python version from command-line, if any
+    // TODO: Investigate better method to override.
+    //       And make sure all pointers/strings are updated
     if (strlen(python_override_version) && ctx.meta.python) {
         guard_free(ctx.meta.python)
         ctx.meta.python = strdup(python_override_version);
