@@ -57,9 +57,11 @@ int artifactory_download_cli(char *dest,
         fprintf(stderr, "%s: %s: %s", __FUNCTION__, path, strerror(errno));
         return -1;
     }
+
     sprintf(path + strlen(path), "/%s", remote_filename);
-    if (download(url, path)) {
+    if (HTTP_ERROR(download(url, path, NULL))) {
         fprintf(stderr, "%s: download failed: %s\n", __FUNCTION__, url);
+        return -1;
     }
     chmod(path, 0755);
     return 0;
