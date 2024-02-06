@@ -7,11 +7,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/utsname.h>
-#include "str.h"
-#include "ini.h"
-#include "environment.h"
-#include "conda.h"
-#include "artifactory.h"
+#include "omc.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65

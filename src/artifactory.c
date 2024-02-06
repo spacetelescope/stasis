@@ -1,4 +1,4 @@
-#include "artifactory.h"
+#include "omc.h"
 
 extern struct OMC_GLOBAL globals;
 

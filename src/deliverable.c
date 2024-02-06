@@ -1,12 +1,6 @@
 #define _GNU_SOURCE
 
-#include <sys/statvfs.h>
 #include "omc.h"
-#include "deliverable.h"
-#include "str.h"
-#include "strlist.h"
-#include "wheel.h"
-#include "copy.h"
 
 extern struct OMC_GLOBAL globals;
 

@@ -3,9 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "copy.h"
 #include "omc.h"
-#include "system.h"
 
 struct JFRT_Auth {
     bool insecure_tls;

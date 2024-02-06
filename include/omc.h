@@ -7,18 +7,22 @@
 #include <limits.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/statvfs.h>
 
 #define SYSERROR stderr, "%s:%s:%d: %s\n", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno)
 #define OMC_BUFSIZ 8192
 #define OMC_NAME_MAX 255
 #define OMC_DIRSTACK_MAX 1024
+#define HTTP_ERROR(X) X >= 400
 
 #include "config.h"
 #include "template.h"
 #include "utils.h"
+#include "copy.h"
 #include "ini.h"
 #include "conda.h"
 #include "environment.h"
+#include "artifactory.h"
 #include "deliverable.h"
 #include "str.h"
 #include "strlist.h"
