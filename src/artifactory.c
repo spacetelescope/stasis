@@ -324,7 +324,6 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     jfrt_register_opt_str(ctx->build_name, "build-name", &arg_map);
     jfrt_register_opt_str(ctx->exclusions, "exclusions", &arg_map);
     jfrt_register_opt_str(ctx->module, "module", &arg_map);
-    jfrt_register_opt_str(ctx->regexp, "regexp", &arg_map);
     jfrt_register_opt_str(ctx->spec, "spec", &arg_map);
     jfrt_register_opt_str(ctx->spec_vars, "spec-vars", &arg_map);
     jfrt_register_opt_str(ctx->project, "project", &arg_map);
@@ -344,6 +343,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     jfrt_register_opt_bool(ctx->recursive, "recursive", &arg_map);
     jfrt_register_opt_bool(ctx->symlinks, "symlinks", &arg_map);
     jfrt_register_opt_bool(ctx->sync_deletes, "sync-deletes", &arg_map);
+    jfrt_register_opt_bool(ctx->regexp, "regexp", &arg_map);
 
     // Integer options
     jfrt_register_opt_long(ctx->build_number, "build-number", &arg_map);
