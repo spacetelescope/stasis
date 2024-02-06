@@ -380,9 +380,6 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter(ini, "meta", "python", INIVAL_TYPE_STR)
     conv_str(ctx, meta.python)
 
-    getter_required(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_baseurl)
-
     getter_required(ini, "conda", "installer_name", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_name)
 
@@ -394,6 +391,9 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
 
     getter_required(ini, "conda", "installer_arch", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_arch)
+
+    getter_required(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR)
+    conv_str(ctx, conda.installer_baseurl)
 
     getter(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY)
     conv_strlist(ctx, conda.conda_packages, "\n")
