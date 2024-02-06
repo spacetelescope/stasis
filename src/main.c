@@ -258,9 +258,9 @@ int main(int argc, char *argv[], char *arge[]) {
         ctx.meta.python = strdup(python_override_version);
     }
 
-
+    msg(OMC_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "FAILED\n");
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "JFrog CLI configuration failed\n");
         exit(1);
     }
 
