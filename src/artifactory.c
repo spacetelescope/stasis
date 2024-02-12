@@ -195,7 +195,10 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     guard_free(auth_args)
     guard_strlist_free(arg_map)
 
-    msg(OMC_MSG_L2, "Executing: %s\n", cmd_redacted);
+    // Pings are noisy. Squelch them.
+    if (!strstr(args, "rt ping")) {
+        msg(OMC_MSG_L2, "Executing: %s\n", cmd_redacted);
+    }
 
     if (!globals.verbose) {
         strcpy(proc.f_stdout, "/dev/null");
