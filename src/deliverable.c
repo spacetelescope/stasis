@@ -126,7 +126,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.root)
     guard_free(ctx->storage.tmpdir)
     guard_free(ctx->storage.delivery_dir)
-    guard_free(ctx->storage.tools_dir);
+    guard_free(ctx->storage.tools_dir)
     guard_free(ctx->storage.conda_install_prefix)
     guard_free(ctx->storage.conda_artifact_dir)
     guard_free(ctx->storage.conda_staging_dir)
