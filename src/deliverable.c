@@ -317,6 +317,8 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         conv_str_stackvar(globals, jfrog.version)
         getter(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, jfrog.remote_filename)
+        getter(cfg, "deploy:artifactory", "repo", INIVAL_TYPE_STR)
+        conv_str_stackvar(globals, jfrog.repo)
     }
 
     // Configure architecture and platform information
@@ -1460,6 +1462,9 @@ int delivery_artifact_upload(struct Delivery *ctx) {
     return status;
 }
 
+int delivery_mission_render_files(struct Delivery *ctx) {
+    if (!ctx->storage.mission_dir) {
+        fprintf(stderr, "Mission directory is not configured. Context not initialized?\n");
         return -1;
     }
 
