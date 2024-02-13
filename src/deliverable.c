@@ -1518,13 +1518,13 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         fp = fopen(data.src, "rb");
         if (!fp) {
             perror(data.src);
-            free(contents);
+            guard_free(contents);
             continue;
         }
 
         if (fread(contents, st.st_size, sizeof(*contents), fp) < 1) {
             perror("while reading template file");
-            free(contents);
+            guard_free(contents);
             fclose(fp);
             continue;
         }
@@ -1532,10 +1532,10 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 
         msg(OMC_MSG_L3, "Writing %s\n", data.dest);
         if (tpl_render_to_file(contents, data.dest)) {
-            free(contents);
+            guard_free(contents);
             continue;
         }
-        free(contents);
+        guard_free(contents);
     }
 
     return 0;
