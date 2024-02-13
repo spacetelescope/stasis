@@ -61,6 +61,7 @@ struct OMC_GLOBAL {
         char *os;
         char *arch;
         char *remote_filename;
+        char *repo;
     } jfrog;
 };
 

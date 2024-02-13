@@ -208,6 +208,7 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
     tpl_register("system.arch", &ctx.system.arch);
     tpl_register("system.platform", &ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
+    tpl_register("deploy.repo", &globals.jfrog.repo);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with OMC_SYSCONFDIR

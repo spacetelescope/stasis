@@ -445,46 +445,53 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         }
     }
 
-    // Artifactory base configuration
-    getter(ini, "deploy:artifactory", "workaround_parent_only", INIVAL_TYPE_BOOL)
-    //conv_bool(ctx, deploy.upload_ctx->workaround_parent_only)
-    ctx->deploy.upload_ctx.workaround_parent_only = val.as_bool;
+    for (size_t z = 0, i = 0; i < ini->section_count; i++) {
+        if (startswith(ini->section[i]->key, "deploy:artifactory")) {
+            // Artifactory base configuration
+            getter(ini, ini->section[i]->key, "workaround_parent_only", INIVAL_TYPE_BOOL)
+            conv_bool(ctx, deploy[z].upload_ctx.workaround_parent_only)
 
-    getter(ini, "deploy:artifactory", "exclusions", INIVAL_TYPE_STR)
-    conv_str(ctx, deploy.upload_ctx.exclusions)
+            getter(ini, ini->section[i]->key, "exclusions", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy[z].upload_ctx.exclusions)
 
-    getter(ini, "deploy:artifactory", "explode", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.explode)
+            getter(ini, ini->section[i]->key, "explode", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.explode)
 
-    getter(ini, "deploy:artifactory", "recursive", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.recursive)
+            getter(ini, ini->section[i]->key, "recursive", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.recursive)
 
-    getter(ini, "deploy:artifactory", "retries", INIVAL_TYPE_INT)
-    conv_int(ctx, deploy.upload_ctx.retries)
+            getter(ini, ini->section[i]->key, "retries", INIVAL_TYPE_INT)
+            conv_int(ctx, deploy[z].upload_ctx.retries)
 
-    getter(ini, "deploy:artifactory", "retry_wait_time", INIVAL_TYPE_INT)
-    conv_int(ctx, deploy.upload_ctx.retry_wait_time)
+            getter(ini, ini->section[i]->key, "retry_wait_time", INIVAL_TYPE_INT)
+            conv_int(ctx, deploy[z].upload_ctx.retry_wait_time)
 
-    getter(ini, "deploy:artifactory", "detailed_summary", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.detailed_summary)
+            getter(ini, ini->section[i]->key, "detailed_summary", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.detailed_summary)
 
-    getter(ini, "deploy:artifactory", "quiet", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.quiet)
+            getter(ini, ini->section[i]->key, "quiet", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.quiet)
 
-    getter(ini, "deploy:artifactory", "regexp", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.regexp)
+            getter(ini, ini->section[i]->key, "regexp", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.regexp)
 
-    getter(ini, "deploy:artifactory", "spec", INIVAL_TYPE_STR)
-    conv_str(ctx, deploy.upload_ctx.spec)
+            getter(ini, ini->section[i]->key, "spec", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy[z].upload_ctx.spec)
 
-    getter(ini, "deploy:artifactory", "flat", INIVAL_TYPE_BOOL)
-    conv_str(ctx, deploy.upload_ctx.flat)
+            getter(ini, ini->section[i]->key, "flat", INIVAL_TYPE_BOOL)
+            conv_str(ctx, deploy[z].upload_ctx.flat)
 
-    getter(ini, "deploy:artifactory", "repo", INIVAL_TYPE_STR)
-    conv_str(ctx, deploy.repo)
+            getter(ini, ini->section[i]->key, "repo", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy[z].repo)
 
-    getter(ini, "deploy:artifactory", "files", INIVAL_TO_LIST)
-    conv_strlist(ctx, deploy.files, "\n")
+            getter(ini, ini->section[i]->key, "dest", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy[z].dest)
+
+            getter(ini, ini->section[i]->key, "files", INIVAL_TYPE_STR_ARRAY)
+            conv_strlist(ctx, deploy[z].files, "\n")
+            z++;
+        }
+    }
 
     char env_name[NAME_MAX];
     char env_date[NAME_MAX];
@@ -1402,20 +1409,57 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
 }
 
 int delivery_artifact_upload(struct Delivery *ctx) {
-    jfrt_upload_set_defaults(&ctx->deploy.upload_ctx);
+    int status = 0;
 
-    char *repo = getenv("OMC_JF_REPO");
-    if (repo) {
-        if (!ctx->deploy.repo) {
-            ctx->deploy.repo = strdup(repo);
+    for (size_t i = 0; i < sizeof(ctx->deploy) / sizeof(*ctx->deploy); i++) {
+        if (!ctx->deploy[i].files || !ctx->deploy[i].dest) {
+            break;
         }
-    } else {
-        fprintf(stderr, "Artifactory destination repository is not configured:\n");
-        fprintf(stderr, "set OMC_JF_REPO to a remote repository path\n");
-        return -1;
+        jfrt_upload_set_defaults(&ctx->deploy[i].upload_ctx);
+
+        char *repo = getenv("OMC_JF_REPO");
+        if (repo) {
+            if (!ctx->deploy[i].repo) {
+                ctx->deploy[i].repo = strdup(repo);
+            }
+        } else {
+            fprintf(stderr, "Artifactory destination repository is not configured:\n");
+            fprintf(stderr, "set OMC_JF_REPO to a remote repository path\n");
+            continue;
+        }
+
+        if (jfrt_auth_init(&ctx->deploy[i].auth_ctx)) {
+            continue;
+        }
+
+        ctx->deploy[i].upload_ctx.workaround_parent_only = true;
+        ctx->deploy[i].upload_ctx.build_name = strdup(ctx->info.release_name);
+        ctx->deploy[i].upload_ctx.build_number = ctx->info.time_now;
+
+        char files[PATH_MAX];
+
+        if (jfrog_cli_rt_ping(&ctx->deploy[i].auth_ctx)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy[i].auth_ctx.url);
+            return -1;
+        }
+
+        if (strlist_count(ctx->deploy[i].files)) {
+            for (size_t f = 0; f < strlist_count(ctx->deploy[i].files); f++) {
+                memset(files, 0, sizeof(files));
+                snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy[i].files, f));
+                status += jfrog_cli_rt_upload(&ctx->deploy[i].auth_ctx, &ctx->deploy[i].upload_ctx, files, ctx->deploy[i].dest);
+            }
+        }
     }
 
-    if (jfrt_auth_init(&ctx->deploy.auth_ctx)) {
+    if (ctx->deploy[0].files && ctx->deploy[0].dest) {
+        jfrog_cli_rt_build_collect_env(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
+        jfrog_cli_rt_build_publish(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
+    }
+
+    return status;
+}
+
         return -1;
     }
 

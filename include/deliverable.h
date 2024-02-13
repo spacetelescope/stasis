@@ -135,7 +135,8 @@ struct Delivery {
         struct JFRT_Auth auth_ctx;
         struct JFRT_Upload upload_ctx;
         char *repo;
-    } deploy;
+        char *dest;
+    } deploy[1000];
 
     struct Rule {
         struct INIFILE *_handle;
