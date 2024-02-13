@@ -8,17 +8,21 @@
 
 #elif defined(__linux__)
 #define OMC_OS_LINUX
+#include "os_linux.h"
 
 #elif defined(unix) || defined(__unix__) || defined(__unix)
 #define OMC_OS_UNIX
 
-#elif defined(__APPLE__) && defined(__MACH__)
+#elif defined(__APPLE__)
 #define OMC_OS_DARWIN
+#include "os_darwin.h"
 
 #else
 #define OMC_OS_UNKNOWN
 #error Operating system unknown/unsupported
 
 #endif // OS detection
+
+
 
 #endif // OMC_CONFIG_H
