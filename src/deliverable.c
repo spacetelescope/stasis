@@ -419,6 +419,11 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR)
     conv_str(ctx, rules.release_fmt)
 
+    if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
+        fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
+        return -1;
+    }
+
     ctx->conda.conda_packages_defer = strlist_init();
     ctx->conda.pip_packages_defer = strlist_init();
 
@@ -498,7 +503,6 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
 
     char env_name[NAME_MAX];
     char env_date[NAME_MAX];
-    ctx->meta.python_compact = to_short_version(ctx->meta.python);
 
     /*
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
@@ -517,11 +521,6 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
                  ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
     }
      */
-    if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
-        fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
-        return -1;
-    }
-
     return 0;
 }
 
