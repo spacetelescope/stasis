@@ -273,14 +273,14 @@ int main(int argc, char *argv[], char *arge[]) {
 
     runtime_apply(ctx.runtime.environ);
     snprintf(env_name, sizeof(env_name_testing) - 1, "%s", ctx.info.release_name);
-    snprintf(env_name_testing, sizeof(env_name) - 1, "%s_test", env_name);
+    snprintf(env_name_testing, sizeof(env_name) - 1, "%s-test", env_name);
 
     msg(OMC_MSG_L1, "Overview\n");
     delivery_meta_show(&ctx);
     delivery_conda_show(&ctx);
     delivery_tests_show(&ctx);
     if (globals.verbose) {
-        delivery_runtime_show(&ctx);
+        //delivery_runtime_show(&ctx);
     }
 
     msg(OMC_MSG_L1, "Conda setup\n");
