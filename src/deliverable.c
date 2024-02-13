@@ -3,6 +3,10 @@
 #include "omc.h"
 
 extern struct OMC_GLOBAL globals;
+#if defined(OMC_OS_DARWIN)
+extern char **environ;
+#define __environ environ
+#endif
 
 #define getter(XINI, SECTION_NAME, KEY, TYPE) \
     { \
@@ -94,11 +98,13 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
+#if defined(OMC_OS_LINUX)
     // If we can't execute programs, or write data to the file system at all, then die
     if ((st.f_flag & ST_NOEXEC) != 0) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted with noexec\n", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
+#endif
     if ((st.f_flag & ST_RDONLY) != 0) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
@@ -353,6 +359,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         ctx->meta.codename = NULL;
     }
 
+    /*
     if (!strcasecmp(ctx->meta.mission, "jwst")) {
         getter(ini, "meta", "version", INIVAL_TYPE_STR)
         conv_str(ctx, meta.version)
@@ -360,6 +367,9 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     } else {
         ctx->meta.version = NULL;
     }
+    */
+    getter(ini, "meta", "version", INIVAL_TYPE_STR)
+    conv_str(ctx, meta.version)
 
     getter_required(ini, "meta", "name", INIVAL_TYPE_STR)
     conv_str(ctx, meta.name)
@@ -1321,6 +1331,7 @@ void delivery_gather_tool_versions(struct Delivery *ctx) {
 }
 
 int delivery_init_artifactory(struct Delivery *ctx) {
+    int status = 0;
     char dest[PATH_MAX] = {0};
     char filepath[PATH_MAX] = {0};
     snprintf(dest, sizeof(dest) - 1, "%s/bin", ctx->storage.tools_dir);
@@ -1331,7 +1342,6 @@ int delivery_init_artifactory(struct Delivery *ctx) {
         msg(OMC_MSG_L3, "Skipped download, %s already exists\n", filepath);
         goto delivery_init_artifactory_envsetup;
     }
-    int status = 0;
 
     msg(OMC_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, ctx->system.platform, ctx->system.arch);
     if ((status = artifactory_download_cli(dest,
