@@ -2,8 +2,22 @@ cmake_minimum_required(VERSION 3.15)
 project(OMC C)
 include(GNUInstallDirs)
 
+set(nix_cflags -Wall -Wextra)
+set(win_cflags /Wall)
 set(CMAKE_C_STANDARD 99)
+
 link_libraries(curl)
+
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+	message("gnu options")
+	add_compile_options(${nix_cflags})
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
+	add_compile_options(${nix_cflags})
+elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	message("microsoft visual c options")
+	add_compile_options(${win_cflags})
+endif()
+
 add_subdirectory(src)
 
 set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")

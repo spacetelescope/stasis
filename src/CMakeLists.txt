@@ -1,7 +1,7 @@
 include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR})
-add_compile_options(-Wall -Wextra -Wno-format-truncation)
+
 add_executable(omc
         main.c
         str.c
