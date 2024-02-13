@@ -427,7 +427,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     ctx->conda.conda_packages_defer = strlist_init();
     ctx->conda.pip_packages_defer = strlist_init();
 
-    for (size_t z = 0, i = 0; i < ini->section_count; i++ ) {
+    for (size_t z = 0, i = 0; i < ini->section_count; i++) {
         if (startswith(ini->section[i]->key, "test:")) {
             val.as_char_p = strchr(ini->section[i]->key, ':') + 1;
             if (val.as_char_p && isempty(val.as_char_p)) {
