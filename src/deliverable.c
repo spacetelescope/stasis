@@ -309,7 +309,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         // Configure jfrog cli downloader
         getter(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, jfrog.jfrog_artifactory_base_url)
-        getter(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR);
+        getter(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, jfrog.jfrog_artifactory_product)
         getter(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, jfrog.cli_major_ver)
