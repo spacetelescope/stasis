@@ -220,7 +220,7 @@ int main(int argc, char *argv[], char *arge[]) {
     // environment variable
     char omc_sysconfdir_tmp[PATH_MAX];
     if (getenv("OMC_SYSCONFDIR")) {
-        strncpy(omc_sysconfdir_tmp, getenv("OMC_SYSCONFDIR"), sizeof(omc_sysconfdir_tmp));
+        strncpy(omc_sysconfdir_tmp, getenv("OMC_SYSCONFDIR"), sizeof(omc_sysconfdir_tmp) - 1);
     } else {
         strncpy(omc_sysconfdir_tmp, OMC_SYSCONFDIR, sizeof(omc_sysconfdir_tmp) - 1);
     }
