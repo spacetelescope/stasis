@@ -199,6 +199,7 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("meta.mission", &ctx.meta.mission);
     tpl_register("meta.python", &ctx.meta.python);
     tpl_register("meta.python_compact", &ctx.meta.python_compact);
+    tpl_register("info.time_str_epoch", &ctx.info.time_str_epoch);
     tpl_register("info.release_name", &ctx.info.release_name);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);

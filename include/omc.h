@@ -13,6 +13,7 @@
 #define OMC_BUFSIZ 8192
 #define OMC_NAME_MAX 255
 #define OMC_DIRSTACK_MAX 1024
+#define OMC_TIME_STR_MAX 128
 #define HTTP_ERROR(X) X >= 400
 
 #include "config.h"

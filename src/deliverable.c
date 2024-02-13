@@ -277,6 +277,12 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     // Record timestamp used for release
     time(&ctx->info.time_now);
     ctx->info.time_info = localtime(&ctx->info.time_now);
+    ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
+    if (!ctx->info.time_str_epoch) {
+        msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+        return -1;
+    }
+    snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
 
     if (cfg) {
         getter(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR)

@@ -86,9 +86,10 @@ struct Delivery {
      * \brief Release information (name & datetime)
      */
     struct Info {
-        char *release_name;        ///< The fully combined release string
-        struct tm *time_info;
-        time_t time_now;           ///< Time stamp for when OMC execution started
+        char *release_name;            ///< The fully combined release string
+        struct tm *time_info;          ///< Delivery time structure
+        time_t time_now;               ///< Time stamp for when OMC execution started
+        char *time_str_epoch;          ///< String representation of Unix epoch
     } info;
 
     /*! \struct Conda
