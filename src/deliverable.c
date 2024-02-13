@@ -1426,10 +1426,14 @@ int delivery_artifact_upload(struct Delivery *ctx) {
             if (!ctx->deploy[i].repo) {
                 ctx->deploy[i].repo = strdup(repo);
             }
+        } else if (globals.jfrog.repo) {
+            ctx->deploy[i].repo = strdup(globals.jfrog.repo);
         } else {
-            fprintf(stderr, "Artifactory destination repository is not configured:\n");
-            fprintf(stderr, "set OMC_JF_REPO to a remote repository path\n");
-            continue;
+            msg(OMC_MSG_WARN, "Artifactory repository path is not configured!\n");
+            fprintf(stderr, "set OMC_JF_REPO environment variable...\nOr append to configuration file:\n\n");
+            fprintf(stderr, "[deploy:artifactory]\nrepo = example/generic/repo/path\n\n");
+            status++;
+            break;
         }
 
         if (jfrt_auth_init(&ctx->deploy[i].auth_ctx)) {
@@ -1456,7 +1460,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         }
     }
 
-    if (ctx->deploy[0].files && ctx->deploy[0].dest) {
+    if (!status && ctx->deploy[0].files && ctx->deploy[0].dest) {
         jfrog_cli_rt_build_collect_env(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
         jfrog_cli_rt_build_publish(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
     }
