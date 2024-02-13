@@ -1292,8 +1292,10 @@ void delivery_tests_run(struct Delivery *ctx) {
                 // enable trace mode before executing each test script
                 memset(cmd, 0, sizeof(cmd));
                 sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
-                status = shell(&proc, cmd);
+
+                status = shell(&proc, tpl_render(cmd));
                 if (status) {
+                    msg(OMC_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
                     COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
                 }
                 popd();
