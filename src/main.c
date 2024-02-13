@@ -453,6 +453,9 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L3, "Rewriting release spec file %s\n", path_basename(specfile));
     delivery_rewrite_spec(&ctx, specfile);
 
+    msg(OMC_MSG_L1, "Rendering mission templates\n");
+    delivery_mission_render_files(&ctx);
+
     msg(OMC_MSG_L1, "Uploading artifacts\n");
     delivery_artifact_upload(&ctx);
 
