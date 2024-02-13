@@ -35,4 +35,12 @@ char *tpl_getval(char *key);
  */
 char *tpl_render(char *str);
 
+/**
+ * Write tpl_render() output to a file
+ * @param str the text to render
+ * @param filename the output file name
+ * @return 0 on success, <0 on error
+ */
+int tpl_render_to_file(char *str, const char *filename);
+
 #endif //OMC_TEMPLATE_H

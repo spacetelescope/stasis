@@ -1467,29 +1467,70 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         fprintf(stderr, "Mission directory is not configured. Context not initialized?\n");
         return -1;
     }
+    struct Data {
+        char *src;
+        char *dest;
+    } data;
+    struct INIFILE *cfg = ctx->rules._handle;
+    union INIVal val;
 
-    ctx->deploy.upload_ctx.workaround_parent_only = true;
-    ctx->deploy.upload_ctx.build_name = strdup(ctx->info.release_name);
-    ctx->deploy.upload_ctx.build_number = ctx->info.time_now;
-
-    char files[PATH_MAX];
-    int status = 0;
-
-    if (jfrog_cli_rt_ping(&ctx->deploy.auth_ctx)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.auth_ctx.url);
+    data.src = calloc(PATH_MAX, sizeof(*data.src));
+    if (!data.src) {
+        perror("data.src");
         return -1;
     }
 
-    jfrog_cli_rt_build_collect_env(&ctx->deploy.auth_ctx, ctx->deploy.upload_ctx.build_name, ctx->deploy.upload_ctx.build_number);
+    for (size_t i = 0; i < cfg->section_count; i++) {
+        char *section_name = cfg->section[i]->key;
+        if (!startswith(section_name, "template:")) {
+            continue;
+        }
+        val.as_char_p = strchr(section_name, ':') + 1;
+        if (val.as_char_p && isempty(val.as_char_p)) {
+            return 1;
+        }
+        sprintf(data.src, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
+        msg(OMC_MSG_L2, "%s\n", data.src);
 
-    strcpy(files, "omc/sources/**/results.xml");
-    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/delivery/results");
-    strcpy(files, "omc/output/delivery/*.yml");
-    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/delivery/");
-    strcpy(files, "omc/output/packages/*");
-    status += jfrog_cli_rt_upload(&ctx->deploy.auth_ctx, &ctx->deploy.upload_ctx, files, "omc/packages/");
+        getter_required(cfg, section_name, "destination", INIVAL_TYPE_STR)
+        conv_str_stackvar(data, dest)
 
-    jfrog_cli_rt_build_publish(&ctx->deploy.auth_ctx, ctx->deploy.upload_ctx.build_name, ctx->deploy.upload_ctx.build_number);
+        char *contents;
+        struct stat st;
+        if (lstat(data.src, &st)) {
+            perror(data.src);
+            continue;
+        }
 
-    return status;
+        contents = calloc(st.st_size + 1, sizeof(*contents));
+        if (!contents) {
+            perror("template file contents");
+            continue;
+        }
+
+        FILE *fp;
+        fp = fopen(data.src, "rb");
+        if (!fp) {
+            perror(data.src);
+            free(contents);
+            continue;
+        }
+
+        if (fread(contents, st.st_size, sizeof(*contents), fp) < 1) {
+            perror("while reading template file");
+            free(contents);
+            fclose(fp);
+            continue;
+        }
+        fclose(fp);
+
+        msg(OMC_MSG_L3, "Writing %s\n", data.dest);
+        if (tpl_render_to_file(contents, data.dest)) {
+            free(contents);
+            continue;
+        }
+        free(contents);
+    }
+
+    return 0;
 }

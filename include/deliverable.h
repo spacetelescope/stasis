@@ -337,4 +337,6 @@ int delivery_init_tmpdir(struct Delivery *ctx);
 int delivery_init_artifactory(struct Delivery *ctx);
 
 int delivery_artifact_upload(struct Delivery *ctx);
+
+int delivery_mission_render_files(struct Delivery *ctx);
 #endif //OMC_DELIVERABLE_H
