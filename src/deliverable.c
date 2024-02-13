@@ -375,6 +375,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
 
     getter(ini, "meta", "python", INIVAL_TYPE_STR)
     conv_str(ctx, meta.python)
+    ctx->meta.python_compact = to_short_version(ctx->meta.python);
 
     getter_required(ini, "conda", "installer_name", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_name)
