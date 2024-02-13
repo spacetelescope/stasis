@@ -16,8 +16,8 @@ specification file and then creating the environment with it.
 
 ### Install the pipeline environment
 ```
-$ curl -O https://ssb.stsci.edu/releases/{{meta.name}}/{{meta.version}}/{{info.release_name}}.yml
-$ conda env create --file {{info.release_name}}.yml
+$ curl -O https://ssb.stsci.edu/releases/{{meta.name}}/{{meta.version}}/latest-linux.yml
+$ conda env create --file latest-linux.yml
 ```
 ### Activate the pipeline environment
 
