@@ -201,6 +201,11 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("meta.python_compact", &ctx.meta.python_compact);
     tpl_register("info.time_str_epoch", &ctx.info.time_str_epoch);
     tpl_register("info.release_name", &ctx.info.release_name);
+    tpl_register("storage.tmpdir", &ctx.storage.tmpdir);
+    tpl_register("storage.delivery_dir", &ctx.storage.delivery_dir);
+    tpl_register("storage.conda_artifact_dir", &ctx.storage.conda_artifact_dir);
+    tpl_register("storage.wheel_artifact_dir", &ctx.storage.wheel_artifact_dir);
+    tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
