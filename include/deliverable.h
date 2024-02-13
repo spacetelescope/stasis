@@ -49,9 +49,11 @@ struct Delivery {
     struct Storage {
         char *root;                     ///< Top-level storage area
         char *tmpdir;                   ///< Temporary storage area (within root)
+        char *output_dir;               ///< Base path to where all artifacts are stored
         char *delivery_dir;             ///< Delivery artifact output directory
         char *tools_dir;                ///< Tools storage
         char *mission_dir;              ///< Mission data storage
+        char *package_dir;              ///< Base path to where all packages are stored
         char *conda_install_prefix;     ///< Path to install Conda
         char *conda_artifact_dir;       ///< Base path to store compiled conda packages
         char *conda_staging_dir;        ///< Base path to copy compiled conda packages

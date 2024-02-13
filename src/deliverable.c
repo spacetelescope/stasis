@@ -163,18 +163,25 @@ void delivery_free(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs(struct Delivery *ctx) {
-    mkdirs("omc/tmp", 0755);
-    mkdirs("omc/tools/bin", 0755);
-    mkdirs("omc/build", 0755);
-    mkdirs("omc/build/recipes", 0755);
-    mkdirs("omc/build/sources", 0755);
-    mkdirs("omc/build/testing", 0755);
-    mkdirs("omc/output", 0755);
-    mkdirs("omc/output/delivery", 0755);
-    mkdirs("omc/output/packages/conda", 0755);
-    mkdirs("omc/output/packages/wheels", 0755);
-    ctx->storage.root = realpath("omc", NULL);
-    ctx->storage.tmpdir = realpath("omc/tmp", NULL);
+    path_store(&ctx->storage.root, PATH_MAX, "omc", "");
+    path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
+    path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
+
+    path_store(&ctx->storage.build_dir, PATH_MAX, ctx->storage.root, "build");
+    path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
+    path_store(&ctx->storage.build_sources_dir, PATH_MAX, ctx->storage.build_dir, "sources");
+    path_store(&ctx->storage.build_testing_dir, PATH_MAX, ctx->storage.build_dir, "testing");
+
+    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
+    path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
+    path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
+    path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.output_dir, "conda");
+    path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.output_dir, "wheels");
+
+    if (!ctx->storage.mission_dir) {
+        path_store(&ctx->storage.mission_dir, PATH_MAX, globals.sysconfdir, "mission");
+    }
+
     if (delivery_init_tmpdir(ctx)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
         if (globals.tmpdir)
@@ -182,25 +189,6 @@ void delivery_init_dirs(struct Delivery *ctx) {
         exit(1);
     }
 
-    ctx->storage.tools_dir = realpath("omc/tools", NULL);
-    ctx->storage.build_dir = realpath("omc/build", NULL);
-    ctx->storage.build_recipes_dir = realpath("omc/build/recipes", NULL);
-    ctx->storage.build_sources_dir = realpath("omc/build/sources", NULL);
-    ctx->storage.build_testing_dir = realpath("omc/build/testing", NULL);
-    ctx->storage.delivery_dir = realpath("omc/output/delivery", NULL);
-    ctx->storage.conda_artifact_dir = realpath("omc/output/packages/conda", NULL);
-    ctx->storage.wheel_artifact_dir = realpath("omc/output/packages/wheels", NULL);
-
-    // Configure mission directory
-    if (!ctx->storage.mission_dir) {
-        ctx->storage.mission_dir = join(
-                (char *[]) {
-                        globals.sysconfdir,
-                        "mission",
-                        NULL
-                },
-                DIR_SEP);
-    }
     if (access(ctx->storage.mission_dir, F_OK)) {
         msg(OMC_MSG_L1, "%s: %s\n", ctx->storage.mission_dir, strerror(errno));
         exit(1);
@@ -223,12 +211,12 @@ void delivery_init_dirs(struct Delivery *ctx) {
             msg(OMC_MSG_ERROR | OMC_MSG_L1, "realpath(): Conda installation prefix reassignment failed\n");
             exit(1);
         }
-         */
         ctx->storage.conda_install_prefix = strdup(globals.conda_install_prefix);
+         */
+        path_store(&ctx->storage.conda_install_prefix, PATH_MAX, globals.conda_install_prefix, "conda");
     } else {
         // install conda under the OMC tree
-        mkdirs("omc/tools/conda", 0755);
-        ctx->storage.conda_install_prefix = realpath("omc/tools/conda", NULL);
+        path_store(&ctx->storage.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
     }
 }
 
