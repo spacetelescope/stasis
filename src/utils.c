@@ -484,3 +484,45 @@ int isempty_dir(const char *path) {
 
     return count == 0;
 }
+
+int path_store(char **destptr, size_t maxlen, const char *base, const char *path) {
+    char *path_tmp;
+    size_t base_len = 0;
+    size_t path_len = 0;
+
+    // Both path elements need to be defined to continue
+    if (!base || !path) {
+        return -1;
+    }
+
+    // Initialize destination pointer to length of maxlen
+    path_tmp = calloc(maxlen, sizeof(*path_tmp));
+    if (!path_tmp) {
+        return -1;
+    }
+
+    // Ensure generated path will fit in destination
+    base_len = strlen(base);
+    path_len = strlen(path);
+    // 2 = directory separator and NUL terminator
+    if (2 + (base_len + path_len) > maxlen) {
+        goto l_path_setup_error;
+    }
+
+    snprintf(path_tmp, maxlen - 1, "%s/%s", base, path);
+    if (mkdirs(path_tmp, 0755)) {
+        goto l_path_setup_error;
+    }
+
+    (*destptr) = realpath(path_tmp, NULL);
+    if (!*destptr) {
+        goto l_path_setup_error;
+    }
+
+    guard_free(path_tmp);
+    return 0;
+
+    l_path_setup_error:
+    guard_free(path_tmp);
+    return -1;
+}

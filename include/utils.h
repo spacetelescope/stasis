@@ -33,6 +33,7 @@ char *find_program(const char *name);
 int touch(const char *filename);
 int git_clone(struct Process *proc, char *url, char *destdir, char *gitref);
 char *git_describe(const char *path);
+int path_store(char **destptr, size_t maxlen, const char *base, const char *path);
 
 #define OMC_MSG_SUCCESS 0
 #define OMC_MSG_NOP 1 << 0
