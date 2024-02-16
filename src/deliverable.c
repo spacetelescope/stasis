@@ -1263,6 +1263,8 @@ int delivery_index_conda_artifacts(struct Delivery *ctx) {
 
 void delivery_tests_run(struct Delivery *ctx) {
     struct Process proc;
+    memset(&proc, 0, sizeof(proc));
+
     if (!ctx->tests[0].name) {
         msg(OMC_MSG_WARN | OMC_MSG_L2, "no tests are defined!\n");
     } else {
@@ -1433,15 +1435,20 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
         char *repo = getenv("OMC_JF_REPO");
         if (repo) {
-            if (!ctx->deploy[i].repo) {
-                ctx->deploy[i].repo = strdup(repo);
-            }
+            ctx->deploy[i].repo = strdup(repo);
         } else if (globals.jfrog.repo) {
             ctx->deploy[i].repo = strdup(globals.jfrog.repo);
         } else {
             msg(OMC_MSG_WARN, "Artifactory repository path is not configured!\n");
             fprintf(stderr, "set OMC_JF_REPO environment variable...\nOr append to configuration file:\n\n");
             fprintf(stderr, "[deploy:artifactory]\nrepo = example/generic/repo/path\n\n");
+            status++;
+            break;
+        }
+
+        if (isempty(ctx->deploy[i].repo) || !strlen(ctx->deploy[i].repo)) {
+            // Unlikely to trigger if the config parser is working correctly
+            msg(OMC_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
             status++;
             break;
         }
