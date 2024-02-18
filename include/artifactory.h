@@ -24,7 +24,7 @@ struct JFRT_Upload {
     bool ant;
     bool archive;
     char *build_name;
-    long build_number;
+    char *build_number;
     bool deb;
     bool detailed_summary;
     bool dry_run;
@@ -51,7 +51,7 @@ struct JFRT_Download {
     char *archive_entries;
     char *build;
     char *build_name;
-    int build_number;
+    char *build_number;
     char *bundle;
     bool detailed_summary;
     bool dry_run;
@@ -97,8 +97,8 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args);
 int jfrog_cli_rt_ping(struct JFRT_Auth *auth);
 int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *src, char *repo_path);
 int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, char *repo_path, char *dest);
-int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, long build_number);
-int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, long build_number);
+int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number);
+int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number);
 void jfrt_upload_set_defaults(struct JFRT_Upload *ctx);
 
 #endif //OMC_ARTIFACTORY_H

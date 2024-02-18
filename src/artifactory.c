@@ -75,7 +75,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
         // no data
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=%s", opt_name, jfrt_val);
+    snprintf(data, sizeof(data) - 1, "--%s=\"%s\"", opt_name, jfrt_val);
     strlist_append(*opt_map, data);
 }
 
@@ -215,17 +215,17 @@ int jfrog_cli_rt(struct JFRT_Auth *auth, char *args) {
     return jfrog_cli(auth, args);
 }
 
-int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, long build_number) {
+int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[OMC_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "rt build-collect-env %s %ld", build_name, build_number);
+    snprintf(cmd, sizeof(cmd) - 1, "rt build-collect-env \"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, cmd);
 }
 
-int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, long build_number) {
+int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[OMC_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "rt build-publish %s %ld", build_name, build_number);
+    snprintf(cmd, sizeof(cmd) - 1, "rt build-publish \"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, cmd);
 }
 
@@ -256,6 +256,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
     jfrt_register_opt_str(ctx->archive_entries, "archive-entries", &arg_map);
     jfrt_register_opt_str(ctx->build, "build", &arg_map);
     jfrt_register_opt_str(ctx->build_name, "build-name", &arg_map);
+    jfrt_register_opt_str(ctx->build_number, "build-number", &arg_map);
     jfrt_register_opt_str(ctx->bundle, "bundle", &arg_map);
     jfrt_register_opt_str(ctx->exclude_artifacts, "exclude-artifacts", &arg_map);
     jfrt_register_opt_str(ctx->exclude_props, "exclude-props", &arg_map);
@@ -282,7 +283,6 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
     jfrt_register_opt_bool(ctx->retry_wait_time, "retry-wait-time", &arg_map);
     jfrt_register_opt_bool(ctx->skip_checksum, "skip-checksum", &arg_map);
 
-    jfrt_register_opt_long(ctx->build_number, "build-number", &arg_map);
     jfrt_register_opt_int(ctx->limit, "limit", &arg_map);
     jfrt_register_opt_int(ctx->min_split, "min-split", &arg_map);
     jfrt_register_opt_int(ctx->offset, "offset", &arg_map);
@@ -325,6 +325,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
 
     // String options
     jfrt_register_opt_str(ctx->build_name, "build-name", &arg_map);
+    jfrt_register_opt_str(ctx->build_number, "build-number", &arg_map);
     jfrt_register_opt_str(ctx->exclusions, "exclusions", &arg_map);
     jfrt_register_opt_str(ctx->module, "module", &arg_map);
     jfrt_register_opt_str(ctx->spec, "spec", &arg_map);
@@ -349,7 +350,6 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     jfrt_register_opt_bool(ctx->regexp, "regexp", &arg_map);
 
     // Integer options
-    jfrt_register_opt_long(ctx->build_number, "build-number", &arg_map);
     jfrt_register_opt_int(ctx->retries, "retries", &arg_map);
     jfrt_register_opt_int(ctx->retry_wait_time, "retry-wait-time", &arg_map);
     jfrt_register_opt_int(ctx->threads, "threads", &arg_map);
@@ -386,7 +386,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         pushd(new_src);
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "rt upload %s '%s' %s", args, src, repo_path);
+    snprintf(cmd, sizeof(cmd) - 1, "rt upload %s '%s' \"%s\"", args, src, repo_path);
     guard_free(args)
     guard_strlist_free(arg_map)
 
