@@ -201,6 +201,8 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("meta.python_compact", &ctx.meta.python_compact);
     tpl_register("info.time_str_epoch", &ctx.info.time_str_epoch);
     tpl_register("info.release_name", &ctx.info.release_name);
+    tpl_register("info.build_name", &ctx.info.build_name);
+    tpl_register("info.build_number", &ctx.info.build_number);
     tpl_register("storage.tmpdir", &ctx.storage.tmpdir);
     tpl_register("storage.delivery_dir", &ctx.storage.delivery_dir);
     tpl_register("storage.conda_artifact_dir", &ctx.storage.conda_artifact_dir);

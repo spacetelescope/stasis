@@ -429,10 +429,22 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR)
     conv_str(ctx, rules.release_fmt)
 
+    // TODO move this somewhere else?
+    // Used for setting artifactory build info
+    getter_required(ctx->rules._handle, "meta", "build_name_fmt", INIVAL_TYPE_STR)
+    conv_str(ctx, rules.build_name_fmt)
+
+    // TODO move this somewhere else?
+    // Used for setting artifactory build info
+    getter_required(ctx->rules._handle, "meta", "build_number_fmt", INIVAL_TYPE_STR)
+    conv_str(ctx, rules.build_number_fmt)
+
     if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
         fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
         return -1;
     }
+    delivery_format_str(ctx, &ctx->info.build_name, ctx->rules.build_name_fmt);
+    delivery_format_str(ctx, &ctx->info.build_number, ctx->rules.build_number_fmt);
 
     ctx->conda.conda_packages_defer = strlist_init();
     ctx->conda.pip_packages_defer = strlist_init();
@@ -1458,8 +1470,8 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         }
 
         ctx->deploy[i].upload_ctx.workaround_parent_only = true;
-        ctx->deploy[i].upload_ctx.build_name = strdup(ctx->info.release_name);
-        ctx->deploy[i].upload_ctx.build_number = ctx->info.time_now;
+        ctx->deploy[i].upload_ctx.build_name = ctx->info.build_name;
+        ctx->deploy[i].upload_ctx.build_number = ctx->info.build_number;
 
         char files[PATH_MAX];
 

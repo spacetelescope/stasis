@@ -87,6 +87,8 @@ struct Delivery {
      */
     struct Info {
         char *release_name;            ///< The fully combined release string
+        char *build_name;
+        char *build_number;
         struct tm *time_info;          ///< Delivery time structure
         time_t time_now;               ///< Time stamp for when OMC execution started
         char *time_str_epoch;          ///< String representation of Unix epoch
@@ -141,7 +143,9 @@ struct Delivery {
     struct Rule {
         struct INIFILE *_handle;
         bool enable_final;          ///< true=allow rc value replacement, false=keep rc value even if final release
-        char *release_fmt;          ///< Release generator format string
+        char *release_fmt;          ///< Release format string
+        char *build_name_fmt;       ///< Build name format string
+        char *build_number_fmt;     ///< Build number format string
         struct Content content[1000];
     } rules;
 };
