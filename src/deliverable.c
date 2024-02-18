@@ -1302,7 +1302,12 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
             }
             msg(OMC_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
-            git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version);
+            if (!git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version)) {
+                ctx->tests[i].repository_info_tag = strdup(git_describe(destdir));
+                ctx->tests[i].repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
+            } else {
+                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to clone repository\n")
+            }
 
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(!globals.continue_on_error, "Unable to enter repository directory\n")

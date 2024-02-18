@@ -377,7 +377,27 @@ char *git_describe(const char *path) {
     pushd(path);
     static char version[NAME_MAX];
     FILE *pp;
-    pp = popen("git describe --always --tags", "r");
+    pp = popen("git describe --first-parent --always --tags", "r");
+    memset(version, 0, sizeof(version));
+    fgets(version, sizeof(version) - 1, pp);
+    strip(version);
+    pclose(pp);
+    popd();
+    return version;
+}
+
+char *git_rev_parse(const char *path, char *args) {
+    pushd(path);
+    static char version[NAME_MAX];
+    char cmd[PATH_MAX];
+    FILE *pp;
+
+    if (isempty(args)) {
+        fprintf(stderr, "git_rev_parse args cannot be empty");
+        return NULL;
+    }
+    sprintf(cmd, "git rev-parse %s", args);
+    pp = popen(cmd, "r");
     memset(version, 0, sizeof(version));
     fgets(version, sizeof(version) - 1, pp);
     strip(version);
