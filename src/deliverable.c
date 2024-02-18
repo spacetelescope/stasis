@@ -181,8 +181,8 @@ void delivery_init_dirs(struct Delivery *ctx) {
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
     path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
-    path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.output_dir, "conda");
-    path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.output_dir, "wheels");
+    path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+    path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
 
     if (!ctx->storage.mission_dir) {
         path_store(&ctx->storage.mission_dir, PATH_MAX, globals.sysconfdir, "mission");
