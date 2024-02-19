@@ -42,19 +42,19 @@ make install
 
 ## Environment variables
 
-| Name                         | Purpose                                               | Example                                                                     |
-|------------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------|
-| TMPDIR                       | Change default path to store temporary data           | ```export TMPDIR=/new/tmp```                                                |
-| OMC_SYSCONFDIR               | Change default path to search for configuration files | ```export OMC_SYSCONFDIR=/my/shared/config/path```                          |
-| OMC_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)    | ```export OMC_JF_ARTIFACTORY_URL=https://myserver.domain.tld/artifactory``` |
-| OMC_JF_ACCESS_TOKEN          | Artifactory Access Token                              | ```export OMC_JF_ACCESS_TOKEN=$(cat /token/file)```                         |
-| OMC_JF_USER                  | Artifactory username                                  | ```export OMC_JF_USER=myusername```                                         |
-| OMC_JF_PASSWORD              | Artifactory password                                  | ```export OMC_JF_PASSWORD=$(cat /my/password)```                            |
-| OMC_JF_SSH_KEY_PATH          | Path to SSH public key file                           | ```export OMC_JF_SSH_KEY_PATH=~/.ssh/id_rsa_artifactory.pub```                 |
-| OMC_JF_SSH_PASSPHRASE        | Password associated with SSH public key file          | ```export OMC_JF_SSH_PASSPHRASE=$(cat /my/password)```                      |
-| OMC_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                            | ```export OMC_JF_CLIENT_CERT_PATH=/path/to/cert/dir```                      |
-| OMC_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                       | ```export OMC_JF_CLIENT_CERT_KEY_PATH=artifactory.pem```                    |
-| OMC_JF_REPO                  | Artifactory "generic" repository to write to          | ```export OMC_JF_REPO=omc```                                                |
+| Name                         | Purpose                                               | 
+|------------------------------|-------------------------------------------------------|
+| TMPDIR                       | Change default path to store temporary data           | 
+| OMC_SYSCONFDIR               | Change default path to search for configuration files | 
+| OMC_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)    | 
+| OMC_JF_ACCESS_TOKEN          | Artifactory Access Token                              | 
+| OMC_JF_USER                  | Artifactory username                                  | 
+| OMC_JF_PASSWORD              | Artifactory password                                  | 
+| OMC_JF_SSH_KEY_PATH          | Path to SSH public key file                           |
+| OMC_JF_SSH_PASSPHRASE        | Password associated with SSH public key file          | 
+| OMC_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                            | 
+| OMC_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                       | 
+| OMC_JF_REPO                  | Artifactory "generic" repository to write to          | 
 
 # Variable expansion
 
