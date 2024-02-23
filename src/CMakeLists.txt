@@ -20,5 +20,6 @@ add_executable(omc
         artifactory.c
         template.c
         rules.c
+        docker.c
 )
 install(TARGETS omc RUNTIME)
