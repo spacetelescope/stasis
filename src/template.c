@@ -133,7 +133,7 @@ char *tpl_render(char *str) {
                 continue;
             }
             // Jump past closing brace
-            pos += (b_close + 2 - pos);
+            pos = b_close + 2;
 
             if (do_env) {
                 char *k = type_stop + 1;
@@ -151,6 +151,7 @@ char *tpl_render(char *str) {
         if (value) {
             // Set output iterator to end of replacement value
             z += strlen(value);
+
             // Append replacement value
             grow(z, &output_bytes, &output);
             strcat(output, value);
