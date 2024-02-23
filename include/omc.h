@@ -25,6 +25,7 @@
 #include "conda.h"
 #include "environment.h"
 #include "artifactory.h"
+#include "docker.h"
 #include "deliverable.h"
 #include "str.h"
 #include "strlist.h"
