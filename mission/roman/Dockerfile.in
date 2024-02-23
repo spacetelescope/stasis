@@ -1,0 +1,80 @@
+FROM quay.io/centos/centos:stream9
+# Declare build-time environment
+ARG DIST_VERSION={{ conda.installer_version }}
+ARG DIST_PLATFORM={{ conda.installer_platform }}
+ARG DIST_ARCH={{ conda.installer_arch }}
+ARG DIST_URL=https://github.com/conda-forge/miniforge/releases/download/${DIST_VERSION}
+# Conda root
+ARG CONDA_VERSION={{ conda.installer_version }}
+ARG CONDA_BUILD_VERSION
+ARG CONDA_PACKAGES
+# Pipeline environment snapshot definition
+ARG SNAPSHOT_INPUT
+# Declare environment
+ENV OPT=/opt \
+    HOME=/home/developer
+ENV PYTHONUNBUFFERED=1 \
+    DIST_VERSION=${DIST_VERSION} \
+    DIST_PLATFORM=${DIST_PLATFORM} \
+    DIST_ARCH=${DIST_ARCH} \
+    DIST_URL=${DIST_URL} \
+    DIST_INSTALLER={{ conda.installer_name }}-${DIST_VERSION}-${DIST_PLATFORM}-${DIST_ARCH}.sh \
+    DIST_PATH=${OPT}/conda \
+    CONDA_VERSION=${CONDA_VERSION} \
+    CONDA_BUILD_VERSION=${CONDA_BUILD_VERSION} \
+    CONDA_PACKAGES=${CONDA_PACKAGES}
+# Toolchain
+RUN yum update -y \
+    && yum install -y \
+        bzip2-devel \
+        gcc \
+        gcc-c++ \
+        gcc-gfortran \
+        git \
+        glibc-devel.i686 \
+        glibc-devel \
+        kernel-devel \
+        libX11-devel \
+        mesa-libGL \
+        mesa-libGLU \
+        ncurses-devel \
+        subversion \
+        sudo \
+        wget \
+        zlib-devel \
+    && yum clean all
+# Create 'developer' user
+# Configure sudoers
+RUN groupadd developer \
+    && useradd -g developer -m -d $HOME -s /bin/bash developer \
+    && echo "developer:developer" | chpasswd \
+    && echo "developer ALL=(ALL)	NOPASSWD: ALL" >> /etc/sudoers
+# Get delivery snapshot
+ADD ${SNAPSHOT_INPUT} ${HOME}/SNAPSHOT.yml
+# Install Miniforge
+# Reset permissions
+RUN curl -q -OSsL ${DIST_URL}/${DIST_INSTALLER} \
+    && bash ${DIST_INSTALLER} -b -p ${DIST_PATH} \
+    && rm -rf ${DIST_INSTALLER} \
+    && echo source ${DIST_PATH}/etc/profile.d/conda.sh > /etc/profile.d/conda.sh \
+    && echo source ${DIST_PATH}/etc/profile.d/mamba.sh > /etc/profile.d/mamba.sh \
+    && source /etc/profile.d/conda.sh \
+    && source /etc/profile.d/mamba.sh \
+
+    && echo conda activate linux > /etc/profile.d/zconda.sh \
+    && chown -R developer: ${OPT} ${HOME}
+# Configure Conda
+ENV PATH "${DIST_PATH}/bin:${PATH}"
+USER developer
+RUN conda config --set auto_update_conda false \
+    && conda config --set always_yes true \
+    && conda config --set quiet true \
+    && conda config --set rollback_enabled false \
+    && source /etc/profile.d/conda.sh \
+    && mamba install \
+        ${CONDA_VERSION} \
+        git \
+        ${CONDA_PACKAGES} \
+    && mamba env create -n linux --file ${HOME}/SNAPSHOT.yml
+WORKDIR ${HOME}
+CMD ["/bin/bash"]
