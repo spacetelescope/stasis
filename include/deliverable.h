@@ -142,6 +142,14 @@ struct Delivery {
         char *dest;
     } deploy[1000];
 
+    struct Docker {
+        struct DockerCapabilities capabilities;
+        char *dockerfile;
+        char *registry;
+        struct StrList *build_args;
+        struct StrList *tags;
+    } docker;
+
     struct Rule {
         struct INIFILE *_handle;
         bool enable_final;          ///< true=allow rc value replacement, false=keep rc value even if final release
@@ -345,4 +353,6 @@ int delivery_init_artifactory(struct Delivery *ctx);
 int delivery_artifact_upload(struct Delivery *ctx);
 
 int delivery_mission_render_files(struct Delivery *ctx);
+
+int delivery_docker(struct Delivery *ctx);
 #endif //OMC_DELIVERABLE_H

@@ -1574,3 +1574,55 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 
     return 0;
 }
+
+int delivery_docker(struct Delivery *ctx) {
+    if (!docker_capable(&ctx->docker.capabilities)) {
+        return -1;
+    }
+    char args[PATH_MAX];
+    size_t total_tags = strlist_count(ctx->docker.tags);
+    size_t total_build_args = strlist_count(ctx->docker.build_args);
+
+    if (!total_tags) {
+        fprintf(stderr, "error: at least one docker image tag must be defined\n");
+        return -1;
+    }
+
+    // Append image tags to command
+    for (size_t i = 0; i < total_tags; i++) {
+        char *tag = strlist_item(ctx->docker.tags, i);
+        sprintf(args + strlen(args), " -t \"%s\" ", tag);
+    }
+
+    // Append build arguments to command (i.e. --build-arg "key=value"
+    for (size_t i = 0; i < total_build_args; i++) {
+        char *build_arg = strlist_item(ctx->docker.build_args, i);
+        if (!build_arg) {
+            break;
+        }
+        sprintf(args + strlen(args), " --build-arg \"%s\" ", build_arg);
+    }
+
+    // Build the image
+    if (docker_build(ctx->storage.delivery_dir, args, ctx->docker.capabilities.build)) {
+        return -1;
+    }
+
+    // Test the image
+    // All tags point back to the same image so test the first one we see
+    // regardless of how many are defined
+    char *tag = NULL;
+    tag = strlist_item(ctx->docker.tags, 0);
+    if (docker_script(tag, "source /etc/profile\npython -m pip freeze\nmamba info", 0)) {
+        // test failed -- don't save the image
+        return -1;
+    }
+
+    // Test successful, save image
+    if (docker_save(basename(tag), ctx->storage.delivery_dir)) {
+        // save failed
+        return -1;
+    }
+
+    return 0;
+}
