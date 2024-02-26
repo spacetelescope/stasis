@@ -22,41 +22,61 @@ extern char **environ;
     }
 
 #define conv_int(X, DEST) X->DEST = val.as_int;
+
 #define conv_str(X, DEST) { \
-    char *tplop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *tplop = tpl_render(rtevnop); \
     if (tplop) { \
         X->DEST = tplop; \
     } else { \
         X->DEST = val.as_char_p; \
     } \
+    guard_free(rtevnop) \
 }
+
 #define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
+
 #define conv_strlist(X, DEST, TOK) { \
-    char *rtevnop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *tplop = tpl_render(rtevnop); \
     if (!X->DEST) \
         X->DEST = strlist_init(); \
-    if (rtevnop) {                   \
-        strip(rtevnop); \
-        strlist_append_tokenize(X->DEST, rtevnop, TOK); \
-        guard_free(rtevnop) \
+    if (tplop) { \
+        strip(tplop); \
+        strlist_append_tokenize(X->DEST, tplop, TOK); \
+        guard_free(tplop) \
     } else { \
         rtevnop = NULL; \
     } \
+    guard_free(rtevnop) \
 }
+
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
 
-#define conv_str_stackvar(X, DEST) X.DEST = tpl_render(runtime_expand_var(NULL, val.as_char_p));
+#define conv_str_stackvar(X, DEST) { \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *tplop = tpl_render(rtevnop);                       \
+    if (tplop) { \
+        X.DEST = tplop; \
+    } else { \
+        X.DEST = val.as_char_p; \
+    } \
+    guard_free(rtevnop) \
+}
+
 #define conv_strlist_stackvar(X, DEST, TOK) { \
-    char *rtevnop = tpl_render(runtime_expand_var(NULL, val.as_char_p)); \
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
+    char *tplop = tpl_render(rtevnop); \
     if (!X.DEST) \
         X.DEST = strlist_init(); \
-    if (rtevnop) {                   \
-        strip(rtevnop); \
-        strlist_append_tokenize(X.DEST, rtevnop, TOK); \
-        guard_free(rtevnop) \
+    if (tplop) { \
+        strip(tplop); \
+        strlist_append_tokenize(X.DEST, tplop, TOK); \
+        guard_free(tplop) \
     } else { \
         rtevnop = NULL; \
     } \
+    guard_free(rtevnop); \
 }
 #define conv_bool_stackvar(X, DEST) X.DEST = val.as_bool;
 
@@ -133,6 +153,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.tmpdir)
     guard_free(ctx->storage.delivery_dir)
     guard_free(ctx->storage.tools_dir)
+    guard_free(ctx->storage.package_dir)
     guard_free(ctx->storage.conda_install_prefix)
     guard_free(ctx->storage.conda_artifact_dir)
     guard_free(ctx->storage.conda_staging_dir)
@@ -145,6 +166,10 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_sources_dir)
     guard_free(ctx->storage.build_testing_dir)
     guard_free(ctx->storage.mission_dir)
+    guard_free(ctx->info.time_str_epoch)
+    guard_free(ctx->info.build_name)
+    guard_free(ctx->info.build_number)
+    guard_free(ctx->info.release_name)
     guard_free(ctx->conda.installer_baseurl)
     guard_free(ctx->conda.installer_name)
     guard_free(ctx->conda.installer_version)
@@ -161,10 +186,21 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests[i].name)
         guard_free(ctx->tests[i].version)
         guard_free(ctx->tests[i].repository)
+        guard_free(ctx->tests[i].repository_info_ref)
+        guard_free(ctx->tests[i].repository_info_tag)
         guard_free(ctx->tests[i].script)
         guard_free(ctx->tests[i].build_recipe)
         // test-specific runtime variables
         guard_runtime_free(ctx->tests[i].runtime.environ)
+    }
+
+    guard_free(ctx->rules.release_fmt)
+    guard_free(ctx->rules.build_name_fmt)
+    guard_free(ctx->rules.build_number_fmt)
+    ini_free(&ctx->rules._handle);
+
+    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+        guard_strlist_free(ctx->deploy[i].files)
     }
 }
 
@@ -522,9 +558,6 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             z++;
         }
     }
-
-    char env_name[NAME_MAX];
-    char env_date[NAME_MAX];
 
     /*
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
@@ -1217,6 +1250,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
         exit(1);
     }
     remove(tempfile);
+    guard_free(tempfile);
 
     // Replace "local" channel with the staging URL
     if (ctx->storage.conda_staging_url) {
@@ -1322,7 +1356,15 @@ void delivery_tests_run(struct Delivery *ctx) {
                 memset(cmd, 0, sizeof(cmd));
                 sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
 
-                status = shell(&proc, tpl_render(cmd));
+                char *cmd_rendered = tpl_render(cmd);
+                if (cmd_rendered) {
+                    if (strcmp(cmd_rendered, cmd) != 0) {
+                        strcpy(cmd, cmd_rendered);
+                    }
+                    guard_free(cmd_rendered)
+                }
+
+                status = shell(&proc, cmd);
                 if (status) {
                     msg(OMC_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
                     COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
@@ -1572,6 +1614,8 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         guard_free(contents);
     }
 
+    guard_free(data.src)
+    guard_free(data.dest)
     return 0;
 }
 

@@ -92,6 +92,8 @@ int shell(struct Process *proc, char *args) {
     if (proc != NULL) {
         proc->returncode = status;
     }
+
+    guard_free(t_name)
     return WEXITSTATUS(status);
 }
 

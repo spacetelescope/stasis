@@ -184,6 +184,7 @@ int tpl_render_to_file(char *str, const char *filename) {
     // Open the destination file for writing
     fp = fopen(filename, "w+");
     if (!fp) {
+        guard_free(result)
         return -1;
     }
 

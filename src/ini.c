@@ -323,7 +323,6 @@ struct INIFILE *ini_open(const char *filename) {
         // no data, skip
         if (!reading_value && isempty(line)) {
             guard_free(value)
-            value = NULL;
             continue;
         }
 

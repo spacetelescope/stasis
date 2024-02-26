@@ -185,8 +185,12 @@ int conda_check_required() {
             }
         }
         if (found < (sizeof(tools) / sizeof(*tools)) - 1) {
+            guard_free(cmd_out)
+            guard_strlist_free(result)
             return 1;
         }
+        guard_free(cmd_out)
+        guard_strlist_free(result)
     } else {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "The base package requirement check could not be performed\n");
         return 2;
