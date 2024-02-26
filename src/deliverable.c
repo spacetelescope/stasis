@@ -1663,7 +1663,7 @@ int delivery_docker(struct Delivery *ctx) {
     }
 
     // Test successful, save image
-    if (docker_save(basename(tag), ctx->storage.delivery_dir)) {
+    if (docker_save(path_basename(tag), ctx->storage.delivery_dir)) {
         // save failed
         return -1;
     }
