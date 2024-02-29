@@ -1,3 +1,4 @@
+//! @file omc.h
 #ifndef OMC_OMC_H
 #define OMC_OMC_H
 
@@ -46,15 +47,15 @@
 }
 
 struct OMC_GLOBAL {
-    bool verbose;
-    bool always_update_base_environment;
-    bool continue_on_error;
-    bool conda_fresh_start;
-    struct StrList *conda_packages;
-    struct StrList *pip_packages;
-    char *tmpdir;
-    char *conda_install_prefix;
-    char *sysconfdir;
+    bool verbose; //!< Enable verbose output
+    bool always_update_base_environment; //!< Update base environment immediately after activation
+    bool continue_on_error; //!< Do not stop on test failures
+    bool conda_fresh_start; //!< Always install a new copy of Conda
+    struct StrList *conda_packages; //!< Conda packages to install after initial activation
+    struct StrList *pip_packages; //!< Pip packages to install after initial activation
+    char *tmpdir; //!< Path to temporary storage directory
+    char *conda_install_prefix; //!< Path to install conda
+    char *sysconfdir; //!< Path where OMC reads its configuration files (mission directory, etc)
     struct Jfrog {
         char *jfrog_artifactory_base_url;
         char *jfrog_artifactory_product;
