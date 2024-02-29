@@ -198,6 +198,9 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.build_name_fmt)
     guard_free(ctx->rules.build_number_fmt)
     ini_free(&ctx->rules._handle);
+    guard_strlist_free(ctx->docker.tags)
+    guard_strlist_free(ctx->docker.build_args)
+    guard_free(ctx->docker.registry)
 
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         guard_strlist_free(ctx->deploy[i].files)
