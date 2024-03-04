@@ -16,16 +16,19 @@
 import os
 import shutil
 import subprocess
+import sys
 
-print("current directory: {}".format(os.path.abspath(os.curdir)))
+print("current directory: {}".format(os.path.abspath(os.curdir)), file=sys.stderr)
+
 if os.path.exists("html"):
     shutil.rmtree("html")
 
 # Update doxygen config
-subprocess.run("doxygen -u", shell=True)
+#subprocess.run("doxygen -u", shell=True)
 
 # Run doxygen
 subprocess.run("doxygen", shell=True)
+
 
 # -- Project information -----------------------------------------------------
 
@@ -33,6 +36,7 @@ project = 'Oh My Cal'
 copyright = '2023-2024, Space Telescope Science Institute'
 author = 'Joseph Hunkeler'
 
+root_doc = "nop"
 html_extra_path = ["html"]
 
 # -- General configuration ---------------------------------------------------
