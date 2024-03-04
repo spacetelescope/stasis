@@ -192,6 +192,6 @@ int tpl_render_to_file(char *str, const char *filename) {
     fprintf(fp, "%s", result);
     fclose(fp);
 
-    guard_free(result);
+    guard_free(result)
     return 0;
 }
