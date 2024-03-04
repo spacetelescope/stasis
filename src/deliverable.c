@@ -29,9 +29,8 @@ extern char **environ;
     if (tplop) { \
         X->DEST = tplop; \
     } else { \
-        X->DEST = val.as_char_p; \
+        X->DEST = NULL; \
     } \
-    guard_free(rtevnop) \
 }
 
 #define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
@@ -48,7 +47,6 @@ extern char **environ;
     } else { \
         rtevnop = NULL; \
     } \
-    guard_free(rtevnop) \
 }
 
 #define conv_bool(X, DEST) X->DEST = val.as_bool;
@@ -59,9 +57,8 @@ extern char **environ;
     if (tplop) { \
         X.DEST = tplop; \
     } else { \
-        X.DEST = val.as_char_p; \
+        X.DEST = NULL; \
     } \
-    guard_free(rtevnop) \
 }
 
 #define conv_strlist_stackvar(X, DEST, TOK) { \
@@ -76,7 +73,6 @@ extern char **environ;
     } else { \
         rtevnop = NULL; \
     } \
-    guard_free(rtevnop); \
 }
 #define conv_bool_stackvar(X, DEST) X.DEST = val.as_bool;
 

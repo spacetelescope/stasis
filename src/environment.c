@@ -284,9 +284,10 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
         return NULL;
     }
 
-    // If there's no environment variables to process return a copy of the input string
+    // If there's no environment variables to process return the input string
     if (strchr(input, delim) == NULL) {
-        return strdup(input);
+        //return strdup(input);
+        return input;
     }
 
     expanded = calloc(OMC_BUFSIZ, sizeof(char));
@@ -417,7 +418,6 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     }
     guard_free(now)
     guard_free(key)
-    guard_free(value)
 }
 
 /**

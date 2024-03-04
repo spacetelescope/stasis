@@ -66,7 +66,6 @@ static int grow(size_t z, size_t *output_bytes, char **output) {
             perror("realloc failed");
             return -1;
         }
-        memset(tmp + strlen(tmp), 0, new_size - strlen(tmp));
         *output = tmp;
         *output_bytes = new_size;
     }
@@ -77,7 +76,7 @@ char *tpl_render(char *str) {
     if (!str) {
         return NULL;
     }
-    size_t output_bytes = strlen(str) * 2;
+    size_t output_bytes = 1024 + strlen(str); // TODO: Is grow working correctly?
     char *output = NULL;
     char *b_close = NULL;
     char *pos = NULL;
@@ -127,10 +126,8 @@ char *tpl_render(char *str) {
             // Find closing brace
             b_close = strstr(pos, "}}");
             if (!b_close) {
-                grow(z + strlen(pos), &output_bytes, &output);
-                strcpy(output, pos);
-                z += strlen(pos);
-                continue;
+                fprintf(stderr, "error while templating '%s'\n\nunbalanced brace at position %zu\n", str, z);
+                return NULL;
             }
             // Jump past closing brace
             pos = b_close + 2;
@@ -144,7 +141,7 @@ char *tpl_render(char *str) {
                 value = strdup(env_val ? env_val : "");
             } else {
                 // Read replacement value
-                value = tpl_getval(key);
+                value = strdup(tpl_getval(key) ? tpl_getval(key) : "");
             }
         }
 
@@ -155,6 +152,8 @@ char *tpl_render(char *str) {
             // Append replacement value
             grow(z, &output_bytes, &output);
             strcat(output, value);
+            guard_free(value);
+            output[z] = 0;
         }
 
 #ifdef DEBUG
