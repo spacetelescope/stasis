@@ -1,7 +1,4 @@
-//
-// Created by jhunk on 10/5/23.
-//
-
+//! @file download.h
 #ifndef OMC_DOWNLOAD_H
 #define OMC_DOWNLOAD_H
 

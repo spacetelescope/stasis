@@ -69,25 +69,6 @@ int rmtree(char *_path) {
     return status;
 }
 
-/**
- * Expand "~" to the user's home directory
- *
- * Example:
- * ~~~{.c}
- * char *home = expandpath("~");             // == /home/username
- * char *config = expandpath("~/.config");   // == /home/username/.config
- * char *nope = expandpath("/tmp/test");     // == /tmp/test
- * char *nada = expandpath("/~/broken");     // == /~/broken
- *
- * free(home);
- * free(config);
- * free(nope);
- * free(nada);
- * ~~~
- *
- * @param _path (Must start with a `~`)
- * @return success=expanded path or original path, failure=NULL
- */
 char *expandpath(const char *_path) {
     if (_path == NULL) {
         return NULL;
@@ -146,13 +127,6 @@ char *expandpath(const char *_path) {
     return strdup(result);
 }
 
-/**
- * Strip directory from file name
- * Note: Caller is responsible for freeing memory
- *
- * @param _path
- * @return success=file name, failure=NULL
- */
 char *path_basename(char *path) {
     char *result = NULL;
     char *last = NULL;
@@ -168,12 +142,6 @@ char *path_basename(char *path) {
     return result;
 }
 
-/**
- * Return parent directory of file, or the parent of a directory
- *
- * @param path
- * @return success=directory, failure=empty string
- */
 char *path_dirname(char *path) {
     if (!path) {
         return "";
@@ -374,11 +342,18 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
 
 char *git_describe(const char *path) {
-    pushd(path);
     static char version[NAME_MAX];
     FILE *pp;
-    pp = popen("git describe --first-parent --always --tags", "r");
+
     memset(version, 0, sizeof(version));
+    if (pushd(path)) {
+        return NULL;
+    }
+
+    pp = popen("git describe --first-parent --always --tags", "r");
+    if (!pp) {
+        return NULL;
+    }
     fgets(version, sizeof(version) - 1, pp);
     strip(version);
     pclose(pp);
@@ -387,18 +362,25 @@ char *git_describe(const char *path) {
 }
 
 char *git_rev_parse(const char *path, char *args) {
-    pushd(path);
     static char version[NAME_MAX];
     char cmd[PATH_MAX];
     FILE *pp;
 
+    memset(version, 0, sizeof(version));
     if (isempty(args)) {
-        fprintf(stderr, "git_rev_parse args cannot be empty");
+        fprintf(stderr, "git_rev_parse args cannot be empty\n");
         return NULL;
     }
+
+    if (pushd(path)) {
+        return NULL;
+    }
+
     sprintf(cmd, "git rev-parse %s", args);
     pp = popen(cmd, "r");
-    memset(version, 0, sizeof(version));
+    if (!pp) {
+        return NULL;
+    }
     fgets(version, sizeof(version) - 1, pp);
     strip(version);
     pclose(pp);

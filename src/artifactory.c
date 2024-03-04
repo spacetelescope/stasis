@@ -115,7 +115,7 @@ void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList 
     strlist_append(*opt_map, data);
 }
 
-void jfrt_upload_set_defaults(struct JFRT_Upload *ctx) {
+void jfrt_upload_init(struct JFRT_Upload *ctx) {
     memset(ctx, 0, sizeof(*ctx));
     ctx->recursive = true;
     ctx->threads = 3;
@@ -131,6 +131,59 @@ static int auth_required(char *cmd) {
         if (!startswith(cmd, modes[i])) {
             return 1;
         }
+    }
+    return 0;
+}
+
+int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
+    char *url = getenv("OMC_JF_ARTIFACTORY_URL");
+    char *user = getenv("OMC_JF_USER");
+    char *access_token = getenv("OMC_JF_ACCESS_TOKEN");
+    char *password = getenv("OMC_JF_PASSWORD");
+    char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
+    char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
+    char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
+    char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
+
+    if (!url) {
+        fprintf(stderr, "Artifactory URL is not configured:\n");
+        fprintf(stderr, "please set OMC_JF_ARTIFACTORY_URL\n");
+        return -1;
+    }
+    auth_ctx->url = url;
+
+    if (access_token) {
+        auth_ctx->user = NULL;
+        auth_ctx->access_token = access_token;
+        auth_ctx->password = NULL;
+        auth_ctx->ssh_key_path = NULL;
+    } else if (user && password) {
+        auth_ctx->user = user;
+        auth_ctx->password = password;
+        auth_ctx->access_token = NULL;
+        auth_ctx->ssh_key_path = NULL;
+    } else if (ssh_key_path) {
+        auth_ctx->user = NULL;
+        auth_ctx->ssh_key_path = ssh_key_path;
+        if (ssh_passphrase) {
+            auth_ctx->ssh_passphrase = ssh_passphrase;
+        }
+        auth_ctx->password = NULL;
+        auth_ctx->access_token = NULL;
+    } else if (client_cert_key_path && client_cert_path) {
+        auth_ctx->user = NULL;
+        auth_ctx->password = NULL;
+        auth_ctx->access_token = NULL;
+        auth_ctx->ssh_key_path = NULL;
+        auth_ctx->client_cert_key_path = client_cert_key_path;
+        auth_ctx->client_cert_path = client_cert_path;
+    } else {
+        fprintf(stderr, "Artifactory authentication is not configured:\n");
+        fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
+        fprintf(stderr, "or, set OMC_JF_ACCESS_TOKEN\n");
+        fprintf(stderr, "or, set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
+        fprintf(stderr, "or, set OMC_JF_CLIENT_CERT_KEY_PATH and OMC_JF_CLIENT_CERT_PATH\n");
+        return -1;
     }
     return 0;
 }

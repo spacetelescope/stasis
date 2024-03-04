@@ -323,17 +323,18 @@ void delivery_install_conda(char *install_script, char *conda_install_dir);
  * Generate a formatted release string
  *
  * Formatters:
- *   %n = Delivery Name
- *   %c = Delivery Codename (HST mission, only)
- *   %m = Mission
- *   %R = Delivery Revision number (or "final")
- *   %r = Delivery Revision number
- *   %v = Delivery Version
- *   %P = Python version (i.e. 3.9.1)
- *   %p = Compact Python version (i.e. 3.9.1 -> 39)
- *   %a = System architecture name
- *   %o = System platform name
- *   %t = Delivery timestamp (Unix Epoch)
+ *
+ * - `%%n` = Delivery Name
+ * - `%%c` = Delivery Codename (HST mission, only)
+ * - `%%m` = Mission
+ * - `%%R` = Delivery Revision number (or "final")
+ * - `%%r` = Delivery Revision number
+ * - `%%v` = Delivery Version
+ * - `%%P` = Python version (i.e. 3.9.1)
+ * - `%%p` = Compact Python version (i.e. 3.9.1 -> 39)
+ * - `%%a` = System architecture name
+ * - `%%o` = System platform name
+ * - `%%t` = Delivery timestamp (Unix Epoch)
  *
  * @param ctx pointer to Delivery context
  * @param dest NULL pointer to string, or initialized string

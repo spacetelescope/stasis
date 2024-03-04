@@ -130,10 +130,10 @@ int artifactory_download_cli(char *dest,
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * if (jfrog_cli(&auth_ctx, "ping") {
  *     fprintf(stderr, "Failed to ping artifactory server: %s\n", auth_ctx.url);
@@ -152,10 +152,10 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args);
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * if (jfrog_cli_ping(&auth_ctx)) {
  *     fprintf(stderr, "Failed to ping artifactory server: %s\n", auth_ctx.url);
@@ -173,13 +173,13 @@ int jfrog_cli_rt_ping(struct JFRT_Auth *auth);
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * struct JFRT_Upload upload_ctx;
- * jfrt_upload_set_defaults(&upload_ctx);
+ * jfrt_upload_init(&upload_ctx);
  *
  * if (jfrt_cli_rt_upload(&auth_ctx, &upload_ctx,
  *     "local/files_*.ext", "repo_name/ext_files/")) {
@@ -201,10 +201,10 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * struct JFRT_Download download_ctx;
  * memset(download_ctx, 0, sizeof(download_ctx));
@@ -229,10 +229,10 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * if (jfrog_cli_rt_build_collect_env(&auth_ctx, "mybuildname", "1.2.3+gabcdef")) {
  *     fprintf(stderr, "Failed to collect runtime data for Artifactory build object\n");
@@ -252,10 +252,10 @@ int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, cha
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
- * memset(auth_ctx, 0, sizeof(auth_context);
  * auth_ctx.user = strdup("myuser");
  * auth_ctx.password = strdup("mypassword");
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
  *
  * if (jfrog_cli_rt_build_collect_env(&auth_ctx, "mybuildname", "1.2.3+gabcdef")) {
  *     fprintf(stderr, "Failed to collect runtime data for Artifactory build object\n");
@@ -276,9 +276,48 @@ int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, cha
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number);
 
 /**
+ * Configure JFrog CLI authentication according to OMC specs
+ *
+ * This function will use the OMC_JF_* environment variables to configure the authentication
+ * context. With this in mind, if an OMC_JF_* environment variable is not defined, the original value of
+ * the structure member will be used instead.
+ *
+ * Use OMC_JF_* variables to configure context
+ *
+ * ```c
+ * struct JFRT_Auth auth_ctx;
+ * jfrt_auth_init(&ctx);
+ * ```
+ *
+ * Use your own input, but let the environment take over when variables are defined
+ *
+ * ```c
+ * struct JFRT_Auth auth_ctx;
+ * auth_ctx.user = strdup("myuser");
+ * auth_ctx.password = strdup("mypassword");
+ * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * jfrt_auth_init(&auth_ctx);
+ * ```
+ *
+ * Use your own input without OMC's help. Purely an illustrative example.
+ *
+ * ```c
+ * struct JFRT_Auth auth_ctx;
+ * memset(auth_ctx, 0, sizeof(auth_ctx));
+ * auth_ctx.user = strdup("myuser");
+ * auth_ctx.password = strdup("mypassword");
+ * auth_ctx.url = strdup("https://myserver.tld/artifactory");
+ * ```
+ *
+ * @param auth_ctx
+ * @return
+ */
+int jfrt_auth_init(struct JFRT_Auth *auth_ctx);
+
+/**
  * Zero-out and apply likely defaults to a JFRT_Upload structure
  * @param ctx JFRT_Upload structure
  */
-void jfrt_upload_set_defaults(struct JFRT_Upload *ctx);
+void jfrt_upload_init(struct JFRT_Upload *ctx);
 
 #endif //OMC_ARTIFACTORY_H

@@ -1,7 +1,4 @@
-//
-// Created by jhunk on 12/17/23.
-//
-
+//! @file template.h
 #ifndef OMC_TEMPLATE_H
 #define OMC_TEMPLATE_H
 
