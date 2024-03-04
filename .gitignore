@@ -1,5 +1,7 @@
 build
-docs/output
+docs/html
+docs/man
+docs/latex
 cmake-*
 .idea
 *.so
