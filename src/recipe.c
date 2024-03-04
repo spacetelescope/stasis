@@ -23,6 +23,7 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
             fprintf(stderr, "OMC is misconfigured. Please check your output path(s) immediately.\n");
             fprintf(stderr, "recipe_dir = '%s'\nreponame = '%s'\ndestdir = '%s'\n",
                     recipe_dir, reponame, destdir);
+            exit(1);
         }
         if (rmtree(destdir)) {
             guard_free(*result)
