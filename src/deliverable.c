@@ -1215,7 +1215,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
         msg(OMC_MSG_ERROR, "failed to generate release header string\n", filename);
         exit(1);
     }
-    tempfile = xmkstemp(&tp);
+    tempfile = xmkstemp(&tp, "w");
     if (!tempfile || !tp) {
         msg(OMC_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
         exit(1);

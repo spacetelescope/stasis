@@ -15,7 +15,7 @@ int shell(struct Process *proc, char *args) {
 
     FILE *tp = NULL;
     char *t_name;
-    t_name = xmkstemp(&tp);
+    t_name = xmkstemp(&tp, "w");
     if (!t_name || !tp) {
         return -1;
     }

@@ -55,7 +55,22 @@ void debug_shell();
  * @return system path to the temporary file
  * @return NULL on failure
  */
-char *xmkstemp(FILE **fp);
+char *xmkstemp(FILE **fp, const char *mode);
+
+/**
+ * Is the path an empty directory structure?
+ *
+ * ```c
+ * if (isempty_dir("/some/path")) {
+ *     fprintf(stderr, "The directory is is empty!\n");
+ * } else {
+ *     printf("The directory contains dirs/files\n");
+ * }
+ * ```
+ *
+ * @param path directory
+ * @return 0 = no, 1 = yes
+ */
 int isempty_dir(const char *path);
 
 #endif //OMC_UTILS_H

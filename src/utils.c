@@ -470,12 +470,12 @@ void debug_shell() {
     exit(255);
 }
 
-char *xmkstemp(FILE **fp) {
+char *xmkstemp(FILE **fp, const char *mode) {
     char t_name[PATH_MAX];
     sprintf(t_name, "%s/%s", globals.tmpdir, "OMC.XXXXXX");
     int fd = mkstemp(t_name);
 
-    *fp = fdopen(fd, "w");
+    *fp = fdopen(fd, mode);
     if (!*fp) {
         if (fd > 0)
             close(fd);

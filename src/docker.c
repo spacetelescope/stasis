@@ -79,7 +79,7 @@ char *docker_ident() {
     char line[PATH_MAX];
     struct Process proc;
 
-    tempfile = xmkstemp(&fp);
+    tempfile = xmkstemp(&fp, "w");
     if (!fp || !tempfile) {
         return NULL;
     }
