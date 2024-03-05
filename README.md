@@ -1,3 +1,5 @@
+[![CMake on multiple platforms](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml) [![Documentation Status](https://readthedocs.org/projects/oh-my-cal/badge/?version=latest)](https://oh-my-cal.readthedocs.io/en/latest/?badge=latest)
+
 OMC aims to consolidate the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
 
 # Requirements
