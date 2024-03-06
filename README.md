@@ -79,6 +79,7 @@ Template strings can be accessed using the `{{ subject.key }}` notation in any O
 | storage.conda_artifact_dir | Ohmycal conda package directory    |
 | storage.wheel_artifact_dir | Ohmycal wheel package directory    |
 | storage.build_sources_dir  | Ohmycal sources directory          |
+| storage.build_docker_dir   | Ohmycal docker directory           |
 | conda.installer_name       | Conda distribution name            |
 | conda.installer_version    | Conda distribution version         |
 | conda.installer_platform   | Conda target platform              |
@@ -86,7 +87,8 @@ Template strings can be accessed using the `{{ subject.key }}` notation in any O
 | conda.installer_baseurl    | Conda installer URL                |
 | system.arch                | System CPU Architecture            |
 | system.platform            | System Platform (OS)               |
-| deploy.repo                | Artifactory destination repository |
+| deploy.docker.registry     | Docker registry                    |
+| deploy.jfrog.repo          | Artifactory destination repository |
 
 The template engine also provides an interface to environment variables using the `{{ env:VARIABLE_NAME }}` notation.
 
@@ -169,6 +171,17 @@ Sections starting with `deploy:artifactory:` will define the upload behavior of 
 |-------|--------|----------------------------------------|----------|
 | files | List   | `jf`-compatible wildcard path          | Y        |
 | dest  | String | Remote artifactory path to store files | Y        |
+
+### deploy:docker
+
+The `deploy:docker` section controls how Docker images are created, when a `Dockerfile` is present in the `build_docker_dir`.
+
+| Key               | Type   | Purpose                                      | Required |
+|-------------------|--------|----------------------------------------------|----------|
+| registry          | String | Docker registry to use                       | Y        |
+| image_compression | String | Compression program (with arguments)         | N        |
+| build_args        | List   | Values passed to `docker build --build-args` | N        |
+| tags              | List   | Docker image tag(s)                          | Y        |
 
 # Mission files
 
