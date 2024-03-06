@@ -24,24 +24,31 @@ int docker_script(const char *image, char *data, unsigned flags) {
     FILE *infile;
     FILE *outfile;
     char cmd[PATH_MAX];
+    char buffer[OMC_BUFSIZ];
 
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/bash -", image);
-    if (flags & OMC_DOCKER_QUIET) {
-    }
-    fprintf(stderr, "%s\n", cmd);
+
     outfile = popen(cmd, "w");
+    if (!outfile) {
+        // opening command pipe for writing failed
+        return -1;
+    }
 
     infile = fmemopen(data, strlen(data), "r");
-    char buffer[OMC_BUFSIZ];
+    if (!infile) {
+        // opening memory file for reading failed
+        return -1;
+    }
+
     do {
+        memset(buffer, 0, sizeof(buffer));
         fgets(buffer, sizeof(buffer) - 1, infile);
         fputs(buffer, outfile);
     } while (!feof(infile));
-    fclose(infile);
-    pclose(outfile);
 
-    return 0;
+    fclose(infile);
+    return pclose(outfile);
 }
 
 int docker_build(const char *dirpath, const char *args, int engine) {
