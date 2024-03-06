@@ -344,9 +344,9 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         getter(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, conda_install_prefix)
         getter(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY)
-        conv_strlist_stackvar(globals, conda_packages, "\n")
+        conv_strlist_stackvar(globals, conda_packages, LINE_SEP)
         getter(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY)
-        conv_strlist_stackvar(globals, pip_packages, "\n")
+        conv_strlist_stackvar(globals, pip_packages, LINE_SEP)
         // Configure jfrog cli downloader
         getter(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR)
         conv_str_stackvar(globals, jfrog.jfrog_artifactory_base_url)
@@ -438,10 +438,10 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     conv_str(ctx, conda.installer_baseurl)
 
     getter(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY)
-    conv_strlist(ctx, conda.conda_packages, "\n")
+    conv_strlist(ctx, conda.conda_packages, LINE_SEP)
 
     getter(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY)
-    conv_strlist(ctx, conda.pip_packages, "\n")
+    conv_strlist(ctx, conda.pip_packages, LINE_SEP)
 
     // Delivery metadata consumed
     // Now populate the rules
@@ -505,7 +505,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             conv_str(ctx, tests[z].build_recipe)
 
             getter(ini, ini->section[i]->key, "runtime", INIVAL_TO_LIST)
-            conv_strlist(ctx, tests[z].runtime.environ, "\n")
+            conv_strlist(ctx, tests[z].runtime.environ, LINE_SEP)
             z++;
         }
     }
@@ -553,7 +553,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             conv_str(ctx, deploy[z].dest)
 
             getter(ini, ini->section[i]->key, "files", INIVAL_TYPE_STR_ARRAY)
-            conv_strlist(ctx, deploy[z].files, "\n")
+            conv_strlist(ctx, deploy.jfrog[z].files, LINE_SEP)
             z++;
         }
     }
