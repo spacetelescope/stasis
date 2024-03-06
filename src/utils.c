@@ -417,6 +417,7 @@ void msg(unsigned type, char *fmt, ...) {
     va_start(args, fmt);
 
     stream = stdout;
+    fprintf(stream, "%s", OMC_COLOR_RESET);
     if (type & OMC_MSG_ERROR) {
         // for error output
         stream = stderr;
