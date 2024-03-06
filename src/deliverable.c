@@ -366,6 +366,15 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         conv_str_stackvar(globals, jfrog.repo)
     }
 
+    // Set artifactory repository via environment if possible
+    char *jfrepo = getenv("OMC_JF_REPO");
+    if (jfrepo) {
+        if (globals.jfrog.repo) {
+            guard_free(globals.jfrog.repo);
+        }
+        globals.jfrog.repo = strdup(jfrepo);
+    }
+
     // Configure architecture and platform information
     delivery_init_platform(ctx);
 
