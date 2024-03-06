@@ -562,6 +562,31 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         }
     }
 
+    for (size_t i = 0; i < ini->section_count; i++) {
+        if (startswith(ini->section[i]->key, "deploy:docker")) {
+            getter(ini, ini->section[i]->key, "registry", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy.docker.registry)
+
+            getter(ini, ini->section[i]->key, "image_compression", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy.docker.image_compression)
+
+            getter(ini, ini->section[i]->key, "test_script", INIVAL_TYPE_STR)
+            conv_str(ctx, deploy.docker.test_script)
+
+            getter(ini, ini->section[i]->key, "build_args", INIVAL_TYPE_STR_ARRAY)
+            conv_strlist(ctx, deploy.docker.build_args, LINE_SEP)
+
+            getter(ini, ini->section[i]->key, "tags", INIVAL_TYPE_STR_ARRAY)
+            conv_strlist(ctx, deploy.docker.tags, LINE_SEP)
+        }
+    }
+
+    if (ctx->deploy.docker.tags) {
+        for (size_t i = 0; i < strlist_count(ctx->deploy.docker.tags); i++) {
+            char *item = strlist_item(ctx->deploy.docker.tags, i);
+            tolower_s(item);
+        }
+    }
     /*
     if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
         memset(env_date, 0, sizeof(env_date));
@@ -1598,7 +1623,23 @@ int delivery_docker(struct Delivery *ctx) {
     }
 
     // Build the image
-    if (docker_build(ctx->storage.delivery_dir, args, ctx->docker.capabilities.build)) {
+    char delivery_file[PATH_MAX];
+    char dest[PATH_MAX];
+    memset(delivery_file, 0, sizeof(delivery_file));
+    memset(dest, 0, sizeof(dest));
+
+    sprintf(delivery_file, "%s/%s.yml", ctx->storage.delivery_dir, ctx->info.release_name);
+    if (access(delivery_file, F_OK) < 0) {
+        fprintf(stderr, "docker build cannot proceed without delivery file: %s\n", delivery_file);
+        return -1;
+    }
+
+    sprintf(dest, "%s/%s.yml", ctx->storage.build_docker_dir, ctx->info.release_name);
+    if (copy2(delivery_file, dest, CT_PERM)) {
+        fprintf(stderr, "Failed to copy delivery file to %s: %s\n", dest, strerror(errno));
+        return -1;
+    }
+    if (docker_build(ctx->storage.build_docker_dir, args, ctx->deploy.docker.capabilities.build)) {
         return -1;
     }
 
@@ -1606,14 +1647,26 @@ int delivery_docker(struct Delivery *ctx) {
     // All tags point back to the same image so test the first one we see
     // regardless of how many are defined
     char *tag = NULL;
-    tag = strlist_item(ctx->docker.tags, 0);
-    if (docker_script(tag, "source /etc/profile\npython -m pip freeze\nmamba info", 0)) {
-        // test failed -- don't save the image
-        return -1;
+    tag = strlist_item(ctx->deploy.docker.tags, 0);
+
+    msg(OMC_MSG_L2, "Executing image test script for %s\n", tag);
+    if (ctx->deploy.docker.test_script) {
+        if (isempty(ctx->deploy.docker.test_script)) {
+            msg(OMC_MSG_L2 | OMC_MSG_WARN, "Image test script has no content\n");
+        } else {
+            int state;
+            if ((state = docker_script(tag, ctx->deploy.docker.test_script, 0))) {
+                msg(OMC_MSG_L2 | OMC_MSG_ERROR, "Non-zero exit (%d) from test script. %s image archive will not be generated.\n", state >> 8, tag);
+                // test failed -- don't save the image
+                return -1;
+            }
+        }
+    } else {
+        msg(OMC_MSG_L2 | OMC_MSG_WARN, "No image test script defined\n");
     }
 
     // Test successful, save image
-    if (docker_save(path_basename(tag), ctx->storage.delivery_dir)) {
+    if (docker_save(path_basename(tag), ctx->storage.docker_artifact_dir, ctx->deploy.docker.image_compression)) {
         // save failed
         return -1;
     }
