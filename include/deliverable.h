@@ -58,6 +58,7 @@ struct Delivery {
         char *conda_artifact_dir;       ///< Base path to store compiled conda packages
         char *conda_staging_dir;        ///< Base path to copy compiled conda packages
         char *conda_staging_url;        ///< URL to access compiled conda packages
+        char *docker_artifact_dir;      ///< Base path to store saved docker images
         char *wheel_artifact_dir;       ///< Base path to store compiled wheel packages (Unused)
         char *wheel_staging_dir;        ///< Base path to copy compiled wheel packages (Unused)
         char *wheel_staging_url;        ///< URL to access compiled wheel packages (Unused)
@@ -65,6 +66,7 @@ struct Delivery {
         char *build_recipes_dir;        ///< Path to store conda recipes
         char *build_sources_dir;        ///< Path to store source code
         char *build_testing_dir;        ///< Path to store test data (Unused)
+        char *build_docker_dir;         ///< Path to store docker build script
     } storage;
 
     /*! \struct Meta
