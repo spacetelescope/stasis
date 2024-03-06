@@ -137,20 +137,24 @@ struct Delivery {
     } tests[1000]; ///< An array of tests
 
     struct Deploy {
-        struct StrList *files;
-        struct JFRT_Auth auth_ctx;
-        struct JFRT_Upload upload_ctx;
-        char *repo;
-        char *dest;
-    } deploy[1000];
+        struct JFrog {
+            struct StrList *files;
+            struct JFRT_Auth auth_ctx;
+            struct JFRT_Upload upload_ctx;
+            char *repo;
+            char *dest;
+        } jfrog[1000];
 
-    struct Docker {
-        struct DockerCapabilities capabilities;
-        char *dockerfile;
-        char *registry;
-        struct StrList *build_args;
-        struct StrList *tags;
-    } docker;
+        struct Docker {
+            struct DockerCapabilities capabilities;
+            char *image_compression;
+            char *dockerfile;
+            char *registry;
+            char *test_script;
+            struct StrList *build_args;
+            struct StrList *tags;
+        } docker;
+    } deploy;
 
     struct Rule {
         struct INIFILE *_handle;

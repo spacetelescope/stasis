@@ -194,12 +194,14 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.build_name_fmt)
     guard_free(ctx->rules.build_number_fmt)
     ini_free(&ctx->rules._handle);
-    guard_strlist_free(ctx->docker.tags)
-    guard_strlist_free(ctx->docker.build_args)
-    guard_free(ctx->docker.registry)
 
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        guard_strlist_free(ctx->deploy[i].files)
+    guard_free(ctx->deploy.docker.registry)
+    guard_free(ctx->deploy.docker.image_compression)
+    guard_strlist_free(ctx->deploy.docker.tags)
+    guard_strlist_free(ctx->deploy.docker.build_args)
+
+    for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(ctx->deploy.jfrog[0]); i++) {
+        guard_strlist_free(ctx->deploy.jfrog[i].files)
     }
 }
 
@@ -516,43 +518,43 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         if (startswith(ini->section[i]->key, "deploy:artifactory")) {
             // Artifactory base configuration
             getter(ini, ini->section[i]->key, "workaround_parent_only", INIVAL_TYPE_BOOL)
-            conv_bool(ctx, deploy[z].upload_ctx.workaround_parent_only)
+            conv_bool(ctx, deploy.jfrog[z].upload_ctx.workaround_parent_only)
 
             getter(ini, ini->section[i]->key, "exclusions", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy[z].upload_ctx.exclusions)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.exclusions)
 
             getter(ini, ini->section[i]->key, "explode", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.explode)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.explode)
 
             getter(ini, ini->section[i]->key, "recursive", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.recursive)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.recursive)
 
             getter(ini, ini->section[i]->key, "retries", INIVAL_TYPE_INT)
-            conv_int(ctx, deploy[z].upload_ctx.retries)
+            conv_int(ctx, deploy.jfrog[z].upload_ctx.retries)
 
             getter(ini, ini->section[i]->key, "retry_wait_time", INIVAL_TYPE_INT)
-            conv_int(ctx, deploy[z].upload_ctx.retry_wait_time)
+            conv_int(ctx, deploy.jfrog[z].upload_ctx.retry_wait_time)
 
             getter(ini, ini->section[i]->key, "detailed_summary", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.detailed_summary)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.detailed_summary)
 
             getter(ini, ini->section[i]->key, "quiet", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.quiet)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.quiet)
 
             getter(ini, ini->section[i]->key, "regexp", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.regexp)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.regexp)
 
             getter(ini, ini->section[i]->key, "spec", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy[z].upload_ctx.spec)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.spec)
 
             getter(ini, ini->section[i]->key, "flat", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy[z].upload_ctx.flat)
+            conv_str(ctx, deploy.jfrog[z].upload_ctx.flat)
 
             getter(ini, ini->section[i]->key, "repo", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy[z].repo)
+            conv_str(ctx, deploy.jfrog[z].repo)
 
             getter(ini, ini->section[i]->key, "dest", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy[z].dest)
+            conv_str(ctx, deploy.jfrog[z].dest)
 
             getter(ini, ini->section[i]->key, "files", INIVAL_TYPE_STR_ARRAY)
             conv_strlist(ctx, deploy.jfrog[z].files, LINE_SEP)
@@ -1434,17 +1436,17 @@ int delivery_init_artifactory(struct Delivery *ctx) {
 int delivery_artifact_upload(struct Delivery *ctx) {
     int status = 0;
 
-    for (size_t i = 0; i < sizeof(ctx->deploy) / sizeof(*ctx->deploy); i++) {
-        if (!ctx->deploy[i].files || !ctx->deploy[i].dest) {
+    for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(*ctx->deploy.jfrog); i++) {
+        if (!ctx->deploy.jfrog[i].files || !ctx->deploy.jfrog[i].dest) {
             break;
         }
-        jfrt_upload_init(&ctx->deploy[i].upload_ctx);
+        jfrt_upload_init(&ctx->deploy.jfrog[i].upload_ctx);
 
         char *repo = getenv("OMC_JF_REPO");
         if (repo) {
-            ctx->deploy[i].repo = strdup(repo);
+            ctx->deploy.jfrog[i].repo = strdup(repo);
         } else if (globals.jfrog.repo) {
-            ctx->deploy[i].repo = strdup(globals.jfrog.repo);
+            ctx->deploy.jfrog[i].repo = strdup(globals.jfrog.repo);
         } else {
             msg(OMC_MSG_WARN, "Artifactory repository path is not configured!\n");
             fprintf(stderr, "set OMC_JF_REPO environment variable...\nOr append to configuration file:\n\n");
@@ -1453,40 +1455,40 @@ int delivery_artifact_upload(struct Delivery *ctx) {
             break;
         }
 
-        if (isempty(ctx->deploy[i].repo) || !strlen(ctx->deploy[i].repo)) {
+        if (isempty(ctx->deploy.jfrog[i].repo) || !strlen(ctx->deploy.jfrog[i].repo)) {
             // Unlikely to trigger if the config parser is working correctly
             msg(OMC_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
             status++;
             break;
         }
 
-        if (jfrt_auth_init(&ctx->deploy[i].auth_ctx)) {
+        if (jfrt_auth_init(&ctx->deploy.jfrog[i].auth_ctx)) {
             continue;
         }
 
-        ctx->deploy[i].upload_ctx.workaround_parent_only = true;
-        ctx->deploy[i].upload_ctx.build_name = ctx->info.build_name;
-        ctx->deploy[i].upload_ctx.build_number = ctx->info.build_number;
+        ctx->deploy.jfrog[i].upload_ctx.workaround_parent_only = true;
+        ctx->deploy.jfrog[i].upload_ctx.build_name = ctx->info.build_name;
+        ctx->deploy.jfrog[i].upload_ctx.build_number = ctx->info.build_number;
 
         char files[PATH_MAX];
 
-        if (jfrog_cli_rt_ping(&ctx->deploy[i].auth_ctx)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy[i].auth_ctx.url);
+        if (jfrog_cli_rt_ping(&ctx->deploy.jfrog[i].auth_ctx)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog[i].auth_ctx.url);
             return -1;
         }
 
-        if (strlist_count(ctx->deploy[i].files)) {
-            for (size_t f = 0; f < strlist_count(ctx->deploy[i].files); f++) {
+        if (strlist_count(ctx->deploy.jfrog[i].files)) {
+            for (size_t f = 0; f < strlist_count(ctx->deploy.jfrog[i].files); f++) {
                 memset(files, 0, sizeof(files));
-                snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy[i].files, f));
-                status += jfrog_cli_rt_upload(&ctx->deploy[i].auth_ctx, &ctx->deploy[i].upload_ctx, files, ctx->deploy[i].dest);
+                snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy.jfrog[i].files, f));
+                status += jfrog_cli_rt_upload(&ctx->deploy.jfrog[i].auth_ctx, &ctx->deploy.jfrog[i].upload_ctx, files, ctx->deploy.jfrog[i].dest);
             }
         }
     }
 
-    if (!status && ctx->deploy[0].files && ctx->deploy[0].dest) {
-        jfrog_cli_rt_build_collect_env(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
-        jfrog_cli_rt_build_publish(&ctx->deploy[0].auth_ctx, ctx->deploy[0].upload_ctx.build_name, ctx->deploy[0].upload_ctx.build_number);
+    if (!status && ctx->deploy.jfrog[0].files && ctx->deploy.jfrog[0].dest) {
+        jfrog_cli_rt_build_collect_env(&ctx->deploy.jfrog[0].auth_ctx, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
+        jfrog_cli_rt_build_publish(&ctx->deploy.jfrog[0].auth_ctx, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
     }
 
     return status;
@@ -1568,12 +1570,12 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 }
 
 int delivery_docker(struct Delivery *ctx) {
-    if (!docker_capable(&ctx->docker.capabilities)) {
+    if (!docker_capable(&ctx->deploy.docker.capabilities)) {
         return -1;
     }
     char args[PATH_MAX];
-    size_t total_tags = strlist_count(ctx->docker.tags);
-    size_t total_build_args = strlist_count(ctx->docker.build_args);
+    size_t total_tags = strlist_count(ctx->deploy.docker.tags);
+    size_t total_build_args = strlist_count(ctx->deploy.docker.build_args);
 
     if (!total_tags) {
         fprintf(stderr, "error: at least one docker image tag must be defined\n");
@@ -1582,13 +1584,13 @@ int delivery_docker(struct Delivery *ctx) {
 
     // Append image tags to command
     for (size_t i = 0; i < total_tags; i++) {
-        char *tag = strlist_item(ctx->docker.tags, i);
+        char *tag = strlist_item(ctx->deploy.docker.tags, i);
         sprintf(args + strlen(args), " -t \"%s\" ", tag);
     }
 
     // Append build arguments to command (i.e. --build-arg "key=value"
     for (size_t i = 0; i < total_build_args; i++) {
-        char *build_arg = strlist_item(ctx->docker.build_args, i);
+        char *build_arg = strlist_item(ctx->deploy.docker.build_args, i);
         if (!build_arg) {
             break;
         }

@@ -217,6 +217,7 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("storage.conda_artifact_dir", &ctx.storage.conda_artifact_dir);
     tpl_register("storage.wheel_artifact_dir", &ctx.storage.wheel_artifact_dir);
     tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
+    tpl_register("storage.build_docker_dir", &ctx.storage.build_docker_dir);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
@@ -224,8 +225,8 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
     tpl_register("system.arch", &ctx.system.arch);
     tpl_register("system.platform", &ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
-    tpl_register("deploy.repo", &globals.jfrog.repo);
-    tpl_register("docker.registry", &ctx.docker.registry);
+    tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
+    tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with OMC_SYSCONFDIR
@@ -442,7 +443,6 @@ int main(int argc, char *argv[], char *arge[]) {
 
         delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
     }
-
 
     conda_exec("list");
 
