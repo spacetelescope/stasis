@@ -468,6 +468,9 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L1, "Rendering mission templates\n");
     delivery_mission_render_files(&ctx);
 
+    msg(OMC_MSG_L1, "Building Docker image\n");
+    delivery_docker(&ctx);
+
     msg(OMC_MSG_L1, "Uploading artifacts\n");
     delivery_artifact_upload(&ctx);
 
