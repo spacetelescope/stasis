@@ -10,6 +10,9 @@
 //! Flag for docker buildx
 #define OMC_DOCKER_BUILD_X 1 << 2
 
+//! Compress "docker save"ed images with a compression program
+#define OMC_DOCKER_IMAGE_COMPRESSION "zstd"
+
 struct DockerCapabilities {
     int podman;  //!< Is "docker" really podman?
     int build;  //!< Is a build plugin available?
@@ -79,6 +82,6 @@ int docker_exec(const char *args, unsigned flags);
  */
 int docker_build(const char *dirpath, const char *args, int engine);
 int docker_script(const char *image, char *data, unsigned flags);
-int docker_save(const char *image, const char *destdir);
+int docker_save(const char *image, const char *destdir, const char *compression_program);
 
 #endif //OMC_DOCKER_H

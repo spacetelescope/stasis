@@ -68,10 +68,30 @@ int docker_build(const char *dirpath, const char *args, int engine) {
     return docker_exec(cmd, 0);
 }
 
-int docker_save(const char *image, const char *destdir) {
+int docker_save(const char *image, const char *destdir, const char *compression_program) {
     char cmd[PATH_MAX];
+
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "save %s -o \"%s/%s.tar\"", image, destdir, image);
+
+    if (compression_program && strlen(compression_program)) {
+        char ext[255];
+        memset(ext, 0, sizeof(ext));
+        if (startswith(compression_program, "zstd")) {
+            strcpy(ext, "zst");
+        } else if (startswith(compression_program, "xz")) {
+            strcpy(ext, "xz");
+        } else if (startswith(compression_program, "gzip")) {
+            strcpy(ext, "gz");
+        } else if (startswith(compression_program, "bzip2")) {
+            strcpy(ext, "bz2");
+        } else {
+            strncpy(ext, compression_program, sizeof(ext) - 1);
+        }
+        sprintf(cmd, "save \"%s\" | %s > \"%s/%s.tar.%s\"", image, compression_program, destdir, image, ext);
+    } else {
+        sprintf(cmd, "save \"%s\" -o \"%s/%s.tar\"", image, destdir, image);
+
+    }
     return docker_exec(cmd, 0);
 }
 
