@@ -132,7 +132,7 @@ char *path_basename(char *path) {
     char *last = NULL;
 
     if ((last = strrchr(path, '/')) == NULL) {
-        return result;
+        return path;
     }
     // Perform a lookahead ensuring the string is valid beyond the last separator
     if (last++ != NULL) {
