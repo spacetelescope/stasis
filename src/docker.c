@@ -12,8 +12,10 @@ int docker_exec(const char *args, unsigned flags) {
     if (flags & OMC_DOCKER_QUIET) {
         strcpy(proc.f_stdout, "/dev/null");
         strcpy(proc.f_stderr, "/dev/null");
+    } else {
+        msg(OMC_MSG_L2, "Executing: %s\n", cmd);
     }
-    fprintf(stderr, "%s\n", cmd);
+
     shell(&proc, cmd);
     return proc.returncode;
 }
