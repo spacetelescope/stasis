@@ -1626,6 +1626,8 @@ int delivery_docker(struct Delivery *ctx) {
         return -1;
     }
 
+    memset(args, 0, sizeof(args));
+
     // Append image tags to command
     for (size_t i = 0; i < total_tags; i++) {
         char *tag = strlist_item(ctx->deploy.docker.tags, i);
