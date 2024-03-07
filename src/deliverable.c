@@ -206,7 +206,17 @@ void delivery_free(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs(struct Delivery *ctx) {
-    path_store(&ctx->storage.root, PATH_MAX, "omc", "");
+    char *rootdir = getenv("OMC_ROOT");
+    if (rootdir) {
+        if (isempty(rootdir)) {
+            fprintf(stderr, "OMC_ROOT is set, but empty. Please assign a file system path to this environment variable.\n");
+            exit(1);
+        }
+        path_store(&ctx->storage.root, PATH_MAX, rootdir, "");
+    } else {
+        // use "omc" in current working directory
+        path_store(&ctx->storage.root, PATH_MAX, "omc", "");
+    }
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
 
