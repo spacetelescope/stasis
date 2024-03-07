@@ -40,6 +40,7 @@ static struct option long_options[] = {
         {"config", optional_argument, 0, 'c'},
         {"python", optional_argument, 0, 'p'},
         {"verbose", no_argument, 0, 'v'},
+        {"unbuffered", no_argument, 0, 'U'},
         {"update-base", optional_argument, 0, OPT_ALWAYS_UPDATE_BASE},
         {0, 0, 0, 0},
 };
@@ -51,6 +52,7 @@ const char *long_options_help[] = {
         "Read configuration file",
         "Override version of Python in configuration",
         "Increase output verbosity",
+        "Disable line buffering",
         "Update conda installation prior to OMC environment creation",
         NULL,
 };
@@ -145,7 +147,7 @@ int main(int argc, char *argv[], char *arge[]) {
     int c;
     while (1) {
         int option_index;
-        c = getopt_long(argc, argv, "hVCc:p:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -167,6 +169,13 @@ int main(int argc, char *argv[], char *arge[]) {
                 break;
             case OPT_ALWAYS_UPDATE_BASE:
                 arg_always_update_base_environment = 1;
+                break;
+            case 'U':
+                setenv("PYTHONUNBUFFERED", "1", 1);
+                fflush(stdout);
+                fflush(stderr);
+                setvbuf(stdout, NULL, _IONBF, 0);
+                setvbuf(stderr, NULL, _IONBF, 0);
                 break;
             case 'v':
                 globals.verbose = 1;
