@@ -30,9 +30,15 @@ struct OMC_GLOBAL globals = {
     .conda_packages = NULL,
     .pip_packages = NULL,
     .tmpdir = NULL,
+    .enable_docker = true,
+    .enable_artifactory = true,
+    .enable_testing = true,
 };
 
 #define OPT_ALWAYS_UPDATE_BASE 1000
+#define OPT_NO_DOCKER 1001
+#define OPT_NO_ARTIFACTORY 1002
+#define OPT_NO_TESTING 1003
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
@@ -42,6 +48,9 @@ static struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
         {"update-base", optional_argument, 0, OPT_ALWAYS_UPDATE_BASE},
+        {"no-docker", no_argument, 0, OPT_NO_DOCKER},
+        {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
+        {"no-testing", no_argument, 0, OPT_NO_TESTING},
         {0, 0, 0, 0},
 };
 
@@ -54,6 +63,9 @@ const char *long_options_help[] = {
         "Increase output verbosity",
         "Disable line buffering",
         "Update conda installation prior to OMC environment creation",
+        "Do not build docker images",
+        "Do not upload artifacts to Artifactory",
+        "Do not execute test scripts",
         NULL,
 };
 
@@ -162,13 +174,13 @@ int main(int argc, char *argv[], char *arge[]) {
                 config_input = strdup(optarg);
                 break;
             case 'C':
-                arg_continue_on_error = 1;
+                arg_continue_on_error = true;
                 break;
             case 'p':
                 strcpy(python_override_version, optarg);
                 break;
             case OPT_ALWAYS_UPDATE_BASE:
-                arg_always_update_base_environment = 1;
+                arg_always_update_base_environment = true;
                 break;
             case 'U':
                 setenv("PYTHONUNBUFFERED", "1", 1);
@@ -178,8 +190,16 @@ int main(int argc, char *argv[], char *arge[]) {
                 setvbuf(stderr, NULL, _IONBF, 0);
                 break;
             case 'v':
-                globals.verbose = 1;
+                globals.verbose = true;
                 break;
+            case OPT_NO_DOCKER:
+                globals.enable_docker = false;
+                break;
+            case OPT_NO_ARTIFACTORY:
+                globals.enable_artifactory = false;
+                break;
+            case OPT_NO_TESTING:
+                globals.enable_testing = false;
             case '?':
                 break;
             default:
@@ -392,8 +412,12 @@ int main(int argc, char *argv[], char *arge[]) {
     }
 
     // Execute configuration-defined tests
-    msg(OMC_MSG_L1, "Begin test execution\n");
-    delivery_tests_run(&ctx);
+    if (globals.enable_testing) {
+        msg(OMC_MSG_L1, "Begin test execution\n");
+        delivery_tests_run(&ctx);
+    } else {
+        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Test execution is disabled\n");
+    }
 
     msg(OMC_MSG_L1, "Generating deferred package listing\n");
     // Test succeeded so move on to producing package artifacts
@@ -477,11 +501,19 @@ int main(int argc, char *argv[], char *arge[]) {
     msg(OMC_MSG_L1, "Rendering mission templates\n");
     delivery_mission_render_files(&ctx);
 
-    msg(OMC_MSG_L1, "Building Docker image\n");
-    delivery_docker(&ctx);
+    if (globals.enable_docker) {
+        msg(OMC_MSG_L1, "Building Docker image\n");
+        delivery_docker(&ctx);
+    } else {
+        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled\n");
+    }
 
-    msg(OMC_MSG_L1, "Uploading artifacts\n");
-    delivery_artifact_upload(&ctx);
+    if (globals.enable_artifactory) {
+        msg(OMC_MSG_L1, "Uploading artifacts\n");
+        delivery_artifact_upload(&ctx);
+    } else {
+        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled\n");
+    }
 
     msg(OMC_MSG_L1, "Cleaning up\n");
     ini_free(&ini);

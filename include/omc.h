@@ -51,6 +51,9 @@ struct OMC_GLOBAL {
     bool always_update_base_environment; //!< Update base environment immediately after activation
     bool continue_on_error; //!< Do not stop on test failures
     bool conda_fresh_start; //!< Always install a new copy of Conda
+    bool enable_docker; //!< Enable docker image builds
+    bool enable_artifactory; //!< Enable artifactory uploads
+    bool enable_testing; //!< Enable package testing
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory

@@ -689,8 +689,11 @@ int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
 
 void delivery_debug_show(struct Delivery *ctx) {
     printf("\n====DEBUG====\n");
-    printf("%-20s %-10s\n", "[DEBUG] system configuration directory:", globals.sysconfdir);
-    printf("%-20s %-10s\n", "[DEBUG] mission directory:", ctx->storage.mission_dir);
+    printf("%-20s %-10s\n", "System configuration directory:", globals.sysconfdir);
+    printf("%-20s %-10s\n", "Mission directory:", ctx->storage.mission_dir);
+    printf("%-20s %-10s\n", "Testing enabled:", globals.enable_testing ? "Yes" : "No");
+    printf("%-20s %-10s\n", "Docker image builds enabled:", globals.enable_docker ? "Yes" : "No");
+    printf("%-20s %-10s\n", "Artifact uploading enabled:", globals.enable_artifactory ? "Yes" : "No");
 }
 
 void delivery_meta_show(struct Delivery *ctx) {
