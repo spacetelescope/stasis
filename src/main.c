@@ -275,6 +275,14 @@ int main(int argc, char *argv[], char *arge[]) {
         memset(omc_sysconfdir_tmp, 0, sizeof(omc_sysconfdir_tmp));
     }
 
+    // Override Python version from command-line, if any
+    if (strlen(python_override_version)) {
+        guard_free(ctx.meta.python)
+        ctx.meta.python = strdup(python_override_version);
+        guard_free(ctx.meta.python_compact);
+        ctx.meta.python_compact = to_short_version(ctx.meta.python);
+    }
+
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
         cfg = ini_open(config_input);
@@ -289,14 +297,6 @@ int main(int argc, char *argv[], char *arge[]) {
     if (!ini) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read delivery file: %s, %s\n", delivery_input, strerror(errno));
         exit(1);
-    }
-
-    // Override Python version from command-line, if any
-    if (strlen(python_override_version)) {
-        guard_free(ctx.meta.python)
-        ctx.meta.python = strdup(python_override_version);
-        guard_free(ctx.meta.python_compact);
-        ctx.meta.python_compact = to_short_version(ctx.meta.python);
     }
 
     if (delivery_init(&ctx, ini, cfg)) {
