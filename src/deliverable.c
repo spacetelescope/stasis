@@ -441,9 +441,12 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     getter(ini, "meta", "based_on", INIVAL_TYPE_STR)
     conv_str(ctx, meta.based_on)
 
-    getter(ini, "meta", "python", INIVAL_TYPE_STR)
-    conv_str(ctx, meta.python)
-    ctx->meta.python_compact = to_short_version(ctx->meta.python);
+    if (!ctx->meta.python) {
+        getter(ini, "meta", "python", INIVAL_TYPE_STR)
+        conv_str(ctx, meta.python)
+        guard_free(ctx->meta.python_compact)
+        ctx->meta.python_compact = to_short_version(ctx->meta.python);
+    }
 
     getter_required(ini, "conda", "installer_name", INIVAL_TYPE_STR)
     conv_str(ctx, conda.installer_name)

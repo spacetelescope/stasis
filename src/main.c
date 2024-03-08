@@ -291,6 +291,14 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
+    // Override Python version from command-line, if any
+    if (strlen(python_override_version)) {
+        guard_free(ctx.meta.python)
+        ctx.meta.python = strdup(python_override_version);
+        guard_free(ctx.meta.python_compact);
+        ctx.meta.python_compact = to_short_version(ctx.meta.python);
+    }
+
     if (delivery_init(&ctx, ini, cfg)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "Failed to initialize delivery context\n");
         exit(1);
@@ -298,14 +306,6 @@ int main(int argc, char *argv[], char *arge[]) {
 
     globals.always_update_base_environment = arg_always_update_base_environment;
     globals.continue_on_error = arg_continue_on_error;
-
-    // Override Python version from command-line, if any
-    // TODO: Investigate better method to override.
-    //       And make sure all pointers/strings are updated
-    if (strlen(python_override_version) && ctx.meta.python) {
-        guard_free(ctx.meta.python)
-        ctx.meta.python = strdup(python_override_version);
-    }
 
     msg(OMC_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {
