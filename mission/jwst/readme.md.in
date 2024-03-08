@@ -43,7 +43,6 @@ https://conda.io/projects/conda/en/latest/user-guide/install/index.html
 **Miniconda:**
 
 ```
-# TODO: UPDATE THIS
 $ wget {{conda.installer_baseurl}}/{{conda.installer_name}}-{{conda.installer_version}}-{{conda.installer_platform}}-{{conda.installer_arch}}.sh
 $ bash {{conda.installer_name}}-{{conda.installer_version}}-{{conda.installer_platform}}-{{conda.installer_arch}}.sh
 $ $HOME/{{conda.installer_name}}/condabin/conda init
