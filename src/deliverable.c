@@ -8,73 +8,47 @@ extern char **environ;
 #define __environ environ
 #endif
 
-#define getter(XINI, SECTION_NAME, KEY, TYPE) \
-    { \
-        ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val); \
+static void ini_getval_required(struct INIFILE *ini, char *section_name, char *key, unsigned type, union INIVal *val) {
+    int status = ini_getval(ini, section_name, key, type, val);
+    if (status || isempty(val->as_char_p)) {
+        fprintf(stderr, "%s:%s is required but not defined\n", section_name, key);
+        exit(1);
     }
-#define getter_required(XINI, SECTION_NAME, KEY, TYPE) \
-    { \
-        int status = ini_getval(XINI, SECTION_NAME, KEY, TYPE, &val); \
-        if (status || isempty(val.as_char_p)) { \
-            fprintf(stderr, "%s:%s is required but not defined\n", SECTION_NAME, KEY); \
-            return -1;\
-        } \
+}
+
+static void conv_int(int *x, union INIVal val) {
+    *x = val.as_int;
+}
+
+static void conv_str(char **x, union INIVal val) {
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p);
+    char *tplop = tpl_render(rtevnop);
+    if (tplop) {
+        *x = tplop;
+    } else {
+        *x = NULL;
     }
-
-#define conv_int(X, DEST) X->DEST = val.as_int;
-
-#define conv_str(X, DEST) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
-    char *tplop = tpl_render(rtevnop); \
-    if (tplop) { \
-        X->DEST = tplop; \
-    } else { \
-        X->DEST = NULL; \
-    } \
 }
 
-#define conv_str_noexpand(X, DEST) if (val.as_char_p) X->DEST = strdup(val.as_char_p);
-
-#define conv_strlist(X, DEST, TOK) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
-    char *tplop = tpl_render(rtevnop); \
-    if (!X->DEST) \
-        X->DEST = strlist_init(); \
-    if (tplop) { \
-        strip(tplop); \
-        strlist_append_tokenize(X->DEST, tplop, TOK); \
-        guard_free(tplop) \
-    } else { \
-        rtevnop = NULL; \
-    } \
+static void conv_str_noexpand(char **x, union INIVal val) {
+    *x = strdup(val.as_char_p);
 }
 
-#define conv_bool(X, DEST) X->DEST = val.as_bool;
-
-#define conv_str_stackvar(X, DEST) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
-    char *tplop = tpl_render(rtevnop);                       \
-    if (tplop) { \
-        X.DEST = tplop; \
-    } else { \
-        X.DEST = NULL; \
-    } \
+static void conv_strlist(struct StrList **x, char *tok, union INIVal val) {
+    char *rtevnop = runtime_expand_var(NULL, val.as_char_p);
+    char *tplop = tpl_render(rtevnop);
+    if (!(*x))
+        (*x) = strlist_init();
+    if (tplop) {
+        strip(tplop);
+        strlist_append_tokenize((*x), tplop, tok);
+        guard_free(tplop)
+    }
 }
 
-#define conv_strlist_stackvar(X, DEST, TOK) { \
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p); \
-    char *tplop = tpl_render(rtevnop); \
-    if (!X.DEST) \
-        X.DEST = strlist_init(); \
-    if (tplop) { \
-        strip(tplop); \
-        strlist_append_tokenize(X.DEST, tplop, TOK); \
-        guard_free(tplop) \
-    } else { \
-        rtevnop = NULL; \
-    } \
+static void conv_bool(bool *x, union INIVal val) {
+    *x = val.as_bool;
 }
-#define conv_bool_stackvar(X, DEST) X.DEST = val.as_bool;
 
 int delivery_init_tmpdir(struct Delivery *ctx) {
     char *tmpdir = NULL;
@@ -340,47 +314,47 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
 
     if (cfg) {
-        getter(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR)
-        conv_str(ctx, storage.conda_staging_dir)
-        getter(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR)
-        conv_str(ctx, storage.conda_staging_url)
-        getter(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR)
-        conv_str(ctx, storage.wheel_staging_dir)
-        getter(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR)
-        conv_str(ctx, storage.wheel_staging_url)
-        getter(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL)
-        conv_bool_stackvar(globals, conda_fresh_start)
+        ini_getval(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->storage.conda_staging_dir, val);
+        ini_getval(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->storage.conda_staging_url, val);
+        ini_getval(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->storage.wheel_staging_dir, val);
+        ini_getval(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->storage.wheel_staging_url, val);
+        ini_getval(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL, &val);
+        conv_bool(&globals.conda_fresh_start, val);
         // Below can also be toggled by command-line arguments
-        getter(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL)
-        conv_bool_stackvar(globals, continue_on_error)
-        getter(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL)
-        conv_bool_stackvar(globals, always_update_base_environment)
-        getter(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, conda_install_prefix)
-        getter(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY)
-        conv_strlist_stackvar(globals, conda_packages, LINE_SEP)
-        getter(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY)
-        conv_strlist_stackvar(globals, pip_packages, LINE_SEP)
+        ini_getval(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL, &val);
+        conv_bool(&globals.continue_on_error, val);
+        ini_getval(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL, &val);
+        conv_bool(&globals.always_update_base_environment, val);
+        ini_getval(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.conda_install_prefix, val);
+        ini_getval(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
+        conv_strlist(&globals.conda_packages, LINE_SEP, val);
+        ini_getval(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
+        conv_strlist(&globals.pip_packages, LINE_SEP, val);
         // Configure jfrog cli downloader
-        getter(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.jfrog_artifactory_base_url)
-        getter(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.jfrog_artifactory_product)
-        getter(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.cli_major_ver)
-        getter(cfg, "jfrog_cli_download", "version", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.version)
-        getter(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.remote_filename)
-        getter(cfg, "deploy:artifactory", "repo", INIVAL_TYPE_STR)
-        conv_str_stackvar(globals, jfrog.repo)
+        ini_getval(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.jfrog_artifactory_base_url, val);
+        ini_getval(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.jfrog_artifactory_product, val);
+        ini_getval(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.cli_major_ver, val);
+        ini_getval(cfg, "jfrog_cli_download", "version", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.version, val);
+        ini_getval(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.remote_filename, val);
+        ini_getval(cfg, "deploy:artifactory", "repo", INIVAL_TYPE_STR, &val);
+        conv_str(&globals.jfrog.repo, val);
     }
 
     // Set artifactory repository via environment if possible
     char *jfrepo = getenv("OMC_JF_REPO");
     if (jfrepo) {
         if (globals.jfrog.repo) {
-            guard_free(globals.jfrog.repo);
+            guard_free(globals.jfrog.repo)
         }
         globals.jfrog.repo = strdup(jfrepo);
     }
@@ -407,67 +381,67 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     runtime_apply(rt);
     ctx->runtime.environ = rt;
 
-    getter(ini, "meta", "mission", INIVAL_TYPE_STR)
-    conv_str(ctx, meta.mission)
+    ini_getval(ini, "meta", "mission", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->meta.mission, val);
 
     if (!strcasecmp(ctx->meta.mission, "hst")) {
-        getter(ini, "meta", "codename", INIVAL_TYPE_STR)
-        conv_str(ctx, meta.codename)
+        ini_getval(ini, "meta", "codename", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->meta.codename, val);
     } else {
         ctx->meta.codename = NULL;
     }
 
     /*
     if (!strcasecmp(ctx->meta.mission, "jwst")) {
-        getter(ini, "meta", "version", INIVAL_TYPE_STR)
-        conv_str(ctx, meta.version)
+        ini_getval(ini, "meta", "version", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->meta.version, val);
 
     } else {
         ctx->meta.version = NULL;
     }
     */
-    getter(ini, "meta", "version", INIVAL_TYPE_STR)
-    conv_str(ctx, meta.version)
+    ini_getval(ini, "meta", "version", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->meta.version, val);
 
-    getter_required(ini, "meta", "name", INIVAL_TYPE_STR)
-    conv_str(ctx, meta.name)
+    ini_getval_required(ini, "meta", "name", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->meta.name, val);
 
-    getter(ini, "meta", "rc", INIVAL_TYPE_INT)
-    conv_int(ctx, meta.rc)
+    ini_getval(ini, "meta", "rc", INIVAL_TYPE_INT, &val);
+    conv_int(&ctx->meta.rc, val);
 
-    getter(ini, "meta", "final", INIVAL_TYPE_BOOL)
-    conv_bool(ctx, meta.final)
+    ini_getval(ini, "meta", "final", INIVAL_TYPE_BOOL, &val);
+    conv_bool(&ctx->meta.final, val);
 
-    getter(ini, "meta", "based_on", INIVAL_TYPE_STR)
-    conv_str(ctx, meta.based_on)
+    ini_getval(ini, "meta", "based_on", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->meta.based_on, val);
 
     if (!ctx->meta.python) {
-        getter(ini, "meta", "python", INIVAL_TYPE_STR)
-        conv_str(ctx, meta.python)
+        ini_getval(ini, "meta", "python", INIVAL_TYPE_STR, &val);
+        conv_str(&ctx->meta.python, val);
         guard_free(ctx->meta.python_compact)
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
     }
 
-    getter_required(ini, "conda", "installer_name", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_name)
+    ini_getval_required(ini, "conda", "installer_name", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->conda.installer_name, val);
 
-    getter_required(ini, "conda", "installer_version", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_version)
+    ini_getval_required(ini, "conda", "installer_version", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->conda.installer_version, val);
 
-    getter_required(ini, "conda", "installer_platform", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_platform)
+    ini_getval_required(ini, "conda", "installer_platform", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->conda.installer_platform, val);
 
-    getter_required(ini, "conda", "installer_arch", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_arch)
+    ini_getval_required(ini, "conda", "installer_arch", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->conda.installer_arch, val);
 
-    getter_required(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR)
-    conv_str(ctx, conda.installer_baseurl)
+    ini_getval_required(ini, "conda", "installer_baseurl", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->conda.installer_baseurl, val);
 
-    getter(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY)
-    conv_strlist(ctx, conda.conda_packages, LINE_SEP)
+    ini_getval(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
+    conv_strlist(&ctx->conda.conda_packages, LINE_SEP, val);
 
-    getter(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY)
-    conv_strlist(ctx, conda.pip_packages, LINE_SEP)
+    ini_getval(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
+    conv_strlist(&ctx->conda.pip_packages, LINE_SEP, val);
 
     // Delivery metadata consumed
     // Now populate the rules
@@ -487,18 +461,18 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         exit(1);
     }
 
-    getter_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR)
-    conv_str(ctx, rules.release_fmt)
+    ini_getval_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->rules.release_fmt, val);
 
     // TODO move this somewhere else?
     // Used for setting artifactory build info
-    getter_required(ctx->rules._handle, "meta", "build_name_fmt", INIVAL_TYPE_STR)
-    conv_str(ctx, rules.build_name_fmt)
+    ini_getval_required(ctx->rules._handle, "meta", "build_name_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->rules.build_name_fmt, val);
 
     // TODO move this somewhere else?
     // Used for setting artifactory build info
-    getter_required(ctx->rules._handle, "meta", "build_number_fmt", INIVAL_TYPE_STR)
-    conv_str(ctx, rules.build_number_fmt)
+    ini_getval_required(ctx->rules._handle, "meta", "build_number_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->rules.build_number_fmt, val);
 
     if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
         fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
@@ -516,22 +490,22 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             if (val.as_char_p && isempty(val.as_char_p)) {
                 return 1;
             }
-            conv_str(ctx, tests[z].name)
+            conv_str(&ctx->tests[z].name, val);
 
-            getter_required(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR)
-            conv_str(ctx, tests[z].version)
+            ini_getval_required(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->tests[z].version, val);
 
-            getter_required(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR)
-            conv_str(ctx, tests[z].repository)
+            ini_getval_required(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->tests[z].repository, val);
 
-            getter_required(ini, ini->section[i]->key, "script", INIVAL_TYPE_STR)
-            conv_str_noexpand(ctx, tests[z].script)
+            ini_getval_required(ini, ini->section[i]->key, "script", INIVAL_TYPE_STR, &val);
+            conv_str_noexpand(&ctx->tests[z].script, val);
 
-            getter(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR)
-            conv_str(ctx, tests[z].build_recipe)
+            ini_getval(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->tests[z].build_recipe, val);
 
-            getter(ini, ini->section[i]->key, "runtime", INIVAL_TO_LIST)
-            conv_strlist(ctx, tests[z].runtime.environ, LINE_SEP)
+            ini_getval(ini, ini->section[i]->key, "runtime", INIVAL_TO_LIST, &val);
+            conv_strlist(&ctx->tests[z].runtime.environ, LINE_SEP, val);
             z++;
         }
     }
@@ -539,67 +513,67 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     for (size_t z = 0, i = 0; i < ini->section_count; i++) {
         if (startswith(ini->section[i]->key, "deploy:artifactory")) {
             // Artifactory base configuration
-            getter(ini, ini->section[i]->key, "workaround_parent_only", INIVAL_TYPE_BOOL)
-            conv_bool(ctx, deploy.jfrog[z].upload_ctx.workaround_parent_only)
+            ini_getval(ini, ini->section[i]->key, "workaround_parent_only", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.workaround_parent_only, val);
 
-            getter(ini, ini->section[i]->key, "exclusions", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.exclusions)
+            ini_getval(ini, ini->section[i]->key, "exclusions", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.jfrog[z].upload_ctx.exclusions, val);
 
-            getter(ini, ini->section[i]->key, "explode", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.explode)
+            ini_getval(ini, ini->section[i]->key, "explode", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.explode, val);
 
-            getter(ini, ini->section[i]->key, "recursive", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.recursive)
+            ini_getval(ini, ini->section[i]->key, "recursive", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.recursive, val);
 
-            getter(ini, ini->section[i]->key, "retries", INIVAL_TYPE_INT)
-            conv_int(ctx, deploy.jfrog[z].upload_ctx.retries)
+            ini_getval(ini, ini->section[i]->key, "retries", INIVAL_TYPE_INT, &val);
+            conv_int(&ctx->deploy.jfrog[z].upload_ctx.retries, val);
 
-            getter(ini, ini->section[i]->key, "retry_wait_time", INIVAL_TYPE_INT)
-            conv_int(ctx, deploy.jfrog[z].upload_ctx.retry_wait_time)
+            ini_getval(ini, ini->section[i]->key, "retry_wait_time", INIVAL_TYPE_INT, &val);
+            conv_int(&ctx->deploy.jfrog[z].upload_ctx.retry_wait_time, val);
 
-            getter(ini, ini->section[i]->key, "detailed_summary", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.detailed_summary)
+            ini_getval(ini, ini->section[i]->key, "detailed_summary", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.detailed_summary, val);
 
-            getter(ini, ini->section[i]->key, "quiet", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.quiet)
+            ini_getval(ini, ini->section[i]->key, "quiet", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.quiet, val);
 
-            getter(ini, ini->section[i]->key, "regexp", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.regexp)
+            ini_getval(ini, ini->section[i]->key, "regexp", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.regexp, val);
 
-            getter(ini, ini->section[i]->key, "spec", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.spec)
+            ini_getval(ini, ini->section[i]->key, "spec", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.jfrog[z].upload_ctx.spec, val);
 
-            getter(ini, ini->section[i]->key, "flat", INIVAL_TYPE_BOOL)
-            conv_str(ctx, deploy.jfrog[z].upload_ctx.flat)
+            ini_getval(ini, ini->section[i]->key, "flat", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&ctx->deploy.jfrog[z].upload_ctx.flat, val);
 
-            getter(ini, ini->section[i]->key, "repo", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.jfrog[z].repo)
+            ini_getval(ini, ini->section[i]->key, "repo", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.jfrog[z].repo, val);
 
-            getter(ini, ini->section[i]->key, "dest", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.jfrog[z].dest)
+            ini_getval(ini, ini->section[i]->key, "dest", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.jfrog[z].dest, val);
 
-            getter(ini, ini->section[i]->key, "files", INIVAL_TYPE_STR_ARRAY)
-            conv_strlist(ctx, deploy.jfrog[z].files, LINE_SEP)
+            ini_getval(ini, ini->section[i]->key, "files", INIVAL_TYPE_STR_ARRAY, &val);
+            conv_strlist(&ctx->deploy.jfrog[z].files, LINE_SEP, val);
             z++;
         }
     }
 
     for (size_t i = 0; i < ini->section_count; i++) {
         if (startswith(ini->section[i]->key, "deploy:docker")) {
-            getter(ini, ini->section[i]->key, "registry", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.docker.registry)
+            ini_getval(ini, ini->section[i]->key, "registry", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.docker.registry, val);
 
-            getter(ini, ini->section[i]->key, "image_compression", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.docker.image_compression)
+            ini_getval(ini, ini->section[i]->key, "image_compression", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.docker.image_compression, val);
 
-            getter(ini, ini->section[i]->key, "test_script", INIVAL_TYPE_STR)
-            conv_str(ctx, deploy.docker.test_script)
+            ini_getval(ini, ini->section[i]->key, "test_script", INIVAL_TYPE_STR, &val);
+            conv_str(&ctx->deploy.docker.test_script, val);
 
-            getter(ini, ini->section[i]->key, "build_args", INIVAL_TYPE_STR_ARRAY)
-            conv_strlist(ctx, deploy.docker.build_args, LINE_SEP)
+            ini_getval(ini, ini->section[i]->key, "build_args", INIVAL_TYPE_STR_ARRAY, &val);
+            conv_strlist(&ctx->deploy.docker.build_args, LINE_SEP, val);
 
-            getter(ini, ini->section[i]->key, "tags", INIVAL_TYPE_STR_ARRAY)
-            conv_strlist(ctx, deploy.docker.tags, LINE_SEP)
+            ini_getval(ini, ini->section[i]->key, "tags", INIVAL_TYPE_STR_ARRAY, &val);
+            conv_strlist(&ctx->deploy.docker.tags, LINE_SEP, val);
         }
     }
 
@@ -1303,7 +1277,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
         exit(1);
     }
     remove(tempfile);
-    guard_free(tempfile);
+    guard_free(tempfile)
 
     // Replace "local" channel with the staging URL
     if (ctx->storage.conda_staging_url) {
@@ -1574,8 +1548,8 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         sprintf(data.src, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
         msg(OMC_MSG_L2, "%s\n", data.src);
 
-        getter_required(cfg, section_name, "destination", INIVAL_TYPE_STR)
-        conv_str_stackvar(data, dest)
+        ini_getval_required(cfg, section_name, "destination", INIVAL_TYPE_STR, &val);
+        conv_str(&data.dest, val);
 
         char *contents;
         struct stat st;
@@ -1594,13 +1568,13 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         fp = fopen(data.src, "rb");
         if (!fp) {
             perror(data.src);
-            guard_free(contents);
+            guard_free(contents)
             continue;
         }
 
         if (fread(contents, st.st_size, sizeof(*contents), fp) < 1) {
             perror("while reading template file");
-            guard_free(contents);
+            guard_free(contents)
             fclose(fp);
             continue;
         }
@@ -1608,10 +1582,10 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 
         msg(OMC_MSG_L3, "Writing %s\n", data.dest);
         if (tpl_render_to_file(contents, data.dest)) {
-            guard_free(contents);
+            guard_free(contents)
             continue;
         }
-        guard_free(contents);
+        guard_free(contents)
     }
 
     guard_free(data.src)
