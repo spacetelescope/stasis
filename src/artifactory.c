@@ -245,8 +245,8 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
             }
         }
     }
-    guard_free(auth_args)
-    guard_strlist_free(arg_map)
+    guard_free(auth_args);
+    guard_strlist_free(arg_map);
 
     // Pings are noisy. Squelch them.
     if (!strstr(args, "rt ping")) {
@@ -350,8 +350,8 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
     }
 
     snprintf(cmd, sizeof(cmd) - 1, "rt download %s '%s' %s", args, repo_path, dest ? dest : "");
-    guard_free(args)
-    guard_strlist_free(arg_map)
+    guard_free(args);
+    guard_strlist_free(arg_map);
 
     int status = jfrog_cli_rt(auth, cmd);
     return status;
@@ -426,7 +426,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
             }
         }
         base = join(&components->data[max_components], "/");
-        guard_free(components->data[max_components])
+        guard_free(components->data[max_components]);
         new_src = join(components->data, "/");
     }
 
@@ -440,8 +440,8 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     }
 
     snprintf(cmd, sizeof(cmd) - 1, "rt upload %s '%s' \"%s\"", args, src, repo_path);
-    guard_free(args)
-    guard_strlist_free(arg_map)
+    guard_free(args);
+    guard_strlist_free(arg_map);
 
     int status = jfrog_cli_rt(auth, cmd);
     if (new_src) {

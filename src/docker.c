@@ -151,7 +151,7 @@ int docker_capable(struct DockerCapabilities *result) {
     if (version && startswith(version, "podman")) {
         result->podman = true;
     }
-    guard_free(version)
+    guard_free(version);
 
     if (!docker_exec("buildx build --help", OMC_DOCKER_QUIET)) {
         result->build |= OMC_DOCKER_BUILD;

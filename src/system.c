@@ -93,7 +93,7 @@ int shell(struct Process *proc, char *args) {
         proc->returncode = status;
     }
 
-    guard_free(t_name)
+    guard_free(t_name);
     return WEXITSTATUS(status);
 }
 

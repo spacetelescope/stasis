@@ -134,7 +134,7 @@ long int strchroff(const char *sptr, int ch) {
     }
 
     result = tmp - orig;
-    guard_free(orig)
+    guard_free(orig);
 
     return result;
 }
@@ -204,7 +204,7 @@ char** split(char *_sptr, const char* delim, size_t max)
     // Preallocate enough records based on the number of delimiters
     char **result = (char **)calloc(split_alloc + 2, sizeof(char *));
     if (!result) {
-        guard_free(sptr)
+        guard_free(sptr);
         return NULL;
     }
 
@@ -226,7 +226,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             break;
         } else {
             if (!result[i]) {
-                guard_free(sptr_begin)
+                guard_free(sptr_begin);
                 return NULL;
             }
             strcpy(result[i], token);
@@ -235,7 +235,7 @@ char** split(char *_sptr, const char* delim, size_t max)
         --x;
         //memcpy(result[i], token, strlen(token) + 1);   // copy the string contents into the record
     }
-    guard_free(sptr_begin)
+    guard_free(sptr_begin);
     sptr_begin = NULL;
     sptr = NULL;
     return result;
@@ -247,9 +247,9 @@ char** split(char *_sptr, const char* delim, size_t max)
  */
 void split_free(char **ptr) {
     for (int i = 0; ptr[i] != NULL; i++) {
-        guard_free(ptr[i])
+        guard_free(ptr[i]);
     }
-    guard_free(ptr)
+    guard_free(ptr);
 }
 
 /**
@@ -361,9 +361,9 @@ char *join_ex(char *separator, ...) {
         if (i < (argc - 1)) {
             strcat(result, separator);
         }
-        guard_free(argv[i])
+        guard_free(argv[i]);
     }
-    guard_free(argv)
+    guard_free(argv);
 
     return result;
 }
@@ -568,9 +568,9 @@ char **strdeldup(char **arr) {
         result[rec] = strdup(arr[i]);
         if (!result[rec]) {
             for (size_t die = 0; result[die] != NULL; die++) {
-                guard_free(result[die])
+                guard_free(result[die]);
             }
-            guard_free(result)
+            guard_free(result);
             return NULL;
         }
 
@@ -767,7 +767,7 @@ char *normalize_space(char *s) {
 
     // Rewrite the input string
     strcpy(result, tmp_orig);
-    guard_free(tmp_orig)
+    guard_free(tmp_orig);
     return result;
 }
 

@@ -225,17 +225,17 @@ void ini_free(struct INIFILE **ini) {
     for (size_t section = 0; section < (*ini)->section_count; section++) {
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
             if ((*ini)->section[section]->data[data]) {
-                guard_free((*ini)->section[section]->data[data]->key)
-                guard_free((*ini)->section[section]->data[data]->value)
-                guard_free((*ini)->section[section]->data[data])
+                guard_free((*ini)->section[section]->data[data]->key);
+                guard_free((*ini)->section[section]->data[data]->value);
+                guard_free((*ini)->section[section]->data[data]);
             }
         }
-        guard_free((*ini)->section[section]->data)
-        guard_free((*ini)->section[section]->key)
-        guard_free((*ini)->section[section])
+        guard_free((*ini)->section[section]->data);
+        guard_free((*ini)->section[section]->key);
+        guard_free((*ini)->section[section]);
     }
-    guard_free((*ini)->section)
-    guard_free((*ini))
+    guard_free((*ini)->section);
+    guard_free((*ini));
 }
 
 struct INIFILE *ini_open(const char *filename) {
@@ -302,7 +302,7 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Ignore default section because we already have an implicit one
             if (!strncmp(section_name, "default", strlen("default"))) {
-                guard_free(section_name)
+                guard_free(section_name);
                 continue;
             }
 
@@ -312,7 +312,7 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Record the name of the section. This is used until another section is found.
             strcpy(current_section, section_name);
-            guard_free(section_name)
+            guard_free(section_name);
             continue;
         }
 
@@ -322,7 +322,7 @@ struct INIFILE *ini_open(const char *filename) {
 
         // no data, skip
         if (!reading_value && isempty(line)) {
-            guard_free(value)
+            guard_free(value);
             continue;
         }
 

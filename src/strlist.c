@@ -105,13 +105,13 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
 fatal:
     if (from_file_tmpdir != NULL) {
         rmtree(from_file_tmpdir);
-        guard_free(from_file_tmpdir)
+        guard_free(from_file_tmpdir);
     }
     if (filename != NULL) {
-        guard_free(filename)
+        guard_free(filename);
     }
     if (path != NULL) {
-        guard_free(path)
+        guard_free(path);
     }
 
     return retval;

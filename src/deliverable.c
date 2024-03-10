@@ -42,7 +42,7 @@ static void conv_strlist(struct StrList **x, char *tok, union INIVal val) {
     if (tplop) {
         strip(tplop);
         strlist_append_tokenize((*x), tplop, tok);
-        guard_free(tplop)
+        guard_free(tplop);
     }
 }
 
@@ -58,7 +58,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 
     x = getenv("TMPDIR");
     if (x) {
-        guard_free(ctx->storage.tmpdir)
+        guard_free(ctx->storage.tmpdir);
         tmpdir = strdup(x);
     } else {
         tmpdir = ctx->storage.tmpdir;
@@ -110,72 +110,72 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 }
 
 void delivery_free(struct Delivery *ctx) {
-    guard_free(ctx->system.arch)
-    guard_free(ctx->meta.name)
-    guard_free(ctx->meta.version)
-    guard_free(ctx->meta.codename)
-    guard_free(ctx->meta.mission)
-    guard_free(ctx->meta.python)
-    guard_free(ctx->meta.mission)
-    guard_free(ctx->meta.python_compact)
-    guard_runtime_free(ctx->runtime.environ)
-    guard_free(ctx->storage.root)
-    guard_free(ctx->storage.tmpdir)
-    guard_free(ctx->storage.delivery_dir)
-    guard_free(ctx->storage.tools_dir)
-    guard_free(ctx->storage.package_dir)
-    guard_free(ctx->storage.conda_install_prefix)
-    guard_free(ctx->storage.conda_artifact_dir)
-    guard_free(ctx->storage.conda_staging_dir)
-    guard_free(ctx->storage.conda_staging_url)
-    guard_free(ctx->storage.wheel_artifact_dir)
-    guard_free(ctx->storage.wheel_staging_dir)
-    guard_free(ctx->storage.wheel_staging_url)
-    guard_free(ctx->storage.build_dir)
-    guard_free(ctx->storage.build_recipes_dir)
-    guard_free(ctx->storage.build_sources_dir)
-    guard_free(ctx->storage.build_testing_dir)
-    guard_free(ctx->storage.mission_dir)
-    guard_free(ctx->info.time_str_epoch)
-    guard_free(ctx->info.build_name)
-    guard_free(ctx->info.build_number)
-    guard_free(ctx->info.release_name)
-    guard_free(ctx->conda.installer_baseurl)
-    guard_free(ctx->conda.installer_name)
-    guard_free(ctx->conda.installer_version)
-    guard_free(ctx->conda.installer_platform)
-    guard_free(ctx->conda.installer_arch)
-    guard_free(ctx->conda.tool_version)
-    guard_free(ctx->conda.tool_build_version)
-    guard_strlist_free(ctx->conda.conda_packages)
-    guard_strlist_free(ctx->conda.conda_packages_defer)
-    guard_strlist_free(ctx->conda.pip_packages)
-    guard_strlist_free(ctx->conda.pip_packages_defer)
+    guard_free(ctx->system.arch);
+    guard_free(ctx->meta.name);
+    guard_free(ctx->meta.version);
+    guard_free(ctx->meta.codename);
+    guard_free(ctx->meta.mission);
+    guard_free(ctx->meta.python);
+    guard_free(ctx->meta.mission);
+    guard_free(ctx->meta.python_compact);
+    guard_runtime_free(ctx->runtime.environ);
+    guard_free(ctx->storage.root);
+    guard_free(ctx->storage.tmpdir);
+    guard_free(ctx->storage.delivery_dir);
+    guard_free(ctx->storage.tools_dir);
+    guard_free(ctx->storage.package_dir);
+    guard_free(ctx->storage.conda_install_prefix);
+    guard_free(ctx->storage.conda_artifact_dir);
+    guard_free(ctx->storage.conda_staging_dir);
+    guard_free(ctx->storage.conda_staging_url);
+    guard_free(ctx->storage.wheel_artifact_dir);
+    guard_free(ctx->storage.wheel_staging_dir);
+    guard_free(ctx->storage.wheel_staging_url);
+    guard_free(ctx->storage.build_dir);
+    guard_free(ctx->storage.build_recipes_dir);
+    guard_free(ctx->storage.build_sources_dir);
+    guard_free(ctx->storage.build_testing_dir);
+    guard_free(ctx->storage.mission_dir);
+    guard_free(ctx->info.time_str_epoch);
+    guard_free(ctx->info.build_name);
+    guard_free(ctx->info.build_number);
+    guard_free(ctx->info.release_name);
+    guard_free(ctx->conda.installer_baseurl);
+    guard_free(ctx->conda.installer_name);
+    guard_free(ctx->conda.installer_version);
+    guard_free(ctx->conda.installer_platform);
+    guard_free(ctx->conda.installer_arch);
+    guard_free(ctx->conda.tool_version);
+    guard_free(ctx->conda.tool_build_version);
+    guard_strlist_free(ctx->conda.conda_packages);
+    guard_strlist_free(ctx->conda.conda_packages_defer);
+    guard_strlist_free(ctx->conda.pip_packages);
+    guard_strlist_free(ctx->conda.pip_packages_defer);
 
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        guard_free(ctx->tests[i].name)
-        guard_free(ctx->tests[i].version)
-        guard_free(ctx->tests[i].repository)
-        guard_free(ctx->tests[i].repository_info_ref)
-        guard_free(ctx->tests[i].repository_info_tag)
-        guard_free(ctx->tests[i].script)
-        guard_free(ctx->tests[i].build_recipe)
+        guard_free(ctx->tests[i].name);
+        guard_free(ctx->tests[i].version);
+        guard_free(ctx->tests[i].repository);
+        guard_free(ctx->tests[i].repository_info_ref);
+        guard_free(ctx->tests[i].repository_info_tag);
+        guard_free(ctx->tests[i].script);
+        guard_free(ctx->tests[i].build_recipe);
         // test-specific runtime variables
-        guard_runtime_free(ctx->tests[i].runtime.environ)
+        guard_runtime_free(ctx->tests[i].runtime.environ);
     }
 
-    guard_free(ctx->rules.release_fmt)
-    guard_free(ctx->rules.build_name_fmt)
-    guard_free(ctx->rules.build_number_fmt)
+    guard_free(ctx->rules.release_fmt);
+    guard_free(ctx->rules.build_name_fmt);
+    guard_free(ctx->rules.build_number_fmt);
     ini_free(&ctx->rules._handle);
 
-    guard_free(ctx->deploy.docker.registry)
-    guard_free(ctx->deploy.docker.image_compression)
-    guard_strlist_free(ctx->deploy.docker.tags)
-    guard_strlist_free(ctx->deploy.docker.build_args)
+    guard_free(ctx->deploy.docker.registry);
+    guard_free(ctx->deploy.docker.image_compression);
+    guard_strlist_free(ctx->deploy.docker.tags);
+    guard_strlist_free(ctx->deploy.docker.build_args);
 
     for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(ctx->deploy.jfrog[0]); i++) {
-        guard_strlist_free(ctx->deploy.jfrog[i].files)
+        guard_strlist_free(ctx->deploy.jfrog[i].files);
     }
 }
 
@@ -214,7 +214,7 @@ void delivery_init_dirs(struct Delivery *ctx) {
     if (delivery_init_tmpdir(ctx)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
         if (globals.tmpdir)
-            guard_free(globals.tmpdir)
+            guard_free(globals.tmpdir);
         exit(1);
     }
 
@@ -354,7 +354,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     char *jfrepo = getenv("OMC_JF_REPO");
     if (jfrepo) {
         if (globals.jfrog.repo) {
-            guard_free(globals.jfrog.repo)
+            guard_free(globals.jfrog.repo);
         }
         globals.jfrog.repo = strdup(jfrepo);
     }
@@ -418,7 +418,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     if (!ctx->meta.python) {
         ini_getval(ini, "meta", "python", INIVAL_TYPE_STR, &val);
         conv_str(&ctx->meta.python, val);
-        guard_free(ctx->meta.python_compact)
+        guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
     }
 
@@ -821,7 +821,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
             }
         }
         if (recipe_dir) {
-            guard_free(recipe_dir)
+            guard_free(recipe_dir);
         }
     }
     return 0;
@@ -1264,10 +1264,10 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     }
 
     for (size_t i = 0; contents[i] != NULL; i++) {
-        guard_free(contents[i])
+        guard_free(contents[i]);
     }
-    guard_free(contents)
-    guard_free(header)
+    guard_free(contents);
+    guard_free(header);
     fflush(tp);
     fclose(tp);
 
@@ -1277,7 +1277,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
         exit(1);
     }
     remove(tempfile);
-    guard_free(tempfile)
+    guard_free(tempfile);
 
     // Replace "local" channel with the staging URL
     if (ctx->storage.conda_staging_url) {
@@ -1388,7 +1388,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
                         strcpy(cmd, cmd_rendered);
                     }
-                    guard_free(cmd_rendered)
+                    guard_free(cmd_rendered);
                 }
 
                 status = shell(&proc, cmd);
@@ -1568,13 +1568,13 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         fp = fopen(data.src, "rb");
         if (!fp) {
             perror(data.src);
-            guard_free(contents)
+            guard_free(contents);
             continue;
         }
 
         if (fread(contents, st.st_size, sizeof(*contents), fp) < 1) {
             perror("while reading template file");
-            guard_free(contents)
+            guard_free(contents);
             fclose(fp);
             continue;
         }
@@ -1582,14 +1582,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 
         msg(OMC_MSG_L3, "Writing %s\n", data.dest);
         if (tpl_render_to_file(contents, data.dest)) {
-            guard_free(contents)
+            guard_free(contents);
             continue;
         }
-        guard_free(contents)
+        guard_free(contents);
     }
 
-    guard_free(data.src)
-    guard_free(data.dest)
+    guard_free(data.src);
+    guard_free(data.dest);
     return 0;
 }
 

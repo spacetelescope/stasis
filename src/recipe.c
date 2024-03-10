@@ -26,7 +26,7 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
             exit(1);
         }
         if (rmtree(destdir)) {
-            guard_free(*result)
+            guard_free(*result);
             *result = NULL;
             return -1;
         }

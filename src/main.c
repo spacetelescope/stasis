@@ -122,20 +122,20 @@ static void usage(char *progname) {
 }
 
 void globals_free() {
-    guard_free(globals.tmpdir)
-    guard_free(globals.sysconfdir)
-    guard_free(globals.conda_install_prefix)
-    guard_strlist_free(globals.conda_packages)
-    guard_strlist_free(globals.pip_packages)
-    guard_free(globals.sysconfdir)
-    guard_free(globals.jfrog.arch)
-    guard_free(globals.jfrog.os)
-    guard_free(globals.jfrog.repo)
-    guard_free(globals.jfrog.version)
-    guard_free(globals.jfrog.cli_major_ver)
-    guard_free(globals.jfrog.jfrog_artifactory_base_url)
-    guard_free(globals.jfrog.jfrog_artifactory_product)
-    guard_free(globals.jfrog.remote_filename)
+    guard_free(globals.tmpdir);
+    guard_free(globals.sysconfdir);
+    guard_free(globals.conda_install_prefix);
+    guard_strlist_free(globals.conda_packages);
+    guard_strlist_free(globals.pip_packages);
+    guard_free(globals.sysconfdir);
+    guard_free(globals.jfrog.arch);
+    guard_free(globals.jfrog.os);
+    guard_free(globals.jfrog.repo);
+    guard_free(globals.jfrog.version);
+    guard_free(globals.jfrog.cli_major_ver);
+    guard_free(globals.jfrog.jfrog_artifactory_base_url);
+    guard_free(globals.jfrog.jfrog_artifactory_product);
+    guard_free(globals.jfrog.remote_filename);
 }
 
 int main(int argc, char *argv[], char *arge[]) {
@@ -277,7 +277,7 @@ int main(int argc, char *argv[], char *arge[]) {
 
     // Override Python version from command-line, if any
     if (strlen(python_override_version)) {
-        guard_free(ctx.meta.python)
+        guard_free(ctx.meta.python);
         ctx.meta.python = strdup(python_override_version);
         guard_free(ctx.meta.python_compact);
         ctx.meta.python_compact = to_short_version(ctx.meta.python);
@@ -524,7 +524,7 @@ int main(int argc, char *argv[], char *arge[]) {
     delivery_free(&ctx);
     globals_free();
     tpl_free();
-    guard_free(config_input)
+    guard_free(config_input);
 
     msg(OMC_MSG_L1, "Done!\n");
     return 0;
