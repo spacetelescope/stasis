@@ -100,7 +100,7 @@ static void usage(char *progname) {
         char tmp[OMC_NAME_MAX] = {0};
         char output[sizeof(tmp)] = {0};
         char opt_long[50] = {0};        // --? [ARG]?
-        char opt_short[3] = {0};        // -?
+        char opt_short[50] = {0};        // -? [ARG]?
 
         strcat(opt_long, "--");
         strcat(opt_long, long_options[x].name);
