@@ -89,7 +89,7 @@ static void usage(char *progname) {
     printf("usage: %s ", progname);
     printf("[-");
     for (int x = 0; long_options[x].val != 0; x++) {
-        if (long_options[x].has_arg == no_argument) {
+        if (long_options[x].has_arg == no_argument && long_options[x].val <= 'z') {
             putchar(long_options[x].val);
         }
     }
