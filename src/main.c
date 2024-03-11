@@ -156,8 +156,6 @@ int main(int argc, char *argv[], char *arge[]) {
     char *config_input = NULL;
     char installer_url[PATH_MAX];
     char python_override_version[OMC_NAME_MAX];
-    unsigned char arg_continue_on_error = 0;
-    unsigned char arg_always_update_base_environment = 0;
 
     int c;
     int option_index = 0;
@@ -173,13 +171,13 @@ int main(int argc, char *argv[], char *arge[]) {
                 config_input = strdup(optarg);
                 break;
             case 'C':
-                arg_continue_on_error = true;
+                globals.continue_on_error = true;
                 break;
             case 'p':
                 strcpy(python_override_version, optarg);
                 break;
             case OPT_ALWAYS_UPDATE_BASE:
-                arg_always_update_base_environment = true;
+                globals.always_update_base_environment = true;
                 break;
             case 'U':
                 setenv("PYTHONUNBUFFERED", "1", 1);
@@ -303,9 +301,6 @@ int main(int argc, char *argv[], char *arge[]) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "Failed to initialize delivery context\n");
         exit(1);
     }
-
-    globals.always_update_base_environment = arg_always_update_base_environment;
-    globals.continue_on_error = arg_continue_on_error;
 
     msg(OMC_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {
