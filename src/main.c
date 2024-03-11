@@ -203,6 +203,7 @@ int main(int argc, char *argv[], char *arge[]) {
                 break;
             case OPT_NO_TESTING:
                 globals.enable_testing = false;
+                break;
             case '?':
                 break;
             default:
