@@ -199,9 +199,8 @@ int main(int argc, char *argv[], char *arge[]) {
                 globals.enable_testing = false;
                 break;
             case '?':
-                break;
             default:
-                printf("unknown option: %c\n", c);
+                exit(1);
         }
     }
 
