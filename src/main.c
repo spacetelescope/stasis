@@ -160,12 +160,8 @@ int main(int argc, char *argv[], char *arge[]) {
     unsigned char arg_always_update_base_environment = 0;
 
     int c;
-    while (1) {
-        int option_index;
-        c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index);
-        if (c == -1) {
-            break;
-        }
+    int option_index = 0;
+    while ((c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index)) != -1) {
         switch (c) {
             case 'h':
                 usage(path_basename(argv[0]));
@@ -214,7 +210,7 @@ int main(int argc, char *argv[], char *arge[]) {
     if (optind < argc) {
         while (optind < argc) {
             // use first positional argument
-            delivery_input = argv[optind];
+            delivery_input = argv[optind++];
             break;
         }
     }
