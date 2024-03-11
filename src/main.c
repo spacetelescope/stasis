@@ -111,6 +111,9 @@ static void usage(char *progname) {
         if (long_options[x].val <= 'z') {
             strcat(opt_short, "-");
             opt_short[1] = (char) long_options[x].val;
+            if (long_options[x].has_arg) {
+                strcat(opt_short, " ARG");
+            }
         } else {
             strcat(opt_short, "  ");
         }
