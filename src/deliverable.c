@@ -325,10 +325,15 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
         ini_getval(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL, &val);
         conv_bool(&globals.conda_fresh_start, val);
         // Below can also be toggled by command-line arguments
-        ini_getval(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL, &val);
-        conv_bool(&globals.continue_on_error, val);
-        ini_getval(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL, &val);
-        conv_bool(&globals.always_update_base_environment, val);
+        if (!globals.continue_on_error) {
+            ini_getval(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&globals.continue_on_error, val);
+        }
+        // Below can also be toggled by command-line arguments
+        if (!globals.always_update_base_environment) {
+            ini_getval(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL, &val);
+            conv_bool(&globals.always_update_base_environment, val);
+        }
         ini_getval(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR, &val);
         conv_str(&globals.conda_install_prefix, val);
         ini_getval(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
