@@ -223,7 +223,7 @@ int main(int argc, char *argv[], char *arge[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
-    msg(OMC_MSG_L1, "Initializing\n");
+    msg(OMC_MSG_L1, "Setup\n");
 
     // Expose variables for use with the template engine
     // NOTE: These pointers are populated by delivery_init() so please avoid using
@@ -296,8 +296,9 @@ int main(int argc, char *argv[], char *arge[]) {
         exit(1);
     }
 
+    msg(OMC_MSG_L2, "Initializing delivery context\n");
     if (delivery_init(&ctx, ini, cfg)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Failed to initialize delivery context\n");
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
 
