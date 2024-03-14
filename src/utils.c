@@ -455,9 +455,9 @@ void debug_shell() {
 
 char *xmkstemp(FILE **fp, const char *mode) {
     char t_name[PATH_MAX];
+    memset(t_name, 0, sizeof(t_name));
     sprintf(t_name, "%s/%s", globals.tmpdir, "OMC.XXXXXX");
     int fd = mkstemp(t_name);
-
     *fp = fdopen(fd, mode);
     if (!*fp) {
         if (fd > 0)
