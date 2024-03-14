@@ -1359,7 +1359,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 // skip unused test records
                 continue;
             }
-            msg(OMC_MSG_L2, "%s %s\n", ctx->tests[i].name, ctx->tests[i].version);
+            msg(OMC_MSG_L2, "Executing tests for %s %s\n", ctx->tests[i].name, ctx->tests[i].version);
             if (!ctx->tests[i].script || !strlen(ctx->tests[i].script)) {
                 msg(OMC_MSG_WARN | OMC_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
                     ctx->tests[i].name);
@@ -1389,6 +1389,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 #if 1
                 int status;
                 char cmd[PATH_MAX];
+
                 msg(OMC_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
 
