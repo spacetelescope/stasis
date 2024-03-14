@@ -896,7 +896,7 @@ static char *requirement_from_test(struct Delivery *ctx, const char *name) {
     static char result[PATH_MAX];
     memset(result, 0, sizeof(result));
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        if (!strcmp(ctx->tests[i].name, name)) {
+        if (strstr(name, ctx->tests[i].name)) {
             sprintf(result, "git+%s@%s",
                     ctx->tests[i].repository,
                     ctx->tests[i].version);
@@ -1183,7 +1183,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
             version = NULL;
             if (ctx->tests[x].name) {
-                if (startswith(ctx->tests[x].name, name)) {
+                if (strstr(name, ctx->tests[x].name)) {
                     version = ctx->tests[x].version;
                     ignore_pkg = 1;
                     z++;
