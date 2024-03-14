@@ -254,4 +254,13 @@ int isempty_dir(const char *path);
  * @return 0 on success, -1 on error
  */
 int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args);
+
+/**
+ * Applies OMC fixups to a tox ini config
+ * @param filename path to tox.ini
+ * @param result path to processed configuration
+ * @return 0 on success, -1 on error
+ */
+int fix_tox_conf(const char *filename, char **result);
+
 #endif //OMC_UTILS_H

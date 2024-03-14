@@ -254,6 +254,7 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("system.platform", &ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
     tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
+    tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with OMC_SYSCONFDIR

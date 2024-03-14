@@ -591,3 +591,59 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
         guard_free(result);
         return -1;
 }
+
+int fix_tox_conf(const char *filename, char **result) {
+    struct INIFILE *toxini;
+    FILE *fptemp;
+    char *tempfile;
+    const char *with_posargs = " \\\n    {posargs}\n";
+
+    tempfile = xmkstemp(&fptemp, "w+");
+    if (!tempfile) {
+        return -1;
+    }
+
+    if (!*result) {
+        *result = calloc(PATH_MAX, sizeof(*result));
+        if (!*result) {
+            return -1;
+        }
+    }
+
+    toxini = ini_open(filename);
+    if (!toxini) {
+        if (fptemp) {
+            guard_free(tempfile);
+            fclose(fptemp);
+        }
+        guard_free(*result);
+        return -1;
+    }
+
+    for (size_t i = 0; i < toxini->section_count; i++) {
+        struct INISection *section = toxini->section[i];
+        if (section) {
+            if (startswith(section->key, "testenv")) {
+                for (size_t k = 0; k < section->data_count; k++) {
+                    struct INIData *data = section->data[k];
+                    if (data) {
+                        if (!strcmp(data->key, "commands") && (startswith(data->value, "pytest") && !strstr(data->value, "{posargs}"))) {
+                            strip(data->value);
+                            data->value = realloc(data->value, strlen(data->value) + strlen(with_posargs) + 1);
+                            strcat(data->value, with_posargs);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (ini_write(toxini, &fptemp)) {
+        guard_free(tempfile);
+    }
+    fclose(fptemp);
+
+    *result = tempfile;
+    ini_free(&toxini);
+    return 0;
+}

@@ -1393,6 +1393,20 @@ void delivery_tests_run(struct Delivery *ctx) {
                 msg(OMC_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
 
+                // Apply workaround for tox positional arguments
+                char *toxconf = NULL;
+                if (!access("tox.ini", F_OK)) {
+                    msg(OMC_MSG_L3, "Fixing tox positional arguments\n");
+
+                    fix_tox_conf("tox.ini", &toxconf);
+                    if (!globals.workaround.tox_posargs) {
+                        globals.workaround.tox_posargs = calloc(PATH_MAX, sizeof(*globals.workaround.tox_posargs));
+                    } else {
+                        memset(globals.workaround.tox_posargs, 0, PATH_MAX);
+                    }
+                    snprintf(globals.workaround.tox_posargs, PATH_MAX - 1, "-c %s --root .", toxconf);
+                }
+
                 // enable trace mode before executing each test script
                 memset(cmd, 0, sizeof(cmd));
                 sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
@@ -1409,6 +1423,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                 if (status) {
                     msg(OMC_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
                     COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
+                }
+
+                if (toxconf) {
+                    remove(toxconf);
+                    guard_free(toxconf);
                 }
                 popd();
 #else

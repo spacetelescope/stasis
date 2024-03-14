@@ -59,6 +59,9 @@ struct OMC_GLOBAL {
     char *tmpdir; //!< Path to temporary storage directory
     char *conda_install_prefix; //!< Path to install conda
     char *sysconfdir; //!< Path where OMC reads its configuration files (mission directory, etc)
+    struct {
+        char *tox_posargs;
+    } workaround;
     struct Jfrog {
         char *jfrog_artifactory_base_url;
         char *jfrog_artifactory_product;
