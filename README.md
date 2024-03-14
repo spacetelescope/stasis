@@ -7,6 +7,7 @@ OMC aims to consolidate the steps required to build, test, and deploy calibratio
 - Linux, or MacOS (Darwin)
 - cmake
 - libcurl
+- libxml2 (optional)
 - rsync
 
 # Installation
@@ -62,33 +63,35 @@ make install
 
 Template strings can be accessed using the `{{ subject.key }}` notation in any Ohmycal configuration file.
 
-| Name                       | Purpose                            |
-|----------------------------|------------------------------------|
-| meta.name                  | Delivery name                      |
-| meta.version               | Delivery version                   |
-| meta.codename              | Delivery codename                  |
-| meta.mission               | Delivery mission                   |
-| meta.python                | Python version (e.g. 3.11)         |
-| meta.python_compact        | Python (e.g. 311)                  |
-| info.time_str_epoch        | UNIX Epoch timestamp               |
-| info.release_name          | Rendered delivery release name     |
-| info.build_name            | Rendered delivery build name       |
-| info.build_number          | Rendered delivery build number     |
-| storage.tmpdir             | Ohymcal temp directory             |
-| storage.delivery_dir       | Ohmycal delivery output directory  |
-| storage.conda_artifact_dir | Ohmycal conda package directory    |
-| storage.wheel_artifact_dir | Ohmycal wheel package directory    |
-| storage.build_sources_dir  | Ohmycal sources directory          |
-| storage.build_docker_dir   | Ohmycal docker directory           |
-| conda.installer_name       | Conda distribution name            |
-| conda.installer_version    | Conda distribution version         |
-| conda.installer_platform   | Conda target platform              |
-| conda.installer_arch       | Conda target architecture          |
-| conda.installer_baseurl    | Conda installer URL                |
-| system.arch                | System CPU Architecture            |
-| system.platform            | System Platform (OS)               |
-| deploy.docker.registry     | Docker registry                    |
-| deploy.jfrog.repo          | Artifactory destination repository |
+| Name                       | Purpose                                                                                                                |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------|
+| meta.name                  | Delivery name                                                                                                          |
+| meta.version               | Delivery version                                                                                                       |
+| meta.codename              | Delivery codename                                                                                                      |
+| meta.mission               | Delivery mission                                                                                                       |
+| meta.python                | Python version (e.g. 3.11)                                                                                             |
+| meta.python_compact        | Python (e.g. 311)                                                                                                      |
+| info.time_str_epoch        | UNIX Epoch timestamp                                                                                                   |
+| info.release_name          | Rendered delivery release name                                                                                         |
+| info.build_name            | Rendered delivery build name                                                                                           |
+| info.build_number          | Rendered delivery build number                                                                                         |
+| storage.tmpdir             | Ohymcal temp directory                                                                                                 |
+| storage.delivery_dir       | Ohmycal delivery output directory                                                                                      |
+| storage.results_dir        | Ohmycal test results directory                                                                                         |
+| storage.conda_artifact_dir | Ohmycal conda package directory                                                                                        |
+| storage.wheel_artifact_dir | Ohmycal wheel package directory                                                                                        |
+| storage.build_sources_dir  | Ohmycal sources directory                                                                                              |
+| storage.build_docker_dir   | Ohmycal docker directory                                                                                               |
+| conda.installer_name       | Conda distribution name                                                                                                |
+| conda.installer_version    | Conda distribution version                                                                                             |
+| conda.installer_platform   | Conda target platform                                                                                                  |
+| conda.installer_arch       | Conda target architecture                                                                                              |
+| conda.installer_baseurl    | Conda installer URL                                                                                                    |
+| system.arch                | System CPU Architecture                                                                                                |
+| system.platform            | System Platform (OS)                                                                                                   |
+| deploy.docker.registry     | Docker registry                                                                                                        |
+| deploy.jfrog.repo          | Artifactory destination repository                                                                                     |
+| workaround.tox_posargs     | Return populated `-c` and `--root` tox arguments.<br/>Force-enables positional arguments in tox's command line parser. |
 
 The template engine also provides an interface to environment variables using the `{{ env:VARIABLE_NAME }}` notation.
 
