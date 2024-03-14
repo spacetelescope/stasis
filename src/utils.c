@@ -517,6 +517,10 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
         goto l_path_setup_error;
     }
 
+    if (*destptr) {
+        guard_free(*destptr);
+    }
+
     (*destptr) = realpath(path_tmp, NULL);
     if (!*destptr) {
         goto l_path_setup_error;
