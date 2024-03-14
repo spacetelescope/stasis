@@ -191,14 +191,33 @@ int ini_section_create(struct INIFILE **ini, char *key) {
     return 0;
 }
 
-void ini_show(struct INIFILE *ini) {
-    for (size_t x = 0; x < ini->section_count; x++) {
-        printf("[%s]\n", ini->section[x]->key);
-        for (size_t y = 0; y < ini->section[x]->data_count; y++) {
-            printf("%s='%s'\n", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
-        }
-        printf("\n");
+int ini_write(struct INIFILE *ini, FILE **stream) {
+    if (!*stream) {
+        return -1;
     }
+    for (size_t x = 0; x < ini->section_count; x++) {
+        fprintf(*stream, "[%s]\n", ini->section[x]->key);
+        for (size_t y = 0; y < ini->section[x]->data_count; y++) {
+            char outvalue[OMC_BUFSIZ];
+            memset(outvalue, 0, sizeof(outvalue));
+            if (ini->section[x]->data[y]->value) {
+                char **parts = split(ini->section[x]->data[y]->value, LINE_SEP, 0);
+                for (size_t p = 0; parts && parts[p] != NULL; p++) {
+                    if (p == 0) {
+                        sprintf(outvalue, "%s\n", parts[p]);
+                    } else {
+                        sprintf(outvalue + strlen(outvalue), "    %s\n", parts[p]);
+                    }
+                }
+                split_free(parts);
+                fprintf(*stream, "%s=%s\n", ini->section[x]->data[y]->key, outvalue);
+            } else {
+                fprintf(*stream, "%s=%s\n", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
+            }
+        }
+        fprintf(*stream, "\n");
+    }
+    return 0;
 }
 
 char *unquote(char *s) {

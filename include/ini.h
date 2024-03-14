@@ -168,10 +168,12 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name);
 int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, union INIVal *result);
 
 /**
- * Print INIFILE sections and data
+ * Write INIFILE sections and data to a file stream
  * @param ini pointer to INIFILE
+ * @param file pointer to address of file stream
+ * @return 0 on success, -1 on error
  */
-void ini_show(struct INIFILE *ini);
+int ini_write(struct INIFILE *ini, FILE **stream);
 
 /**
  * Free memory allocated by ini_open()
