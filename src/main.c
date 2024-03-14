@@ -244,6 +244,7 @@ int main(int argc, char *argv[], char *arge[]) {
     tpl_register("storage.wheel_artifact_dir", &ctx.storage.wheel_artifact_dir);
     tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
     tpl_register("storage.build_docker_dir", &ctx.storage.build_docker_dir);
+    tpl_register("storage.results_dir", &ctx.storage.results_dir);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
@@ -410,6 +411,8 @@ int main(int argc, char *argv[], char *arge[]) {
     if (globals.enable_testing) {
         msg(OMC_MSG_L1, "Begin test execution\n");
         delivery_tests_run(&ctx);
+        msg(OMC_MSG_L1, "Rewriting test results\n");
+        delivery_fixup_test_results(&ctx);
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Test execution is disabled\n");
     }

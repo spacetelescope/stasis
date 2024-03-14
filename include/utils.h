@@ -22,6 +22,9 @@
 #define LINE_SEP "\n"
 #endif
 
+#define OMC_XML_PRETTY_PRINT_PROG "xmllint"
+#define OMC_XML_PRETTY_PRINT_ARGS "--format"
+
 typedef int (ReaderFn)(size_t line, char **);
 
 /**
@@ -243,4 +246,12 @@ char *xmkstemp(FILE **fp, const char *mode);
  */
 int isempty_dir(const char *path);
 
+/**
+ * Rewrite an XML file with a pretty printer command
+ * @param filename path to modify
+ * @param pretty_print_prog program to call
+ * @param pretty_print_args arguments to pass to program
+ * @return 0 on success, -1 on error
+ */
+int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args);
 #endif //OMC_UTILS_H

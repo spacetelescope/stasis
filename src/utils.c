@@ -533,3 +533,61 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
     guard_free(path_tmp);
     return -1;
 }
+
+int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args) {
+    int status = 0;
+    char *tempfile = NULL;
+    char *result = NULL;
+    FILE *fp = NULL;
+    FILE *tmpfp = NULL;
+    char cmd[PATH_MAX];
+    if (!find_program(pretty_print_prog)) {
+        // Pretty printing is optional. 99% chance the XML data will
+        // be passed to a report generator; not inspected by a human.
+        return 0;
+    }
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, sizeof(cmd) - 1, "%s %s %s", pretty_print_prog, pretty_print_args, filename);
+    result = shell_output(cmd, &status);
+    if (status || !result) {
+        goto pretty_print_failed;
+    }
+
+    tempfile = xmkstemp(&tmpfp, "w+");
+    if (!tmpfp || !tempfile) {
+        goto pretty_print_failed;
+    }
+
+    fprintf(tmpfp, "%s", result);
+    fflush(tmpfp);
+    fclose(tmpfp);
+
+    fp = fopen(filename, "w+");
+    if (!fp) {
+        goto pretty_print_failed;
+    }
+
+    if (copy2(tempfile, filename, CT_PERM)) {
+        goto pretty_print_failed;
+    }
+
+    if (remove(tempfile)) {
+        goto pretty_print_failed;
+    }
+
+    guard_free(tempfile);
+    guard_free(result);
+    return 0;
+
+    pretty_print_failed:
+        fprintf(SYSERROR);
+        if (fp) {
+            fclose(fp);
+        }
+        if (tmpfp) {
+            fclose(tmpfp);
+        }
+        guard_free(tempfile);
+        guard_free(result);
+        return -1;
+}

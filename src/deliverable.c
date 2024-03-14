@@ -1679,3 +1679,34 @@ int delivery_docker(struct Delivery *ctx) {
 
     return 0;
 }
+
+int delivery_fixup_test_results(struct Delivery *ctx) {
+    struct dirent *rec;
+    DIR *dp;
+
+    dp = opendir(ctx->storage.results_dir);
+    if (!dp) {
+        perror(ctx->storage.results_dir);
+        return -1;
+    }
+
+    while ((rec = readdir(dp)) != NULL) {
+        char path[PATH_MAX];
+        memset(path, 0, sizeof(path));
+
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        } else if (!endswith(rec->d_name, ".xml")) {
+            continue;
+        }
+
+        sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
+        msg(OMC_MSG_L2, "%s\n", rec->d_name);
+        if (xml_pretty_print_in_place(path, OMC_XML_PRETTY_PRINT_PROG, OMC_XML_PRETTY_PRINT_ARGS)) {
+            msg(OMC_MSG_L3 | OMC_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
+        }
+    }
+
+    closedir(dp);
+    return 0;
+}
