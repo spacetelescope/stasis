@@ -16,6 +16,15 @@ struct tpl_item {
 };
 struct tpl_item *tpl_pool[1024] = {0};
 unsigned tpl_pool_used = 0;
+unsigned tpl_pool_func_used = 0;
+
+struct tplfunc_frame *tpl_pool_func[1024] = {0};
+
+void tpl_register_func(char *key, struct tplfunc_frame *frame) {
+    tpl_pool_func[tpl_pool_func_used] = calloc(1, sizeof(tpl_pool_func[tpl_pool_func_used]));
+    memcpy(tpl_pool_func[tpl_pool_func_used], frame, sizeof(*frame));
+    tpl_pool_func_used++;
+}
 
 void tpl_register(char *key, char **ptr) {
     struct tpl_item *item = NULL;
@@ -48,6 +57,19 @@ char *tpl_getval(char *key) {
         if (tpl_pool[i]->key) {
             if (!strcmp(tpl_pool[i]->key, key)) {
                 result = *tpl_pool[i]->ptr;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+struct tplfunc_frame *tpl_getfunc(char *key) {
+    struct tplfunc_frame *result = NULL;
+    for (size_t i = 0; i < tpl_pool_func_used; i++) {
+        if (tpl_pool_func[i]->key) {
+            if (!strcmp(tpl_pool_func[i]->key, key)) {
+                result = tpl_pool_func[i];
                 break;
             }
         }
@@ -117,9 +139,12 @@ char *tpl_render(char *str) {
             type_stop = strchr(key, ':');
 
             int do_env = 0;
+            int do_func = 0;
             if (type_stop) {
                 if (!strncmp(key, "env", type_stop - key)) {
                     do_env = 1;
+                } else if (!strncmp(key, "func", type_stop - key)) {
+                    do_func = 1;
                 }
             }
 
@@ -139,6 +164,8 @@ char *tpl_render(char *str) {
                 key[klen] = 0;
                 char *env_val = getenv(key);
                 value = strdup(env_val ? env_val : "");
+            } else if (do_func) {
+                // TODO
             } else {
                 // Read replacement value
                 value = strdup(tpl_getval(key) ? tpl_getval(key) : "");

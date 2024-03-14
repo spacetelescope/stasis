@@ -40,4 +40,28 @@ char *tpl_render(char *str);
  */
 int tpl_render_to_file(char *str, const char *filename);
 
+struct tplfunc_frame *tpl_getfunc(char *key);
+struct tplfunc_frame;
+typedef int tplfunc(struct tplfunc_frame *frame);
+struct tplfunc_frame {
+    char *key;
+    tplfunc *func;
+    int argc;
+    union {
+        char **t_char_refptr;
+        char *t_char_ptr;
+        void *t_void_ptr;
+        int *t_int_ptr;
+        unsigned *t_uint_ptr;
+        float *t_float_ptr;
+        double *t_double_ptr;
+        char t_char;
+        int t_int;
+        unsigned t_uint;
+        float t_float;
+        double t_double;
+    } argv[10]; // accept up to 10 arguments
+};
+void tpl_register_func(char *key, struct tplfunc_frame *frame);
+
 #endif //OMC_TEMPLATE_H
