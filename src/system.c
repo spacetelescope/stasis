@@ -152,7 +152,9 @@ char *shell_output(const char *command, int *status) {
         *status = 1;
     }
     result = calloc(initial_size, sizeof(result));
-    while (fgets(line, sizeof(line) - 1, pp) != NULL) {
+    memset(line, 0, sizeof(line));
+    while (fread(line, sizeof(char), sizeof(line) - 1, pp) != 0) {
+    //while (fgets(line, sizeof(line) - 1, pp) != NULL) {
         size_t result_len = strlen(result);
         size_t need_realloc = (result_len + strlen(line)) > current_size;
         if (need_realloc) {
@@ -160,14 +162,13 @@ char *shell_output(const char *command, int *status) {
             char *tmp = realloc(result, sizeof(*result) * current_size);
             if (!tmp) {
                 return NULL;
-            } else if (tmp != result) {
+            }
+            if (tmp != result) {
                 result = tmp;
-            } else {
-                fprintf(SYSERROR);
-                return NULL;
             }
         }
         strcat(result, line);
+        memset(line, 0, sizeof(line));
     }
     pclose(pp);
     return result;
