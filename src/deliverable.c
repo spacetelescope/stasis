@@ -179,7 +179,17 @@ void delivery_free(struct Delivery *ctx) {
     }
 }
 
-void delivery_init_dirs(struct Delivery *ctx) {
+void delivery_init_dirs_stage2(struct Delivery *ctx) {
+    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.output_dir, ctx->info.build_name);
+    path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
+    path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
+    path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
+    path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+    path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
+    path_store(&ctx->storage.docker_artifact_dir, PATH_MAX, ctx->storage.package_dir, "docker");
+}
+
+void delivery_init_dirs_stage1(struct Delivery *ctx) {
     char *rootdir = getenv("OMC_ROOT");
     if (rootdir) {
         if (isempty(rootdir)) {
@@ -201,11 +211,6 @@ void delivery_init_dirs(struct Delivery *ctx) {
     path_store(&ctx->storage.build_docker_dir, PATH_MAX, ctx->storage.build_dir, "docker");
 
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
-    path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
-    path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
-    path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
-    path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
-    path_store(&ctx->storage.docker_artifact_dir, PATH_MAX, ctx->storage.package_dir, "docker");
 
     if (!ctx->storage.mission_dir) {
         path_store(&ctx->storage.mission_dir, PATH_MAX, globals.sysconfdir, "mission");
@@ -368,7 +373,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     delivery_init_platform(ctx);
 
     // Create OMC directory structure
-    delivery_init_dirs(ctx);
+    delivery_init_dirs_stage1(ctx);
 
     // add tools to PATH
     char pathvar_tmp[OMC_BUFSIZ];
@@ -485,6 +490,9 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     }
     delivery_format_str(ctx, &ctx->info.build_name, ctx->rules.build_name_fmt);
     delivery_format_str(ctx, &ctx->info.build_number, ctx->rules.build_number_fmt);
+
+    // Best I can do to make output directories unique. Annoying.
+    delivery_init_dirs_stage2(ctx);
 
     ctx->conda.conda_packages_defer = strlist_init();
     ctx->conda.pip_packages_defer = strlist_init();
