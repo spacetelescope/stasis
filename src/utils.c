@@ -484,7 +484,7 @@ int isempty_dir(const char *path) {
         }
         count++;
     }
-
+    closedir(dp);
     return count == 0;
 }
 

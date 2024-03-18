@@ -136,6 +136,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_sources_dir);
     guard_free(ctx->storage.build_testing_dir);
     guard_free(ctx->storage.mission_dir);
+    guard_free(ctx->storage.docker_artifact_dir);
     guard_free(ctx->info.time_str_epoch);
     guard_free(ctx->info.build_name);
     guard_free(ctx->info.build_number);
@@ -169,6 +170,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.build_number_fmt);
     ini_free(&ctx->rules._handle);
 
+    guard_free(ctx->deploy.docker.test_script);
     guard_free(ctx->deploy.docker.registry);
     guard_free(ctx->deploy.docker.image_compression);
     guard_strlist_free(ctx->deploy.docker.tags);
@@ -883,7 +885,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                             strlist_append(result, rec->d_name);
                         }
                     }
-
+                    closedir(dp);
                 }
                 popd();
             }
@@ -1094,6 +1096,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         sprintf(path_src, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
         rename(path_src, path_dest);
     }
+    closedir(dp);
     return 0;
 }
 
