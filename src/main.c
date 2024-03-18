@@ -139,6 +139,7 @@ void globals_free() {
     guard_free(globals.jfrog.jfrog_artifactory_base_url);
     guard_free(globals.jfrog.jfrog_artifactory_product);
     guard_free(globals.jfrog.remote_filename);
+    guard_free(globals.workaround.tox_posargs);
 }
 
 int main(int argc, char *argv[], char *arge[]) {
