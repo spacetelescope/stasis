@@ -154,7 +154,6 @@ char *shell_output(const char *command, int *status) {
     result = calloc(initial_size, sizeof(result));
     memset(line, 0, sizeof(line));
     while (fread(line, sizeof(char), sizeof(line) - 1, pp) != 0) {
-    //while (fgets(line, sizeof(line) - 1, pp) != NULL) {
         size_t result_len = strlen(result);
         size_t need_realloc = (result_len + strlen(line)) > current_size;
         if (need_realloc) {
