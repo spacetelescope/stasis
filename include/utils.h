@@ -263,4 +263,6 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  */
 int fix_tox_conf(const char *filename, char **result);
 
+char *collapse_whitespace(char **s);
+
 #endif //OMC_UTILS_H

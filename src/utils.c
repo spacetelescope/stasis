@@ -647,3 +647,28 @@ int fix_tox_conf(const char *filename, char **result) {
     ini_free(&toxini);
     return 0;
 }
+
+static size_t count_blanks(char *s) {
+    size_t blank = 0;
+    for (size_t i = 0; i < strlen(s); i++) {
+        if (isblank(s[i])) {
+            blank++;
+        } else {
+            break;
+        }
+    }
+    return blank;
+}
+
+char *collapse_whitespace(char **s) {
+    char *x = (*s);
+    size_t len = strlen(x);
+    for (size_t i = 0; i < len; i++) {
+        size_t blank = count_blanks(&x[i]);
+        if (blank > 1) {
+            memmove(&x[i], &x[i] + blank, strlen(&x[i]));
+        }
+    }
+
+    return *s;
+}

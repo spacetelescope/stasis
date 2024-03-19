@@ -229,17 +229,6 @@ char *unquote(char *s) {
     return s;
 }
 
-char *collapse_whitespace(char **s) {
-    size_t len = strlen(*s);
-    size_t i;
-    for (i = 0; isblank((int)*s[i]); i++);
-    memmove(*s, *s + i, strlen(*s));
-    if (i) {
-        *s[len - i] = '\0';
-    }
-    return *s;
-}
-
 void ini_free(struct INIFILE **ini) {
     for (size_t section = 0; section < (*ini)->section_count; section++) {
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
