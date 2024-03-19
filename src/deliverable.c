@@ -118,6 +118,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->meta.python);
     guard_free(ctx->meta.mission);
     guard_free(ctx->meta.python_compact);
+    guard_free(ctx->meta.based_on);
     guard_runtime_free(ctx->runtime.environ);
     guard_free(ctx->storage.root);
     guard_free(ctx->storage.tmpdir);
