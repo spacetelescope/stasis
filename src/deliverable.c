@@ -1413,15 +1413,15 @@ void delivery_tests_run(struct Delivery *ctx) {
                 // Apply workaround for tox positional arguments
                 char *toxconf = NULL;
                 if (!access("tox.ini", F_OK)) {
-                    msg(OMC_MSG_L3, "Fixing tox positional arguments\n");
-
-                    fix_tox_conf("tox.ini", &toxconf);
-                    if (!globals.workaround.tox_posargs) {
-                        globals.workaround.tox_posargs = calloc(PATH_MAX, sizeof(*globals.workaround.tox_posargs));
-                    } else {
-                        memset(globals.workaround.tox_posargs, 0, PATH_MAX);
+                    if (!fix_tox_conf("tox.ini", &toxconf)) {
+                        msg(OMC_MSG_L3, "Fixing tox positional arguments\n");
+                        if (!globals.workaround.tox_posargs) {
+                            globals.workaround.tox_posargs = calloc(PATH_MAX, sizeof(*globals.workaround.tox_posargs));
+                        } else {
+                            memset(globals.workaround.tox_posargs, 0, PATH_MAX);
+                        }
+                        snprintf(globals.workaround.tox_posargs, PATH_MAX - 1, "-c %s --root .", toxconf);
                     }
-                    snprintf(globals.workaround.tox_posargs, PATH_MAX - 1, "-c %s --root .", toxconf);
                 }
 
                 // enable trace mode before executing each test script
