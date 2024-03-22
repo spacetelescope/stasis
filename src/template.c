@@ -44,7 +44,7 @@ void tpl_free() {
         struct tpl_item *item = tpl_pool[i];
         if (item) {
             if (item->key) {
-                free(item->key);
+                SYSERROR("freeing template item key: %s", item->key);
                 guard_free(item->key);
             }
             free(item);

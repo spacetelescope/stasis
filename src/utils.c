@@ -521,8 +521,7 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
         guard_free(*destptr);
     }
 
-    (*destptr) = realpath(path_tmp, NULL);
-    if (!*destptr) {
+    if (!(*destptr = realpath(path_tmp, NULL))) {
         goto l_path_setup_error;
     }
 
@@ -638,9 +637,7 @@ int fix_tox_conf(const char *filename, char **result) {
         }
     }
 
-    if (ini_write(toxini, &fptemp)) {
-        guard_free(tempfile);
-    }
+    ini_write(toxini, &fptemp);
     fclose(fptemp);
 
     *result = tempfile;
