@@ -141,7 +141,7 @@ void globals_free() {
     guard_free(globals.workaround.tox_posargs);
 }
 
-int main(int argc, char *argv[], char *arge[]) {
+int main(int argc, char *argv[]) {
     struct INIFILE *cfg = NULL;
     struct INIFILE *ini = NULL;
     struct Delivery ctx;
