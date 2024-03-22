@@ -314,8 +314,9 @@ int main(int argc, char *argv[], char *arge[]) {
     }
 
     runtime_apply(ctx.runtime.environ);
-    snprintf(env_name, sizeof(env_name) - 1, "%s", ctx.info.release_name);
-    snprintf(env_name_testing, sizeof(env_name_testing) - 1, "%s-test", env_name);
+    strcpy(env_name, ctx.info.release_name);
+    strcpy(env_name_testing, env_name);
+    strcat(env_name_testing, "-test");
 
     msg(OMC_MSG_L1, "Overview\n");
     delivery_meta_show(&ctx);
