@@ -291,6 +291,7 @@ int main(int argc, char *argv[], char *arge[]) {
             msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s\n", delivery_input, strerror(errno));
             exit(1);
         }
+        guard_free(config_input);
     }
 
     msg(OMC_MSG_L2, "Reading OMC delivery configuration: %s\n", delivery_input);
