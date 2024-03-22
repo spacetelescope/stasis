@@ -21,10 +21,13 @@ static void conv_int(int *x, union INIVal val) {
 }
 
 static void conv_str(char **x, union INIVal val) {
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p);
-    char *tplop = tpl_render(rtevnop);
-    if (tplop) {
-        *x = tplop;
+    if (val.as_char_p) {
+        char *tplop = tpl_render(val.as_char_p);
+        if (tplop) {
+            *x = tplop;
+        } else {
+            *x = NULL;
+        }
     } else {
         *x = NULL;
     }
@@ -35,14 +38,15 @@ static void conv_str_noexpand(char **x, union INIVal val) {
 }
 
 static void conv_strlist(struct StrList **x, char *tok, union INIVal val) {
-    char *rtevnop = runtime_expand_var(NULL, val.as_char_p);
-    char *tplop = tpl_render(rtevnop);
     if (!(*x))
         (*x) = strlist_init();
-    if (tplop) {
-        strip(tplop);
-        strlist_append_tokenize((*x), tplop, tok);
-        guard_free(tplop);
+    if (val.as_char_p) {
+        char *tplop = tpl_render(val.as_char_p);
+        if (tplop) {
+            strip(tplop);
+            strlist_append_tokenize((*x), tplop, tok);
+            guard_free(tplop);
+        }
     }
 }
 
