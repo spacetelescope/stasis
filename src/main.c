@@ -527,7 +527,6 @@ int main(int argc, char *argv[], char *arge[]) {
     delivery_free(&ctx);
     globals_free();
     tpl_free();
-    guard_free(config_input);
 
     msg(OMC_MSG_L1, "Done!\n");
     return 0;
