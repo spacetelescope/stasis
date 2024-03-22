@@ -117,7 +117,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             puts(output);
         }
         guard_free(value);
-        split_free(pair);
+        GENERIC_ARRAY_FREE(pair);
     }
 }
 
@@ -210,10 +210,10 @@ ssize_t runtime_contains(RuntimeEnv *env, const char *key) {
         }
         if (strcmp(pair[0], key) == 0) {
             result = i;
-            split_free(pair);
+            GENERIC_ARRAY_FREE(pair);
             break;
         }
-        split_free(pair);
+        GENERIC_ARRAY_FREE(pair);
     }
     return result;
 }
@@ -246,7 +246,7 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
     if (key_offset != -1) {
         char **pair = split(strlist_item(env, key_offset), "=", 0);
         result = join(&pair[1], "=");
-        split_free(pair);
+        GENERIC_ARRAY_FREE(pair);
     }
     return result;
 }
@@ -292,8 +292,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
 
     expanded = calloc(OMC_BUFSIZ, sizeof(char));
     if (expanded == NULL) {
-        perror("could not allocate runtime_expand_var buffer");
-        fprintf(SYSERROR);
+        SYSERROR("could not allocate %d bytes for runtime_expand_var buffer", OMC_BUFSIZ);
         return NULL;
     }
 
@@ -428,7 +427,7 @@ void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 1);
         setenv(pair[0], pair[1], 1);
-        split_free(pair);
+        GENERIC_ARRAY_FREE(pair);
     }
 }
 

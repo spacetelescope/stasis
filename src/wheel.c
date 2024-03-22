@@ -66,7 +66,7 @@ struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_ma
             result->abi_tag = strdup(parts[4]);
             result->platform_tag = strdup(parts[5]);
         }
-        split_free(parts);
+        GENERIC_ARRAY_FREE(parts);
         break;
     }
     closedir(dp);

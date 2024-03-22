@@ -149,7 +149,7 @@ int conda_activate(const char *root, const char *env_name) {
         } else {
             setenv(part[0], part[1], 1);
         }
-        split_free(part);
+        GENERIC_ARRAY_FREE(part);
         i++;
     }
     fclose(fp);

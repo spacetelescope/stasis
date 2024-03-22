@@ -111,6 +111,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 
 void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->system.arch);
+    GENERIC_ARRAY_FREE(ctx->system.platform);
     guard_free(ctx->meta.name);
     guard_free(ctx->meta.version);
     guard_free(ctx->meta.codename);
@@ -1086,7 +1087,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         strcpy(name, rec->d_name);
         char **parts = split(name, "-", 1);
         strcpy(name, parts[0]);
-        split_free(parts);
+        GENERIC_ARRAY_FREE(parts);
 
         tolower_s(name);
         char path_dest[PATH_MAX];

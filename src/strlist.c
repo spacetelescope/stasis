@@ -167,7 +167,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
          for (size_t i = 0; token[i] != NULL; i++) {
              strlist_append(pStrList, token[i]);
          }
-         split_free(token);
+         GENERIC_ARRAY_FREE(token);
      }
  }
 
