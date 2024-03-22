@@ -628,7 +628,15 @@ int fix_tox_conf(const char *filename, char **result) {
                     if (data) {
                         if (!strcmp(data->key, "commands") && (startswith(data->value, "pytest") && !strstr(data->value, "{posargs}"))) {
                             strip(data->value);
-                            data->value = realloc(data->value, strlen(data->value) + strlen(with_posargs) + 1);
+                            char *tmp;
+                            tmp = realloc(data->value, strlen(data->value) + strlen(with_posargs) + 1);
+                            if (!tmp) {
+                                SYSERROR("failed to increase data->value size to +%zu bytes", strlen(data->value) + strlen(with_posargs) + 1);
+                                guard_free(result);
+                                return -1;
+                            } else if (tmp != data->value) {
+                                data->value = tmp;
+                            }
                             strcat(data->value, with_posargs);
                         }
                     }
