@@ -10,7 +10,10 @@
 #include <time.h>
 #include <sys/statvfs.h>
 
-#define SYSERROR stderr, "%s:%s:%d: %s\n", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno)
+#define SYSERROR(MSG, ...) do { \
+    fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno) ? "info" : strerror(errno)); \
+    fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
+} while (0)
 #define OMC_BUFSIZ 8192
 #define OMC_NAME_MAX 255
 #define OMC_DIRSTACK_MAX 1024
