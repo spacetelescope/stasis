@@ -147,10 +147,11 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
     }
 
     struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
-    if (!tmp) {
+    if (tmp != section->data) {
+        section->data = tmp;
+    } else if (!tmp) {
         return 1;
     }
-    section->data = tmp;
     if (!ini_data_get((*ini), section_name, key)) {
         section->data[section->data_count] = calloc(1, sizeof(*section->data[0]));
         section->data[section->data_count]->key = key;
@@ -164,29 +165,34 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
-            perror(__FUNCTION__ );
+            SYSERROR("Unable to increase data->value size to %zu bytes", value_len_new + 2);
             return -1;
+        } else if (value_tmp != data->value) {
+            data->value = value_tmp;
         }
-        data->value = value_tmp;
         strcat(data->value, value);
     }
     return 0;
 }
 
 int ini_section_create(struct INIFILE **ini, char *key) {
-    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof((*ini)->section));
+    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof(**(*ini)->section));
     if (!tmp) {
         return 1;
+    } else if (tmp != (*ini)->section) {
+        (*ini)->section = tmp;
     }
-    (*ini)->section = tmp;
+
     (*ini)->section[(*ini)->section_count] = calloc(1, sizeof(*(*ini)->section[0]));
     if (!(*ini)->section[(*ini)->section_count]) {
         return -1;
     }
+
     (*ini)->section[(*ini)->section_count]->key = strdup(key);
     if (!(*ini)->section[(*ini)->section_count]->key) {
         return -1;
     }
+
     (*ini)->section_count++;
     return 0;
 }
