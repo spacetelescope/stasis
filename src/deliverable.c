@@ -1049,7 +1049,7 @@ int delivery_get_installer(char *installer_url) {
 }
 
 int delivery_copy_conda_artifacts(struct Delivery *ctx) {
-    char cmd[PATH_MAX];
+    char cmd[OMC_BUFSIZ];
     char conda_build_dir[PATH_MAX];
     char subdir[PATH_MAX];
     memset(cmd, 0, sizeof(cmd));
