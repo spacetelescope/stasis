@@ -866,7 +866,6 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     result = strlist_init();
     if (!result) {
         perror("unable to allocate memory for string list");
-        result = NULL;
         return NULL;
     }
 
