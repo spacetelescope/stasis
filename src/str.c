@@ -187,7 +187,6 @@ char** split(char *_sptr, const char* delim, size_t max)
     // Duplicate the input string and save a copy of the pointer to be freed later
     char *orig = _sptr;
     char *sptr = strdup(orig);
-    char *sptr_begin = sptr;
 
     if (!sptr) {
         return NULL;
@@ -226,7 +225,6 @@ char** split(char *_sptr, const char* delim, size_t max)
             break;
         } else {
             if (!result[i]) {
-                guard_free(sptr_begin);
                 return NULL;
             }
             strcpy(result[i], token);
@@ -235,8 +233,6 @@ char** split(char *_sptr, const char* delim, size_t max)
         --x;
         //memcpy(result[i], token, strlen(token) + 1);   // copy the string contents into the record
     }
-    guard_free(sptr_begin);
-    sptr_begin = NULL;
     sptr = NULL;
     return result;
 }
