@@ -127,6 +127,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.tools_dir);
     guard_free(ctx->storage.package_dir);
     guard_free(ctx->storage.results_dir);
+    guard_free(ctx->storage.output_dir);
     guard_free(ctx->storage.conda_install_prefix);
     guard_free(ctx->storage.conda_artifact_dir);
     guard_free(ctx->storage.conda_staging_dir);
@@ -138,6 +139,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_recipes_dir);
     guard_free(ctx->storage.build_sources_dir);
     guard_free(ctx->storage.build_testing_dir);
+    guard_free(ctx->storage.build_docker_dir);
     guard_free(ctx->storage.mission_dir);
     guard_free(ctx->storage.docker_artifact_dir);
     guard_free(ctx->info.time_str_epoch);
@@ -180,6 +182,8 @@ void delivery_free(struct Delivery *ctx) {
     guard_strlist_free(ctx->deploy.docker.build_args);
 
     for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(ctx->deploy.jfrog[0]); i++) {
+        guard_free(ctx->deploy.jfrog[i].repo);
+        guard_free(ctx->deploy.jfrog[i].dest);
         guard_strlist_free(ctx->deploy.jfrog[i].files);
     }
 }
