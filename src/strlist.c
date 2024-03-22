@@ -69,7 +69,6 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     int retval = 0;
     char *path = NULL;
     char *filename = NULL;
-    char *from_file_tmpdir = NULL;
     char **data = NULL;
 
     if (readerFn == NULL) {
@@ -104,10 +103,6 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     free(data);
 
 fatal:
-    if (from_file_tmpdir != NULL) {
-        rmtree(from_file_tmpdir);
-        guard_free(from_file_tmpdir);
-    }
     if (filename != NULL) {
         guard_free(filename);
     }
