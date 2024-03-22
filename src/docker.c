@@ -119,15 +119,17 @@ char *docker_ident() {
     shell(&proc, "docker -v");
 
     if (!freopen(tempfile, "r", fp)) {
+        guard_free(tempfile);
         return NULL;
     }
 
     if (!fgets(line, sizeof(line) - 1, fp)) {
-        free(tempfile);
+        guard_free(tempfile);
         return NULL;
     }
     fclose(fp);
     remove(tempfile);
+    guard_free(tempfile);
 
     return strdup(line);
 }
