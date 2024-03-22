@@ -40,7 +40,7 @@ struct Delivery {
     struct System {
         char *arch;
         ///< System CPU architecture ident
-        char platform[DELIVERY_PLATFORM_MAX][DELIVERY_PLATFORM_MAXLEN];
+        char **platform;
         ///< System platform name
     } system;
     /*! \struct Storage

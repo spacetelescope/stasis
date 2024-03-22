@@ -268,6 +268,11 @@ int delivery_init_platform(struct Delivery *ctx) {
         return -1;
     }
 
+    ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX, sizeof(*ctx->system.platform));
+    for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
+        ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
+    }
+
     ctx->system.arch = strdup(uts.machine);
     if (!ctx->system.arch) {
         // memory error
