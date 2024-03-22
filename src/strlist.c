@@ -42,8 +42,9 @@ void strlist_append(struct StrList *pStrList, char *str) {
         strlist_free(pStrList);
         perror("failed to append to array");
         exit(1);
+    } else if (tmp != pStrList->data) {
+        pStrList->data = tmp;
     }
-    pStrList->data = tmp;
     pStrList->data[pStrList->num_inuse] = strdup(str);
     pStrList->data[pStrList->num_alloc] = NULL;
     strcpy(pStrList->data[pStrList->num_inuse], str);
