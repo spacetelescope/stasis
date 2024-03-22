@@ -16,13 +16,13 @@ void strlist_free(struct StrList *pStrList) {
     }
     for (size_t i = 0; i < pStrList->num_inuse; i++) {
         if (pStrList->data[i]) {
-            free(pStrList->data[i]);
+            guard_free(pStrList->data[i]);
         }
     }
     if (pStrList->data) {
-        free(pStrList->data);
+        guard_free(pStrList->data);
     }
-    free(pStrList);
+    guard_free(pStrList);
 }
 
 /**
@@ -39,7 +39,7 @@ void strlist_append(struct StrList *pStrList, char *str) {
 
     tmp = realloc(pStrList->data, (pStrList->num_alloc + 1) * sizeof(char *));
     if (tmp == NULL) {
-        strlist_free(pStrList);
+        guard_strlist_free(pStrList);
         perror("failed to append to array");
         exit(1);
     } else if (tmp != pStrList->data) {
@@ -98,9 +98,9 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
 
     for (size_t record = 0; data[record] != NULL; record++) {
         strlist_append(pStrList, data[record]);
-        free(data[record]);
+        guard_free(data[record]);
     }
-    free(data);
+    guard_free(data);
 
 fatal:
     if (filename != NULL) {

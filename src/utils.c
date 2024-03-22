@@ -644,6 +644,8 @@ int fix_tox_conf(const char *filename, char **result) {
     fclose(fptemp);
 
     *result = tempfile;
+    guard_free(tempfile);
+
     ini_free(&toxini);
     return 0;
 }

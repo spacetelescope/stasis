@@ -45,9 +45,11 @@ void tpl_free() {
         if (item) {
             if (item->key) {
                 free(item->key);
+                guard_free(item->key);
             }
             free(item);
         }
+        guard_free(item);
     }
 }
 
