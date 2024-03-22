@@ -882,8 +882,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             {
                 if (python_exec("-m build -w ")) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
-                    strlist_free(result);
-                    result = NULL;
+                    guard_strlist_free(result);
                     return NULL;
                 } else {
                     DIR *dp;
@@ -891,7 +890,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     dp = opendir("dist");
                     if (!dp) {
                         fprintf(stderr, "wheel artifact directory does not exist: %s\n", ctx->storage.wheel_artifact_dir);
-                        strlist_free(result);
+                        guard_strlist_free(result);
                         return NULL;
                     }
 
@@ -1594,6 +1593,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         }
         val.as_char_p = strchr(section_name, ':') + 1;
         if (val.as_char_p && isempty(val.as_char_p)) {
+            guard_free(data.src);
             return 1;
         }
         sprintf(data.src, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
@@ -1606,12 +1606,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         struct stat st;
         if (lstat(data.src, &st)) {
             perror(data.src);
+            guard_free(data.dest);
             continue;
         }
 
         contents = calloc(st.st_size + 1, sizeof(*contents));
         if (!contents) {
             perror("template file contents");
+            guard_free(data.dest);
             continue;
         }
 
@@ -1620,12 +1622,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         if (!fp) {
             perror(data.src);
             guard_free(contents);
+            guard_free(data.dest);
             continue;
         }
 
         if (fread(contents, st.st_size, sizeof(*contents), fp) < 1) {
             perror("while reading template file");
             guard_free(contents);
+            guard_free(data.dest);
             fclose(fp);
             continue;
         }
@@ -1634,13 +1638,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         msg(OMC_MSG_L3, "Writing %s\n", data.dest);
         if (tpl_render_to_file(contents, data.dest)) {
             guard_free(contents);
+            guard_free(data.dest);
             continue;
         }
         guard_free(contents);
+        guard_free(data.dest);
     }
 
     guard_free(data.src);
-    guard_free(data.dest);
     return 0;
 }
 
