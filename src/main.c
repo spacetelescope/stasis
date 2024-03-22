@@ -157,6 +157,8 @@ int main(int argc, char *argv[], char *arge[]) {
     char installer_url[PATH_MAX];
     char python_override_version[OMC_NAME_MAX];
 
+    memset(python_override_version, 0, sizeof(python_override_version));
+
     int c;
     int option_index = 0;
     while ((c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index)) != -1) {
