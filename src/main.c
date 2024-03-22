@@ -466,10 +466,15 @@ int main(int argc, char *argv[], char *arge[]) {
 
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
     if (strlist_count(ctx.conda.pip_packages_defer)) {
-        // TODO: wheels would be nice, but can't right now
-        if (!delivery_build_wheels(&ctx)) {
+        struct StrList *wheel_files;
+        if (!(wheel_files = delivery_build_wheels(&ctx))) {
             exit(1);
         }
+
+        // TODO: I want to believe the list returned by delivery_build_wheels
+        // TODO: intended for delivery_copy_wheel_artifacts... investigate.
+        guard_strlist_free(wheel_files); // unused for now
+
         if (delivery_copy_wheel_artifacts(&ctx)) {
             exit(1);
         }
