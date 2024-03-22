@@ -172,7 +172,7 @@ void strdelsuffix(char *sptr, const char *suffix) {
 /**
  * Split a string by every delimiter in `delim` string.
  *
- * Callee must free memory using `split_free()`
+ * Callee should free memory using `GENERIC_ARRAY_FREE()`
  *
  * @param sptr string to split
  * @param delim characters to split on
@@ -239,17 +239,6 @@ char** split(char *_sptr, const char* delim, size_t max)
     sptr_begin = NULL;
     sptr = NULL;
     return result;
-}
-
-/**
- * Frees memory allocated by `split()`
- * @param ptr pointer to array
- */
-void split_free(char **ptr) {
-    for (int i = 0; ptr[i] != NULL; i++) {
-        guard_free(ptr[i]);
-    }
-    guard_free(ptr);
 }
 
 /**

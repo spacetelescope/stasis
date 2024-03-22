@@ -24,7 +24,6 @@ void strchrdel(char *sptr, const char *chars);
 long int strchroff(const char *sptr, int ch);
 void strdelsuffix(char *sptr, const char *suffix);
 char** split(char *sptr, const char* delim, size_t max);
-void split_free(char **ptr);
 char *join(char **arr, const char *separator);
 char *join_ex(char *separator, ...);
 char *substring_between(char *sptr, const char *delims);
