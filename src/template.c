@@ -30,7 +30,7 @@ void tpl_register(char *key, char **ptr) {
     struct tpl_item *item = NULL;
     item = calloc(1, sizeof(*item));
     if (!item) {
-        perror("unable to register tpl_item");
+        SYSERROR("unable to register tpl_item for %s", key);
         exit(1);
     }
     item->key = strdup(key);
@@ -47,7 +47,7 @@ void tpl_free() {
                 SYSERROR("freeing template item key: %s", item->key);
                 guard_free(item->key);
             }
-            free(item);
+            SYSERROR("freeing template item: %p", item);
             item->ptr = NULL;
         }
         guard_free(item);

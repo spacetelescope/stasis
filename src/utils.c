@@ -177,14 +177,13 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
 
     if (fp == NULL) {
         perror(filename);
-        fprintf(SYSERROR);
+        SYSERROR("failed to open %s for reading", filename);
         return NULL;
     }
 
     // Allocate buffer
     if ((buffer = calloc(OMC_BUFSIZ, sizeof(char))) == NULL) {
-        perror("line buffer");
-        fprintf(SYSERROR);
+        SYSERROR("unable to allocate %d bytes for buffer", OMC_BUFSIZ);
         if (!use_stdin) {
             fclose(fp);
         }
@@ -579,7 +578,6 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     return 0;
 
     pretty_print_failed:
-        fprintf(SYSERROR);
         if (fp) {
             fclose(fp);
         }
