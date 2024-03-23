@@ -48,6 +48,7 @@ void tpl_free() {
                 guard_free(item->key);
             }
             free(item);
+            item->ptr = NULL;
         }
         guard_free(item);
     }
@@ -113,28 +114,29 @@ char *tpl_render(char *str) {
     }
 
     size_t z = 0;
-    while (*pos != 0) {
+    size_t off = 0;
+    while (pos[off] != 0) {
         char key[255] = {0};
         char *value = NULL;
 
         memset(key, 0, sizeof(key));
         grow(z, &output_bytes, &output);
         // At opening brace
-        if (!strncmp(pos, "{{", 2)) {
+        if (!strncmp(&pos[off], "{{", 2)) {
             // Scan until key is reached
-            while (!isalnum(*pos)) {
-                pos++;
+            while (!isalnum(pos[off])) {
+                off++;
             }
 
             // Read key name
             size_t key_len = 0;
-            while (isalnum(*pos) || *pos != '}') {
-                if (isspace(*pos) || isblank(*pos)) {
+            while (isalnum(pos[off]) || pos[off] != '}') {
+                if (isspace(pos[off]) || isblank(pos[off])) {
                     break;
                 }
-                key[key_len] = *pos;
+                key[key_len] = pos[off];
                 key_len++;
-                pos++;
+                off++;
             }
 
             char *type_stop = NULL;
@@ -151,13 +153,14 @@ char *tpl_render(char *str) {
             }
 
             // Find closing brace
-            b_close = strstr(pos, "}}");
+            b_close = strstr(&pos[off], "}}");
             if (!b_close) {
                 fprintf(stderr, "error while templating '%s'\n\nunbalanced brace at position %zu\n", str, z);
                 return NULL;
+            } else {
+                // Jump past closing brace
+                off += 2;
             }
-            // Jump past closing brace
-            pos = b_close + 2;
 
             if (do_env) {
                 char *k = type_stop + 1;
@@ -188,8 +191,8 @@ char *tpl_render(char *str) {
 #ifdef DEBUG
         fprintf(stderr, "z=%zu, output_bytes=%zu\n", z, output_bytes);
 #endif
-        output[z] = *pos;
-        pos++;
+        output[z] = pos[off];
+        off++;
         z++;
     }
 #ifdef DEBUG
