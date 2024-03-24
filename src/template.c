@@ -101,6 +101,8 @@ static int grow(size_t z, size_t *output_bytes, char **output) {
 char *tpl_render(char *str) {
     if (!str) {
         return NULL;
+    } else if (!strlen(str)) {
+        return strdup("");
     }
     size_t output_bytes = 1024 + strlen(str); // TODO: Is grow working correctly?
     char *output = NULL;
