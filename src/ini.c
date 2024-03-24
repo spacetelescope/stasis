@@ -146,16 +146,29 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         return 1;
     }
 
-    struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
+    struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(section->data));
     if (tmp != section->data) {
         section->data = tmp;
     } else if (!tmp) {
         return 1;
     }
     if (!ini_data_get((*ini), section_name, key)) {
-        section->data[section->data_count] = calloc(1, sizeof(*section->data[0]));
-        section->data[section->data_count]->key = key ? strdup(key) : strdup("");
-        section->data[section->data_count]->value = strdup(value);
+        struct INIData **data = section->data;
+        data[section->data_count] = calloc(1, sizeof(*data[0]));
+        if (!data[section->data_count]) {
+            SYSERROR("Unable to allocate %zu bytes for section data", sizeof(*data[0]));
+            return -1;
+        }
+        data[section->data_count]->key = key ? strdup(key) : strdup("");
+        if (!data[section->data_count]->key) {
+            SYSERROR("Unable to allocate data key%s", "");
+            return -1;
+        }
+        data[section->data_count]->value = strdup(value);
+        if (!data[section->data_count]->value) {
+            SYSERROR("Unable to allocate data value%s", "");
+            return -1;
+        }
         section->data_count++;
     } else {
         struct INIData *data = ini_data_get(*ini, section_name, key);
