@@ -105,7 +105,9 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     }
 
     globals.tmpdir = strdup(tmpdir);
-    ctx->storage.tmpdir = strdup(globals.tmpdir);
+    if (!ctx->storage.tmpdir) {
+        ctx->storage.tmpdir = strdup(globals.tmpdir);
+    }
     return unusable;
 
     l_delivery_init_tmpdir_fatal:
@@ -216,6 +218,12 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
     }
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
+    if (delivery_init_tmpdir(ctx)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
+        if (globals.tmpdir)
+            guard_free(globals.tmpdir);
+        exit(1);
+    }
 
     path_store(&ctx->storage.build_dir, PATH_MAX, ctx->storage.root, "build");
     path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
@@ -227,13 +235,6 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 
     if (!ctx->storage.mission_dir) {
         path_store(&ctx->storage.mission_dir, PATH_MAX, globals.sysconfdir, "mission");
-    }
-
-    if (delivery_init_tmpdir(ctx)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
-        if (globals.tmpdir)
-            guard_free(globals.tmpdir);
-        exit(1);
     }
 
     if (access(ctx->storage.mission_dir, F_OK)) {
