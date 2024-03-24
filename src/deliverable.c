@@ -277,7 +277,11 @@ int delivery_init_platform(struct Delivery *ctx) {
         return -1;
     }
 
-    ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX, sizeof(*ctx->system.platform));
+    ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX + 1, sizeof(*ctx->system.platform));
+    if (!ctx->system.platform) {
+        SYSERROR("Unable to allocate %d records for platform array\n", DELIVERY_PLATFORM_MAX);
+        return -1;
+    }
     for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
         ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
     }
