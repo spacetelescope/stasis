@@ -197,11 +197,11 @@ char** split(char *_sptr, const char* delim, size_t max)
         if (max && i > max) {
             break;
         }
-        split_alloc += num_chars(sptr, delim[i]);
+        split_alloc = num_chars(sptr, delim[i]);
     }
 
     // Preallocate enough records based on the number of delimiters
-    char **result = (char **)calloc(split_alloc + 2, sizeof(char *));
+    char **result = calloc(split_alloc + 2, sizeof(result[0]));
     if (!result) {
         guard_free(sptr);
         return NULL;
@@ -210,7 +210,6 @@ char** split(char *_sptr, const char* delim, size_t max)
     // No delimiter, but the string was not NULL, so return the original string
     if (split_alloc == 0) {
         result[0] = sptr;
-        result[1] = NULL;
         return result;
     }
 
@@ -218,7 +217,8 @@ char** split(char *_sptr, const char* delim, size_t max)
     int i = 0;
     size_t x = max;
     char *token = NULL;
-    while((token = strsep(&sptr, delim)) != NULL) {
+    char *sptr_tmp = sptr;
+    while((token = strsep(&sptr_tmp, delim)) != NULL) {
         result[i] = calloc(OMC_BUFSIZ, sizeof(char));
         if (x < max) {
             strcat(result[i], strstr(orig, delim) + 1);
@@ -230,10 +230,12 @@ char** split(char *_sptr, const char* delim, size_t max)
             strcpy(result[i], token);
         }
         i++;
-        --x;
+        if (x > 0) {
+            --x;
+        }
         //memcpy(result[i], token, strlen(token) + 1);   // copy the string contents into the record
     }
-    sptr = NULL;
+    guard_free(sptr);
     return result;
 }
 
