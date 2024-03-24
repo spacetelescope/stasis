@@ -165,14 +165,14 @@ char *tpl_render(char *str) {
                 off += 2;
             }
 
-            if (do_env) {
+            if (do_env) { // {{ env:VAR }}
                 char *k = type_stop + 1;
                 size_t klen = strlen(k);
                 memmove(key, k, klen);
                 key[klen] = 0;
                 char *env_val = getenv(key);
                 value = strdup(env_val ? env_val : "");
-            } else if (do_func) {
+            } else if (do_func) { // {{ func:NAME(a, ...) }}
                 // TODO
             } else {
                 // Read replacement value
