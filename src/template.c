@@ -90,8 +90,9 @@ static int grow(size_t z, size_t *output_bytes, char **output) {
         if (!tmp) {
             perror("realloc failed");
             return -1;
+        } else if (tmp != *output) {
+            *output = tmp;
         }
-        *output = tmp;
         *output_bytes = new_size;
     }
     return 0;
