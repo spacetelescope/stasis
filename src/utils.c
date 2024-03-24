@@ -601,7 +601,7 @@ int fix_tox_conf(const char *filename, char **result) {
     }
 
     if (!*result) {
-        *result = calloc(PATH_MAX, sizeof(*result));
+        *result = calloc(PATH_MAX, sizeof(**result));
         if (!*result) {
             return -1;
         }
@@ -610,10 +610,10 @@ int fix_tox_conf(const char *filename, char **result) {
     toxini = ini_open(filename);
     if (!toxini) {
         if (fptemp) {
+            guard_free(result);
             guard_free(tempfile);
             fclose(fptemp);
         }
-        guard_free(*result);
         return -1;
     }
 
@@ -630,7 +630,7 @@ int fix_tox_conf(const char *filename, char **result) {
                             tmp = realloc(data->value, strlen(data->value) + strlen(with_posargs) + 1);
                             if (!tmp) {
                                 SYSERROR("failed to increase data->value size to +%zu bytes", strlen(data->value) + strlen(with_posargs) + 1);
-                                guard_free(result);
+                                guard_free(*result);
                                 return -1;
                             } else if (tmp != data->value) {
                                 data->value = tmp;
@@ -646,7 +646,7 @@ int fix_tox_conf(const char *filename, char **result) {
     ini_write(toxini, &fptemp);
     fclose(fptemp);
 
-    *result = tempfile;
+    strcpy(*result, tempfile);
     guard_free(tempfile);
 
     ini_free(&toxini);
