@@ -272,8 +272,6 @@ int main(int argc, char *argv[]) {
     if (!globals.sysconfdir) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to resolve path to configuration directory: %s\n", omc_sysconfdir_tmp);
         exit(1);
-    } else {
-        memset(omc_sysconfdir_tmp, 0, sizeof(omc_sysconfdir_tmp));
     }
 
     // Override Python version from command-line, if any
@@ -357,6 +355,7 @@ int main(int argc, char *argv[]) {
         char pathvar_tmp[OMC_BUFSIZ];
         sprintf(pathvar_tmp, "%s/bin:%s", ctx.storage.conda_install_prefix, pathvar);
         setenv("PATH", pathvar_tmp, 1);
+        pathvar = NULL;
     }
 
     msg(OMC_MSG_L1, "Creating release environment(s)\n");
