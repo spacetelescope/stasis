@@ -410,6 +410,7 @@ struct INIFILE *ini_open(const char *filename) {
             reading_value = 1;
         }
     }
+    fclose(fp);
 
     return ini;
 }
