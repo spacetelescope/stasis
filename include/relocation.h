@@ -16,7 +16,7 @@
 #endif
 #include <unistd.h>
 
-void replace_text(char *original, const char *target, const char *replacement);
-void file_replace_text(const char* filename, const char* target, const char* replacement);
+int replace_text(char *original, const char *target, const char *replacement);
+int file_replace_text(const char* filename, const char* target, const char* replacement);
 
 #endif //OMC_RELOCATION_H
