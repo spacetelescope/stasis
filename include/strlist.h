@@ -2,8 +2,8 @@
  * String array convenience functions
  * @file strlist.h
  */
-#ifndef SPM_STRLIST_H
-#define SPM_STRLIST_H
+#ifndef OMC_STRLIST_H
+#define OMC_STRLIST_H
 #include <stdlib.h>
 #include "utils.h"
 #include "str.h"
@@ -44,4 +44,4 @@ struct StrList *strlist_copy(struct StrList *pStrList);
 int strlist_cmp(struct StrList *a, struct StrList *b);
 void strlist_free(struct StrList *pStrList);
 
-#endif //SPM_STRLIST_H
+#endif //OMC_STRLIST_H
