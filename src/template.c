@@ -166,7 +166,7 @@ char *tpl_render(char *str) {
                 return NULL;
             } else {
                 // Jump past closing brace
-                off += 2;
+                off = ((b_close + 2) - pos);
             }
 
             if (do_env) { // {{ env:VAR }}
