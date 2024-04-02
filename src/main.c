@@ -157,6 +157,9 @@ int main(int argc, char *argv[]) {
     char installer_url[PATH_MAX];
     char python_override_version[OMC_NAME_MAX];
 
+    memset(env_name, 0, sizeof(env_name));
+    memset(env_name_testing, 0, sizeof(env_name_testing));
+    memset(installer_url, 0, sizeof(installer_url));
     memset(python_override_version, 0, sizeof(python_override_version));
 
     int c;
