@@ -149,7 +149,7 @@ RuntimeEnv *runtime_copy(char **env) {
 
     rt = strlist_init();
     for (size_t i = 0; i < env_count; i++) {
-        strlist_append(rt, env[i]);
+        strlist_append(&rt, env[i]);
     }
     return rt;
 }
@@ -411,9 +411,9 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     char *now = join((char *[]) {key, value, NULL}, "=");
 
     if (key_offset < 0) {
-        strlist_append(env, now);
+        strlist_append(&env, now);
     } else {
-        strlist_set(env, key_offset, now);
+        strlist_set(&env, key_offset, now);
     }
     guard_free(now);
     guard_free(key);
@@ -439,5 +439,5 @@ void runtime_free(RuntimeEnv *env) {
     if (env == NULL) {
         return;
     }
-    strlist_free(env);
+    strlist_free(&env);
 }

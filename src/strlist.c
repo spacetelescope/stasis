@@ -10,19 +10,20 @@
  *
  * @param pStrList `StrList`
  */
-void strlist_free(struct StrList *pStrList) {
-    if (pStrList == NULL) {
+void strlist_free(struct StrList **pStrList) {
+    if (!(*pStrList)) {
         return;
     }
-    for (size_t i = 0; i < pStrList->num_inuse; i++) {
-        if (pStrList->data[i]) {
-            guard_free(pStrList->data[i]);
+
+    for (size_t i = 0; i < (*pStrList)->num_inuse; i++) {
+        if ((*pStrList)->data[i]) {
+            guard_free((*pStrList)->data[i]);
         }
     }
-    if (pStrList->data) {
-        guard_free(pStrList->data);
+    if ((*pStrList)->data) {
+        guard_free((*pStrList)->data);
     }
-    guard_free(pStrList);
+    guard_free((*pStrList));
 }
 
 /**
@@ -30,26 +31,26 @@ void strlist_free(struct StrList *pStrList) {
  * @param pStrList `StrList`
  * @param str
  */
-void strlist_append(struct StrList *pStrList, char *str) {
+void strlist_append(struct StrList **pStrList, char *str) {
     char **tmp = NULL;
 
     if (pStrList == NULL) {
         return;
     }
 
-    tmp = realloc(pStrList->data, (pStrList->num_alloc + 1) * sizeof(char *));
+    tmp = realloc((*pStrList)->data, ((*pStrList)->num_alloc + 1) * sizeof(char *));
     if (tmp == NULL) {
         guard_strlist_free(pStrList);
         perror("failed to append to array");
         exit(1);
-    } else if (tmp != pStrList->data) {
-        pStrList->data = tmp;
+    } else if (tmp != (*pStrList)->data) {
+        (*pStrList)->data = tmp;
     }
-    pStrList->data[pStrList->num_inuse] = strdup(str);
-    pStrList->data[pStrList->num_alloc] = NULL;
-    strcpy(pStrList->data[pStrList->num_inuse], str);
-    pStrList->num_inuse++;
-    pStrList->num_alloc++;
+    (*pStrList)->data[(*pStrList)->num_inuse] = strdup(str);
+    (*pStrList)->data[(*pStrList)->num_alloc] = NULL;
+    strcpy((*pStrList)->data[(*pStrList)->num_inuse], str);
+    (*pStrList)->num_inuse++;
+    (*pStrList)->num_alloc++;
 }
 
 static int reader_strlist_append_file(size_t lineno, char **line) {
@@ -97,7 +98,7 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     }
 
     for (size_t record = 0; data[record] != NULL; record++) {
-        strlist_append(pStrList, data[record]);
+        strlist_append(&pStrList, data[record]);
         guard_free(data[record]);
     }
     guard_free(data);
@@ -128,7 +129,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
     count = strlist_count(pStrList2);
     for (size_t i = 0; i < count; i++) {
         char *item = strlist_item(pStrList2, i);
-        strlist_append(pStrList1, item);
+        strlist_append(&pStrList1, item);
     }
 }
 
@@ -142,7 +143,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
          return;
      }
      for (size_t i = 0; arr[i] != NULL; i++) {
-         strlist_append(pStrList, arr[i]);
+         strlist_append(&pStrList, arr[i]);
      }
  }
 
@@ -161,7 +162,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
      token = split(str, delim, 0);
      if (token) {
          for (size_t i = 0; token[i] != NULL; i++) {
-             strlist_append(pStrList, token[i]);
+             strlist_append(&pStrList, token[i]);
          }
          GENERIC_ARRAY_FREE(token);
      }
@@ -173,13 +174,18 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  * @return `StrList` copy
  */
 struct StrList *strlist_copy(struct StrList *pStrList) {
-    struct StrList *result = strlist_init();
-    if (pStrList == NULL || result == NULL) {
+    struct StrList *result;
+    if (pStrList == NULL) {
+        return NULL;
+    }
+
+    result = strlist_init();
+    if (!result) {
         return NULL;
     }
 
     for (size_t i = 0; i < strlist_count(pStrList); i++) {
-        strlist_append(result, strlist_item(pStrList, i));
+        strlist_append(&result, strlist_item(pStrList, i));
     }
     return result;
 }
@@ -278,7 +284,13 @@ void strlist_reverse(struct StrList *pStrList) {
  * @return
  */
 size_t strlist_count(struct StrList *pStrList) {
-    return pStrList->num_inuse;
+    size_t result;
+    if (pStrList != NULL) {
+        result = pStrList->num_inuse;
+    } else {
+        result = 0;
+    }
+    return result;
 }
 
 /**
@@ -287,26 +299,26 @@ size_t strlist_count(struct StrList *pStrList) {
  * @param value string
  * @return
  */
-void strlist_set(struct StrList *pStrList, size_t index, char *value) {
+void strlist_set(struct StrList **pStrList, size_t index, char *value) {
     char *tmp = NULL;
     char *item = NULL;
-    if (pStrList == NULL || index > strlist_count(pStrList)) {
+    if (*pStrList == NULL || index > strlist_count(*pStrList)) {
         return;
     }
-    if ((item = strlist_item(pStrList, index)) == NULL) {
-        return;
-    }
+
     if (value == NULL) {
-        pStrList->data[index] = NULL;
+        (*pStrList)->data[index] = NULL;
     } else {
-        if ((tmp = realloc(pStrList->data[index], strlen(value) + 1)) == NULL) {
+        tmp = realloc((*pStrList)->data[index], (strlen(value) + 1) * sizeof(char *));
+        if (!tmp) {
             perror("realloc strlist_set replacement value");
             return;
+        } else if (tmp != (*pStrList)->data[index]) {
+            (*pStrList)->data[index] = tmp;
         }
 
-        pStrList->data[index] = tmp;
-        memset(pStrList->data[index], '\0', strlen(value) + 1);
-        strncpy(pStrList->data[index], value, strlen(value));
+        memset((*pStrList)->data[index], '\0', strlen(value) + 1);
+        strncpy((*pStrList)->data[index], value, strlen(value));
     }
 }
 
@@ -317,10 +329,10 @@ void strlist_set(struct StrList *pStrList, size_t index, char *value) {
  * @return string
  */
 char *strlist_item(struct StrList *pStrList, size_t index) {
-    if (pStrList == NULL || index > strlist_count(pStrList)) {
-        return NULL;
+    if (pStrList && pStrList->data && pStrList->data[index]) {
+        return pStrList->data[index];
     }
-    return pStrList->data[index];
+    return NULL;
 }
 
 /**
@@ -471,7 +483,7 @@ struct StrList *strlist_init() {
     struct StrList *pStrList = calloc(1, sizeof(struct StrList));
     if (pStrList == NULL) {
         perror("failed to allocate array");
-        exit(errno);
+        return NULL;
     }
     pStrList->num_inuse = 0;
     pStrList->num_alloc = 1;

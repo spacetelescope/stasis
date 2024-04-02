@@ -184,13 +184,13 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->deploy.docker.test_script);
     guard_free(ctx->deploy.docker.registry);
     guard_free(ctx->deploy.docker.image_compression);
-    guard_strlist_free(ctx->deploy.docker.tags);
-    guard_strlist_free(ctx->deploy.docker.build_args);
+    guard_strlist_free(&ctx->deploy.docker.tags);
+    guard_strlist_free(&ctx->deploy.docker.build_args);
 
     for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(ctx->deploy.jfrog[0]); i++) {
         guard_free(ctx->deploy.jfrog[i].repo);
         guard_free(ctx->deploy.jfrog[i].dest);
-        guard_strlist_free(ctx->deploy.jfrog[i].files);
+        guard_strlist_free(&ctx->deploy.jfrog[i].files);
     }
 }
 
@@ -887,7 +887,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             {
                 if (python_exec("-m build -w ")) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
-                    guard_strlist_free(result);
+                    strlist_free(&result);
                     return NULL;
                 } else {
                     DIR *dp;
@@ -895,13 +895,13 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     dp = opendir("dist");
                     if (!dp) {
                         fprintf(stderr, "wheel artifact directory does not exist: %s\n", ctx->storage.wheel_artifact_dir);
-                        guard_strlist_free(result);
+                        strlist_free(&result);
                         return NULL;
                     }
 
                     while ((rec = readdir(dp)) != NULL) {
                         if (strstr(rec->d_name, ctx->tests[i].name)) {
-                            strlist_append(result, rec->d_name);
+                            strlist_append(&result, rec->d_name);
                         }
                     }
                     closedir(dp);
@@ -1222,10 +1222,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             }
 
             printf("BUILD FOR HOST\n");
-            strlist_append(deferred, name);
+            strlist_append(&deferred, name);
         } else {
             printf("USE EXISTING\n");
-            strlist_append(filtered, name);
+            strlist_append(&filtered, name);
         }
     }
 
@@ -1233,10 +1233,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         msg(OMC_MSG_WARN | OMC_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
     } else {
         if (DEFER_CONDA == type) {
-            strlist_free(ctx->conda.conda_packages);
+            strlist_free(&ctx->conda.conda_packages);
             ctx->conda.conda_packages = strlist_copy(filtered);
         } else if (DEFER_PIP == type) {
-            strlist_free(ctx->conda.pip_packages);
+            strlist_free(&ctx->conda.pip_packages);
             ctx->conda.pip_packages = strlist_copy(filtered);
         }
     }
