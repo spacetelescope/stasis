@@ -301,7 +301,6 @@ size_t strlist_count(struct StrList *pStrList) {
  */
 void strlist_set(struct StrList **pStrList, size_t index, char *value) {
     char *tmp = NULL;
-    char *item = NULL;
     if (*pStrList == NULL || index > strlist_count(*pStrList)) {
         return;
     }
