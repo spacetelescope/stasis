@@ -250,9 +250,18 @@ char *unquote(char *s) {
 
 void ini_free(struct INIFILE **ini) {
     for (size_t section = 0; section < (*ini)->section_count; section++) {
+#ifdef DEBUG
+        SYSERROR("freeing section: %s", (*ini)->section[section]->key);
+#endif
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
             if ((*ini)->section[section]->data[data]) {
+#ifdef DEBUG
+                SYSERROR("freeing data key: %s", (*ini)->section[section]->data[data]->key);
+#endif
                 guard_free((*ini)->section[section]->data[data]->key);
+#ifdef DEBUG
+                SYSERROR("freeing data value: %s", (*ini)->section[section]->data[data]->value);
+#endif
                 guard_free((*ini)->section[section]->data[data]->value);
                 guard_free((*ini)->section[section]->data[data]);
             }

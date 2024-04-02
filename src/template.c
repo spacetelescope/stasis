@@ -44,10 +44,14 @@ void tpl_free() {
         struct tpl_item *item = tpl_pool[i];
         if (item) {
             if (item->key) {
+#ifdef DEBUG
                 SYSERROR("freeing template item key: %s", item->key);
+#endif
                 guard_free(item->key);
             }
+#ifdef DEBUG
             SYSERROR("freeing template item: %p", item);
+#endif
             item->ptr = NULL;
         }
         guard_free(item);
@@ -84,7 +88,7 @@ static int grow(size_t z, size_t *output_bytes, char **output) {
     if (z >= *output_bytes) {
         size_t new_size = *output_bytes + z + 1;
 #ifdef DEBUG
-        fprintf(stderr, "template output buffer new size: %zu\n", *output_bytes);
+        fprintf(stderr, "template output buffer new size: %zu\n", new_size);
 #endif
         char *tmp = realloc(*output, new_size);
         if (!tmp) {
