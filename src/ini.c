@@ -210,31 +210,44 @@ int ini_section_create(struct INIFILE **ini, char *key) {
     return 0;
 }
 
-int ini_write(struct INIFILE *ini, FILE **stream) {
+int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
     if (!*stream) {
         return -1;
     }
     for (size_t x = 0; x < ini->section_count; x++) {
-        fprintf(*stream, "[%s]\n", ini->section[x]->key);
+        fprintf(*stream, "[%s]" LINE_SEP, ini->section[x]->key);
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
             char outvalue[OMC_BUFSIZ];
             memset(outvalue, 0, sizeof(outvalue));
             if (ini->section[x]->data[y]->value) {
                 char **parts = split(ini->section[x]->data[y]->value, LINE_SEP, 0);
+                size_t parts_total = 0;
+                for (; parts && parts[parts_total] != NULL; parts_total++);
                 for (size_t p = 0; parts && parts[p] != NULL; p++) {
-                    if (p == 0) {
-                        sprintf(outvalue, "%s\n", parts[p]);
+                    char *render = NULL;
+                    if (mode == INI_WRITE_PRESERVE) {
+                        render = tpl_render(parts[p]);
                     } else {
-                        sprintf(outvalue + strlen(outvalue), "    %s\n", parts[p]);
+                        render = parts[p];
+                    }
+                    if (p == 0) {
+                        sprintf(outvalue, "%s" LINE_SEP, render);
+                    } else {
+                        sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
+                    }
+                    if (mode == INI_WRITE_PRESERVE) {
+                        guard_free(render);
                     }
                 }
                 GENERIC_ARRAY_FREE(parts);
-                fprintf(*stream, "%s=%s\n", ini->section[x]->data[y]->key, outvalue);
+                strip(outvalue);
+                strcat(outvalue, LINE_SEP);
+                fprintf(*stream, "%s=%s%s", ini->section[x]->data[y]->key, parts_total > 1 ? LINE_SEP "    " : "", outvalue);
             } else {
-                fprintf(*stream, "%s=%s\n", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
+                fprintf(*stream, "%s=%s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
             }
         }
-        fprintf(*stream, "\n");
+        fprintf(*stream, LINE_SEP);
     }
     return 0;
 }

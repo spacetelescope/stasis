@@ -643,7 +643,7 @@ int fix_tox_conf(const char *filename, char **result) {
         }
     }
 
-    ini_write(toxini, &fptemp);
+    ini_write(toxini, &fptemp, INI_WRITE_RAW);
     fclose(fptemp);
 
     strcpy(*result, tempfile);

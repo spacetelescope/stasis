@@ -5,6 +5,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#define INI_WRITE_RAW 0             ///< Dump INI data. Contents are not modified.
+#define INI_WRITE_PRESERVE 1        ///< Dump INI data. Template strings are
+                                    ///< expanded to preserve runtime state.
+
 #define INIVAL_TYPE_INT 1           ///< Integer
 #define INIVAL_TYPE_UINT 2          ///< Unsigned integer
 #define INIVAL_TYPE_LONG 3          ///< Long integer
@@ -173,7 +177,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, uni
  * @param file pointer to address of file stream
  * @return 0 on success, -1 on error
  */
-int ini_write(struct INIFILE *ini, FILE **stream);
+int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode);
 
 /**
  * Free memory allocated by ini_open()
