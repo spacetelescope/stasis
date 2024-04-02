@@ -1139,7 +1139,12 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
 
         char path_src[PATH_MAX];
         sprintf(path_src, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
-        rename(path_src, path_dest);
+        if (access(path_dest, F_OK)) {
+            rename(path_src, path_dest);
+        } else {
+            copy2(path_src, path_dest, CT_PERM);
+            remove(path_src);
+        }
     }
     closedir(dp);
     return 0;
