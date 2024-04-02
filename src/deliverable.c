@@ -1395,7 +1395,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (!access(destdir, F_OK)) {
                 msg(OMC_MSG_L3, "Purging repository %s\n", destdir);
                 if (rmtree(destdir)) {
-                    COE_CHECK_ABORT(!globals.continue_on_error, "Unable to remove repository\n")
+                    COE_CHECK_ABORT(1, "Unable to remove repository\n");
                 }
             }
             msg(OMC_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
@@ -1403,11 +1403,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                 ctx->tests[i].repository_info_tag = strdup(git_describe(destdir));
                 ctx->tests[i].repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
             } else {
-                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to clone repository\n")
+                COE_CHECK_ABORT(1, "Unable to clone repository\n");
             }
 
             if (pushd(destdir)) {
-                COE_CHECK_ABORT(!globals.continue_on_error, "Unable to enter repository directory\n")
+                COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
             } else {
 #if 1
                 int status;
@@ -1445,7 +1445,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 status = shell(&proc, cmd);
                 if (status) {
                     msg(OMC_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
-                    COE_CHECK_ABORT(!globals.continue_on_error, "Test failure")
+                    COE_CHECK_ABORT(1, "Test failure");
                 }
 
                 if (toxconf) {

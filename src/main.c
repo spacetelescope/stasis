@@ -510,7 +510,9 @@ int main(int argc, char *argv[]) {
 
     if (globals.enable_docker) {
         msg(OMC_MSG_L1, "Building Docker image\n");
-        delivery_docker(&ctx);
+        if (delivery_docker(&ctx)) {
+            COE_CHECK_ABORT(1, "Failed to build docker image");
+        }
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled\n");
     }
