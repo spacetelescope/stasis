@@ -487,8 +487,22 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
     ini_getval(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
     conv_strlist(&ctx->conda.conda_packages, LINE_SEP, val);
 
+    for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
+        char *pkg = strlist_item(ctx->conda.conda_packages, i);
+        if (strpbrk(pkg, ";#")) {
+            strlist_remove(ctx->conda.conda_packages, i);
+        }
+    }
+
     ini_getval(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
     conv_strlist(&ctx->conda.pip_packages, LINE_SEP, val);
+
+    for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
+        char *pkg = strlist_item(ctx->conda.pip_packages, i);
+        if (strpbrk(pkg, ";#")) {
+            strlist_remove(ctx->conda.pip_packages, i);
+        }
+    }
 
     // Delivery metadata consumed
     // Now populate the rules
