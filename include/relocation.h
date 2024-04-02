@@ -16,7 +16,9 @@
 #endif
 #include <unistd.h>
 
-int replace_text(char *original, const char *target, const char *replacement);
-int file_replace_text(const char* filename, const char* target, const char* replacement);
+#define REPLACE_TRUNCATE_AFTER_MATCH 1
+
+int replace_text(char *original, const char *target, const char *replacement, unsigned flags);
+int file_replace_text(const char* filename, const char* target, const char* replacement, unsigned flags);
 
 #endif //OMC_RELOCATION_H

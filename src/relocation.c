@@ -23,7 +23,7 @@
  * @param replacement string value
  * @return 0 on success, -1 on error
  */
-int replace_text(char *original, const char *target, const char *replacement) {
+int replace_text(char *original, const char *target, const char *replacement, unsigned flags) {
     char buffer[OMC_BUFSIZ];
     char *pos = original;
     char *match = NULL;
@@ -58,6 +58,12 @@ int replace_text(char *original, const char *target, const char *replacement) {
                 // target consumed. jump to the end of the substring.
                 pos += target_len;
             }
+            if (flags & REPLACE_TRUNCATE_AFTER_MATCH) {
+                if (strstr(pos, LINE_SEP)) {
+                    strcat(buffer, LINE_SEP);
+                }
+                break;
+            }
             // find more matches
             if (!(match = strstr(pos, target))) {
                 // no more matches
@@ -67,6 +73,8 @@ int replace_text(char *original, const char *target, const char *replacement) {
                 break;
             }
         }
+    } else {
+        return 0;
     }
 
     buffer_len = strlen(buffer);
@@ -94,7 +102,7 @@ int replace_text(char *original, const char *target, const char *replacement) {
  * @param replacement string
  * @return 0 on success, -1 on error
  */
-int file_replace_text(const char* filename, const char* target, const char* replacement) {
+int file_replace_text(const char* filename, const char* target, const char* replacement, unsigned flags) {
     int result;
     char buffer[OMC_BUFSIZ];
     char tempfilename[] = "tempfileXXXXXX";
@@ -118,7 +126,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
     result = 0;
     while (fgets(buffer, sizeof(buffer), fp)) {
         if (strstr(buffer, target)) {
-            if (replace_text(buffer, target, replacement)) {
+            if (replace_text(buffer, target, replacement, flags)) {
                 result = -1;
             }
         }
