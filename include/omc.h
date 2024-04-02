@@ -48,12 +48,13 @@
     guard_free(ARR); \
 } while (0)
 
-#define COE_CHECK_ABORT(COND, MSG) {\
-    if (COND) { \
-        msg(OMC_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
-        exit(1); \
-    } \
-}
+#define COE_CHECK_ABORT(COND, MSG) \
+    do {\
+        if (!globals.continue_on_error && COND) { \
+            msg(OMC_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
+            exit(1);                       \
+        } \
+    } while (0)
 
 struct OMC_GLOBAL {
     bool verbose; //!< Enable verbose output
