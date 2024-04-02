@@ -442,6 +442,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (strlist_count(ctx.conda.pip_packages_defer)) {
+        if (!(ctx.conda.wheels_packages = delivery_build_wheels(&ctx))) {
+            exit(1);
+        }
+        if (delivery_copy_wheel_artifacts(&ctx)) {
+            exit(1);
+        }
+        if (delivery_index_wheel_artifacts(&ctx)) {
+            exit(1);
+        }
+
+    }
+
     // Populate the release environment
     msg(OMC_MSG_L1, "Populating release environment\n");
     msg(OMC_MSG_L2, "Installing conda packages\n");
@@ -466,22 +479,6 @@ int main(int argc, char *argv[]) {
 
     msg(OMC_MSG_L3, "Installing deferred pip packages\n");
     if (strlist_count(ctx.conda.pip_packages_defer)) {
-        struct StrList *wheel_files;
-        if (!(wheel_files = delivery_build_wheels(&ctx))) {
-            exit(1);
-        }
-
-        // TODO: I want to believe the list returned by delivery_build_wheels
-        // TODO: intended for delivery_copy_wheel_artifacts... investigate.
-        guard_strlist_free(wheel_files); // unused for now
-
-        if (delivery_copy_wheel_artifacts(&ctx)) {
-            exit(1);
-        }
-        if (delivery_index_wheel_artifacts(&ctx)) {
-            exit(1);
-        }
-
         delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
     }
 
