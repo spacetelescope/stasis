@@ -76,7 +76,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
         return;
     }
     snprintf(data, sizeof(data) - 1, "--%s=\"%s\"", opt_name, jfrt_val);
-    strlist_append(*opt_map, data);
+    strlist_append(&*opt_map, data);
 }
 
 void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList **opt_map) {
@@ -88,7 +88,7 @@ void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList 
         return;
     }
     snprintf(data, sizeof(data) - 1, "--%s", opt_name);
-    strlist_append(*opt_map, data);
+    strlist_append(&*opt_map, data);
 }
 
 void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **opt_map) {
@@ -100,7 +100,7 @@ void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **
         return;
     }
     snprintf(data, sizeof(data) - 1, "--%s=%d", opt_name, jfrt_val);
-    strlist_append(*opt_map, data);
+    strlist_append(&*opt_map, data);
 }
 
 void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList **opt_map) {
@@ -112,7 +112,7 @@ void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList 
         return;
     }
     snprintf(data, sizeof(data) - 1, "--%s=%ld", opt_name, jfrt_val);
-    strlist_append(*opt_map, data);
+    strlist_append(&*opt_map, data);
 }
 
 void jfrt_upload_init(struct JFRT_Upload *ctx) {
@@ -246,7 +246,7 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
         }
     }
     guard_free(auth_args);
-    guard_strlist_free(arg_map);
+    guard_strlist_free(&arg_map);
 
     // Pings are noisy. Squelch them.
     if (!strstr(args, "rt ping")) {
@@ -351,7 +351,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
 
     snprintf(cmd, sizeof(cmd) - 1, "rt download %s '%s' %s", args, repo_path, dest ? dest : "");
     guard_free(args);
-    guard_strlist_free(arg_map);
+    guard_strlist_free(&arg_map);
 
     int status = jfrog_cli_rt(auth, cmd);
     return status;
@@ -441,7 +441,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
 
     snprintf(cmd, sizeof(cmd) - 1, "rt upload %s '%s' \"%s\"", args, src, repo_path);
     guard_free(args);
-    guard_strlist_free(arg_map);
+    guard_strlist_free(&arg_map);
 
     int status = jfrog_cli_rt(auth, cmd);
     if (new_src) {

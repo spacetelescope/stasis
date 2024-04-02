@@ -159,10 +159,11 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->conda.installer_arch);
     guard_free(ctx->conda.tool_version);
     guard_free(ctx->conda.tool_build_version);
-    guard_strlist_free(ctx->conda.conda_packages);
-    guard_strlist_free(ctx->conda.conda_packages_defer);
-    guard_strlist_free(ctx->conda.pip_packages);
-    guard_strlist_free(ctx->conda.pip_packages_defer);
+    guard_strlist_free(&ctx->conda.conda_packages);
+    guard_strlist_free(&ctx->conda.conda_packages_defer);
+    guard_strlist_free(&ctx->conda.pip_packages);
+    guard_strlist_free(&ctx->conda.pip_packages_defer);
+    guard_strlist_free(&ctx->conda.wheels_packages);
 
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         guard_free(ctx->tests[i].name);
@@ -1241,7 +1242,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         }
     }
     if (filtered) {
-        strlist_free(filtered);
+        strlist_free(&filtered);
     }
 }
 
