@@ -842,19 +842,20 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 strcpy(recipe_git_rev, "");
                 sprintf(recipe_buildno, "  number: 0");
 
+                unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
                 //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
                 if (ctx->meta.final) {
                     sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].version);
                     // TODO: replace sha256 of tagged archive
                     // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
                     // For now, remove the sha256 requirement
-                    file_replace_text("meta.yaml", "  sha256:", "\n");
+                    file_replace_text("meta.yaml", "sha256:", "\n", flags);
                 } else {
-                    file_replace_text("meta.yaml", "{% set version = ", recipe_version);
-                    file_replace_text("meta.yaml", "  url:", recipe_git_url);
-                    //file_replace_text("meta.yaml", "  sha256:", recipe_git_rev);
-                    file_replace_text("meta.yaml", "  sha256:", "\n");
-                    file_replace_text("meta.yaml", "  number:", recipe_buildno);
+                    file_replace_text("meta.yaml", "{% set version = ", recipe_version, flags);
+                    file_replace_text("meta.yaml", "  url:", recipe_git_url, flags);
+                    //file_replace_text("meta.yaml", "sha256:", recipe_git_rev);
+                    file_replace_text("meta.yaml", "  sha256:", "\n", flags);
+                    file_replace_text("meta.yaml", "  number:", recipe_buildno, flags);
                 }
 
                 char command[PATH_MAX];
@@ -1342,7 +1343,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     // Replace "local" channel with the staging URL
     if (ctx->storage.conda_staging_url) {
         sprintf(output, "  - %s", ctx->storage.conda_staging_url);
-        file_replace_text(filename, "  - local", output);
+        file_replace_text(filename, "  - local", output, 0);
     } else {
         msg(OMC_MSG_WARN, "conda_staging_url is not configured. References to \"local\" channel will not be replaced\n", filename);
     }
