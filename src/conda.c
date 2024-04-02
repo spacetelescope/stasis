@@ -207,11 +207,12 @@ void conda_setup_headless() {
     }
 
     // Configure conda for headless CI
-    conda_exec("config --system --set auto_update_conda false");
-    conda_exec("config --system --set always_yes true");
-    conda_exec("config --system --set rollback_enabled false");
-    conda_exec("config --system --set report_errors false");
-    conda_exec("config --system --set solver libmamba");
+    conda_exec("config --system --set auto_update_conda false");    // never update conda automatically
+    conda_exec("config --system --set always_yes true");            // never prompt for input
+    conda_exec("config --system --set safety_checks disabled");     // speedup
+    conda_exec("config --system --set rollback_enabled false");     // speedup
+    conda_exec("config --system --set report_errors false");        // disable data sharing
+    conda_exec("config --system --set solver libmamba");            // use a real solver
 
     char cmd[PATH_MAX];
     size_t total = 0;
