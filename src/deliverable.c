@@ -1294,7 +1294,6 @@ char *delivery_get_release_header(struct Delivery *ctx) {
 }
 
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
-    char *package_name = NULL;
     char output[PATH_MAX];
     char *header = NULL;
     char *tempfile = NULL;
@@ -1352,47 +1351,41 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
     } else {
         msg(OMC_MSG_WARN, "conda_staging_url is not configured. References to \"local\" channel will not be replaced\n", filename);
     }
+    // Rewrite tested packages to point to tested code, at their defined verison
+    for (size_t i = 0; i < strlist_count(ctx->conda.wheels_packages); i++) {
+        struct Wheel *wheelfile = NULL;
+        char *package_name_tmp = NULL;
 
-    // Rewrite tested packages to point to tested code, at a defined verison
-    for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages_defer); i++) {
-        package_name = strlist_item(ctx->conda.pip_packages_defer, i);
-        char target[PATH_MAX];
-        char replacement[PATH_MAX];
-        //struct Wheel *wheelfile;
+        package_name_tmp = strlist_item(ctx->conda.wheels_packages, i);
+        if (!package_name_tmp) {
+            SYSERROR("wheel_package claims to have %zu records, "
+                     "but the package at index %zu was NULL\n", strlist_count(ctx->conda.wheels_packages), i);
+            continue;
+        }
 
+        char **parts = split(package_name_tmp, "-", 0);
+        if (parts && parts[0]) {
+            wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, parts[0], (char *[]) {parts[1], parts[2], parts[3], NULL});
+            guard_free(parts);
+        }
+
+        if (!wheelfile) {
+            SYSERROR("Wheel package '%s/%s' no longer exists!\n", ctx->storage.wheel_artifact_dir, package_name_tmp);
+            continue;
+        }
+
+        char target[OMC_NAME_MAX];
+        char replacement[OMC_NAME_MAX];
         memset(target, 0, sizeof(target));
         memset(replacement, 0, sizeof(replacement));
-        sprintf(target, "    - %s", package_name);
-        // TODO: I still want to use wheels for this but tagging semantics are getting in the way.
-        // When someone pushes a lightweight tag setuptools_scm will not resolve the expected
-        // refs unless the following is present in pyproject.toml, setup.cfg, or setup.py:
-        //
-        // git_describe_command = "git describe --tags" # at the bare minimum
-        //
 
-        //char abi[NAME_MAX];
-        //strcpy(abi, ctx->meta.python);
-        //strchrdel(abi, ".");
-
-        //char source_dir[PATH_MAX];
-        //sprintf(source_dir, "%s/%s", ctx->storage.build_sources_dir, package_name);
-        //wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, package_name, (char *[]) {git_describe(source_dir), abi, ctx->system.arch, NULL});
-        //if (wheelfile) {
-        //    sprintf(replacement, "    - %s/%s", ctx->storage.wheel_staging_url, wheelfile->file_name);
-        //    file_replace_text(filename, target, replacement);
-        //}
-        // end of TODO
-
-        char *requirement = requirement_from_test(ctx, package_name);
-        if (requirement) {
-            sprintf(replacement, "    - %s", requirement);
-            file_replace_text(filename, target, replacement);
-        } else {
-            fprintf(stderr, "an error occurred while rewriting a release artifact: %s\n", filename);
-            fprintf(stderr, "mapping a replacement value for package defined by '[test:%s]' failed: %s\n", package_name, package_name);
-            fprintf(stderr, "target string in artifact was:\n%s\n", target);
-            exit(1);
+        sprintf(target, "- %s==", wheelfile->distribution);
+        sprintf(replacement, "- %s/%s", ctx->storage.wheel_staging_url, wheelfile->file_name);
+        if (file_replace_text(filename, target, replacement, REPLACE_TRUNCATE_AFTER_MATCH)) {
+            SYSERROR("file_replace_text failed for file %s: target: %s, replacement: %s",
+                     filename, target, replacement);
         }
+
     }
 }
 
