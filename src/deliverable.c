@@ -967,7 +967,12 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
         strcat(cmd, " --use-local");
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
-        strcat(cmd, " --upgrade");
+        // Don't change the baseline package set unless we're working with a
+        // new build. Release candidates will need to keep packages as stable
+        // as possible between releases.
+        if (!ctx->meta.based_on) {
+            strcat(cmd, " --upgrade");
+        }
     }
 
     for (size_t x = 0; manifest[x] != NULL; x++) {
