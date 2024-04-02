@@ -1025,10 +1025,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                     }
                 }
                 closedir(dp);
-                char *requirement = requirement_from_test(ctx, name);
-                if (requirement) {
-                    sprintf(cmd + strlen(cmd), " '%s'", requirement);
-                }
+
 
             } else {
                 if (startswith(name, "--") || startswith(name, "-")) {
