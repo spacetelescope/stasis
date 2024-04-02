@@ -1683,12 +1683,37 @@ int delivery_docker(struct Delivery *ctx) {
         return -1;
     }
     char args[PATH_MAX];
+    int has_registry = ctx->deploy.docker.registry != NULL;
     size_t total_tags = strlist_count(ctx->deploy.docker.tags);
     size_t total_build_args = strlist_count(ctx->deploy.docker.build_args);
 
+    if (!has_registry) {
+        msg(OMC_MSG_WARN | OMC_MSG_L2, "No docker registry defined. You will need to manually retag the resulting image.\n");
+    }
+
     if (!total_tags) {
-        fprintf(stderr, "error: at least one docker image tag must be defined\n");
-        return -1;
+        char default_tag[PATH_MAX];
+        msg(OMC_MSG_WARN | OMC_MSG_L2, "No docker tags defined by configuration. Generating default tag(s).\n");
+        // generate local tag
+        memset(default_tag, 0, sizeof(default_tag));
+        sprintf(default_tag, "%s:%s-py%s", ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
+        tolower_s(default_tag);
+
+        // Add tag
+        ctx->deploy.docker.tags = strlist_init();
+        strlist_append(&ctx->deploy.docker.tags, default_tag);
+
+        if (has_registry) {
+            // generate tag for target registry
+            memset(default_tag, 0, sizeof(default_tag));
+            sprintf(default_tag, "%s/%s:%s-py%s", ctx->deploy.docker.registry, ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
+            tolower_s(default_tag);
+
+            // Add tag
+            strlist_append(&ctx->deploy.docker.tags, default_tag);
+        }
+        // regenerate total tag available
+        total_tags = strlist_count(ctx->deploy.docker.tags);
     }
 
     memset(args, 0, sizeof(args));
