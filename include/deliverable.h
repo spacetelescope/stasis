@@ -115,6 +115,7 @@ struct Delivery {
         struct StrList *conda_packages_defer;   ///< Conda recipes to be built for delivery
         struct StrList *pip_packages;           ///< Python packages to install (pip)
         struct StrList *pip_packages_defer;     ///< Python packages to be built for delivery
+        struct StrList *wheels_packages;        ///< Wheel packages built for delivery
     } conda;
 
     /*! \struct Runtime

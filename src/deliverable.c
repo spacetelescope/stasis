@@ -991,33 +991,39 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
-                //DIR *dp;
-                //struct dirent *rec;
+                DIR *dp;
+                struct dirent *rec;
 
-                //dp = opendir(ctx->storage.wheel_artifact_dir);
-                //if (!dp) {
-                //    perror(ctx->storage.wheel_artifact_dir);
-                //    exit(1);
-                //}
+                dp = opendir(ctx->storage.wheel_artifact_dir);
+                if (!dp) {
+                    perror(ctx->storage.wheel_artifact_dir);
+                    exit(1);
+                }
 
-                //char pyver_compact[100];
-                //sprintf(pyver_compact, "-cp%s", ctx->meta.python);
-                //strchrdel(pyver_compact, ".");
-                //while ((rec = readdir(dp)) != NULL) {
-                //    struct Wheel *wheelfile = NULL;
-                //    if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
-                //        continue;
-                //    }
-                //    if (DT_DIR == rec->d_type && startswith(rec->d_name, name)) {
-                //        wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, name, (char *[]) {pyver_compact, NULL});
-                //        if (wheelfile) {
-                //            sprintf(cmd + strlen(cmd), " %s/%s", wheelfile->path_name, wheelfile->file_name);
-                //            free(wheelfile);
-                //            break;
-                //        }
-                //    }
-                //}
-                //closedir(dp);
+                char pyver_compact[100];
+                sprintf(pyver_compact, "-cp%s", ctx->meta.python_compact);
+                while ((rec = readdir(dp)) != NULL) {
+                    struct Wheel *wheelfile = NULL;
+                    if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+                        continue;
+                    }
+                    if (DT_DIR == rec->d_type && startswith(rec->d_name, name)) {
+                        wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, name, (char *[]) {pyver_compact, NULL});
+                        if (!wheelfile) {
+                            // Not a binary package? Let's check.
+                            wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, name, (char *[]) {"-any", NULL});
+                        }
+                        if (wheelfile) {
+                            sprintf(cmd + strlen(cmd), " %s/%s", wheelfile->path_name, wheelfile->file_name);
+                            free(wheelfile);
+                            break;
+                        } else {
+                            fprintf(stderr, "Delivery artifact for '%s' is not present in '%s'!\n", name, ctx->storage.wheel_artifact_dir);
+                            exit(1);
+                        }
+                    }
+                }
+                closedir(dp);
                 char *requirement = requirement_from_test(ctx, name);
                 if (requirement) {
                     sprintf(cmd + strlen(cmd), " '%s'", requirement);
