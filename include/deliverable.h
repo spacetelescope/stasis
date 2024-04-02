@@ -48,6 +48,7 @@ struct Delivery {
      */
     struct Storage {
         char *root;                     ///< Top-level storage area
+        char *home;                     ///< Temporary user account profile
         char *tmpdir;                   ///< Temporary storage area (within root)
         char *output_dir;               ///< Base path to where all artifacts are stored
         char *delivery_dir;             ///< Delivery artifact output directory

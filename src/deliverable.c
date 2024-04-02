@@ -129,6 +129,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_runtime_free(ctx->runtime.environ);
     guard_free(ctx->storage.root);
     guard_free(ctx->storage.tmpdir);
+    guard_free(ctx->storage.home);
     guard_free(ctx->storage.delivery_dir);
     guard_free(ctx->storage.tools_dir);
     guard_free(ctx->storage.package_dir);
@@ -226,6 +227,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
         exit(1);
     }
 
+    path_store(&ctx->storage.home, PATH_MAX, ctx->storage.tmpdir, "home");
     path_store(&ctx->storage.build_dir, PATH_MAX, ctx->storage.root, "build");
     path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
     path_store(&ctx->storage.build_sources_dir, PATH_MAX, ctx->storage.build_dir, "sources");
@@ -404,6 +406,11 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
 
     // Create OMC directory structure
     delivery_init_dirs_stage1(ctx);
+
+    // Avoid contaminating the user account with artifacts
+    // Some SELinux configurations will not enjoy this change.
+    setenv("HOME", ctx->storage.home, 1);
+    setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
 
     // add tools to PATH
     char pathvar_tmp[OMC_BUFSIZ];
