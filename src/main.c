@@ -252,8 +252,6 @@ int main(int argc, char *argv[]) {
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
     tpl_register("conda.installer_arch", &ctx.conda.installer_arch);
     tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
-    tpl_register("system.arch", &ctx.system.arch);
-    tpl_register("system.platform", &ctx.system.platform[DELIVERY_PLATFORM_RELEASE]);
     tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
     tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);

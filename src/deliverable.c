@@ -324,6 +324,12 @@ int delivery_init_platform(struct Delivery *ctx) {
     setenv("OMC_CONDA_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
     setenv("OMC_CONDA_PLATFORM_SUBDIR", ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
 
+    // Register template variables
+    // These were moved out of main() because we can't take the address of system.platform[x]
+    // _before_ the array has been initialized.
+    tpl_register("system.arch", &ctx->system.arch);
+    tpl_register("system.platform", &ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
+
     return 0;
 }
 
