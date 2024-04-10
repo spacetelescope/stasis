@@ -552,6 +552,7 @@ int main(int argc, char *argv[]) {
     if (globals.enable_docker) {
         msg(OMC_MSG_L1, "Building Docker image\n");
         if (delivery_docker(&ctx)) {
+            msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
             COE_CHECK_ABORT(1, "Failed to build docker image");
         }
     } else {
