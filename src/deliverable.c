@@ -648,21 +648,10 @@ int delivery_init(struct Delivery *ctx) {
             tolower_s(item);
         }
     }
-    /*
-    if (!strcasecmp(ctx->meta.mission, "hst") && ctx->meta.final) {
-        memset(env_date, 0, sizeof(env_date));
-        strftime(env_date, sizeof(env_date) - 1, "%Y%m%d", ctx->info.time_info);
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_final",
-                 ctx->meta.name, env_date, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact);
-    } else if (!strcasecmp(ctx->meta.mission, "hst")) {
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_rc%d",
-                 ctx->meta.name, ctx->meta.codename, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
-    } else if (!strcasecmp(ctx->meta.mission, "jwst") && ctx->meta.final) {
-        snprintf(env_name, sizeof(env_name), "%s_%s_%s_%s_py%s_final",
-                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact);
-    } else if (!strcasecmp(ctx->meta.mission, "jwst")) {
-        snprintf(env_name, sizeof(env_name) - 1, "%s_%s_%s_%s_py%s_rc%d",
-                 ctx->meta.name, ctx->meta.version, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.arch, ctx->meta.python_compact, ctx->meta.rc);
+
+    if (docker_validate_compression_program(ctx->deploy.docker.image_compression)) {
+        SYSERROR("[deploy:docker].image_compression - invalid command / program is not installed: %s", ctx->deploy.docker.image_compression);
+        return -1;
     }
      */
     return 0;

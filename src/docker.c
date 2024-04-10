@@ -180,3 +180,20 @@ void docker_sanitize_tag(char *str) {
         pos++;
     }
 }
+
+int docker_validate_compression_program(char *prog) {
+    int result = -1;
+    char **parts = NULL;
+    if (!prog) {
+        goto invalid;
+    }
+    parts = split(prog, " ", 1);
+    if (!parts) {
+        goto invalid;
+    }
+    result = find_program(parts[0]) ? 0 : -1;
+
+    invalid:
+    GENERIC_ARRAY_FREE(parts);
+    return result;
+}
