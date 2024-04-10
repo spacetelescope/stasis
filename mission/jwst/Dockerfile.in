@@ -8,6 +8,7 @@ ARG DIST_URL=https://github.com/conda-forge/miniforge/releases/download/${DIST_V
 ARG CONDA_PACKAGES
 # Pipeline environment snapshot definition
 ARG SNAPSHOT_INPUT
+ARG SNAPSHOT_PKGDIR
 # Declare environment
 ENV OPT=/opt \
     HOME=/home/developer
@@ -45,8 +46,6 @@ RUN groupadd developer \
     && useradd -g developer -m -d $HOME -s /bin/bash developer \
     && echo "developer:developer" | chpasswd \
     && echo "developer ALL=(ALL)	NOPASSWD: ALL" >> /etc/sudoers
-# Get delivery snapshot
-ADD ${SNAPSHOT_INPUT} ${HOME}/SNAPSHOT.yml
 # Install Miniforge
 # Reset permissions
 RUN curl -q -OSsL ${DIST_URL}/${DIST_INSTALLER} \
@@ -60,14 +59,17 @@ RUN curl -q -OSsL ${DIST_URL}/${DIST_INSTALLER} \
     && chown -R developer: ${OPT} ${HOME}
 # Configure Conda
 ENV PATH "${DIST_PATH}/bin:${PATH}"
+# Get delivery snapshot
+ADD ${SNAPSHOT_INPUT} ${HOME}/SNAPSHOT.yml
+ADD ${SNAPSHOT_PKGDIR} ${HOME}/packages
+RUN chown -R developer: ${HOME}
 USER developer
 RUN conda config --set auto_update_conda false \
     && conda config --set always_yes true \
     && conda config --set quiet true \
-    && conda config --set rollback_enabled false \
-    && source /etc/profile.d/conda.sh \
-    && source /etc/profile.d/mamba.sh \
-    && mamba install \
+    && conda config --set rollback_enabled false
+RUN sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--extra-index-url ${HOME}/packages/wheels|;" ${HOME}/SNAPSHOT.yml
+RUN mamba install \
         git \
         ${CONDA_PACKAGES} \
     && mamba env create -n linux --file ${HOME}/SNAPSHOT.yml
