@@ -156,9 +156,10 @@ struct Delivery {
     } tests[1000]; ///< An array of tests
 
     struct Deploy {
+        struct JFRT_Auth jfrog_auth;
+
         struct JFrog {
             struct StrList *files;
-            struct JFRT_Auth auth_ctx;
             struct JFRT_Upload upload_ctx;
             char *repo;
             char *dest;

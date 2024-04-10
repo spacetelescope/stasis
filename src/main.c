@@ -132,6 +132,7 @@ void globals_free() {
     guard_strlist_free(&globals.pip_packages);
     guard_free(globals.jfrog.arch);
     guard_free(globals.jfrog.os);
+    guard_free(globals.jfrog.url);
     guard_free(globals.jfrog.repo);
     guard_free(globals.jfrog.version);
     guard_free(globals.jfrog.cli_major_ver);
@@ -256,6 +257,7 @@ int main(int argc, char *argv[]) {
     tpl_register("conda.installer_arch", &ctx.conda.installer_arch);
     tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
     tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
+    tpl_register("deploy.jfrog.url", &globals.jfrog.url);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
     tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
 

@@ -1617,34 +1617,32 @@ int delivery_init_artifactory(struct Delivery *ctx) {
 int delivery_artifact_upload(struct Delivery *ctx) {
     int status = 0;
 
+    if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
+        fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+        return -1;
+    }
+
     for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(*ctx->deploy.jfrog); i++) {
         if (!ctx->deploy.jfrog[i].files || !ctx->deploy.jfrog[i].dest) {
             break;
         }
         jfrt_upload_init(&ctx->deploy.jfrog[i].upload_ctx);
 
-        char *repo = getenv("OMC_JF_REPO");
-        if (repo) {
-            ctx->deploy.jfrog[i].repo = strdup(repo);
-        } else if (globals.jfrog.repo) {
-            ctx->deploy.jfrog[i].repo = strdup(globals.jfrog.repo);
-        } else {
+        if (!globals.jfrog.repo) {
             msg(OMC_MSG_WARN, "Artifactory repository path is not configured!\n");
             fprintf(stderr, "set OMC_JF_REPO environment variable...\nOr append to configuration file:\n\n");
             fprintf(stderr, "[deploy:artifactory]\nrepo = example/generic/repo/path\n\n");
             status++;
             break;
+        } else if (!ctx->deploy.jfrog[i].repo) {
+            ctx->deploy.jfrog[i].repo = strdup(globals.jfrog.repo);
         }
 
-        if (isempty(ctx->deploy.jfrog[i].repo) || !strlen(ctx->deploy.jfrog[i].repo)) {
+        if (!ctx->deploy.jfrog[i].repo || isempty(ctx->deploy.jfrog[i].repo) || !strlen(ctx->deploy.jfrog[i].repo)) {
             // Unlikely to trigger if the config parser is working correctly
             msg(OMC_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
             status++;
             break;
-        }
-
-        if (jfrt_auth_init(&ctx->deploy.jfrog[i].auth_ctx)) {
-            continue;
         }
 
         ctx->deploy.jfrog[i].upload_ctx.workaround_parent_only = true;
@@ -1652,24 +1650,27 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         ctx->deploy.jfrog[i].upload_ctx.build_number = ctx->info.build_number;
 
         char files[PATH_MAX];
+        char dest[PATH_MAX];  // repo + remote dir
 
-        if (jfrog_cli_rt_ping(&ctx->deploy.jfrog[i].auth_ctx)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog[i].auth_ctx.url);
+        if (jfrog_cli_rt_ping(&ctx->deploy.jfrog_auth)) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog_auth.url);
             return -1;
         }
 
         if (strlist_count(ctx->deploy.jfrog[i].files)) {
             for (size_t f = 0; f < strlist_count(ctx->deploy.jfrog[i].files); f++) {
+                memset(dest, 0, sizeof(dest));
                 memset(files, 0, sizeof(files));
+                snprintf(dest, sizeof(dest) - 1, "%s/%s", ctx->deploy.jfrog[i].repo, ctx->deploy.jfrog[i].dest);
                 snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy.jfrog[i].files, f));
-                status += jfrog_cli_rt_upload(&ctx->deploy.jfrog[i].auth_ctx, &ctx->deploy.jfrog[i].upload_ctx, files, ctx->deploy.jfrog[i].dest);
+                status += jfrog_cli_rt_upload(&ctx->deploy.jfrog_auth, &ctx->deploy.jfrog[i].upload_ctx, files, dest);
             }
         }
     }
 
     if (!status && ctx->deploy.jfrog[0].files && ctx->deploy.jfrog[0].dest) {
-        jfrog_cli_rt_build_collect_env(&ctx->deploy.jfrog[0].auth_ctx, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
-        jfrog_cli_rt_build_publish(&ctx->deploy.jfrog[0].auth_ctx, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
+        jfrog_cli_rt_build_collect_env(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
+        jfrog_cli_rt_build_publish(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
     }
 
     return status;
