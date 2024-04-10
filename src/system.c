@@ -161,8 +161,7 @@ char *shell_output(const char *command, int *status) {
             char *tmp = realloc(result, sizeof(*result) * current_size);
             if (!tmp) {
                 return NULL;
-            }
-            if (tmp != result) {
+            } else if (tmp != result) {
                 result = tmp;
             }
         }
