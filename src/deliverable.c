@@ -690,10 +690,6 @@ int delivery_init(struct Delivery *ctx) {
     sprintf(cache_local, "%s/%s", ctx->storage.tmpdir, "cache");
     setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
 
-    char data_local[PATH_MAX];
-    sprintf(data_local, "%s/%s", ctx->storage.tmpdir, "local/share");
-    setenv("XDG_DATA_HOME", data_local, 1);
-
     // add tools to PATH
     char pathvar_tmp[OMC_BUFSIZ];
     sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
