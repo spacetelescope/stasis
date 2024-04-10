@@ -1077,8 +1077,8 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     return 0;
 }
 
-    if (delivery->conda.installer_version) {
 void delivery_get_installer_url(struct Delivery *ctx, char *result) {
+    if (ctx->conda.installer_version) {
         // Use version specified by configuration file
         sprintf(result, "%s/%s-%s-%s-%s.sh", ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
