@@ -904,7 +904,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 //sprintf(recipe_git_url, "  git_url: %s", ctx->tests[i].repository);
                 //sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests[i].version);
                 // TODO: Conditionally download archives if github.com is the origin. Else, use raw git_* keys ^^^
-                sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].version);
+                sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].repository_info_tag ? ctx->tests[i].repository_info_tag : ctx->tests[i].version);
                 sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests[i].repository);
                 strcpy(recipe_git_rev, "");
                 sprintf(recipe_buildno, "  number: 0");
