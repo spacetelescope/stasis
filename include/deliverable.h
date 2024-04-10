@@ -181,7 +181,7 @@ struct Delivery {
  * @return `0` on success
  * @return Non-zero on error
  */
-int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg);
+int delivery_init(struct Delivery *ctx);
 
 /**
  * Free memory allocated by delivery_init()
