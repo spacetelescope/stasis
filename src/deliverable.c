@@ -986,22 +986,6 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
                     strlist_free(&result);
                     return NULL;
-                } else {
-                    DIR *dp;
-                    struct dirent *rec;
-                    dp = opendir("dist");
-                    if (!dp) {
-                        fprintf(stderr, "wheel artifact directory does not exist: %s\n", ctx->storage.wheel_artifact_dir);
-                        strlist_free(&result);
-                        return NULL;
-                    }
-
-                    while ((rec = readdir(dp)) != NULL) {
-                        if (strstr(rec->d_name, ctx->tests[i].name)) {
-                            strlist_append(&result, rec->d_name);
-                        }
-                    }
-                    closedir(dp);
                 }
                 popd();
             }
@@ -1010,19 +994,15 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     return result;
 }
 
-static char *requirement_from_test(struct Delivery *ctx, const char *name) {
-    static char result[PATH_MAX];
-    memset(result, 0, sizeof(result));
+static const struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
+    struct Test *result;
+
+    result = NULL;
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         if (strstr(name, ctx->tests[i].name)) {
-            sprintf(result, "git+%s@%s",
-                    ctx->tests[i].repository,
-                    ctx->tests[i].version);
+            result = &ctx->tests[i];
             break;
         }
-    }
-    if (!strlen(result)) {
-        return NULL;
     }
     return result;
 }
@@ -1074,41 +1054,13 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
-                DIR *dp;
-                struct dirent *rec;
-
-                dp = opendir(ctx->storage.wheel_artifact_dir);
-                if (!dp) {
-                    perror(ctx->storage.wheel_artifact_dir);
-                    exit(1);
+                const struct Test *info = requirement_from_test(ctx, name);
+                if (info) {
+                    sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, info->version);
+                } else {
+                    fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
+                    return -1;
                 }
-
-                char pyver_compact[100];
-                sprintf(pyver_compact, "-cp%s", ctx->meta.python_compact);
-                while ((rec = readdir(dp)) != NULL) {
-                    struct Wheel *wheelfile = NULL;
-                    if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
-                        continue;
-                    }
-                    if (DT_DIR == rec->d_type && startswith(rec->d_name, name)) {
-                        wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, name, (char *[]) {pyver_compact, NULL});
-                        if (!wheelfile) {
-                            // Not a binary package? Let's check.
-                            wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, name, (char *[]) {"-any", NULL});
-                        }
-                        if (wheelfile) {
-                            sprintf(cmd + strlen(cmd), " %s/%s", wheelfile->path_name, wheelfile->file_name);
-                            free(wheelfile);
-                            break;
-                        } else {
-                            fprintf(stderr, "Delivery artifact for '%s' is not present in '%s'!\n", name, ctx->storage.wheel_artifact_dir);
-                            exit(1);
-                        }
-                    }
-                }
-                closedir(dp);
-
-
             } else {
                 if (startswith(name, "--") || startswith(name, "-")) {
                     sprintf(cmd + strlen(cmd), " %s", name);
