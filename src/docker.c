@@ -168,3 +168,15 @@ int docker_capable(struct DockerCapabilities *result) {
     result->usable = true;
     return true;
 }
+
+void docker_sanitize_tag(char *str) {
+    char *pos = str;
+    while (*pos != 0) {
+        if (!isalnum(*pos)) {
+            if (*pos != '.' && *pos != ':' && *pos != '/') {
+                *pos = '-';
+            }
+        }
+        pos++;
+    }
+}
