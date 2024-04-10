@@ -1761,6 +1761,7 @@ int delivery_docker(struct Delivery *ctx) {
     if (!docker_capable(&ctx->deploy.docker.capabilities)) {
         return -1;
     }
+    char tag[OMC_NAME_MAX];
     char args[PATH_MAX];
     int has_registry = ctx->deploy.docker.registry != NULL;
     size_t total_tags = strlist_count(ctx->deploy.docker.tags);
