@@ -1320,99 +1320,87 @@ char *delivery_get_release_header(struct Delivery *ctx) {
     return strdup(output);
 }
 
-void delivery_rewrite_spec(struct Delivery *ctx, char *filename) {
+void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage) {
     char output[PATH_MAX];
     char *header = NULL;
     char *tempfile = NULL;
     FILE *tp = NULL;
 
-    header = delivery_get_release_header(ctx);
-    if (!header) {
-        msg(OMC_MSG_ERROR, "failed to generate release header string\n", filename);
-        exit(1);
-    }
-    tempfile = xmkstemp(&tp, "w");
-    if (!tempfile || !tp) {
-        msg(OMC_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
-        exit(1);
-    }
-    fprintf(tp, "%s", header);
-
-    // Read the original file
-    char **contents = file_readlines(filename, 0, 0, NULL);
-    if (!contents) {
-        msg(OMC_MSG_ERROR, "%s: unable to read %s", filename);
-        exit(1);
-    }
-
-    // Write temporary data
-    for (size_t i = 0; contents[i] != NULL; i++) {
-        if (startswith(contents[i], "prefix:")) {
-            // quick hack: prefixes are written at the bottom of the file
-            // so strip it off
-            break;
+    if (stage == DELIVERY_REWRITE_SPEC_STAGE_1) {
+        header = delivery_get_release_header(ctx);
+        if (!header) {
+            msg(OMC_MSG_ERROR, "failed to generate release header string\n", filename);
+            exit(1);
         }
-        fprintf(tp, "%s", contents[i]);
-    }
+        tempfile = xmkstemp(&tp, "w+");
+        if (!tempfile || !tp) {
+            msg(OMC_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
+            exit(1);
+        }
+        fprintf(tp, "%s", header);
 
-    for (size_t i = 0; contents[i] != NULL; i++) {
-        guard_free(contents[i]);
-    }
-    guard_free(contents);
-    guard_free(header);
-    fflush(tp);
-    fclose(tp);
-
-    // Replace the original file with our temporary data
-    if (copy2(tempfile, filename, CT_PERM) < 0) {
-        fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
-        exit(1);
-    }
-    remove(tempfile);
-    guard_free(tempfile);
-
-    // Replace "local" channel with the staging URL
-    if (ctx->storage.conda_staging_url) {
-        sprintf(output, "  - %s", ctx->storage.conda_staging_url);
-        file_replace_text(filename, "  - local", output, 0);
-    } else {
-        msg(OMC_MSG_WARN, "conda_staging_url is not configured. References to \"local\" channel will not be replaced\n", filename);
-    }
-    // Rewrite tested packages to point to tested code, at their defined verison
-    for (size_t i = 0; i < strlist_count(ctx->conda.wheels_packages); i++) {
-        struct Wheel *wheelfile = NULL;
-        char *package_name_tmp = NULL;
-
-        package_name_tmp = strlist_item(ctx->conda.wheels_packages, i);
-        if (!package_name_tmp) {
-            SYSERROR("wheel_package claims to have %zu records, "
-                     "but the package at index %zu was NULL\n", strlist_count(ctx->conda.wheels_packages), i);
-            continue;
+        // Read the original file
+        char **contents = file_readlines(filename, 0, 0, NULL);
+        if (!contents) {
+            msg(OMC_MSG_ERROR, "%s: unable to read %s", filename);
+            exit(1);
         }
 
-        char **parts = split(package_name_tmp, "-", 0);
-        if (parts && parts[0]) {
-            wheelfile = get_wheel_file(ctx->storage.wheel_artifact_dir, parts[0], (char *[]) {parts[1], parts[2], parts[3], NULL});
-            guard_free(parts);
+        // Write temporary data
+        for (size_t i = 0; contents[i] != NULL; i++) {
+            if (startswith(contents[i], "channels:")) {
+                // Allow for additional conda channel injection
+                fprintf(tp, "%s  - @CONDA_CHANNEL@\n", contents[i]);
+                continue;
+            } else if (strstr(contents[i], "- pip:")) {
+                // Allow for additional pip argument injection
+                fprintf(tp, "%s      - @PIP_ARGUMENTS@\n", contents[i]);
+                continue;
+            } else if (startswith(contents[i], "prefix:")) {
+                // Remove the prefix key
+                if (strstr(contents[i], "/") || strstr(contents[i], "\\")) {
+                    // path is on the same line as the key
+                    continue;
+                } else {
+                    // path is on the next line?
+                    if (contents[i + 1] && (strstr(contents[i + 1], "/") || strstr(contents[i + 1], "\\"))) {
+                        i++;
+                    }
+                    continue;
+                }
+            }
+            fprintf(tp, "%s", contents[i]);
+        }
+        GENERIC_ARRAY_FREE(contents);
+        guard_free(header);
+        fflush(tp);
+        fclose(tp);
+
+        // Replace the original file with our temporary data
+        if (copy2(tempfile, filename, CT_PERM) < 0) {
+            fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
+            exit(1);
+        }
+        remove(tempfile);
+        guard_free(tempfile);
+    } else if (stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
+        // Replace "local" channel with the staging URL
+        if (ctx->storage.conda_staging_url) {
+            file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
+        } else if (globals.jfrog.repo) {
+            sprintf(output, "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
+            file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
+        } else {
+            msg(OMC_MSG_WARN, "conda_staging_url is not configured\n", filename);
+            file_replace_text(filename, "  - @CONDA_CHANNEL@", "", 0);
         }
 
-        if (!wheelfile) {
-            SYSERROR("Wheel package '%s/%s' no longer exists!\n", ctx->storage.wheel_artifact_dir, package_name_tmp);
-            continue;
+        if (ctx->storage.wheel_staging_url) {
+            file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
+        } else if (globals.jfrog.repo) {
+            sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
+            file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
-
-        char target[OMC_NAME_MAX];
-        char replacement[OMC_NAME_MAX];
-        memset(target, 0, sizeof(target));
-        memset(replacement, 0, sizeof(replacement));
-
-        sprintf(target, "- %s==", wheelfile->distribution);
-        sprintf(replacement, "- %s/%s", ctx->storage.wheel_staging_url, wheelfile->file_name);
-        if (file_replace_text(filename, target, replacement, REPLACE_TRUNCATE_AFTER_MATCH)) {
-            SYSERROR("file_replace_text failed for file %s: target: %s, replacement: %s",
-                     filename, target, replacement);
-        }
-
     }
 }
 

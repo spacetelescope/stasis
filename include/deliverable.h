@@ -16,6 +16,9 @@
 #define DELIVERY_PLATFORM_CONDA_INSTALLER 2
 #define DELIVERY_PLATFORM_RELEASE 3
 
+#define DELIVERY_REWRITE_SPEC_STAGE_1 0
+#define DELIVERY_REWRITE_SPEC_STAGE_2 1
+
 #define INSTALL_PKG_CONDA 1 << 1            ///< Toggle conda package installation
 #define INSTALL_PKG_CONDA_DEFERRED 1 << 2   ///< Toggle deferred conda package installation
 #define INSTALL_PKG_PIP 1 << 3              ///< Toggle pip package installation
@@ -247,7 +250,7 @@ char *delivery_get_release_header(struct Delivery *ctx);
  * @param ctx poitner to Delivery context
  * @param filename path to delivery artifact (Conda YAML file)
  */
-void delivery_rewrite_spec(struct Delivery *ctx, char *filename);
+void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage);
 
 /**
  * Copy compiled wheels to artifact storage
