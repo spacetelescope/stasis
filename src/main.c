@@ -199,6 +199,8 @@ int main(int argc, char *argv[]) {
     memset(env_name_testing, 0, sizeof(env_name_testing));
     memset(installer_url, 0, sizeof(installer_url));
     memset(python_override_version, 0, sizeof(python_override_version));
+    memset(&proc, 0, sizeof(proc));
+    memset(&ctx, 0, sizeof(ctx));
 
     int c;
     int option_index = 0;
@@ -254,9 +256,6 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
-
-    memset(&proc, 0, sizeof(proc));
-    memset(&ctx, 0, sizeof(ctx));
 
     if (!delivery_input) {
         fprintf(stderr, "error: a DELIVERY_FILE is required\n");
