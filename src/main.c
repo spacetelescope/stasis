@@ -546,8 +546,8 @@ int main(int argc, char *argv[]) {
     // Rewrite release environment output (i.e. set package origin(s) to point to the deployment server, etc.)
     char specfile[PATH_MAX];
     sprintf(specfile, "%s/%s.yml", ctx.storage.delivery_dir, env_name);
-    msg(OMC_MSG_L3, "Rewriting release spec file %s\n", path_basename(specfile));
-    delivery_rewrite_spec(&ctx, specfile);
+    msg(OMC_MSG_L3, "Rewriting release spec file (stage 1): %s\n", path_basename(specfile));
+    delivery_rewrite_spec(&ctx, specfile, DELIVERY_REWRITE_SPEC_STAGE_1);
 
     msg(OMC_MSG_L1, "Rendering mission templates\n");
     delivery_mission_render_files(&ctx);
@@ -560,6 +560,9 @@ int main(int argc, char *argv[]) {
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled\n");
     }
+
+    msg(OMC_MSG_L3, "Rewriting release spec file (stage 2): %s\n", path_basename(specfile));
+    delivery_rewrite_spec(&ctx, specfile, DELIVERY_REWRITE_SPEC_STAGE_2);
 
     if (globals.enable_artifactory) {
         msg(OMC_MSG_L1, "Uploading artifacts\n");
