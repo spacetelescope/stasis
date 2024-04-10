@@ -143,6 +143,44 @@ void globals_free() {
     guard_free(globals.workaround.tox_posargs);
 }
 
+static void check_system_requirements() {
+    const char *tools_required[] = {
+        "rsync",
+        NULL,
+    };
+
+    msg(OMC_MSG_L1, "Checking system requirements\n");
+    for (size_t i = 0; tools_required[i] != NULL; i++) {
+        if (!find_program(tools_required[i])) {
+            msg(OMC_MSG_L2 | OMC_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
+            exit(1);
+        }
+    }
+
+    struct DockerCapabilities dcap;
+    if (!docker_capable(&dcap)) {
+        msg(OMC_MSG_L2 | OMC_MSG_WARN, "Docker is broken\n");
+        msg(OMC_MSG_L3, "Available: %s\n", dcap.available ? "Yes" : "No");
+        msg(OMC_MSG_L3, "Usable: %s\n", dcap.usable ? "Yes" : "No");
+        msg(OMC_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap.podman ? "Yes" : "No");
+        msg(OMC_MSG_L3, "Build plugin(s): ");
+        if (dcap.usable) {
+            if (dcap.build & OMC_DOCKER_BUILD) {
+                printf("build ");
+            }
+            if (dcap.build & OMC_DOCKER_BUILD_X) {
+                printf("buildx ");
+            }
+            puts("");
+        } else {
+            printf("N/A\n");
+        }
+
+        // disable docker builds
+        globals.enable_docker = false;
+    }
+}
+
 int main(int argc, char *argv[]) {
     struct INIFILE *cfg = NULL;
     struct INIFILE *ini = NULL;
@@ -230,6 +268,7 @@ int main(int argc, char *argv[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
+    check_system_requirements();
     msg(OMC_MSG_L1, "Setup\n");
 
     // Expose variables for use with the template engine
