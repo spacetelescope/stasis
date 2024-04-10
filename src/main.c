@@ -495,9 +495,6 @@ int main(int argc, char *argv[]) {
         if (!(ctx.conda.wheels_packages = delivery_build_wheels(&ctx))) {
             exit(1);
         }
-        if (delivery_copy_wheel_artifacts(&ctx)) {
-            exit(1);
-        }
         if (delivery_index_wheel_artifacts(&ctx)) {
             exit(1);
         }
