@@ -21,6 +21,7 @@ unsigned tpl_pool_func_used = 0;
 struct tplfunc_frame *tpl_pool_func[1024] = {0};
 
 void tpl_register_func(char *key, struct tplfunc_frame *frame) {
+    (void) key;  // TODO: placeholder
     tpl_pool_func[tpl_pool_func_used] = calloc(1, sizeof(tpl_pool_func[tpl_pool_func_used]));
     memcpy(tpl_pool_func[tpl_pool_func_used], frame, sizeof(*frame));
     tpl_pool_func_used++;
