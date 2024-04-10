@@ -21,6 +21,7 @@ int docker_exec(const char *args, unsigned flags) {
 }
 
 int docker_script(const char *image, char *data, unsigned flags) {
+    (void)flags;  // TODO: placeholder
     FILE *infile;
     FILE *outfile;
     char cmd[PATH_MAX];
