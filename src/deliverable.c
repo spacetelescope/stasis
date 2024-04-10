@@ -208,6 +208,13 @@ void delivery_free(struct Delivery *ctx) {
 
 void delivery_init_dirs_stage2(struct Delivery *ctx) {
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.output_dir, ctx->info.build_name);
+    path_store(&ctx->storage.build_dir, PATH_MAX, ctx->storage.build_dir, ctx->info.build_name);
+
+    path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
+    path_store(&ctx->storage.build_sources_dir, PATH_MAX, ctx->storage.build_dir, "sources");
+    path_store(&ctx->storage.build_testing_dir, PATH_MAX, ctx->storage.build_dir, "testing");
+    path_store(&ctx->storage.build_docker_dir, PATH_MAX, ctx->storage.build_dir, "docker");
+
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
@@ -237,13 +244,8 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
         exit(1);
     }
 
-    path_store(&ctx->storage.home, PATH_MAX, ctx->storage.tmpdir, "home");
+    path_store(&ctx->storage.home, PATH_MAX, ctx->storage.root, "home");
     path_store(&ctx->storage.build_dir, PATH_MAX, ctx->storage.root, "build");
-    path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
-    path_store(&ctx->storage.build_sources_dir, PATH_MAX, ctx->storage.build_dir, "sources");
-    path_store(&ctx->storage.build_testing_dir, PATH_MAX, ctx->storage.build_dir, "testing");
-    path_store(&ctx->storage.build_docker_dir, PATH_MAX, ctx->storage.build_dir, "docker");
-
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
 
     if (!ctx->storage.mission_dir) {
