@@ -695,6 +695,9 @@ int delivery_init(struct Delivery *ctx) {
     sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
     setenv("PATH", pathvar_tmp, 1);
 
+    // Prevent git from paginating output
+    setenv("GIT_PAGER", "", 1);
+
     populate_delivery_ini(ctx);
 
     if (ctx->deploy.docker.tags) {
