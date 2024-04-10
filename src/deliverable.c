@@ -1818,6 +1818,7 @@ int delivery_docker(struct Delivery *ctx) {
     // Build the image
     char delivery_file[PATH_MAX];
     char dest[PATH_MAX];
+    char rsync_cmd[PATH_MAX * 2];
     memset(delivery_file, 0, sizeof(delivery_file));
     memset(dest, 0, sizeof(dest));
 
@@ -1832,6 +1833,25 @@ int delivery_docker(struct Delivery *ctx) {
         fprintf(stderr, "Failed to copy delivery file to %s: %s\n", dest, strerror(errno));
         return -1;
     }
+
+    memset(dest, 0, sizeof(dest));
+    sprintf(dest, "%s/packages", ctx->storage.build_docker_dir);
+
+    msg(OMC_MSG_L2, "Copying conda packages\n");
+    memset(rsync_cmd, 0, sizeof(rsync_cmd));
+    sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.conda_artifact_dir, dest);
+    if (system(rsync_cmd)) {
+        fprintf(stderr, "Failed to copy conda artifacts to docker build directory\n");
+        return -1;
+    }
+
+    msg(OMC_MSG_L2, "Copying wheel packages\n");
+    memset(rsync_cmd, 0, sizeof(rsync_cmd));
+    sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
+    if (system(rsync_cmd)) {
+        fprintf(stderr, "Failed to copy wheel artifactory to docker build directory\n");
+    }
+
     if (docker_build(ctx->storage.build_docker_dir, args, ctx->deploy.docker.capabilities.build)) {
         return -1;
     }
