@@ -345,60 +345,18 @@ int delivery_init_platform(struct Delivery *ctx) {
     return 0;
 }
 
-    RuntimeEnv *rt;
-    struct INIData *rtdata;
+static int populate_mission_ini(struct Delivery **ctx) {
     union INIVal val;
+    struct INIFILE *ini;
 
-    // Record timestamp used for release
-    time(&ctx->info.time_now);
-    ctx->info.time_info = localtime(&ctx->info.time_now);
-    ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
-    if (!ctx->info.time_str_epoch) {
-        msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
-        return -1;
-    }
-    snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
-
-    if (cfg) {
-        ini_getval(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR, &val);
-        conv_str(&ctx->storage.conda_staging_dir, val);
-        ini_getval(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR, &val);
-        conv_str(&ctx->storage.conda_staging_url, val);
-        ini_getval(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR, &val);
-        conv_str(&ctx->storage.wheel_staging_dir, val);
-        ini_getval(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR, &val);
-        conv_str(&ctx->storage.wheel_staging_url, val);
-        ini_getval(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL, &val);
-        conv_bool(&globals.conda_fresh_start, val);
-        // Below can also be toggled by command-line arguments
-        if (!globals.continue_on_error) {
-            ini_getval(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL, &val);
-            conv_bool(&globals.continue_on_error, val);
-        }
-        // Below can also be toggled by command-line arguments
-        if (!globals.always_update_base_environment) {
-            ini_getval(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL, &val);
-            conv_bool(&globals.always_update_base_environment, val);
-        }
-        ini_getval(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.conda_install_prefix, val);
-        ini_getval(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
-        conv_strlist(&globals.conda_packages, LINE_SEP, val);
-        ini_getval(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
-        conv_strlist(&globals.pip_packages, LINE_SEP, val);
-        // Configure jfrog cli downloader
-        ini_getval(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.jfrog_artifactory_base_url, val);
-        ini_getval(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.jfrog_artifactory_product, val);
-        ini_getval(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.cli_major_ver, val);
-        ini_getval(cfg, "jfrog_cli_download", "version", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.version, val);
-        ini_getval(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.remote_filename, val);
-        ini_getval(cfg, "deploy:artifactory", "repo", INIVAL_TYPE_STR, &val);
-        conv_str(&globals.jfrog.repo, val);
+    // Now populate the rules
+    char missionfile[PATH_MAX] = {0};
+    if (getenv("OMC_SYSCONFDIR")) {
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                getenv("OMC_SYSCONFDIR"), "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
+    } else {
+        sprintf(missionfile, "%s/%s/%s/%s.ini",
+                globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 
     msg(OMC_MSG_L2, "Reading mission configuration: %s\n", missionfile);
@@ -410,16 +368,20 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
     (*ctx)->_omc_ini_fp.mission_path = strdup(missionfile);
 
-    // Configure architecture and platform information
-    delivery_init_platform(ctx);
+    ini_getval_required(ini, "meta", "release_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&(*ctx)->rules.release_fmt, val);
 
-    // Create OMC directory structure
-    delivery_init_dirs_stage1(ctx);
+    // TODO move this somewhere else?
+    // Used for setting artifactory build info
+    ini_getval_required(ini, "meta", "build_name_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&(*ctx)->rules.build_name_fmt, val);
 
-    // Avoid contaminating the user account with artifacts
-    // Some SELinux configurations will not enjoy this change.
-    setenv("HOME", ctx->storage.home, 1);
-    setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
+    // TODO move this somewhere else?
+    // Used for setting artifactory build info
+    ini_getval_required(ini, "meta", "build_number_fmt", INIVAL_TYPE_STR, &val);
+    conv_str(&(*ctx)->rules.build_number_fmt, val);
+    return 0;
+}
 
 static int populate_delivery_ini(struct Delivery *ctx) {
     union INIVal val;
@@ -515,35 +477,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     }
 
     // Delivery metadata consumed
-    // Now populate the rules
-    char missionfile[PATH_MAX] = {0};
-    if (getenv("OMC_SYSCONFDIR")) {
-        sprintf(missionfile, "%s/%s/%s/%s.ini",
-                getenv("OMC_SYSCONFDIR"), "mission", ctx->meta.mission, ctx->meta.mission);
-    } else {
-        sprintf(missionfile, "%s/%s/%s/%s.ini",
-                globals.sysconfdir, "mission", ctx->meta.mission, ctx->meta.mission);
-    }
-
-    msg(OMC_MSG_L2, "Reading mission configuration: %s\n", missionfile);
-    ctx->rules._handle = ini_open(missionfile);
-    if (!ctx->rules._handle) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
-        exit(1);
-    }
-
-    ini_getval_required(ctx->rules._handle, "meta", "release_fmt", INIVAL_TYPE_STR, &val);
-    conv_str(&ctx->rules.release_fmt, val);
-
-    // TODO move this somewhere else?
-    // Used for setting artifactory build info
-    ini_getval_required(ctx->rules._handle, "meta", "build_name_fmt", INIVAL_TYPE_STR, &val);
-    conv_str(&ctx->rules.build_name_fmt, val);
-
-    // TODO move this somewhere else?
-    // Used for setting artifactory build info
-    ini_getval_required(ctx->rules._handle, "meta", "build_number_fmt", INIVAL_TYPE_STR, &val);
-    conv_str(&ctx->rules.build_number_fmt, val);
+    populate_mission_ini(&ctx);
 
     if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
         fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
@@ -721,6 +655,54 @@ static int populate_info(struct Delivery *ctx) {
 }
 
 int delivery_init(struct Delivery *ctx) {
+    populate_info(ctx);
+    populate_delivery_cfg(ctx);
+
+    // Set artifactory URL via environment variable if possible
+    char *jfurl = getenv("OMC_JF_ARTIFACTORY_URL");
+    if (jfurl) {
+        if (globals.jfrog.url) {
+            guard_free(globals.jfrog.url);
+        }
+        globals.jfrog.url = strdup(jfurl);
+    }
+
+    // Set artifactory repository via environment if possible
+    char *jfrepo = getenv("OMC_JF_REPO");
+    if (jfrepo) {
+        if (globals.jfrog.repo) {
+            guard_free(globals.jfrog.repo);
+        }
+        globals.jfrog.repo = strdup(jfrepo);
+    }
+
+    // Configure architecture and platform information
+    delivery_init_platform(ctx);
+
+    // Create OMC directory structure
+    delivery_init_dirs_stage1(ctx);
+
+    // Avoid contaminating the user account with artifacts
+    // Some SELinux configurations will not enjoy this change.
+    //setenv("HOME", ctx->storage.home, 1);
+    char config_local[PATH_MAX];
+    sprintf(config_local, "%s/%s", ctx->storage.tmpdir, "config");
+    setenv("XDG_CONFIG_HOME", config_local, 1);
+
+    char cache_local[PATH_MAX];
+    sprintf(cache_local, "%s/%s", ctx->storage.tmpdir, "cache");
+    setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
+
+    char data_local[PATH_MAX];
+    sprintf(data_local, "%s/%s", ctx->storage.tmpdir, "local/share");
+    setenv("XDG_DATA_HOME", data_local, 1);
+
+    // add tools to PATH
+    char pathvar_tmp[OMC_BUFSIZ];
+    sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+    setenv("PATH", pathvar_tmp, 1);
+
+    populate_delivery_ini(ctx);
 
     if (ctx->deploy.docker.tags) {
         for (size_t i = 0; i < strlist_count(ctx->deploy.docker.tags); i++) {
@@ -733,7 +715,6 @@ int delivery_init(struct Delivery *ctx) {
         SYSERROR("[deploy:docker].image_compression - invalid command / program is not installed: %s", ctx->deploy.docker.image_compression);
         return -1;
     }
-     */
     return 0;
 }
 
