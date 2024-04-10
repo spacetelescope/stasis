@@ -428,6 +428,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         base = join(&components->data[max_components], "/");
         guard_free(components->data[max_components]);
         new_src = join(components->data, "/");
+        guard_strlist_free(&components);
     }
 
     if (new_src) {
