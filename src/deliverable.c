@@ -1413,12 +1413,16 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         for (size_t i = 0; contents[i] != NULL; i++) {
             if (startswith(contents[i], "channels:")) {
                 // Allow for additional conda channel injection
-                fprintf(tp, "%s  - @CONDA_CHANNEL@\n", contents[i]);
-                continue;
+                if (ctx->conda.conda_packages_defer && strlist_count(ctx->conda.conda_packages_defer)) {
+                    fprintf(tp, "%s  - @CONDA_CHANNEL@\n", contents[i]);
+                    continue;
+                }
             } else if (strstr(contents[i], "- pip:")) {
-                // Allow for additional pip argument injection
-                fprintf(tp, "%s      - @PIP_ARGUMENTS@\n", contents[i]);
-                continue;
+                if (ctx->conda.pip_packages_defer && strlist_count(ctx->conda.pip_packages_defer)) {
+                    // Allow for additional pip argument injection
+                    fprintf(tp, "%s      - @PIP_ARGUMENTS@\n", contents[i]);
+                    continue;
+                }
             } else if (startswith(contents[i], "prefix:")) {
                 // Remove the prefix key
                 if (strstr(contents[i], "/") || strstr(contents[i], "\\")) {
