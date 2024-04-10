@@ -915,6 +915,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             pushd(srcdir);
             {
                 if (python_exec("-m build -w ")) {
+                char cmd[PATH_MAX * 2];
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
                     strlist_free(&result);
                     return NULL;

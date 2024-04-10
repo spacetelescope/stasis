@@ -98,7 +98,7 @@ int conda_activate(const char *root, const char *env_name) {
     }
 
     // Fully activate conda and record its effect on the runtime environment
-    char command[PATH_MAX];
+    char command[PATH_MAX * 3];
     snprintf(command, sizeof(command) - 1, "source %s; source %s; conda activate %s &>/dev/null; env -0", path_conda, path_mamba, env_name);
     int retval = shell(&proc, command);
     if (retval) {
