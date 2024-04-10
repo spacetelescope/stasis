@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
     }
 
     msg(OMC_MSG_L2, "Initializing delivery context\n");
-    if (delivery_init(&ctx, ini, cfg)) {
+    if (delivery_init(&ctx)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
     msg(OMC_MSG_L1, "Conda setup\n");
     delivery_get_installer_url(&ctx, installer_url);
     msg(OMC_MSG_L2, "Downloading: %s\n", installer_url);
-    if (delivery_get_installer(installer_url)) {
+    if (delivery_get_installer(&ctx, installer_url)) {
         msg(OMC_MSG_ERROR, "download failed: %s\n", installer_url);
         exit(1);
     }
@@ -341,8 +341,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    msg(OMC_MSG_L2, "Installing: %s\n", path_basename(installer_url));
-    delivery_install_conda(path_basename(installer_url), ctx.storage.conda_install_prefix);
+    msg(OMC_MSG_L2, "Installing: %s\n", ctx.conda.installer_name);
+    delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
 
     msg(OMC_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
     delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);

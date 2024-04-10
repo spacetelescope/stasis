@@ -158,6 +158,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->conda.installer_version);
     guard_free(ctx->conda.installer_platform);
     guard_free(ctx->conda.installer_arch);
+    guard_free(ctx->conda.installer_path);
     guard_free(ctx->conda.tool_version);
     guard_free(ctx->conda.tool_build_version);
     guard_strlist_free(&ctx->conda.conda_packages);
@@ -335,7 +336,6 @@ int delivery_init_platform(struct Delivery *ctx) {
     return 0;
 }
 
-int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg) {
     RuntimeEnv *rt;
     struct INIData *rtdata;
     union INIVal val;
@@ -640,6 +640,7 @@ int delivery_init(struct Delivery *ctx, struct INIFILE *ini, struct INIFILE *cfg
             conv_strlist(&ctx->deploy.docker.tags, LINE_SEP, val);
         }
     }
+int delivery_init(struct Delivery *ctx) {
 
     if (ctx->deploy.docker.tags) {
         for (size_t i = 0; i < strlist_count(ctx->deploy.docker.tags); i++) {
@@ -914,8 +915,22 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version);
             pushd(srcdir);
             {
-                if (python_exec("-m build -w ")) {
+                char dname[NAME_MAX];
+                char outdir[PATH_MAX];
                 char cmd[PATH_MAX * 2];
+                memset(dname, 0, sizeof(dname));
+                memset(outdir, 0, sizeof(outdir));
+                memset(cmd, 0, sizeof(outdir));
+
+                strcpy(dname, ctx->tests[i].name);
+                tolower_s(dname);
+                sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
+                if (mkdirs(outdir, 0755)) {
+                    fprintf(stderr, "failed to create output directory: %s\n", outdir);
+                }
+
+                sprintf(cmd, "-m build -w -o %s", outdir);
+                if (python_exec(cmd)) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
                     strlist_free(&result);
                     return NULL;
@@ -1058,35 +1073,46 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     return 0;
 }
 
-void delivery_get_installer_url(struct Delivery *delivery, char *result) {
     if (delivery->conda.installer_version) {
+void delivery_get_installer_url(struct Delivery *ctx, char *result) {
         // Use version specified by configuration file
-        sprintf(result, "%s/%s-%s-%s-%s.sh", delivery->conda.installer_baseurl,
-                delivery->conda.installer_name,
-                delivery->conda.installer_version,
-                delivery->conda.installer_platform,
-                delivery->conda.installer_arch);
+        sprintf(result, "%s/%s-%s-%s-%s.sh", ctx->conda.installer_baseurl,
+                ctx->conda.installer_name,
+                ctx->conda.installer_version,
+                ctx->conda.installer_platform,
+                ctx->conda.installer_arch);
     } else {
         // Use latest installer
-        sprintf(result, "%s/%s-%s-%s.sh", delivery->conda.installer_baseurl,
-                delivery->conda.installer_name,
-                delivery->conda.installer_platform,
-                delivery->conda.installer_arch);
+        sprintf(result, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
+                ctx->conda.installer_name,
+                ctx->conda.installer_platform,
+                ctx->conda.installer_arch);
     }
 
 }
 
-int delivery_get_installer(char *installer_url) {
-    char *script = path_basename(installer_url);
-    if (access(script, F_OK)) {
+int delivery_get_installer(struct Delivery *ctx, char *installer_url) {
+    char script_path[PATH_MAX];
+    char *installer = path_basename(installer_url);
+
+    memset(script_path, 0, sizeof(script_path));
+    sprintf(script_path, "%s/%s", ctx->storage.tmpdir, installer);
+    if (access(script_path, F_OK)) {
         // Script doesn't exist
-        if (HTTP_ERROR(download(installer_url, script, NULL))) {
+        if (HTTP_ERROR(download(installer_url, script_path, NULL))) {
             // download failed
             return -1;
         }
     } else {
-        msg(OMC_MSG_RESTRICT | OMC_MSG_L3, "Skipped, installer already exists\n", script);
+        msg(OMC_MSG_RESTRICT | OMC_MSG_L3, "Skipped, installer already exists\n", script_path);
     }
+
+    ctx->conda.installer_path = strdup(script_path);
+    if (!ctx->conda.installer_path) {
+        SYSERROR("Unable to duplicate script_path: '%s'", script_path);
+        return -1;
+    }
+
     return 0;
 }
 

@@ -109,6 +109,7 @@ struct Delivery {
         char *installer_version;                ///< Version of installer
         char *installer_platform;               ///< Platform/OS target of installer
         char *installer_arch;                   ///< CPU architecture target of installer
+        char *installer_path;                   ///< Absolute path of installer on-disk
         char *tool_version;                     ///< Installed version of conda
         char *tool_build_version;               ///< Installed version of "build" package
         struct StrList *conda_packages;         ///< Conda packages to deliver
@@ -268,15 +269,15 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx);
  * Retrieve Conda installer
  * @param installer_url URL to installation script
  */
-int delivery_get_installer(char *installer_url);
+int delivery_get_installer(struct Delivery *ctx, char *installer_url);
 
 /**
  * Generate URL based on Delivery context
- * @param delivery pointer to Delivery context
+ * @param ctx pointer to Delivery context
  * @param result pointer to char
  * @return in result
  */
-void delivery_get_installer_url(struct Delivery *delivery, char *result);
+void delivery_get_installer_url(struct Delivery *ctx, char *result);
 
 /**
  * Install packages based on Delivery context
