@@ -182,8 +182,6 @@ static void check_system_requirements() {
 }
 
 int main(int argc, char *argv[]) {
-    struct INIFILE *cfg = NULL;
-    struct INIFILE *ini = NULL;
     struct Delivery ctx;
     struct Process proc = {
             .f_stdout = "",
@@ -572,11 +570,6 @@ int main(int argc, char *argv[]) {
     }
 
     msg(OMC_MSG_L1, "Cleaning up\n");
-    ini_free(&ini);
-    if (cfg) {
-        // optional extras
-        ini_free(&cfg);
-    }
     delivery_free(&ctx);
     globals_free();
     tpl_free();
