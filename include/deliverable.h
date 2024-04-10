@@ -37,6 +37,18 @@ struct Content {
  *  \brief A structure describing a full delivery object
  */
 struct Delivery {
+    /*! \struct OMC_INI_FP
+     * \brief Container for INIFILE handles
+    */
+    struct OMC_INI_FP {
+        struct INIFILE *delivery;
+        struct INIFILE *cfg;
+        struct INIFILE *mission;
+        char *delivery_path;
+        char *cfg_path;
+        char *mission_path;
+    } _omc_ini_fp;
+
     /*! \struct System
      * \brief System information
     */

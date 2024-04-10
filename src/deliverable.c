@@ -182,7 +182,6 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);
     guard_free(ctx->rules.build_number_fmt);
-    ini_free(&ctx->rules._handle);
 
     guard_free(ctx->deploy.docker.test_script);
     guard_free(ctx->deploy.docker.registry);
@@ -195,6 +194,16 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->deploy.jfrog[i].dest);
         guard_strlist_free(&ctx->deploy.jfrog[i].files);
     }
+
+    ini_free(&ctx->_omc_ini_fp.delivery);
+    guard_free(ctx->_omc_ini_fp.delivery_path);
+    if (ctx->_omc_ini_fp.cfg) {
+        // optional extras
+        ini_free(&ctx->_omc_ini_fp.cfg);
+        guard_free(ctx->_omc_ini_fp.cfg_path);
+    }
+    ini_free(&ctx->_omc_ini_fp.mission);
+    guard_free(ctx->_omc_ini_fp.mission_path);
 }
 
 void delivery_init_dirs_stage2(struct Delivery *ctx) {
@@ -392,14 +401,14 @@ int delivery_init_platform(struct Delivery *ctx) {
         conv_str(&globals.jfrog.repo, val);
     }
 
-    // Set artifactory repository via environment if possible
-    char *jfrepo = getenv("OMC_JF_REPO");
-    if (jfrepo) {
-        if (globals.jfrog.repo) {
-            guard_free(globals.jfrog.repo);
-        }
-        globals.jfrog.repo = strdup(jfrepo);
+    msg(OMC_MSG_L2, "Reading mission configuration: %s\n", missionfile);
+    (*ctx)->_omc_ini_fp.mission = ini_open(missionfile);
+    ini = (*ctx)->_omc_ini_fp.mission;
+    if (!ini) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
+        exit(1);
     }
+    (*ctx)->_omc_ini_fp.mission_path = strdup(missionfile);
 
     // Configure architecture and platform information
     delivery_init_platform(ctx);
@@ -412,10 +421,11 @@ int delivery_init_platform(struct Delivery *ctx) {
     setenv("HOME", ctx->storage.home, 1);
     setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
 
-    // add tools to PATH
-    char pathvar_tmp[OMC_BUFSIZ];
-    sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
-    setenv("PATH", pathvar_tmp, 1);
+static int populate_delivery_ini(struct Delivery *ctx) {
+    union INIVal val;
+    struct INIFILE *ini = ctx->_omc_ini_fp.delivery;
+    struct INIData *rtdata;
+    RuntimeEnv *rt;
 
     // Populate runtime variables first they may be interpreted by other
     // keys in the configuration
@@ -640,6 +650,76 @@ int delivery_init_platform(struct Delivery *ctx) {
             conv_strlist(&ctx->deploy.docker.tags, LINE_SEP, val);
         }
     }
+    return 0;
+}
+
+static int populate_delivery_cfg(struct Delivery *ctx) {
+    union INIVal val;
+    struct INIFILE *cfg = ctx->_omc_ini_fp.cfg;
+    ini_getval(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->storage.conda_staging_dir, val);
+    ini_getval(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->storage.conda_staging_url, val);
+    ini_getval(cfg, "default", "wheel_staging_dir", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->storage.wheel_staging_dir, val);
+    ini_getval(cfg, "default", "wheel_staging_url", INIVAL_TYPE_STR, &val);
+    conv_str(&ctx->storage.wheel_staging_url, val);
+    ini_getval(cfg, "default", "conda_fresh_start", INIVAL_TYPE_BOOL, &val);
+    conv_bool(&globals.conda_fresh_start, val);
+    // Below can also be toggled by command-line arguments
+    if (!globals.continue_on_error) {
+        ini_getval(cfg, "default", "continue_on_error", INIVAL_TYPE_BOOL, &val);
+        conv_bool(&globals.continue_on_error, val);
+    }
+    // Below can also be toggled by command-line arguments
+    if (!globals.always_update_base_environment) {
+        ini_getval(cfg, "default", "always_update_base_environment", INIVAL_TYPE_BOOL, &val);
+        conv_bool(&globals.always_update_base_environment, val);
+    }
+    ini_getval(cfg, "default", "conda_install_prefix", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.conda_install_prefix, val);
+    ini_getval(cfg, "default", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
+    conv_strlist(&globals.conda_packages, LINE_SEP, val);
+    ini_getval(cfg, "default", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
+    conv_strlist(&globals.pip_packages, LINE_SEP, val);
+    // Configure jfrog cli downloader
+    ini_getval(cfg, "jfrog_cli_download", "url", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.jfrog_artifactory_base_url, val);
+    ini_getval(cfg, "jfrog_cli_download", "product", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.jfrog_artifactory_product, val);
+    ini_getval(cfg, "jfrog_cli_download", "version_series", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.cli_major_ver, val);
+    ini_getval(cfg, "jfrog_cli_download", "version", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.version, val);
+    ini_getval(cfg, "jfrog_cli_download", "filename", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.remote_filename, val);
+    ini_getval(cfg, "deploy:artifactory", "url", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.url, val);
+    ini_getval(cfg, "deploy:artifactory", "repo", INIVAL_TYPE_STR, &val);
+    conv_str(&globals.jfrog.repo, val);
+    return 0;
+}
+
+char *bootstrap_build_name(struct Delivery *ctx) {
+    struct Delivery local;
+    memcpy(&local._omc_ini_fp, &ctx->_omc_ini_fp, sizeof(local._omc_ini_fp));
+
+    return NULL;
+}
+
+static int populate_info(struct Delivery *ctx) {
+    // Record timestamp used for release
+    time(&ctx->info.time_now);
+    ctx->info.time_info = localtime(&ctx->info.time_now);
+    ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
+    if (!ctx->info.time_str_epoch) {
+        msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+        return -1;
+    }
+    snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
+    return 0;
+}
+
 int delivery_init(struct Delivery *ctx) {
 
     if (ctx->deploy.docker.tags) {
@@ -1621,7 +1701,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         char *src;
         char *dest;
     } data;
-    struct INIFILE *cfg = ctx->rules._handle;
+    struct INIFILE *cfg = ctx->_omc_ini_fp.mission;
     union INIVal val;
 
     data.src = calloc(PATH_MAX, sizeof(*data.src));

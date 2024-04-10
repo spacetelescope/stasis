@@ -285,20 +285,27 @@ int main(int argc, char *argv[]) {
 
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
-        cfg = ini_open(config_input);
-        if (!cfg) {
+
+        ctx._omc_ini_fp.cfg = ini_open(config_input);
+        if (!ctx._omc_ini_fp.cfg) {
             msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s\n", delivery_input, strerror(errno));
             exit(1);
         }
+        ctx._omc_ini_fp.cfg_path = strdup(config_input);
         guard_free(config_input);
     }
 
     msg(OMC_MSG_L2, "Reading OMC delivery configuration: %s\n", delivery_input);
-    ini = ini_open(delivery_input);
-    if (!ini) {
+    ctx._omc_ini_fp.delivery = ini_open(delivery_input);
+    if (!ctx._omc_ini_fp.delivery) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read delivery file: %s, %s\n", delivery_input, strerror(errno));
         exit(1);
     }
+    ctx._omc_ini_fp.delivery_path = strdup(delivery_input);
+
+
+    extern char *bootstrap_build_name(struct Delivery *ctx);
+    bootstrap_build_name(&ctx);
 
     msg(OMC_MSG_L2, "Initializing delivery context\n");
     if (delivery_init(&ctx)) {
