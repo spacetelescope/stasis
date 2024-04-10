@@ -1043,6 +1043,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (!ctx->meta.based_on) {
             strcat(cmd, " --upgrade");
         }
+        sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
 
     for (size_t x = 0; manifest[x] != NULL; x++) {
@@ -1154,41 +1155,88 @@ int delivery_copy_wheel_artifacts(struct Delivery *ctx) {
     return system(cmd);
 }
 
+static struct StrList *listdir(const char *path) {
+    struct StrList *node;
+    DIR *dp;
+    struct dirent *rec;
+
+    dp = opendir(path);
+    if (!dp) {
+        return NULL;
+    }
+    node = strlist_init();
+
+    while ((rec = readdir(dp)) != NULL) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        }
+        strlist_append(&node, rec->d_name);
+    }
+    return node;
+}
+
 int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     struct dirent *rec;
     DIR *dp;
+    FILE *top_fp;
+
     dp = opendir(ctx->storage.wheel_artifact_dir);
     if (!dp) {
         return -1;
     }
 
+    // Generate a "dumb" local pypi index that is compatible with:
+    // pip install --extra-index-url
+    char top_index[PATH_MAX];
+    memset(top_index, 0, sizeof(top_index));
+    sprintf(top_index, "%s/index.html", ctx->storage.wheel_artifact_dir);
+    top_fp = fopen(top_index, "w+");
+    if (!top_fp) {
+        return -2;
+    }
+
     while ((rec = readdir(dp)) != NULL) {
         // skip directories
-        if (DT_DIR == rec->d_type || !endswith(rec->d_name, ".whl")) {
+        if (DT_REG == rec->d_type || !strcmp(rec->d_name, "..") || !strcmp(rec->d_name, ".")) {
             continue;
         }
-        char name[NAME_MAX];
-        strcpy(name, rec->d_name);
-        char **parts = split(name, "-", 1);
-        strcpy(name, parts[0]);
-        GENERIC_ARRAY_FREE(parts);
 
-        tolower_s(name);
-        char path_dest[PATH_MAX];
-        sprintf(path_dest, "%s/%s/", ctx->storage.wheel_artifact_dir, name);
-        mkdir(path_dest, 0755);
-        sprintf(path_dest + strlen(path_dest), "%s", rec->d_name);
-
-        char path_src[PATH_MAX];
-        sprintf(path_src, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
-        if (access(path_dest, F_OK)) {
-            rename(path_src, path_dest);
-        } else {
-            copy2(path_src, path_dest, CT_PERM);
-            remove(path_src);
+        FILE *bottom_fp;
+        char bottom_index[PATH_MAX];
+        memset(bottom_index, 0, sizeof(bottom_index));
+        sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
+        bottom_fp = fopen(bottom_index, "w+");
+        if (!bottom_fp) {
+            return -3;
         }
+
+        // Add record to top level index
+        fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
+
+        char dpath[PATH_MAX];
+        memset(dpath, 0, sizeof(dpath));
+        sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
+        struct StrList *packages = listdir(dpath);
+        if (!packages) {
+            fclose(top_fp);
+            fclose(bottom_fp);
+            return -4;
+        }
+
+        for (size_t i = 0; i < strlist_count(packages); i++) {
+            char *package = strlist_item(packages, i);
+            if (!endswith(package, ".whl")) {
+                continue;
+            }
+            // Write record to bottom level index
+            fprintf(bottom_fp, "<a href=\"%s\">%s</a><br/>\n", package, package);
+        }
+        fclose(bottom_fp);
+
+        guard_strlist_free(&packages);
     }
     closedir(dp);
+    fclose(top_fp);
     return 0;
 }
 
