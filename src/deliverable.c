@@ -1786,7 +1786,7 @@ int delivery_docker(struct Delivery *ctx) {
         if (has_registry) {
             // generate tag for target registry
             memset(default_tag, 0, sizeof(default_tag));
-            sprintf(default_tag, "%s/%s:%s-py%s", ctx->deploy.docker.registry, ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
+            sprintf(default_tag, "%s/%s:%s-py%s", ctx->deploy.docker.registry, ctx->meta.name, ctx->info.build_number, ctx->meta.python_compact);
             tolower_s(default_tag);
 
             // Add tag
