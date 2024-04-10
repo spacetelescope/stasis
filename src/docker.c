@@ -109,7 +109,7 @@ char *docker_ident() {
     char line[PATH_MAX];
     struct Process proc;
 
-    tempfile = xmkstemp(&fp, "w");
+    tempfile = xmkstemp(&fp, "w+");
     if (!fp || !tempfile) {
         return NULL;
     }
@@ -117,17 +117,21 @@ char *docker_ident() {
     memset(&proc, 0, sizeof(proc));
     strcpy(proc.f_stdout, tempfile);
     strcpy(proc.f_stderr, "/dev/null");
-    shell(&proc, "docker -v");
+    shell(&proc, "docker --version");
 
     if (!freopen(tempfile, "r", fp)) {
+        remove(tempfile);
         guard_free(tempfile);
         return NULL;
     }
 
     if (!fgets(line, sizeof(line) - 1, fp)) {
+        fclose(fp);
+        remove(tempfile);
         guard_free(tempfile);
         return NULL;
     }
+
     fclose(fp);
     remove(tempfile);
     guard_free(tempfile);
