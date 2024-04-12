@@ -401,7 +401,11 @@ struct INIFILE *ini_open(const char *filename) {
             memset(key_last, 0, sizeof(inikey[1]));
             strcpy(key_last, key);
             reading_value = 1;
-            strcpy(value, &operator[1]);
+            if (strlen(operator) > 1) {
+                strcpy(value, &operator[1]);
+            } else {
+                strcpy(value, "");
+            }
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
                 multiline_data = 1;
