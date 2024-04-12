@@ -532,6 +532,33 @@ int main(int argc, char *argv[]) {
     conda_exec("list");
 
     msg(OMC_MSG_L1, "Creating release\n");
+    msg(OMC_MSG_L2, "Exporting delivery configuration\n");
+    if (!pushd(ctx.storage.cfgdump_dir)) {
+        char filename[PATH_MAX] = {0};
+        sprintf(filename, "%s.ini", ctx.info.release_name);
+        FILE *spec = fopen(filename, "w+");
+        if (!spec) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed %s\n", filename);
+            exit(1);
+        }
+        ini_write(ctx._omc_ini_fp.delivery, &spec, INI_WRITE_RAW);
+        fclose(spec);
+
+        memset(filename, 0, sizeof(filename));
+        sprintf(filename, "%s-rendered.ini", ctx.info.release_name);
+        spec = fopen(filename, "w+");
+        if (!spec) {
+            msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed %s\n", filename);
+            exit(1);
+        }
+        ini_write(ctx._omc_ini_fp.delivery, &spec, INI_WRITE_PRESERVE);
+        fclose(spec);
+        popd();
+    } else {
+        SYSERROR("Failed to enter directory: %s", ctx.storage.delivery_dir);
+        exit(1);
+    }
+
     msg(OMC_MSG_L2, "Exporting %s\n", env_name_testing);
     if (conda_env_export(env_name_testing, ctx.storage.delivery_dir, env_name_testing)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "failed %s\n", env_name_testing);

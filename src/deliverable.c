@@ -228,6 +228,8 @@ void delivery_init_dirs_stage2(struct Delivery *ctx) {
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
+    path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
+
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.docker_artifact_dir, PATH_MAX, ctx->storage.package_dir, "docker");

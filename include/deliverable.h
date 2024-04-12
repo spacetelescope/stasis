@@ -66,6 +66,7 @@ struct Delivery {
         char *tmpdir;                   ///< Temporary storage area (within root)
         char *output_dir;               ///< Base path to where all artifacts are stored
         char *delivery_dir;             ///< Delivery artifact output directory
+        char *cfgdump_dir;              ///< Base path to where input configuration dumps are stored
         char *tools_dir;                ///< Tools storage
         char *mission_dir;              ///< Mission data storage
         char *package_dir;              ///< Base path to where all packages are stored
