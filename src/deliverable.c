@@ -1188,6 +1188,7 @@ static struct StrList *listdir(const char *path) {
         }
         strlist_append(&node, rec->d_name);
     }
+    closedir(dp);
     return node;
 }
 
