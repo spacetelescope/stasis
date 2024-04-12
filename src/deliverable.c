@@ -654,23 +654,21 @@ static int populate_delivery_cfg(struct Delivery *ctx) {
     return 0;
 }
 
-char *bootstrap_build_name(struct Delivery *ctx) {
-    struct Delivery local;
-    memcpy(&local._omc_ini_fp, &ctx->_omc_ini_fp, sizeof(local._omc_ini_fp));
-
-    return NULL;
-}
-
 static int populate_info(struct Delivery *ctx) {
-    // Record timestamp used for release
-    time(&ctx->info.time_now);
-    ctx->info.time_info = localtime(&ctx->info.time_now);
-    ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
     if (!ctx->info.time_str_epoch) {
-        msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
-        return -1;
+        // Record timestamp used for release
+        time(&ctx->info.time_now);
+        ctx->info.time_info = localtime(&ctx->info.time_now);
+
+        ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
+        if (!ctx->info.time_str_epoch) {
+            msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+            return -1;
+        }
+        snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
     }
-    snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
+    return 0;
+}
     return 0;
 }
 
