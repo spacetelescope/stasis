@@ -144,14 +144,15 @@ struct Delivery {
      * \brief Test information
      */
     struct Test {
-        char *name;                 ///< Name of package
-        char *version;              ///< Version of package
-        char *repository;           ///< Git repository of package
-        char *script;               ///< Commands to execute
-        char *build_recipe;         ///< Conda recipe to build (optional)
-        char *repository_info_ref;  ///< Git commit hash
-        char *repository_info_tag;  ///< Git tag (first parent)
-        struct Runtime runtime;     ///< Environment variables specific to the test context
+        char *name;                     ///< Name of package
+        char *version;                  ///< Version of package
+        char *repository;               ///< Git repository of package
+        char *script;                   ///< Commands to execute
+        char *build_recipe;             ///< Conda recipe to build (optional)
+        char *repository_info_ref;      ///< Git commit hash
+        char *repository_info_tag;      ///< Git tag (first parent)
+        struct StrList *repository_remove_tags;   ///< Git tags to remove (to fix duplicate commit tags)
+        struct Runtime runtime;         ///< Environment variables specific to the test context
     } tests[1000]; ///< An array of tests
 
     struct Deploy {

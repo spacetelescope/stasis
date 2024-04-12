@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 
+#include <fnmatch.h>
 #include "omc.h"
 
 extern struct OMC_GLOBAL globals;
@@ -533,6 +534,9 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             ini_getval_required(ini, ini->section[i]->key, "script", INIVAL_TYPE_STR, &val);
             conv_str_noexpand(&ctx->tests[z].script, val);
 
+            ini_getval(ini, ini->section[i]->key, "repository_remove_tags", INIVAL_TYPE_STR_ARRAY, &val);
+            conv_strlist(&ctx->tests[z].repository_remove_tags, LINE_SEP, val);
+
             ini_getval(ini, ini->section[i]->key, "build_recipe", INIVAL_TYPE_STR, &val);
             conv_str(&ctx->tests[z].build_recipe, val);
 
@@ -978,6 +982,37 @@ int delivery_build_recipes(struct Delivery *ctx) {
     return 0;
 }
 
+static int filter_repo_tags(char *repo, struct StrList *patterns) {
+    int result = 0;
+
+    if (!pushd(repo)) {
+        int list_status = 0;
+        char *tags_raw = shell_output("git tag -l", &list_status);
+        struct StrList *tags = strlist_init();
+        strlist_append_tokenize(tags, tags_raw, LINE_SEP);
+
+        for (size_t i = 0; tags && i < strlist_count(tags); i++) {
+            char *tag = strlist_item(tags, i);
+            for (size_t p = 0; p < strlist_count(patterns); p++) {
+                char *pattern = strlist_item(patterns, p);
+                int match = fnmatch(pattern, tag, 0);
+                if (!match) {
+                    char cmd[PATH_MAX] = {0};
+                    sprintf(cmd, "git tag -d %s", tag);
+                    result += system(cmd);
+                    break;
+                }
+            }
+        }
+        guard_strlist_free(&tags);
+        guard_free(tags_raw);
+        popd();
+    } else {
+        result = -1;
+    }
+    return result;
+}
+
 struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     struct StrList *result = NULL;
     struct Process proc;
@@ -998,6 +1033,11 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
 
             sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests[i].name);
             git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version);
+
+            if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
+                filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
+            }
+
             pushd(srcdir);
             {
                 char dname[NAME_MAX];
@@ -1543,6 +1583,10 @@ void delivery_tests_run(struct Delivery *ctx) {
                 ctx->tests[i].repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
             } else {
                 COE_CHECK_ABORT(1, "Unable to clone repository\n");
+            }
+
+            if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
+                filter_repo_tags(destdir, ctx->tests[i].repository_remove_tags);
             }
 
             if (pushd(destdir)) {
