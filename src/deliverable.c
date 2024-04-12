@@ -21,6 +21,9 @@ static void conv_int(int *x, union INIVal val) {
 }
 
 static void conv_str(char **x, union INIVal val) {
+    if (*x) {
+        guard_free(*x);
+    }
     if (val.as_char_p) {
         char *tplop = tpl_render(val.as_char_p);
         if (tplop) {
@@ -34,6 +37,9 @@ static void conv_str(char **x, union INIVal val) {
 }
 
 static void conv_str_noexpand(char **x, union INIVal val) {
+    if (*x) {
+        guard_free(*x);
+    }
     *x = strdup(val.as_char_p);
 }
 
