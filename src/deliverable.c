@@ -219,7 +219,6 @@ void delivery_free(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs_stage2(struct Delivery *ctx) {
-
     path_store(&ctx->storage.build_recipes_dir, PATH_MAX, ctx->storage.build_dir, "recipes");
     path_store(&ctx->storage.build_sources_dir, PATH_MAX, ctx->storage.build_dir, "sources");
     path_store(&ctx->storage.build_testing_dir, PATH_MAX, ctx->storage.build_dir, "testing");
