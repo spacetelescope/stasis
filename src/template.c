@@ -27,17 +27,46 @@ void tpl_register_func(char *key, struct tplfunc_frame *frame) {
     tpl_pool_func_used++;
 }
 
+int tpl_key_exists(char *key) {
+    for (size_t i = 0; i < tpl_pool_used; i++) {
+        if (tpl_pool[i]->key) {
+            if (!strcmp(tpl_pool[i]->key, key)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void tpl_register(char *key, char **ptr) {
     struct tpl_item *item = NULL;
-    item = calloc(1, sizeof(*item));
+    int replacing = 0;
+
+    if (tpl_key_exists(key)) {
+        for (size_t i = 0; i < tpl_pool_used; i++) {
+            if (tpl_pool[i]->key) {
+                if (!strcmp(tpl_pool[i]->key, key)) {
+                    item = tpl_pool[i];
+                    break;
+                }
+            }
+        }
+        replacing = 1;
+    } else {
+        item = calloc(1, sizeof(*item));
+        item->key = strdup(key);
+    }
+
     if (!item) {
         SYSERROR("unable to register tpl_item for %s", key);
         exit(1);
     }
-    item->key = strdup(key);
+
     item->ptr = ptr;
-    tpl_pool[tpl_pool_used] = item;
-    tpl_pool_used++;
+    if (!replacing) {
+        tpl_pool[tpl_pool_used] = item;
+        tpl_pool_used++;
+    }
 }
 
 void tpl_free() {
