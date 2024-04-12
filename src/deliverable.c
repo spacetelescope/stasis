@@ -200,14 +200,20 @@ void delivery_free(struct Delivery *ctx) {
         guard_strlist_free(&ctx->deploy.jfrog[i].files);
     }
 
-    ini_free(&ctx->_omc_ini_fp.delivery);
+    if (ctx->_omc_ini_fp.delivery) {
+        ini_free(&ctx->_omc_ini_fp.delivery);
+    }
     guard_free(ctx->_omc_ini_fp.delivery_path);
+
     if (ctx->_omc_ini_fp.cfg) {
         // optional extras
         ini_free(&ctx->_omc_ini_fp.cfg);
-        guard_free(ctx->_omc_ini_fp.cfg_path);
     }
-    ini_free(&ctx->_omc_ini_fp.mission);
+    guard_free(ctx->_omc_ini_fp.cfg_path);
+
+    if (ctx->_omc_ini_fp.mission) {
+        ini_free(&ctx->_omc_ini_fp.mission);
+    }
     guard_free(ctx->_omc_ini_fp.mission_path);
 }
 
