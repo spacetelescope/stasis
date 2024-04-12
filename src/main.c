@@ -282,6 +282,7 @@ int main(int argc, char *argv[]) {
     tpl_register("info.build_name", &ctx.info.build_name);
     tpl_register("info.build_number", &ctx.info.build_number);
     tpl_register("storage.tmpdir", &ctx.storage.tmpdir);
+    tpl_register("storage.output_dir", &ctx.storage.output_dir);
     tpl_register("storage.delivery_dir", &ctx.storage.delivery_dir);
     tpl_register("storage.conda_artifact_dir", &ctx.storage.conda_artifact_dir);
     tpl_register("storage.wheel_artifact_dir", &ctx.storage.wheel_artifact_dir);
