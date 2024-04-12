@@ -359,6 +359,10 @@ static int populate_mission_ini(struct Delivery **ctx) {
     union INIVal val;
     struct INIFILE *ini;
 
+    if ((*ctx)->_omc_ini_fp.mission) {
+        return 0;
+    }
+
     // Now populate the rules
     char missionfile[PATH_MAX] = {0};
     if (getenv("OMC_SYSCONFDIR")) {
