@@ -150,9 +150,7 @@ char *tpl_render(char *str) {
         return NULL;
     }
 
-    size_t z = 0;
-    size_t off = 0;
-    while (pos[off] != 0) {
+    for (size_t off = 0, z = 0; off < strlen(str); off++) {
         char key[255] = {0};
         char *value = NULL;
 
@@ -229,7 +227,6 @@ char *tpl_render(char *str) {
         fprintf(stderr, "z=%zu, output_bytes=%zu\n", z, output_bytes);
 #endif
         output[z] = pos[off];
-        off++;
         z++;
     }
 #ifdef DEBUG
