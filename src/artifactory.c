@@ -447,6 +447,10 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     int status = jfrog_cli_rt(auth, cmd);
     if (new_src) {
         popd();
+        guard_free(new_src);
+    }
+    if (base) {
+        guard_free(base);
     }
 
     return status;
