@@ -146,7 +146,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         return 1;
     }
 
-    struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(section->data));
+    struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
     if (tmp != section->data) {
         section->data = tmp;
     } else if (!tmp) {
@@ -177,11 +177,11 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         size_t value_len_new = value_len_old + value_len;
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
-        if (!value_tmp) {
+        if (value_tmp != data->value) {
+            data->value = value_tmp;
+        } else if (!value_tmp) {
             SYSERROR("Unable to increase data->value size to %zu bytes", value_len_new + 2);
             return -1;
-        } else if (value_tmp != data->value) {
-            data->value = value_tmp;
         }
         strcat(data->value, value);
     }
