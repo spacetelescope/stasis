@@ -580,11 +580,17 @@ int main(int argc, char *argv[]) {
     msg(OMC_MSG_L1, "Rendering mission templates\n");
     delivery_mission_render_files(&ctx);
 
+    char dockerfile[PATH_MAX] = {0};
+    sprintf(dockerfile, "%s/%s", ctx.storage.build_docker_dir, "Dockerfile");
     if (globals.enable_docker) {
-        msg(OMC_MSG_L1, "Building Docker image\n");
-        if (delivery_docker(&ctx)) {
-            msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
-            COE_CHECK_ABORT(1, "Failed to build docker image");
+        if (!access(dockerfile, F_OK)) {
+            msg(OMC_MSG_L1, "Building Docker image\n");
+            if (delivery_docker(&ctx)) {
+                msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
+                COE_CHECK_ABORT(1, "Failed to build docker image");
+            }
+        } else {
+            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx.storage.build_docker_dir);
         }
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled\n");

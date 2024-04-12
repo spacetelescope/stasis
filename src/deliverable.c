@@ -752,9 +752,11 @@ int delivery_init(struct Delivery *ctx) {
         }
     }
 
-    if (docker_validate_compression_program(ctx->deploy.docker.image_compression)) {
-        SYSERROR("[deploy:docker].image_compression - invalid command / program is not installed: %s", ctx->deploy.docker.image_compression);
-        return -1;
+    if (ctx->deploy.docker.image_compression) {
+        if (docker_validate_compression_program(ctx->deploy.docker.image_compression)) {
+            SYSERROR("[deploy:docker].image_compression - invalid command / program is not installed: %s", ctx->deploy.docker.image_compression);
+            return -1;
+        }
     }
     return 0;
 }
