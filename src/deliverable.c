@@ -1670,13 +1670,14 @@ int delivery_init_artifactory(struct Delivery *ctx) {
         goto delivery_init_artifactory_envsetup;
     }
 
-    msg(OMC_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, ctx->system.platform, ctx->system.arch);
+    char *platform = ctx->system.platform[DELIVERY_PLATFORM];
+    msg(OMC_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, platform, ctx->system.arch);
     if ((status = artifactory_download_cli(dest,
             globals.jfrog.jfrog_artifactory_base_url,
             globals.jfrog.jfrog_artifactory_product,
             globals.jfrog.cli_major_ver,
             globals.jfrog.version,
-            ctx->system.platform[DELIVERY_PLATFORM],
+            platform,
             ctx->system.arch,
             globals.jfrog.remote_filename))) {
         remove(filepath);
