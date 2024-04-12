@@ -239,10 +239,10 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
             fprintf(stderr, "OMC_ROOT is set, but empty. Please assign a file system path to this environment variable.\n");
             exit(1);
         }
-        path_store(&ctx->storage.root, PATH_MAX, rootdir, "");
+        path_store(&ctx->storage.root, PATH_MAX, rootdir, ctx->info.build_name);
     } else {
         // use "omc" in current working directory
-        path_store(&ctx->storage.root, PATH_MAX, "omc", "");
+        path_store(&ctx->storage.root, PATH_MAX, "omc", ctx->info.build_name);
     }
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
@@ -673,6 +673,23 @@ static int populate_info(struct Delivery *ctx) {
     }
     return 0;
 }
+
+int *bootstrap_build_info(struct Delivery *ctx) {
+    struct Delivery local;
+    memset(&local, 0, sizeof(local));
+    local._omc_ini_fp.cfg = ini_open(ctx->_omc_ini_fp.cfg_path);
+    local._omc_ini_fp.delivery = ini_open(ctx->_omc_ini_fp.delivery_path);
+    delivery_init_platform(&local);
+    populate_delivery_cfg(&local);
+    populate_delivery_ini(&local);
+    populate_info(&local);
+    ctx->info.build_name = strdup(local.info.build_name);
+    ctx->info.build_number = strdup(local.info.build_number);
+    ctx->info.release_name = strdup(local.info.release_name);
+    memcpy(&ctx->info.time_info, &local.info.time_info, sizeof(ctx->info.time_info));
+    ctx->info.time_now = local.info.time_now;
+    ctx->info.time_str_epoch = strdup(local.info.time_str_epoch);
+    delivery_free(&local);
     return 0;
 }
 

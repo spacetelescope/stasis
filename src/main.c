@@ -343,8 +343,11 @@ int main(int argc, char *argv[]) {
     ctx._omc_ini_fp.delivery_path = strdup(delivery_input);
 
 
-    extern char *bootstrap_build_name(struct Delivery *ctx);
-    bootstrap_build_name(&ctx);
+    msg(OMC_MSG_L2, "Bootstrapping delivery context\n");
+    if (bootstrap_build_info(&ctx)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to bootstrap delivery context\n");
+        exit(1);
+    }
 
     msg(OMC_MSG_L2, "Initializing delivery context\n");
     if (delivery_init(&ctx)) {
