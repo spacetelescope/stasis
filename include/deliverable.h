@@ -384,4 +384,7 @@ int delivery_mission_render_files(struct Delivery *ctx);
 int delivery_docker(struct Delivery *ctx);
 
 int delivery_fixup_test_results(struct Delivery *ctx);
+
+int *bootstrap_build_info(struct Delivery *ctx);
+
 #endif //OMC_DELIVERABLE_H
