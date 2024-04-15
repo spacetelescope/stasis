@@ -521,12 +521,18 @@ int main(int argc, char *argv[]) {
 
     msg(OMC_MSG_L2, "Installing pip packages\n");
     if (strlist_count(ctx.conda.pip_packages)) {
-        delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL});
+        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL})) {
+            exit(1);
+        }
     }
 
-    msg(OMC_MSG_L3, "Installing deferred pip packages\n");
     if (strlist_count(ctx.conda.pip_packages_defer)) {
-        delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL});
+        msg(OMC_MSG_L3, "Installing deferred pip packages\n");
+        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL})) {
+            exit(1);
+        }
+    } else {
+        msg(OMC_MSG_L3, "No deferred pip packages\n");
     }
 
     conda_exec("list");
