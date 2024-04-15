@@ -188,6 +188,24 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
     return 0;
 }
 
+int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value) {
+    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
+    if (section == NULL) {
+        return 1;
+    }
+    if (ini_has_key(*ini, section_name, key)) {
+        if (!type) {
+            ini_data_append(ini, section_name, key, value);
+        } else {
+            struct INIData *data = ini_data_get(*ini, section_name, key);
+            if (data) {
+                guard_free(data->value);
+                data->value = strdup(value);
+            }
+        }
+    }
+}
+
 int ini_section_create(struct INIFILE **ini, char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof(**(*ini)->section));
     if (!tmp) {

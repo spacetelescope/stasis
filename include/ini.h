@@ -7,6 +7,8 @@
 
 #define INI_WRITE_RAW 0             ///< Dump INI data. Contents are not modified.
 #define INI_WRITE_PRESERVE 1        ///< Dump INI data. Template strings are
+#define INI_SETVAL_APPEND 0
+#define INI_SETVAL_REPLACE 1
                                     ///< expanded to preserve runtime state.
 
 #define INIVAL_TYPE_INT 1           ///< Integer
@@ -86,6 +88,17 @@ struct INIFILE {
  * @return pointer to INIFILE
  */
 struct INIFILE *ini_open(const char *filename);
+
+/**
+ * Assign value to a section key
+ * @param ini
+ * @param type INI_SETVAL_APPEND or INI_SETVAL_REPLACE
+ * @param section_name
+ * @param key
+ * @param value
+ * @return
+ */
+int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value);
 
 /**
  * Retrieve all data records in an INI section
