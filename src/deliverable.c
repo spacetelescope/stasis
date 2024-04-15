@@ -503,6 +503,8 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         conv_str(&ctx->meta.python, val);
         guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
+    } else {
+        ini_setval(&ini, INI_SETVAL_REPLACE, "meta", "python", ctx->meta.python);
     }
 
     ini_getval_required(ini, "conda", "installer_name", INIVAL_TYPE_STR, &val);
