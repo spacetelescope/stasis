@@ -391,12 +391,10 @@ static int populate_mission_ini(struct Delivery **ctx) {
     ini_getval_required(ini, "meta", "release_fmt", INIVAL_TYPE_STR, &val);
     conv_str(&(*ctx)->rules.release_fmt, val);
 
-    // TODO move this somewhere else?
     // Used for setting artifactory build info
     ini_getval_required(ini, "meta", "build_name_fmt", INIVAL_TYPE_STR, &val);
     conv_str(&(*ctx)->rules.build_name_fmt, val);
 
-    // TODO move this somewhere else?
     // Used for setting artifactory build info
     ini_getval_required(ini, "meta", "build_number_fmt", INIVAL_TYPE_STR, &val);
     conv_str(&(*ctx)->rules.build_number_fmt, val);
