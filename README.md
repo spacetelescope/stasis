@@ -94,7 +94,7 @@ python = 3.12
 
 The `[conda]` section instructs OMC how to obtain the conda installer of your choice, and defines the packages to be installed into the delivery's release environment.
 
-```shell
+```ini
 [conda]
 ; e.g. Download Miniforge3-23.11.0-0 for the current system platform and architecture
 installer_name = Miniforge3
@@ -113,7 +113,7 @@ pip_packages =
 
 Create some test cases for packages.
 
-```shell
+```ini
 [test:our_cool_program]
 version = 1.2.3
 repository = https://github.com/org/our_cool_program
