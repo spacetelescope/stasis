@@ -440,9 +440,12 @@ void validate_delivery_ini(struct INIFILE *ini) {
         // yeah?
     }
 
-    if (ini_section_search(&ini, INI_SEARCH_BEGINS, "deploy:artifactory")) {
-        ini_has_key_required(ini, "deploy:artifactory", "files");
-        ini_has_key_required(ini, "deploy:artifactory", "dest");
+    for (size_t i = 0; i < ini->section_count; i++) {
+        struct INISection *section = ini->section[i];
+        if (section && startswith(section->key, "deploy:artifactory")) {
+            ini_has_key_required(ini, section->key, "files");
+            ini_has_key_required(ini, section->key, "dest");
+        }
     }
 }
 
