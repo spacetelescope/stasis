@@ -674,6 +674,9 @@ static int populate_delivery_ini(struct Delivery *ctx) {
 static int populate_delivery_cfg(struct Delivery *ctx) {
     union INIVal val;
     struct INIFILE *cfg = ctx->_omc_ini_fp.cfg;
+    if (!cfg) {
+        return -1;
+    }
     ini_getval(cfg, "default", "conda_staging_dir", INIVAL_TYPE_STR, &val);
     conv_str(&ctx->storage.conda_staging_dir, val);
     ini_getval(cfg, "default", "conda_staging_url", INIVAL_TYPE_STR, &val);
