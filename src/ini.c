@@ -23,14 +23,17 @@ struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char 
             if (mode == INI_SEARCH_EXACT) {
                 if (!strcmp((*ini)->section[i]->key, value)) {
                     result = (*ini)->section[i];
+                    break;
                 }
             } else if (mode == INI_SEARCH_BEGINS) {
                 if (startswith((*ini)->section[i]->key, value)) {
                     result = (*ini)->section[i];
+                    break;
                 }
             } else if (mode == INI_SEARCH_SUBSTR) {
                 if (strstr((*ini)->section[i]->key, value)) {
                     result = (*ini)->section[i];
+                    break;
                 }
             }
         }
