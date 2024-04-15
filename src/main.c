@@ -327,8 +327,10 @@ int main(int argc, char *argv[]) {
         // no configuration passed by argument. use basic config.
         char cfgfile[PATH_MAX * 2];
         sprintf(cfgfile, "%s/%s", globals.sysconfdir, "omc.ini");
-        if (!access(cfgfile, F_OK)) {
+        if (!access(cfgfile, F_OK | R_OK)) {
             config_input = strdup(cfgfile);
+        } else {
+            msg(OMC_MSG_WARN, "OMC global configuration is not readable, or does not exist: %s", cfgfile);
         }
     }
 
