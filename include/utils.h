@@ -265,4 +265,47 @@ int fix_tox_conf(const char *filename, char **result);
 
 char *collapse_whitespace(char **s);
 
+/**
+ * Write ***REDACTED*** in dest for each occurrence of to_redacted token present in src
+ *
+ * ```c
+ * char command[PATH_MAX] = {0};
+ * char command_redacted[PATH_MAX] = {0};
+ * const char *password = "abc123";
+ * const char *host = "myhostname";
+ * const char *to_redact_case1[] = {password, host, NULL};
+ * const char *to_redact_case2[] = {password, "--host", NULL};
+ * const char *to_redact_case3[] = {password, "--host", host, NULL};
+ *
+ * sprintf(command, "echo %s | program --host=%s -", password, host);
+ *
+ * // CASE 1
+ * redact_sensitive(to_redact_case1, command, command_redacted, sizeof(command_redacted) - 1);
+ * printf("executing: %s\n", command_redacted);
+ * // User sees:
+ * // executing: echo ***REDACTED*** | program --host=***REDACTED*** -
+ * system(command);
+ *
+ * // CASE 2 remove an entire argument
+ * redact_sensitive(to_redact_case2, command, command_redacted, sizeof(command_redacted) - 1);
+ * printf("executing: %s\n", command_redacted);
+ * // User sees:
+ * // executing: echo ***REDACTED*** | program ***REDACTED*** -
+ * system(command);
+ *
+ * // CASE 3 remove it all (noisy)
+ * redact_sensitive(to_redact_case3, command, command_redacted, sizeof(command_redacted) - 1);
+ * printf("executing: %s\n", command_redacted);
+ * // User sees:
+ * // executing: echo ***REDACTED*** | program ***REDACTED***=***REDACTED*** -
+ * system(command);
+ * ```
+ *
+ * @param to_redact array of tokens to redact
+ * @param src input string
+ * @param dest output string
+ * @param maxlen maximum length of dest byte array
+ * @return 0 on success, -1 on error
+ */
+int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen);
 #endif //OMC_UTILS_H

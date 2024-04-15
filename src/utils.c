@@ -686,3 +686,31 @@ char *collapse_whitespace(char **s) {
 
     return *s;
 }
+
+int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen) {
+    char **parts = split(src, " ", 0);
+    if (!parts) {
+        fprintf(stderr, "Unable to split source string\n");
+        return -1;
+    }
+
+    for (size_t i = 0; to_redact[i] != NULL; i++) {
+        for (size_t p = 0; parts[p] != NULL; p++) {
+            if (strstr(parts[p], to_redact[i])) {
+                replace_text(parts[p], to_redact[i], "***REDACTED***", REPLACE_TRUNCATE_AFTER_MATCH);
+            }
+        }
+    }
+
+    char *dest_tmp = join(parts, " ");
+    if (!dest_tmp) {
+        fprintf(stderr, "Unable to join message array\n");
+        return -1;
+    }
+    strncpy(dest, dest_tmp, maxlen);
+
+    GENERIC_ARRAY_FREE(parts);
+    guard_free(dest_tmp);
+    return 0;
+}
+
