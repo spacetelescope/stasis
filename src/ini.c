@@ -16,12 +16,22 @@ void ini_section_init(struct INIFILE **ini) {
     (*ini)->section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
 }
 
-struct INISection *ini_section_search(struct INIFILE **ini, char *value) {
+struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char *value) {
     struct INISection *result = NULL;
     for (size_t i = 0; i < (*ini)->section_count; i++) {
         if ((*ini)->section[i]->key != NULL) {
-            if (!strcmp((*ini)->section[i]->key, value)) {
-                result = (*ini)->section[i];
+            if (mode == INI_SEARCH_EXACT) {
+                if (!strcmp((*ini)->section[i]->key, value)) {
+                    result = (*ini)->section[i];
+                }
+            } else if (mode == INI_SEARCH_BEGINS) {
+                if (startswith((*ini)->section[i]->key, value)) {
+                    result = (*ini)->section[i];
+                }
+            } else if (mode == INI_SEARCH_SUBSTR) {
+                if (strstr((*ini)->section[i]->key, value)) {
+                    result = (*ini)->section[i];
+                }
             }
         }
     }
@@ -29,7 +39,7 @@ struct INISection *ini_section_search(struct INIFILE **ini, char *value) {
 }
 
 int ini_data_init(struct INIFILE **ini, char *section_name) {
-    struct INISection *section = ini_section_search(ini, section_name);
+    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         return 1;
     }
@@ -37,10 +47,29 @@ int ini_data_init(struct INIFILE **ini, char *section_name) {
     return 0;
 }
 
+int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key) {
+    if (!ini || !section_name || !key) {
+        return 0;
+    }
+    struct INISection *section = ini_section_search(&ini, INI_SEARCH_EXACT, section_name);
+    if (!section) {
+        return 0;
+    }
+    for (size_t i = 0; i < section->data_count; i++) {
+        const struct INIData *data = section->data[i];
+        if (data && data->key) {
+            if (!strcmp(data->key, key)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key) {
     struct INISection *section = NULL;
 
-    section = ini_section_search(&ini, section_name);
+    section = ini_section_search(&ini, INI_SEARCH_EXACT, section_name);
     if (!section) {
         return NULL;
     }
@@ -61,7 +90,10 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
     struct INIData *result = NULL;
     static size_t i = 0;
 
-    section = ini_section_search(&ini, section_name);
+    section = ini_section_search(&ini, INI_SEARCH_EXACT, section_name);
+    if (!section) {
+        return NULL;
+    }
     if (i == section->data_count) {
         i = 0;
         return NULL;
@@ -141,7 +173,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, uni
 }
 
 int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value) {
-    struct INISection *section = ini_section_search(ini, section_name);
+    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         return 1;
     }
@@ -191,19 +223,31 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
 int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value) {
     struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
-        return 1;
+        // no section
+        return -1;
     }
     if (ini_has_key(*ini, section_name, key)) {
         if (!type) {
-            ini_data_append(ini, section_name, key, value);
+            if (ini_data_append(ini, section_name, key, value)) {
+                // append failed
+                return -1;
+            }
         } else {
             struct INIData *data = ini_data_get(*ini, section_name, key);
             if (data) {
                 guard_free(data->value);
                 data->value = strdup(value);
+                if (!data->value) {
+                    // allocation failed
+                    return -1;
+                }
+            } else {
+                // getting data failed
+                return -1;
             }
         }
     }
+    return 0;
 }
 
 int ini_section_create(struct INIFILE **ini, char *key) {

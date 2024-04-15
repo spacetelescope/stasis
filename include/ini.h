@@ -9,6 +9,9 @@
 #define INI_WRITE_PRESERVE 1        ///< Dump INI data. Template strings are
 #define INI_SETVAL_APPEND 0
 #define INI_SETVAL_REPLACE 1
+#define INI_SEARCH_EXACT 0
+#define INI_SEARCH_BEGINS 1
+#define INI_SEARCH_SUBSTR 2
                                     ///< expanded to preserve runtime state.
 
 #define INIVAL_TYPE_INT 1           ///< Integer
@@ -88,6 +91,23 @@ struct INIFILE {
  * @return pointer to INIFILE
  */
 struct INIFILE *ini_open(const char *filename);
+
+/**
+ *
+ * @param ini
+ * @param value
+ * @return
+ */
+struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char *value);
+
+/**
+ * 
+ * @param ini 
+ * @param section 
+ * @param key 
+ * @return 
+ */
+int ini_has_key(struct INIFILE *ini, const char *section, const char *key);
 
 /**
  * Assign value to a section key
