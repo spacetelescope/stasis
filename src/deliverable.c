@@ -464,7 +464,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     runtime_apply(rt);
     ctx->runtime.environ = rt;
 
-    ini_getval(ini, "meta", "mission", INIVAL_TYPE_STR, &val);
+    ini_getval_required(ini, "meta", "mission", INIVAL_TYPE_STR, &val);
     conv_str(&ctx->meta.mission, val);
 
     if (!strcasecmp(ctx->meta.mission, "hst")) {
