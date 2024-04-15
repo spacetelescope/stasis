@@ -545,12 +545,17 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     // Delivery metadata consumed
     populate_mission_ini(&ctx);
 
-    if (!ctx->info.release_name) {
-        if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
-            fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
-            return -1;
-        }
+    if (ctx->info.release_name) {
+        guard_free(ctx->info.release_name);
+        guard_free(ctx->info.build_name);
+        guard_free(ctx->info.build_number);
     }
+
+    if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
+        fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
+        return -1;
+    }
+
     if (!ctx->info.build_name) {
         delivery_format_str(ctx, &ctx->info.build_name, ctx->rules.build_name_fmt);
     }
