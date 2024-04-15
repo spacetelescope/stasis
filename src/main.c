@@ -323,9 +323,17 @@ int main(int argc, char *argv[]) {
         ctx.meta.python_compact = to_short_version(ctx.meta.python);
     }
 
+    if (!config_input) {
+        // no configuration passed by argument. use basic config.
+        char cfgfile[PATH_MAX * 2];
+        sprintf(cfgfile, "%s/%s", globals.sysconfdir, "omc.ini");
+        if (!access(cfgfile, F_OK)) {
+            config_input = strdup(cfgfile);
+        }
+    }
+
     if (config_input) {
         msg(OMC_MSG_L2, "Reading OMC global configuration: %s\n", config_input);
-
         ctx._omc_ini_fp.cfg = ini_open(config_input);
         if (!ctx._omc_ini_fp.cfg) {
             msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read config file: %s, %s\n", delivery_input, strerror(errno));
