@@ -1830,6 +1830,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
     struct INIFILE *cfg = ctx->_omc_ini_fp.mission;
     union INIVal val;
 
+    memset(&data, 0, sizeof(data));
     data.src = calloc(PATH_MAX, sizeof(*data.src));
     if (!data.src) {
         perror("data.src");
