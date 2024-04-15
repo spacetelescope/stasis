@@ -14,7 +14,7 @@ long download(char *url, const char *filename, char **errmsg) {
     extern char *VERSION;
     CURL *c;
     CURLcode curl_code;
-    long http_code;
+    long http_code = -1;
     FILE *fp;
     char user_agent[20];
     sprintf(user_agent, "omc/%s", VERSION);
@@ -25,7 +25,7 @@ long download(char *url, const char *filename, char **errmsg) {
     curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
     fp = fopen(filename, "wb");
     if (!fp) {
-        return 1;
+        return -1;
     }
     curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
@@ -37,12 +37,14 @@ long download(char *url, const char *filename, char **errmsg) {
         if (errmsg) {
             strcpy(*errmsg, curl_easy_strerror(curl_code));
         } else {
-            fprintf(stderr, "CURL ERROR: %s\n", curl_easy_strerror(curl_code));
+            fprintf(stderr, "\nCURL ERROR: %s\n", curl_easy_strerror(curl_code));
         }
+        goto failed;
     }
     curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
-    fclose(fp);
 
+    failed:
+    fclose(fp);
     curl_easy_cleanup(c);
     curl_global_cleanup();
     return http_code;
