@@ -16,7 +16,7 @@ static void ini_has_key_required(struct INIFILE *ini, const char *section_name, 
 static void ini_getval_required(struct INIFILE *ini, char *section_name, char *key, unsigned type, union INIVal *val) {
     int status = ini_getval(ini, section_name, key, type, val);
     if (status || isempty(val->as_char_p)) {
-        fprintf(stderr, "%s:%s is required but not defined\n", section_name, key);
+        SYSERROR("%s:%s value is required but not defined", section_name, key);
         exit(1);
     }
 }
