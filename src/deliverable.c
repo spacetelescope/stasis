@@ -4,10 +4,6 @@
 #include "omc.h"
 
 extern struct OMC_GLOBAL globals;
-#if defined(OMC_OS_DARWIN)
-extern char **environ;
-#define __environ environ
-#endif
 
 static void ini_getval_required(struct INIFILE *ini, char *section_name, char *key, unsigned type, union INIVal *val) {
     int status = ini_getval(ini, section_name, key, type, val);
