@@ -343,7 +343,6 @@ int main(int argc, char *argv[]) {
     }
     ctx._omc_ini_fp.delivery_path = strdup(delivery_input);
 
-
     msg(OMC_MSG_L2, "Bootstrapping delivery context\n");
     if (bootstrap_build_info(&ctx)) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to bootstrap delivery context\n");
@@ -586,30 +585,41 @@ int main(int argc, char *argv[]) {
     msg(OMC_MSG_L1, "Rendering mission templates\n");
     delivery_mission_render_files(&ctx);
 
-    char dockerfile[PATH_MAX] = {0};
-    sprintf(dockerfile, "%s/%s", ctx.storage.build_docker_dir, "Dockerfile");
-    if (globals.enable_docker) {
-        if (!access(dockerfile, F_OK)) {
-            msg(OMC_MSG_L1, "Building Docker image\n");
-            if (delivery_docker(&ctx)) {
-                msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
-                COE_CHECK_ABORT(1, "Failed to build docker image");
+    int want_docker = ini_section_search(&ctx._omc_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:docker") ? true : false;
+    int want_artifactory = ini_section_search(&ctx._omc_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:artifactory") ? true : false;
+
+    if (want_docker) {
+        char dockerfile[PATH_MAX] = {0};
+        sprintf(dockerfile, "%s/%s", ctx.storage.build_docker_dir, "Dockerfile");
+        if (globals.enable_docker) {
+            if (!access(dockerfile, F_OK)) {
+                msg(OMC_MSG_L1, "Building Docker image\n");
+                if (delivery_docker(&ctx)) {
+                    msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
+                    COE_CHECK_ABORT(1, "Failed to build docker image");
+                }
+            } else {
+                msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx.storage.build_docker_dir);
             }
         } else {
-            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx.storage.build_docker_dir);
+            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled due to a system configuration issue\n");
         }
     } else {
-        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled\n");
+        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. deploy:docker is not configured\n");
     }
 
     msg(OMC_MSG_L3, "Rewriting release spec file (stage 2): %s\n", path_basename(specfile));
     delivery_rewrite_spec(&ctx, specfile, DELIVERY_REWRITE_SPEC_STAGE_2);
 
-    if (globals.enable_artifactory) {
-        msg(OMC_MSG_L1, "Uploading artifacts\n");
-        delivery_artifact_upload(&ctx);
+    if (want_artifactory) {
+        if (globals.enable_artifactory) {
+            msg(OMC_MSG_L1, "Uploading artifacts\n");
+            delivery_artifact_upload(&ctx);
+        } else {
+            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled\n");
+        }
     } else {
-        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled\n");
+        msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled. deploy:artifactory is not configured\n");
     }
 
     msg(OMC_MSG_L1, "Cleaning up\n");
