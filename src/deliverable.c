@@ -5,6 +5,14 @@
 
 extern struct OMC_GLOBAL globals;
 
+static void ini_has_key_required(struct INIFILE *ini, const char *section_name, char *key) {
+    int status = ini_has_key(ini, section_name, key);
+    if (!status) {
+        SYSERROR("%s:%s key is required but not defined", section_name, key);
+        exit(1);
+    }
+}
+
 static void ini_getval_required(struct INIFILE *ini, char *section_name, char *key, unsigned type, union INIVal *val) {
     int status = ini_getval(ini, section_name, key, type, val);
     if (status || isempty(val->as_char_p)) {
