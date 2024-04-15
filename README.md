@@ -1,6 +1,6 @@
 [![CMake on multiple platforms](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml) [![Documentation Status](https://readthedocs.org/projects/oh-my-cal/badge/?version=latest)](https://oh-my-cal.readthedocs.io/en/latest/?badge=latest)
 
-OMC aims to consolidate the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
+OMC consolidate the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
 
 # Requirements
 
@@ -37,6 +37,106 @@ Compile and install ohmycal
 ```shell
 make
 make install
+export PATH="$HOME/programs/ohmycal/bin:$PATH"
+```
+
+# Quickstart
+
+## Step 1: Create a mission
+
+Missions definitions live in OMC's `etc/mission` directory. Let's create a new one specifically geared toward generic data analysis tools. You may override the path to the `etc` directory by setting the `OMC_SYSCONFDIR` environment variable to different location.
+
+```shell
+mkdir $HOME/programs/ohmycal/etc/missions/mymission
+touch $HOME/programs/ohmycal/etc/missions/mymission/mymission.ini
+```
+
+Now populate the new data analysis mission configuration. Refer to the [release formatters](#release-formatters) section to see a list of what each `%` formatter does.
+
+```ini
+[meta]
+release_fmt = %n-%v-%r-py%p-%o-%a
+; e.g. mydelivery-1.2.3-1-py312-linux-x86_64
+
+build_name_fmt = %n-%v
+; e.g. mydelivery-1.2.3
+
+build_number_fmt = %v.%r
+; e.g. 1.2.3.1
+```
+
+Text files containing OMC template strings can be stored at the same level as the mission configuration, and rendered to anywhere inside the output directory. This will can you time if you plan to release for multiple platforms and architectures.
+
+```ini
+[template:readme.md.in]
+destination = {{ storage.delivery_dir }}/README-{{ info.release_name }}.md
+; e.g [..]/output/delivery/README-mydelivery-1.2.3-1-py312-linux-x86_64.md
+
+[template:Dockerfile.in]
+destination = {{ storage.build_docker_dir }}/Dockerfile
+; e.g [..]/build/docker/Dockerfile
+```
+
+## Step 2: Create a delivery configuration
+
+OMC's configuration parser does not distinguish input files by extension, so `mydelivery.ini`, `mydelivery.cfg`, `mydelivery.txt`, and `abc123.zyx987` are all perfectly valid file names.
+
+All deliveries require a `[meta]` section. Here global metadata such as the delivery's `name`, `version`, and any programs/dependencies that make up the deliverable.
+
+```ini
+[meta]
+mission = mymission
+name = mydelivery
+version = 2024.3.1
+rc = 1
+python = 3.12
+```
+
+The `[conda]` section instructs OMC how to obtain the conda installer of your choice, and defines the packages to be installed into the delivery's release environment.
+
+```shell
+[conda]
+; e.g. Download Miniforge3-23.11.0-0 for the current system platform and architecture
+installer_name = Miniforge3
+installer_version = 23.11.0-0
+installer_platform = {{env:OMC_CONDA_PLATFORM}}
+installer_arch = {{env:OMC_CONDA_ARCH}}
+installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/{{conda.installer_version}}
+
+conda_packages =
+    qt>=5.0
+    
+pip_packages =
+    our_cool_program
+    our_other_cool_program
+```
+
+Create some test cases for packages.
+
+```shell
+[test:our_cool_program]
+version = 1.2.3
+repository = https://github.com/org/our_cool_program
+script =
+    pytest -v \
+        --basetemp="{{ storage.results_dir }}/truth-$(basename $(pwd))-{{ info.release_name }}" \
+        --junit-xml="{{ storage.results_dir }}/results-$(basename $(pwd))-{{ info.release_name }}.xml" \
+        tests/
+
+[test:our_other_cool_program]
+version = 4.5.6
+repository = https://github.com/org/our_other_cool_program
+script =
+    pytest -v \
+        --basetemp="{{ storage.results_dir }}/truth-$(basename $(pwd))-{{ info.release_name }}" \
+        --junit-xml="{{ storage.results_dir }}/results-$(basename $(pwd))-{{ info.release_name }}.xml" \
+        tests/
+```
+
+## Step 3: Run OMC
+
+```shell
+omc mydelivery.ini
 ```
 
 # Configuration
@@ -45,7 +145,8 @@ make install
 
 | Name                         | Purpose                                               | 
 |------------------------------|-------------------------------------------------------|
-| TMPDIR                       | Change default path to store temporary data           | 
+| TMPDIR                       | Change default path to store temporary data           |
+| OMC_ROOT                     | Change default path to write OMC's data               |
 | OMC_SYSCONFDIR               | Change default path to search for configuration files | 
 | OMC_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)    | 
 | OMC_JF_ACCESS_TOKEN          | Artifactory Access Token                              | 
@@ -100,18 +201,6 @@ The template engine also provides an interface to environment variables using th
 name = {{ env:MY_DYNAMIC_DELIVERY_NAME }}
 version = {{ env:MY_DYNAMIC_DELIVERY_VERSION }}
 python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
-```
-
-## Runtime strings
-
-Alternatively, one may expand environment variables using the `${VARIABLE_NAME}` notation.
-Note: Environment variable expansion is not rendered in `[test:*].script` keys.
-
-```ini
-[meta]
-name = ${MY_DYNAMIC_DELIVERY_NAME}
-version = ${MY_DYNAMIC_DELIVERY_VERSION}
-python = ${MY_DYNAMIC_PYTHON_VERSION}
 ```
 
 # Delivery files
@@ -208,7 +297,7 @@ OMC_SYSCONFDIR/
 | build_name_fmt   | String | -                                                         | Y        |
 | build_number_fmt | String | -                                                         | Y        |
 
-#### Release format specifiers
+#### Release formatters
 
 | Formatter | Purpose                          |
 |-----------|----------------------------------|
