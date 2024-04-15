@@ -1338,7 +1338,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         }
 
         FILE *bottom_fp;
-        char bottom_index[PATH_MAX];
+        char bottom_index[PATH_MAX * 2];
         memset(bottom_index, 0, sizeof(bottom_index));
         sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
         bottom_fp = fopen(bottom_index, "w+");
@@ -1349,7 +1349,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         // Add record to top level index
         fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
-        char dpath[PATH_MAX];
+        char dpath[PATH_MAX * 2];
         memset(dpath, 0, sizeof(dpath));
         sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
         struct StrList *packages = listdir(dpath);
