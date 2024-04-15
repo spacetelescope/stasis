@@ -401,12 +401,58 @@ static int populate_mission_ini(struct Delivery **ctx) {
     return 0;
 }
 
+void validate_delivery_ini(struct INIFILE *ini) {
+    if (ini_section_search(&ini, INI_SEARCH_EXACT, "meta")) {
+        ini_has_key_required(ini, "meta", "name");
+        ini_has_key_required(ini, "meta", "version");
+        ini_has_key_required(ini, "meta", "rc");
+        ini_has_key_required(ini, "meta", "mission");
+        ini_has_key_required(ini, "meta", "python");
+    } else {
+        SYSERROR("%s", "[meta] configuration section is required");
+        exit(1);
+    }
+
+    if (ini_section_search(&ini, INI_SEARCH_EXACT, "conda")) {
+        ini_has_key_required(ini, "conda", "installer_name");
+        ini_has_key_required(ini, "conda", "installer_version");
+        ini_has_key_required(ini, "conda", "installer_platform");
+        ini_has_key_required(ini, "conda", "installer_arch");
+    } else {
+        SYSERROR("%s", "[conda] configuration section is required");
+        exit(1);
+    }
+
+    for (size_t i = 0; i < ini->section_count; i++) {
+        struct INISection *section = ini->section[i];
+        if (section && startswith(section->key, "test:")) {
+            char *name = strstr(section->key, ":");
+            if (name && strlen(name) > 1) {
+                name = &name[1];
+            }
+            ini_has_key_required(ini, section->key, "version");
+            ini_has_key_required(ini, section->key, "repository");
+            ini_has_key_required(ini, section->key, "script");
+        }
+    }
+
+    if (ini_section_search(&ini, INI_SEARCH_EXACT, "deploy:docker")) {
+        // yeah?
+    }
+
+    if (ini_section_search(&ini, INI_SEARCH_BEGINS, "deploy:artifactory")) {
+        ini_has_key_required(ini, "deploy:artifactory", "files");
+        ini_has_key_required(ini, "deploy:artifactory", "dest");
+    }
+}
+
 static int populate_delivery_ini(struct Delivery *ctx) {
     union INIVal val;
     struct INIFILE *ini = ctx->_omc_ini_fp.delivery;
     struct INIData *rtdata;
     RuntimeEnv *rt;
 
+    validate_delivery_ini(ini);
     // Populate runtime variables first they may be interpreted by other
     // keys in the configuration
     rt = runtime_copy(__environ);
