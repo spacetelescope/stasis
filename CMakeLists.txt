@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(OMC C)
 include(GNUInstallDirs)
 
-set(nix_cflags -Wall -Wextra)
+set(nix_cflags -Wall -Wextra -fPIC)
 set(win_cflags /Wall)
 set(CMAKE_C_STANDARD 99)
 

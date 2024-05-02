@@ -1,8 +1,6 @@
 #include <stdarg.h>
 #include "omc.h"
 
-extern struct OMC_GLOBAL globals;
-
 char *dirstack[OMC_DIRSTACK_MAX];
 const ssize_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);
 ssize_t dirstack_len = 0;

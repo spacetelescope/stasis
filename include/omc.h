@@ -85,6 +85,11 @@ struct OMC_GLOBAL {
         char *url;
     } jfrog;
 };
+extern struct OMC_GLOBAL globals;
+extern const char *VERSION;
+extern const char *AUTHOR;
+extern const char *BANNER;
+
 
 /**
  * Free memory allocated in global configuration structure

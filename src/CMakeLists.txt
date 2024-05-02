@@ -2,8 +2,8 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR})
 
-add_executable(omc
-        main.c
+add_library(ohmycal STATIC
+        globals.c
         str.c
         strlist.c
         ini.c
@@ -22,4 +22,13 @@ add_executable(omc
         rules.c
         docker.c
 )
+
+add_executable(omc
+        omc_main.c
+)
+target_link_libraries(omc ohmycal)
+add_executable(omc_indexer
+        omc_indexer.c
+)
+target_link_libraries(omc_indexer ohmycal)
 install(TARGETS omc RUNTIME)
