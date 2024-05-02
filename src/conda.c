@@ -121,9 +121,10 @@ int conda_activate(const char *root, const char *env_name) {
         char buf[OMC_BUFSIZ] = {0};
         int ch = 0;
         size_t z = 0;
+        // We are ingesting output from "env -0", can't use fgets()
+        // Copy each character into the buffer until we encounter '\0' or EOF
         while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
             if (ch == EOF) {
-                ch = 0;
                 break;
             }
             buf[z] = (char) ch;
@@ -134,7 +135,7 @@ int conda_activate(const char *root, const char *env_name) {
         if (!strlen(buf)) {
             continue;
         }
-        //printf("\e[0m[%d] %s\e[0m\n", i, buf);
+
         char **part = split(buf, "=", 1);
         if (!part) {
             perror("unable to split environment variable buffer");
