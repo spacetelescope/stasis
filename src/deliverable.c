@@ -232,6 +232,7 @@ void delivery_init_dirs_stage2(struct Delivery *ctx) {
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
     path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
+    path_store(&ctx->storage.meta_dir, PATH_MAX, ctx->storage.output_dir, "meta");
 
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
@@ -1485,6 +1486,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 }
 
 const char *release_header = "# delivery_name: %s\n"
+                             "# delivery_fmt: %s\n"
                      "# creation_time: %s\n"
                      "# conda_ident: %s\n"
                      "# conda_build_ident: %s\n";
@@ -1495,10 +1497,52 @@ char *delivery_get_release_header(struct Delivery *ctx) {
     strftime(stamp, sizeof(stamp) - 1, "%c", ctx->info.time_info);
     sprintf(output, release_header,
             ctx->info.release_name,
+            ctx->rules.release_fmt,
             stamp,
             ctx->conda.tool_version,
             ctx->conda.tool_build_version);
     return strdup(output);
+}
+
+int delivery_dump_metadata(struct Delivery *ctx) {
+    FILE *fp;
+    char filename[PATH_MAX];
+    sprintf(filename, "%s/meta-%s.omc", ctx->storage.meta_dir, ctx->info.release_name);
+    fp = fopen(filename, "w+");
+    if (!fp) {
+        return -1;
+    }
+    if (globals.verbose) {
+        printf("%s\n", filename);
+    }
+    fprintf(fp, "name %s\n", ctx->meta.name);
+    fprintf(fp, "version %s\n", ctx->meta.version);
+    fprintf(fp, "rc %d\n", ctx->meta.rc);
+    fprintf(fp, "python %s\n", ctx->meta.python);
+    fprintf(fp, "python_compact %s\n", ctx->meta.python_compact);
+    fprintf(fp, "mission %s\n", ctx->meta.mission);
+    fprintf(fp, "codename %s\n", ctx->meta.codename ? ctx->meta.codename : "");
+    fprintf(fp, "platform %s %s %s %s\n",
+            ctx->system.platform[DELIVERY_PLATFORM],
+            ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR],
+            ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER],
+            ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
+    fprintf(fp, "arch %s\n", ctx->system.arch);
+    fprintf(fp, "time %s\n", ctx->info.time_str_epoch);
+    fprintf(fp, "release_fmt %s\n", ctx->rules.release_fmt);
+    fprintf(fp, "release_name %s\n", ctx->info.release_name);
+    fprintf(fp, "build_name_fmt %s\n", ctx->rules.build_name_fmt);
+    fprintf(fp, "build_name %s\n", ctx->info.build_name);
+    fprintf(fp, "build_number_fmt %s\n", ctx->rules.build_number_fmt);
+    fprintf(fp, "build_number %s\n", ctx->info.build_number);
+    fprintf(fp, "conda_installer_baseurl %s\n", ctx->conda.installer_baseurl);
+    fprintf(fp, "conda_installer_name %s\n", ctx->conda.installer_name);
+    fprintf(fp, "conda_installer_version %s\n", ctx->conda.installer_version);
+    fprintf(fp, "conda_installer_platform %s\n", ctx->conda.installer_platform);
+    fprintf(fp, "conda_installer_arch %s\n", ctx->conda.installer_arch);
+
+    fclose(fp);
+    return 0;
 }
 
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage) {

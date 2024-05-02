@@ -71,6 +71,7 @@ struct Delivery {
         char *mission_dir;              ///< Mission data storage
         char *package_dir;              ///< Base path to where all packages are stored
         char *results_dir;              ///< Base path to where test results are stored
+        char *meta_dir;                 ///< Base path to where metadata records are stored
         char *conda_install_prefix;     ///< Path to install Conda
         char *conda_artifact_dir;       ///< Base path to store compiled conda packages
         char *conda_staging_dir;        ///< Base path to copy compiled conda packages
@@ -387,5 +388,7 @@ int delivery_docker(struct Delivery *ctx);
 int delivery_fixup_test_results(struct Delivery *ctx);
 
 int *bootstrap_build_info(struct Delivery *ctx);
+
+int delivery_dump_metadata(struct Delivery *ctx);
 
 #endif //OMC_DELIVERABLE_H

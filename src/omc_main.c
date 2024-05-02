@@ -586,6 +586,11 @@ int main(int argc, char *argv[]) {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled. deploy:artifactory is not configured\n");
     }
 
+    msg(OMC_MSG_L1, "Dumping metadata\n");
+    if (delivery_dump_metadata(&ctx)) {
+        msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Metadata dump failed\n");
+    }
+
     msg(OMC_MSG_L1, "Cleaning up\n");
     delivery_free(&ctx);
     globals_free();
