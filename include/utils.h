@@ -308,4 +308,7 @@ char *collapse_whitespace(char **s);
  * @return 0 on success, -1 on error
  */
 int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen);
+
+struct StrList *listdir(const char *path);
+
 #endif //OMC_UTILS_H

@@ -712,3 +712,24 @@ int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxle
     return 0;
 }
 
+struct StrList *listdir(const char *path) {
+    struct StrList *node;
+    DIR *dp;
+    struct dirent *rec;
+
+    dp = opendir(path);
+    if (!dp) {
+        return NULL;
+    }
+    node = strlist_init();
+
+    while ((rec = readdir(dp)) != NULL) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        }
+        strlist_append(&node, rec->d_name);
+    }
+    closedir(dp);
+    return node;
+}
+
