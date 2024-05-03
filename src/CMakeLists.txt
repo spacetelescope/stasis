@@ -31,4 +31,4 @@ add_executable(omc_indexer
         omc_indexer.c
 )
 target_link_libraries(omc_indexer ohmycal)
-install(TARGETS omc RUNTIME)
+install(TARGETS omc omc_indexer RUNTIME)
