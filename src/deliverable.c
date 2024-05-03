@@ -115,7 +115,10 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
-    globals.tmpdir = strdup(tmpdir);
+    if (!globals.tmpdir) {
+        globals.tmpdir = strdup(tmpdir);
+    }
+
     if (!ctx->storage.tmpdir) {
         ctx->storage.tmpdir = strdup(globals.tmpdir);
     }
