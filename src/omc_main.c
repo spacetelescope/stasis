@@ -581,6 +581,11 @@ int main(int argc, char *argv[]) {
     msg(OMC_MSG_L3, "Rewriting release spec file (stage 2): %s\n", path_basename(specfile));
     delivery_rewrite_spec(&ctx, specfile, DELIVERY_REWRITE_SPEC_STAGE_2);
 
+    msg(OMC_MSG_L1, "Dumping metadata\n");
+    if (delivery_dump_metadata(&ctx)) {
+        msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Metadata dump failed\n");
+    }
+
     if (want_artifactory) {
         if (globals.enable_artifactory) {
             msg(OMC_MSG_L1, "Uploading artifacts\n");
@@ -590,11 +595,6 @@ int main(int argc, char *argv[]) {
         }
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Artifact uploading is disabled. deploy:artifactory is not configured\n");
-    }
-
-    msg(OMC_MSG_L1, "Dumping metadata\n");
-    if (delivery_dump_metadata(&ctx)) {
-        msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Metadata dump failed\n");
     }
 
     msg(OMC_MSG_L1, "Cleaning up\n");
