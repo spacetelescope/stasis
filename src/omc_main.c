@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
     char *config_input = NULL;
     char installer_url[PATH_MAX];
     char python_override_version[OMC_NAME_MAX];
+    int user_disabled_docker = false;
 
     memset(env_name, 0, sizeof(env_name));
     memset(env_name_testing, 0, sizeof(env_name_testing));
@@ -190,6 +191,7 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_NO_DOCKER:
                 globals.enable_docker = false;
+                user_disabled_docker = true;
                 break;
             case OPT_NO_ARTIFACTORY:
                 globals.enable_artifactory = false;
@@ -553,20 +555,24 @@ int main(int argc, char *argv[]) {
     int want_artifactory = ini_section_search(&ctx._omc_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:artifactory") ? true : false;
 
     if (want_docker) {
-        char dockerfile[PATH_MAX] = {0};
-        sprintf(dockerfile, "%s/%s", ctx.storage.build_docker_dir, "Dockerfile");
-        if (globals.enable_docker) {
-            if (!access(dockerfile, F_OK)) {
-                msg(OMC_MSG_L1, "Building Docker image\n");
-                if (delivery_docker(&ctx)) {
-                    msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
-                    COE_CHECK_ABORT(1, "Failed to build docker image");
+        if (user_disabled_docker) {
+            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled by CLI argument\n");
+        } else {
+            char dockerfile[PATH_MAX] = {0};
+            sprintf(dockerfile, "%s/%s", ctx.storage.build_docker_dir, "Dockerfile");
+            if (globals.enable_docker) {
+                if (!access(dockerfile, F_OK)) {
+                    msg(OMC_MSG_L1, "Building Docker image\n");
+                    if (delivery_docker(&ctx)) {
+                        msg(OMC_MSG_L1 | OMC_MSG_ERROR, "Failed to build docker image!\n");
+                        COE_CHECK_ABORT(1, "Failed to build docker image");
+                    }
+                } else {
+                    msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx.storage.build_docker_dir);
                 }
             } else {
-                msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx.storage.build_docker_dir);
+                msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. System configuration error\n");
             }
-        } else {
-            msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled due to a system configuration issue\n");
         }
     } else {
         msg(OMC_MSG_L1 | OMC_MSG_WARN, "Docker image building is disabled. deploy:docker is not configured\n");
