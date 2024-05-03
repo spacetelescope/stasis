@@ -1,7 +1,7 @@
-//
-// Created by jhunk on 10/4/23.
-//
-
+/**
+ * System functions
+ * @file system.h
+ */
 #ifndef OMC_SYSTEM_H
 #define OMC_SYSTEM_H
 
