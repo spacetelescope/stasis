@@ -35,7 +35,7 @@ static void usage(char *name) {
 
 }
 
-int indexer_combine_rootdirs(struct Delivery *ctx, const char *dest, const char **rootdirs, const size_t rootdirs_total) {
+int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t rootdirs_total) {
     char cmd[PATH_MAX];
 
     memset(cmd, 0, sizeof(cmd));
