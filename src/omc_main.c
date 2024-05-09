@@ -97,7 +97,7 @@ static void usage(char *progname) {
 
 
 
-static void check_system_requirements() {
+static void check_system_requirements(struct Delivery *ctx) {
     const char *tools_required[] = {
         "rsync",
         NULL,
@@ -109,6 +109,10 @@ static void check_system_requirements() {
             msg(OMC_MSG_L2 | OMC_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
             exit(1);
         }
+    }
+
+    if (!globals.tmpdir && !ctx->storage.tmpdir) {
+        delivery_init_tmpdir(ctx);
     }
 
     struct DockerCapabilities dcap;
@@ -221,7 +225,6 @@ int main(int argc, char *argv[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
-    check_system_requirements();
     msg(OMC_MSG_L1, "Setup\n");
 
     // Expose variables for use with the template engine
@@ -320,6 +323,7 @@ int main(int argc, char *argv[]) {
         msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
+    check_system_requirements(&ctx);
 
     msg(OMC_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {
