@@ -34,7 +34,11 @@ int artifactory_download_cli(char *dest,
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
         strcpy(arch_ident, "386");
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
-        strcpy(arch_ident, "amd64");
+        if (!strcmp(os_ident, "mac")) {
+            strcpy(arch_ident, "386");
+        } else {
+            strcpy(arch_ident, "amd64");
+        }
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
         strcpy(arch_ident, "arm64");
     } else {
