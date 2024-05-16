@@ -1332,6 +1332,9 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
             return -3;
         }
 
+        if (globals.verbose) {
+            printf("+ %s\n", rec->d_name);
+        }
         // Add record to top level index
         fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
@@ -1349,6 +1352,9 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
             char *package = strlist_item(packages, i);
             if (!endswith(package, ".whl")) {
                 continue;
+            }
+            if (globals.verbose) {
+                printf("`- %s\n", package);
             }
             // Write record to bottom level index
             fprintf(bottom_fp, "<a href=\"%s\">%s</a><br/>\n", package, package);
