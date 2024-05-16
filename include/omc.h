@@ -38,6 +38,7 @@
 #include "recipe.h"
 #include "relocation.h"
 #include "wheel.h"
+#include "junitxml.h"
 
 #define guard_runtime_free(X) do { if (X) { runtime_free(X); X = NULL; } } while (0)
 #define guard_strlist_free(X) do { if ((*X)) { strlist_free(X); (*X) = NULL; } } while (0)

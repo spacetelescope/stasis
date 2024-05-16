@@ -5,8 +5,11 @@ include(GNUInstallDirs)
 set(nix_cflags -Wall -Wextra -fPIC)
 set(win_cflags /Wall)
 set(CMAKE_C_STANDARD 99)
-
-link_libraries(curl)
+find_package(libxml2)
+find_package(CURL)
+link_libraries(CURL::libcurl)
+link_libraries(LibXml2::LibXml2)
+include_directories(${LIBXML2_INCLUDE_DIR})
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	message("gnu options")

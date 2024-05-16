@@ -7,6 +7,7 @@ static struct option long_options[] = {
         {"destdir", required_argument, 0, 'd'},
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
+        {"web", no_argument, 0, 'w'},
         {0, 0, 0, 0},
 };
 
@@ -15,6 +16,7 @@ const char *long_options_help[] = {
         "Destination directory",
         "Increase output verbosity",
         "Disable line buffering",
+        "Generate HTML indexes (requires pandoc)",
         NULL,
 };
 
@@ -169,7 +171,7 @@ int indexer_get_files(struct StrList **out, const char *path, const char *patter
 int get_latest_rc(struct Delivery ctx[], size_t nelem) {
     int result = 0;
     for (size_t i = 0; i < nelem; i++) {
-        if (&ctx[i] && ctx[i].meta.rc > result) {
+        if (ctx[i].meta.rc > result) {
             result = ctx[i].meta.rc;
         }
     }
@@ -247,6 +249,44 @@ int micromamba(const char *write_to, const char *prefix, char *command, ...) {
     unsetenv("MAMBA_ROOT_PREFIX");
 
     return status;
+}
+
+int indexer_make_website(struct Delivery *ctx) {
+    char cmd[PATH_MAX];
+    char *inputs[] = {
+        ctx->storage.delivery_dir, "/README.md",
+        ctx->storage.results_dir, "/README.md",
+    };
+
+    if (!find_program("pandoc")) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < sizeof(inputs) / sizeof(*inputs); i += 2) {
+        char fullpath[PATH_MAX];
+        memset(fullpath, 0, sizeof(fullpath));
+        sprintf(fullpath, "%s/%s", inputs[i], inputs[i + 1]);
+        if (access(fullpath, F_OK)) {
+            continue;
+        }
+        // Converts a markdown file to html
+        strcpy(cmd, "pandoc ");
+        strcat(cmd, fullpath);
+        strcat(cmd, " ");
+        strcat(cmd, "-o ");
+        strcat(cmd, inputs[i]);
+        strcat(cmd, "/index.html");
+        if (globals.verbose) {
+            puts(cmd);
+        }
+        // This might be negative when killed by a signal.
+        // Otherwise, the return code is not critical to us.
+        if (system(cmd) < 0) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 int indexer_conda(struct Delivery *ctx) {
@@ -361,6 +401,7 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
         struct StrList *platforms = get_platforms(*latest, nelem);
 
         fprintf(indexfp, "# %s-%s\n\n", ctx->meta.name, ctx->meta.version);
+        fprintf(indexfp, "## Current Release\n\n");
         for (size_t p = 0; p < strlist_count(platforms); p++) {
             char *platform = strlist_item(platforms, p);
             for (size_t a = 0; a < strlist_count(archs); a++) {
@@ -374,10 +415,10 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
                 if (!have_combo) {
                     continue;
                 }
-                fprintf(indexfp, "## %s-%s\n\n", platform, arch);
+                fprintf(indexfp, "### %s-%s\n\n", platform, arch);
 
                 fprintf(indexfp, "|Release|Info|Receipt|\n");
-                fprintf(indexfp, "|----|----|----|\n");
+                fprintf(indexfp, "|:----:|:----:|:----:|\n");
                 for (size_t i = 0; i < nelem; i++) {
                     char link_name[PATH_MAX];
                     char readme_name[PATH_MAX];
@@ -413,6 +454,102 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
     return 0;
 }
 
+int indexer_junitxml_report(struct Delivery ctx[], size_t nelem) {
+    struct Delivery **latest = NULL;
+    latest = get_latest_deliveries(ctx, nelem);
+
+    char indexfile[PATH_MAX] = {0};
+    sprintf(indexfile, "%s/README.md", ctx->storage.results_dir);
+
+    struct StrList *file_listing = listdir(ctx->storage.results_dir);
+    if (!file_listing) {
+        // no test results to process
+        return 0;
+    }
+
+    if (!pushd(ctx->storage.results_dir)) {
+        FILE *indexfp;
+        indexfp = fopen(indexfile, "w+");
+        if (!indexfp) {
+            fprintf(stderr, "Unable to open %s for writing\n", indexfile);
+            return -1;
+        }
+        struct StrList *archs = get_architectures(*latest, nelem);
+        struct StrList *platforms = get_platforms(*latest, nelem);
+
+        fprintf(indexfp, "# %s-%s Test Report\n\n", ctx->meta.name, ctx->meta.version);
+        fprintf(indexfp, "## Current Release\n\n");
+        for (size_t p = 0; p < strlist_count(platforms); p++) {
+            char *platform = strlist_item(platforms, p);
+            for (size_t a = 0; a < strlist_count(archs); a++) {
+                char *arch = strlist_item(archs, a);
+                int have_combo = 0;
+                for (size_t i = 0; i < nelem; i++) {
+                    if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) && strstr(latest[i]->system.arch, arch)) {
+                        have_combo = 1;
+                        break;
+                    }
+                }
+                if (!have_combo) {
+                    continue;
+                }
+                fprintf(indexfp, "### %s-%s\n\n", platform, arch);
+
+                fprintf(indexfp, "|Suite|Duration|Fail    |Skip |Error |\n");
+                fprintf(indexfp, "|:----|:------:|:------:|:---:|:----:|\n");
+                for (size_t f = 0; f < strlist_count(file_listing); f++) {
+                    char *filename = strlist_item(file_listing, f);
+                    if (!endswith(filename, ".xml")) {
+                        continue;
+                    }
+
+                    if (strstr(filename, platform) && strstr(filename, arch)) {
+                        struct JUNIT_Testsuite *testsuite = junitxml_testsuite_read(filename);
+                        if (testsuite) {
+                            if (globals.verbose) {
+                                printf("%s: duration: %0.4f, failed: %d, skipped: %d, errors: %d\n", filename, testsuite->time, testsuite->failures, testsuite->skipped, testsuite->errors);
+                            }
+                            fprintf(indexfp, "|[%s](%s)|%0.4f|%d|%d|%d|\n", filename, filename, testsuite->time, testsuite->failures, testsuite->skipped, testsuite->errors);
+                            /*
+                             * TODO: Display failure/skip/error output.
+                             *
+                            for (size_t i = 0; i < testsuite->_tc_inuse; i++) {
+                                if (testsuite->testcase[i]->tc_result_state_type) {
+                                    printf("testcase: %s :: %s\n", testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
+                                    if (testsuite->testcase[i]->tc_result_state_type == JUNIT_RESULT_STATE_FAILURE) {
+                                        printf("failure: %s\n", testsuite->testcase[i]->result_state.failure->message);
+                                    } else if (testsuite->testcase[i]->tc_result_state_type == JUNIT_RESULT_STATE_SKIPPED) {
+                                        printf("skipped: %s\n", testsuite->testcase[i]->result_state.skipped->message);
+                                    }
+                                }
+                            }
+                             */
+                            junitxml_testsuite_free(&testsuite);
+                        } else {
+                            fprintf(stderr, "bad test suite: %s: %s\n", strerror(errno), filename);
+                            continue;
+                        }
+                    }
+                }
+                fprintf(indexfp, "\n");
+            }
+            fprintf(indexfp, "\n");
+        }
+        guard_strlist_free(&archs);
+        guard_strlist_free(&platforms);
+        fclose(indexfp);
+        popd();
+    } else {
+        fprintf(stderr, "Unable to enter delivery directory: %s\n", ctx->storage.delivery_dir);
+        guard_free(latest);
+        return -1;
+    }
+
+    // "latest" is an array of pointers to ctxs[]. Do not free the contents of the array.
+    guard_free(latest);
+    return 0;
+}
+
 void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.root, PATH_MAX, workdir, "");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
@@ -425,6 +562,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.meta_dir, PATH_MAX, ctx->storage.output_dir, "meta");
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
     path_store(&ctx->storage.package_dir, PATH_MAX, ctx->storage.output_dir, "packages");
+    path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
 }
@@ -433,9 +571,10 @@ int main(int argc, char *argv[]) {
     size_t rootdirs_total = 0;
     char *destdir = NULL;
     char **rootdirs = NULL;
+    int do_html = 0;
     int c = 0;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hd:vU", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hd:vUw", long_options, &option_index)) != -1) {
         switch (c) {
             case 'h':
                 usage(path_basename(argv[0]));
@@ -451,6 +590,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 globals.verbose = 1;
+                break;
+            case 'w':
+                do_html = 1;
                 break;
             case '?':
             default:
@@ -515,6 +657,15 @@ int main(int argc, char *argv[]) {
     if (indexer_combine_rootdirs(workdir, rootdirs, rootdirs_total)) {
         SYSERROR("%s", "Copy operation failed");
         rmtree(workdir);
+        exit(1);
+    }
+
+    if (access(ctx.storage.conda_artifact_dir, F_OK)) {
+        mkdirs(ctx.storage.conda_artifact_dir, 0755);
+    }
+
+    if (access(ctx.storage.wheel_artifact_dir, F_OK)) {
+        mkdirs(ctx.storage.wheel_artifact_dir, 0755);
     }
 
     msg(OMC_MSG_L1, "Indexing conda packages\n");
@@ -559,10 +710,24 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    msg(OMC_MSG_L1, "Indexing test results\n");
+    if (indexer_junitxml_report(local, strlist_count(metafiles))) {
+        SYSERROR("%s", "Test result indexing operation failed");
+        exit(1);
+    }
+
+    if (do_html) {
+        msg(OMC_MSG_L1, "Generating HTML indexes\n");
+        if (indexer_make_website(local)) {
+            SYSERROR("%s", "Site creation failed");
+            exit(1);
+        }
+    }
+
     msg(OMC_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX];
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/output/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
+    sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
     guard_free(destdir);
 
     if (globals.verbose) {

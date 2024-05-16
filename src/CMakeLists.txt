@@ -21,14 +21,16 @@ add_library(ohmycal STATIC
         template.c
         rules.c
         docker.c
+        junitxml.c
 )
 
 add_executable(omc
         omc_main.c
 )
-target_link_libraries(omc ohmycal)
+target_link_libraries(omc PRIVATE ohmycal)
+target_link_libraries(omc PUBLIC LibXml2::LibXml2)
 add_executable(omc_indexer
         omc_indexer.c
 )
-target_link_libraries(omc_indexer ohmycal)
+target_link_libraries(omc_indexer PRIVATE ohmycal)
 install(TARGETS omc omc_indexer RUNTIME)
