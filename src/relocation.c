@@ -8,7 +8,7 @@
  * Replace all occurrences of `target` with `replacement` in `original`
  *
  * ~~~{.c}
- * char *str = (char *)calloc(100, sizeof(char));
+ * char *str = calloc(100, sizeof(char));
  * strcpy(str, "This are a test.");
  * if (replace_text(str, "are", "is")) {
  *     fprintf(stderr, "string replacement failed\n");
@@ -91,7 +91,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
  * Replace `target` with `replacement` in `filename`
  *
  * ~~~{.c}
- * if (file_replace_text("/path/to/file.txt, "are", "is")) {
+ * if (file_replace_text("/path/to/file.txt", "are", "is")) {
  *     fprintf(stderr, "failed to replace strings in file\n");
  *     exit(1);
  * }
