@@ -65,6 +65,23 @@ static struct JUNIT_Failure *testcase_failure_from_attributes(struct StrList *at
     return result;
 }
 
+static struct JUNIT_Error *testcase_error_from_attributes(struct StrList *attrs) {
+    struct JUNIT_Error *result;
+
+    result = calloc(1, sizeof(*result));
+    if(!result) {
+        return NULL;
+    }
+    for (size_t x = 0; x < strlist_count(attrs); x += 2) {
+        char *attr_name = strlist_item(attrs, x);
+        char *attr_value = strlist_item(attrs, x + 1);
+        if (!strcmp(attr_name, "message")) {
+            result->message = strdup(attr_value);
+        }
+    }
+    return result;
+}
+
 static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *attrs) {
     struct JUNIT_Skipped *result;
 
@@ -133,6 +150,7 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
 
     name = xmlTextReaderConstName(reader);
     if (!name) {
+        // name could not be converted to string
         name = BAD_CAST "--";
     }
     value = xmlTextReaderConstValue(reader);
@@ -171,6 +189,11 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
             struct JUNIT_Failure *failure = testcase_failure_from_attributes(attrs);
             (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_FAILURE;
             (*testsuite)->testcase[cur_tc]->result_state.failure = failure;
+        } else if (!strcmp(node_name, "error")) {
+            size_t cur_tc = (*testsuite)->_tc_inuse > 0 ? (*testsuite)->_tc_inuse - 1 : (*testsuite)->_tc_inuse;
+            struct JUNIT_Error *error = testcase_error_from_attributes(attrs);
+            (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_ERROR;
+            (*testsuite)->testcase[cur_tc]->result_state.error = error;
         } else if (!strcmp(node_name, "skipped")) {
             size_t cur_tc = (*testsuite)->_tc_inuse > 0 ? (*testsuite)->_tc_inuse - 1 : (*testsuite)->_tc_inuse;
             struct JUNIT_Skipped *skipped = testcase_skipped_from_attributes(attrs);
