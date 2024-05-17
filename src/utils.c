@@ -596,24 +596,34 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
         return -1;
 }
 
+/**
+ *
+ * @param filename /path/to/tox.ini
+ * @param result path of replacement tox.ini configuration
+ * @return 0 on success, -1 on error
+ */
 int fix_tox_conf(const char *filename, char **result) {
     struct INIFILE *toxini;
     FILE *fptemp;
     char *tempfile;
     const char *with_posargs = " \\\n    {posargs}\n";
 
+    // Create new temporary tox configuration file
     tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
         return -1;
     }
 
+    // If the result pointer is NULL, allocate enough to store a filesystem path
     if (!*result) {
         *result = calloc(PATH_MAX, sizeof(**result));
         if (!*result) {
+            guard_free(tempfile);
             return -1;
         }
     }
 
+    // Consume the original tox.ini configuration
     toxini = ini_open(filename);
     if (!toxini) {
         if (fptemp) {
@@ -624,6 +634,8 @@ int fix_tox_conf(const char *filename, char **result) {
         return -1;
     }
 
+    // Modify tox configuration
+    // - Allow passing positional arguments pytest
     for (size_t i = 0; i < toxini->section_count; i++) {
         struct INISection *section = toxini->section[i];
         if (section) {
@@ -650,9 +662,11 @@ int fix_tox_conf(const char *filename, char **result) {
         }
     }
 
+    // Save modified configuration
     ini_write(toxini, &fptemp, INI_WRITE_RAW);
     fclose(fptemp);
 
+    // Store path to modified config
     strcpy(*result, tempfile);
     guard_free(tempfile);
 
@@ -661,6 +675,7 @@ int fix_tox_conf(const char *filename, char **result) {
 }
 
 static size_t count_blanks(char *s) {
+    // return the number of leading blanks (tab/space) in a string
     size_t blank = 0;
     for (size_t i = 0; i < strlen(s); i++) {
         if (isblank(s[i])) {
@@ -685,6 +700,14 @@ char *collapse_whitespace(char **s) {
     return *s;
 }
 
+/**
+ * Replace sensitive text in strings with ***REDACTED***
+ * @param to_redact a list of tokens to redact
+ * @param src to read
+ * @param dest to write modified string
+ * @param maxlen maximum length of dest string
+ * @return 0 on success, -1 on error
+ */
 int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen) {
     char **parts = split(src, " ", 0);
     if (!parts) {
@@ -712,6 +735,13 @@ int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxle
     return 0;
 }
 
+/**
+ * Retrieve file names in a directory
+ * (no metadata, non-recursive)
+ *
+ * @param path directory path
+ * @return StrList structure
+ */
 struct StrList *listdir(const char *path) {
     struct StrList *node;
     DIR *dp;
