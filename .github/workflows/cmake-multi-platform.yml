@@ -54,7 +54,6 @@ jobs:
           toolchain:p
           cmake:p
           libxml2:p
-      shell: msys2 {0}
       if: matrix.os == 'windows-latest'
 
     - name: Configure CMake
