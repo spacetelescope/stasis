@@ -30,8 +30,8 @@ jobs:
             c_compiler: gcc
 
     defaults:
-      if: matrix.os == 'windows-latest'
       run:
+        if: matrix.os == 'windows-latest'
         shell: msys2 {0}
 
     steps:
