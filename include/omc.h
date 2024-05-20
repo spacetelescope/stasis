@@ -8,37 +8,37 @@
 #include <limits.h>
 #include <unistd.h>
 #include <time.h>
-#include <sys/statvfs.h>
+#include "config.h"
 
 #define SYSERROR(MSG, ...) do { \
     fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno) ? "info" : strerror(errno)); \
     fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
 } while (0)
+
 #define OMC_BUFSIZ 8192
 #define OMC_NAME_MAX 255
 #define OMC_DIRSTACK_MAX 1024
 #define OMC_TIME_STR_MAX 128
 #define HTTP_ERROR(X) X >= 400
 
-#include "config.h"
 #include "template.h"
 
+#include "strlist.h"
+#include "str.h"
+#include "environment.h"
 #include "utils.h"
 #include "copy.h"
 #include "ini.h"
 #include "conda.h"
-#include "environment.h"
 #include "artifactory.h"
 #include "docker.h"
-#include "deliverable.h"
-#include "str.h"
-#include "strlist.h"
 #include "system.h"
 #include "download.h"
 #include "recipe.h"
 #include "relocation.h"
 #include "wheel.h"
 #include "junitxml.h"
+#include "deliverable.h"
 
 #define guard_runtime_free(X) do { if (X) { runtime_free(X); X = NULL; } } while (0)
 #define guard_strlist_free(X) do { if ((*X)) { strlist_free(X); (*X) = NULL; } } while (0)

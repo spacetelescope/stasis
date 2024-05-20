@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    runtime_apply(ctx.runtime.environ);
+    runtime_apply(ctx.runtime.env);
     strcpy(env_name, ctx.info.release_name);
     strcpy(env_name_testing, env_name);
     strcat(env_name_testing, "-test");

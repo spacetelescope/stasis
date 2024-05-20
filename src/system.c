@@ -5,6 +5,14 @@
 #include "system.h"
 #include "omc.h"
 
+#if defined(OMC_OS_WINDOWS)
+int shell(struct Process *proc, char *args) {
+    char cmd[OMC_BUFSIZ];
+    memset(cmd, 0, sizeof(cmd));
+    strcat(cmd, args);
+    return system(cmd);
+}
+#else
 int shell(struct Process *proc, char *args) {
     FILE *fp_out = NULL;
     FILE *fp_err = NULL;
@@ -96,6 +104,7 @@ int shell(struct Process *proc, char *args) {
     guard_free(t_name);
     return WEXITSTATUS(status);
 }
+#endif
 
 int shell_safe(struct Process *proc, char *args) {
     FILE *fp;

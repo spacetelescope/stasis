@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <sys/utsname.h>
+
 #include "omc.h"
 
 #define DELIVERY_PLATFORM_MAX 4
@@ -139,7 +139,7 @@ struct Delivery {
      *  \brief Global runtime variables
      */
     struct Runtime {
-        RuntimeEnv *environ;        ///< Environment variables
+        struct StrList *env;        ///< Environment variables
     } runtime;
 
     /*! \struct Test

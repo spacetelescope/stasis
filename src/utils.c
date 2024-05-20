@@ -52,8 +52,16 @@ int rmtree(char *_path) {
             continue;
         }
 
+        int is_dir = 0;
+#if defined(OMC_OS_WINDOWS)
+        struct stat st;
+        stat(d_entity->d_name, &st);
+        is_dir = S_ISDIR(st.st_mode);
+#else
+        is_dir = DT_DIR == d_entity->d_type;
+#endif
         // Push directories on to the stack first
-        if (d_entity->d_type == DT_DIR) {
+        if (is_dir) {
             rmtree(abspath);
         } else {
             remove(abspath);
@@ -385,12 +393,21 @@ char *git_rev_parse(const char *path, char *args) {
     return version;
 }
 
+#if defined(OMC_OS_WINDOWS)
+#define OMC_COLOR_RED ""
+#define OMC_COLOR_GREEN ""
+#define OMC_COLOR_YELLOW ""
+#define OMC_COLOR_BLUE ""
+#define OMC_COLOR_WHITE ""
+#define OMC_COLOR_RESET ""
+#else
 #define OMC_COLOR_RED "\e[1;91m"
 #define OMC_COLOR_GREEN "\e[1;92m"
 #define OMC_COLOR_YELLOW "\e[1;93m"
 #define OMC_COLOR_BLUE "\e[1;94m"
 #define OMC_COLOR_WHITE "\e[1;97m"
 #define OMC_COLOR_RESET "\e[0;37m\e[0m"
+#endif
 
 void msg(unsigned type, char *fmt, ...) {
     FILE *stream = NULL;
@@ -763,3 +780,51 @@ struct StrList *listdir(const char *path) {
     return node;
 }
 
+#if defined(OMC_OS_WINDOWS)
+char *realpath(const char *path, char **dest) {
+    char cwd_start[PATH_MAX] = {0};
+    char cwd[PATH_MAX] = {0};
+    char where[PATH_MAX] = {0};
+    char bname[PATH_MAX] = {0};
+    char *w = where;
+    getcwd(cwd_start, sizeof(cwd) - 1);
+    strcpy(w, path);
+    w = path_dirname(w);
+    if (chdir(w)) {
+        getcwd(cwd, sizeof(cwd) - 1);
+        path_basename(bname);
+        strcat(cwd, bname);
+        chdir(cwd_start);
+    }
+
+    char *result;
+    result = strdup(cwd);
+    if (!result) {
+        return NULL;
+    }
+
+    if (dest) {
+        *dest = result;
+    }
+
+    return result;
+}
+
+int setenv(const char *key, const char *value, int overwrite) {
+    size_t len = 0;
+    char *data = NULL;
+    len = strlen(key) + strlen(value) + 2;
+    data = calloc(len, sizeof(*data));
+    if (!data) {
+        return -1;
+    }
+    sprintf(data, "%s=%s", key, value);
+    if (_putenv(data)) {
+        free(data);
+        return 1;
+    }
+
+    free(data);
+    return 0;
+}
+#endif

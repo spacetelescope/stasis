@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include "environment.h"
+#include "omc.h"
 
 typedef struct StrList RuntimeEnv;
 
@@ -20,4 +20,5 @@ char *runtime_expand_var(RuntimeEnv *env, char *input);
 void runtime_export(RuntimeEnv *env, char **keys);
 void runtime_apply(RuntimeEnv *env);
 void runtime_free(RuntimeEnv *env);
+
 #endif //OMC_ENVIRONMENT_H

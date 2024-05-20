@@ -5,6 +5,7 @@
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
 #define OMC_OS_WINDOWS
+#include "os_windows.h"
 
 #elif defined(__linux__)
 #define OMC_OS_LINUX

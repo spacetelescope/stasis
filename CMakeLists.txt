@@ -21,6 +21,10 @@ elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(${win_cflags})
 endif()
 
+link_libraries(curl)
+if (WIN32)
+    link_libraries(shlwapi)
+endif ()
 add_subdirectory(src)
 
 set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")

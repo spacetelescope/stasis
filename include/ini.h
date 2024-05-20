@@ -101,11 +101,11 @@ struct INIFILE *ini_open(const char *filename);
 struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char *value);
 
 /**
- * 
- * @param ini 
- * @param section 
- * @param key 
- * @return 
+ *
+ * @param ini
+ * @param section
+ * @param key
+ * @return
  */
 int ini_has_key(struct INIFILE *ini, const char *section, const char *key);
 

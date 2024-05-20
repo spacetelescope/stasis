@@ -1,9 +1,14 @@
 #define _GNU_SOURCE
 
-#include <fnmatch.h>
 #include "omc.h"
-
-extern struct OMC_GLOBAL globals;
+#if !defined(OMC_OS_WINDOWS)
+#include <fnmatch.h>
+#include <sys/statvfs.h>
+#endif
+#include "deliverable.h"
+#include "str.h"
+#include "strlist.h"
+#include "copy.h"
 
 static void ini_has_key_required(struct INIFILE *ini, const char *section_name, char *key) {
     int status = ini_has_key(ini, section_name, key);
@@ -98,6 +103,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
+#if !defined(OMC_OS_WINDOWS)
     struct statvfs st;
     if (statvfs(tmpdir, &st) < 0) {
         goto l_delivery_init_tmpdir_fatal;
@@ -114,6 +120,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
+#endif
 
     if (!globals.tmpdir) {
         globals.tmpdir = strdup(tmpdir);
@@ -140,7 +147,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->meta.mission);
     guard_free(ctx->meta.python_compact);
     guard_free(ctx->meta.based_on);
-    guard_runtime_free(ctx->runtime.environ);
+    guard_runtime_free(ctx->runtime.env);
     guard_free(ctx->storage.root);
     guard_free(ctx->storage.tmpdir);
     guard_free(ctx->storage.delivery_dir);
@@ -189,7 +196,7 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests[i].script);
         guard_free(ctx->tests[i].build_recipe);
         // test-specific runtime variables
-        guard_runtime_free(ctx->tests[i].runtime.environ);
+        guard_runtime_free(ctx->tests[i].runtime.env);
     }
 
     guard_free(ctx->rules.release_fmt);
@@ -304,11 +311,6 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 int delivery_init_platform(struct Delivery *ctx) {
     msg(OMC_MSG_L2, "Setting architecture\n");
     char archsuffix[20];
-    struct utsname uts;
-    if (uname(&uts)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "uname() failed: %s\n", strerror(errno));
-        return -1;
-    }
 
     ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX + 1, sizeof(*ctx->system.platform));
     if (!ctx->system.platform) {
@@ -318,6 +320,35 @@ int delivery_init_platform(struct Delivery *ctx) {
     for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
         ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
     }
+
+#if !defined(OMC_OS_WINDOWS)
+    struct utsname uts;
+    if (uname(&uts)) {
+        msg(OMC_MSG_ERROR | OMC_MSG_L2, "uname() failed: %s\n", strerror(errno));
+        return -1;
+    }
+#else
+#include <sysinfoapi.h>
+    struct utsname {
+        char machine[65];
+        char sysname[MAX_COMPUTERNAME_LENGTH + 1];
+    } uts;
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    switch (si.wProcessorArchitecture) {
+        case PROCESSOR_ARCHITECTURE_AMD64:
+            strcpy(uts.machine, "x86_64");
+            break;
+        case PROCESSOR_ARCHITECTURE_ARM64:
+            strcpy(uts.machine, "arm64");
+            break;
+        default:
+            strcpy(uts.machine, "unknown");
+            break;
+    }
+    unsigned long maxlen = MAX_COMPUTERNAME_LENGTH;
+    GetComputerNameA(uts.sysname, &maxlen);
+#endif
 
     ctx->system.arch = strdup(uts.machine);
     if (!ctx->system.arch) {
@@ -469,7 +500,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         runtime_set(rt, rtdata->key, rtdata->value);
     }
     runtime_apply(rt);
-    ctx->runtime.environ = rt;
+    ctx->runtime.env = rt;
 
     ini_getval_required(ini, "meta", "mission", INIVAL_TYPE_STR, &val);
     conv_str(&ctx->meta.mission, val);
@@ -604,7 +635,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             conv_str(&ctx->tests[z].build_recipe, val);
 
             ini_getval(ini, ini->section[i]->key, "runtime", INIVAL_TO_LIST, &val);
-            conv_strlist(&ctx->tests[z].runtime.environ, LINE_SEP, val);
+            conv_strlist(&ctx->tests[z].runtime.env, LINE_SEP, val);
             z++;
         }
     }
@@ -963,7 +994,7 @@ void delivery_tests_show(struct Delivery *ctx) {
 void delivery_runtime_show(struct Delivery *ctx) {
     printf("\n====RUNTIME====\n");
     struct StrList *rt = NULL;
-    rt = strlist_copy(ctx->runtime.environ);
+    rt = strlist_copy(ctx->runtime.env);
     if (!rt) {
         // no data
         return;
@@ -1063,7 +1094,8 @@ static int filter_repo_tags(char *repo, struct StrList *patterns) {
             char *tag = strlist_item(tags, i);
             for (size_t p = 0; p < strlist_count(patterns); p++) {
                 char *pattern = strlist_item(patterns, p);
-                int match = fnmatch(pattern, tag, 0);
+                //int match = fnmatch(pattern, tag, 0);
+                int match = 0; // TODO fnmatch
                 if (!match) {
                     char cmd[PATH_MAX] = {0};
                     sprintf(cmd, "git tag -d %s", tag);
@@ -1159,7 +1191,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
             // Activate the requested environment
             printf("Activating: %s\n", env_name);
             conda_activate(conda_install_dir, env_name);
-            runtime_replace(&ctx->runtime.environ, __environ);
+            runtime_replace(&ctx->runtime.env, __environ);
         }
     }
 
@@ -1318,50 +1350,60 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     }
 
     while ((rec = readdir(dp)) != NULL) {
-        // skip directories
-        if (DT_REG == rec->d_type || !strcmp(rec->d_name, "..") || !strcmp(rec->d_name, ".")) {
+        unsigned is_dir = 0;
+#if defined(OMC_OS_WINDOWS)
+        struct stat st;
+        if (stat(rec->d_name, &st)) {
+            perror(rec->d_name);
             continue;
         }
+        is_dir = S_ISDIR(st.st_mode);
+#else
+        is_dir = DT_DIR == rec->d_type;
+#endif
+        // skip directories
+        if (is_dir || !endswith(rec->d_name, ".whl")) {
 
-        FILE *bottom_fp;
-        char bottom_index[PATH_MAX * 2];
-        memset(bottom_index, 0, sizeof(bottom_index));
-        sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
-        bottom_fp = fopen(bottom_index, "w+");
-        if (!bottom_fp) {
-            return -3;
-        }
-
-        if (globals.verbose) {
-            printf("+ %s\n", rec->d_name);
-        }
-        // Add record to top level index
-        fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
-
-        char dpath[PATH_MAX * 2];
-        memset(dpath, 0, sizeof(dpath));
-        sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
-        struct StrList *packages = listdir(dpath);
-        if (!packages) {
-            fclose(top_fp);
-            fclose(bottom_fp);
-            return -4;
-        }
-
-        for (size_t i = 0; i < strlist_count(packages); i++) {
-            char *package = strlist_item(packages, i);
-            if (!endswith(package, ".whl")) {
-                continue;
+            FILE *bottom_fp;
+            char bottom_index[PATH_MAX * 2];
+            memset(bottom_index, 0, sizeof(bottom_index));
+            sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
+            bottom_fp = fopen(bottom_index, "w+");
+            if (!bottom_fp) {
+                return -3;
             }
+
             if (globals.verbose) {
-                printf("`- %s\n", package);
+                printf("+ %s\n", rec->d_name);
             }
-            // Write record to bottom level index
-            fprintf(bottom_fp, "<a href=\"%s\">%s</a><br/>\n", package, package);
-        }
-        fclose(bottom_fp);
+            // Add record to top level index
+            fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
-        guard_strlist_free(&packages);
+            char dpath[PATH_MAX * 2];
+            memset(dpath, 0, sizeof(dpath));
+            sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
+            struct StrList *packages = listdir(dpath);
+            if (!packages) {
+                fclose(top_fp);
+                fclose(bottom_fp);
+                return -4;
+            }
+
+            for (size_t i = 0; i < strlist_count(packages); i++) {
+                char *package = strlist_item(packages, i);
+                if (!endswith(package, ".whl")) {
+                    continue;
+                }
+                if (globals.verbose) {
+                    printf("`- %s\n", package);
+                }
+                // Write record to bottom level index
+                fprintf(bottom_fp, "<a href=\"%s\">%s</a><br/>\n", package, package);
+            }
+            fclose(bottom_fp);
+
+            guard_strlist_free(&packages);
+        }
     }
     closedir(dp);
     fclose(top_fp);
@@ -1409,7 +1451,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
     char rcpath[PATH_MAX];
     sprintf(rcpath, "%s/%s", conda_install_dir, ".condarc");
     setenv("CONDARC", rcpath, 1);
-    if (runtime_replace(&ctx->runtime.environ, __environ)) {
+    if (runtime_replace(&ctx->runtime.env, __environ)) {
         perror("unable to replace runtime environment after activating conda");
         exit(1);
     }
