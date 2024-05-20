@@ -61,10 +61,10 @@ jobs:
     - name: Configure CMake (Windows)
       shell: msys2 {0}
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        cmake -B "${{ steps.strings.outputs.build-output-dir }}"
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+        -S "${{ github.workspace }}"
       if: runner.os == 'Windows'
 
     - name: Configure CMake
@@ -81,7 +81,7 @@ jobs:
       if: runner.os == 'Windows'
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build "${{ steps.strings.outputs.build-output-dir }}" --config ${{ matrix.build_type }}
       if: runner.os != 'Windows'
 
     # TODO: Write ctests
