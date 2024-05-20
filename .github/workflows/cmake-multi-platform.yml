@@ -44,8 +44,6 @@ jobs:
         sudo apt install -y libcurl4-openssl-dev libxml2-dev rsync
 
     - name: 'Install MSYS2 ${{ matrix.sys }} dependencies'
-      if: matrix.os == 'windows-latest'
-      shell: msys2 {0}
       uses: msys2/setup-msys2@v2
       with:
         msystem: ${{matrix.c_win_sys}}
@@ -56,6 +54,8 @@ jobs:
           toolchain:p
           cmake:p
           libxml2:p
+      shell: msys2 {0}
+      if: matrix.os == 'windows-latest'
 
     - name: Configure CMake
       run: >
@@ -65,13 +65,13 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build (Windows)
-      if: runner.os == 'Windows'
       shell: msys2 {0}
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      if: runner.os == 'Windows'
 
     - name: Build
-      if: runner.os != 'Windows'
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      if: runner.os != 'Windows'
 
     # TODO: Write ctests
     #- name: Test
