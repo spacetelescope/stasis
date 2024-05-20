@@ -58,6 +58,14 @@ jobs:
           libxml2:x
       if: matrix.os == 'windows-latest'
 
+    - name: Configure CMake (Windows)
+      shell: msys2 {0}
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
