@@ -55,7 +55,8 @@ jobs:
         pacboy: >-
           toolchain:p
           cmake:p
-          libxml2:p
+          libcurl:x
+          libxml2:x
       if: matrix.os == 'windows-latest'
 
     - name: Configure CMake
