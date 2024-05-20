@@ -21,6 +21,8 @@
 #include <sys/syslimits.h>
 #endif
 
+#include <wait.h>
+
 extern char **environ;
 #define __environ environ
 

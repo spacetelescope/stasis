@@ -182,7 +182,7 @@ int copytree(const char *srcdir, const char *destdir, unsigned int op) {
 #if defined (OMC_OS_WINDOWS)
         is_dir = S_ISDIR(st.st_mode);
 #else
-        is_dir = DT_DIR == rec->d_type;
+        is_dir = DT_DIR == d->d_type;
 #endif
         if (is_dir) {
             if (strncmp(src, dest, strlen(src)) == 0) {

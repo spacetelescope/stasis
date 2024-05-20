@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <sys/statvfs.h>
 #include <sys/utsname.h>
+#include <wait.h>
 
 #ifndef PATH_MAX
 #include <linux/limits.h>

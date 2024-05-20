@@ -58,7 +58,7 @@ int rmtree(char *_path) {
         stat(d_entity->d_name, &st);
         is_dir = S_ISDIR(st.st_mode);
 #else
-        is_dir = DT_DIR == rec->d_type;
+        is_dir = DT_DIR == d_entity->d_type;
 #endif
         // Push directories on to the stack first
         if (is_dir) {
