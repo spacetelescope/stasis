@@ -26,6 +26,7 @@ int copy2(const char *src, const char *dest, unsigned int op) {
     }
 
     stat(dname, &dnamest);
+#if ! defined(OMC_OS_WINDOWS)
     if (S_ISLNK(src_stat.st_mode)) {
         char lpath[1024] = {0};
         if (readlink(src, lpath, sizeof(lpath)) < 0) {
@@ -46,7 +47,9 @@ int copy2(const char *src, const char *dest, unsigned int op) {
             perror(src);
             return -1;
         }
-    } else if (S_ISREG(src_stat.st_mode)) {
+    } else
+#endif
+    if (S_ISREG(src_stat.st_mode)) {
         fp1 = fopen(src, "rb");
         if (!fp1) {
             perror(src);
@@ -67,13 +70,15 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         fclose(fp2);
 
         if (bytes_written != (size_t) src_stat.st_size) {
-            fprintf(stderr, "%s: SHORT WRITE (expected %zu bytes, but wrote %zu bytes)\n", dest, src_stat.st_size, bytes_written);
+            fprintf(stderr, "%s: SHORT WRITE (expected %li bytes, but wrote %zu bytes)\n", dest, src_stat.st_size, bytes_written);
             return -1;
         }
 
+#if !defined(OMC_OS_WINDOWS)
         if (op & CT_OWNER && chown(dest, src_stat.st_uid, src_stat.st_gid) < 0) {
             perror(dest);
         }
+#endif
 
         if (op & CT_PERM && chmod(dest, src_stat.st_mode) < 0) {
             perror(dest);
@@ -173,7 +178,13 @@ int copytree(const char *srcdir, const char *destdir, unsigned int op) {
             return -1;
         }
 
-        if (d->d_type == DT_DIR) {
+        int is_dir = 0;
+#if defined (OMC_OS_WINDOWS)
+        is_dir = S_ISDIR(st.st_mode);
+#else
+        is_dir = DT_DIR == rec->d_type;
+#endif
+        if (is_dir) {
             if (strncmp(src, dest, strlen(src)) == 0) {
                 closedir(dir);
                 return -1;

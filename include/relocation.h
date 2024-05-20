@@ -11,7 +11,7 @@
 #include <string.h>
 #if defined(OMC_OS_DARWIN)
 #include <limits.h>
-# else
+#elif defined(OMC_OS_LINUX)
 #include <linux/limits.h>
 #endif
 #include <unistd.h>

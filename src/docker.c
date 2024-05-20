@@ -36,7 +36,20 @@ int docker_script(const char *image, char *data, unsigned flags) {
         return -1;
     }
 
+#if defined(OMC_OS_WINDOWS)
+    char tempfile[PATH_MAX];
+    strcpy(tempfile, "OMC.docker.XXXXXX");
+    if (mkstemp(tempfile)) {
+        // creating temp file failed
+        return -1;
+    }
+    infile = fopen(tempfile, "w");
+    for (size_t i = 0; i < strlen(data); i++) {
+        fputc(data[i], infile);
+    }
+#else
     infile = fmemopen(data, strlen(data), "r");
+#endif
     if (!infile) {
         // opening memory file for reading failed
         return -1;
@@ -49,6 +62,9 @@ int docker_script(const char *image, char *data, unsigned flags) {
     } while (!feof(infile));
 
     fclose(infile);
+#if defined(OMC_OS_WINDOWS)
+    remove(tempfile);
+#endif
     return pclose(outfile);
 }
 

@@ -11,7 +11,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <limits.h>
+#if defined(OMC_OS_UNIX)
 #include <sys/wait.h>
+#endif
 #include <sys/stat.h>
 
 struct Process {

@@ -2,6 +2,7 @@
 #define OMC_OS_DARWIN_H
 
 #include <sys/mount.h>
+#include <sys/utsname.h>
 
 #ifndef __DARWIN_64_BIT_INO_T
 #define statvfs statfs

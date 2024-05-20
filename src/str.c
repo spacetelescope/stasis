@@ -2,7 +2,18 @@
  * @file strings.c
  */
 #include <unistd.h>
-#include "str.h"
+#include "omc.h"
+
+#if defined(OMC_OS_WINDOWS)
+char *strsep(char **str, const char *delim) {
+    static char *last;
+    return strtok_r(*str, delim, &last);
+}
+
+char *strndup(const char *str, size_t nelem) {
+    return calloc(nelem, sizeof(*str));
+}
+#endif
 
 int num_chars(const char *sptr, int ch) {
     int result = 0;

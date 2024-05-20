@@ -333,5 +333,9 @@ char *tolower_s(char *s);
  * @return pointer to new string
  */
 char *to_short_version(const char *s);
+#if defined(OMC_OS_WINDOWS)
+char *strsep(char **str, const char *delim);
+char *strndup(const char *str, size_t nelem);
+#endif
 
 #endif //OMC_STR_H
