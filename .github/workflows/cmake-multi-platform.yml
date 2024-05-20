@@ -55,7 +55,6 @@ jobs:
         pacboy: >-
           toolchain:p
           cmake:p
-          libcurl:x
           libxml2:x
       if: matrix.os == 'windows-latest'
 
