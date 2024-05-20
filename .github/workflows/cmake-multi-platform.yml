@@ -40,12 +40,12 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install Linux dependencies
+    - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: >
         sudo apt install -y libcurl4-openssl-dev libxml2-dev rsync
 
-    - name: 'Install MSYS2 ${{ matrix.sys }} dependencies'
+    - name: 'Install dependencies (Windows)'
       uses: msys2/setup-msys2@v2
       with:
         msystem: ${{matrix.c_win_sys}}
@@ -67,6 +67,11 @@ jobs:
         -S "${{ github.workspace }}"
       if: runner.os == 'Windows'
 
+    - name: Build (Windows)
+      shell: msys2 {0}
+      run: cmake --build "${{ steps.strings.outputs.build-output-dir }}" --config ${{ matrix.build_type }}
+      if: runner.os == 'Windows'
+
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
@@ -75,13 +80,8 @@ jobs:
         -S ${{ github.workspace }}
       if: runner.os != 'Windows'
 
-    - name: Build (Windows)
-      shell: msys2 {0}
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-      if: runner.os == 'Windows'
-
     - name: Build
-      run: cmake --build "${{ steps.strings.outputs.build-output-dir }}" --config ${{ matrix.build_type }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
       if: runner.os != 'Windows'
 
     # TODO: Write ctests
