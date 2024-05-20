@@ -26,6 +26,10 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
         exclude:
+          - os: linux-latest
+            c_win_sys: mingw64
+          - os: macos-latest
+            c_win_sys: mingw64
           - os: macos-latest
             c_compiler: gcc
           - os: windows-latest
