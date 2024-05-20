@@ -4,12 +4,6 @@
 #include <unistd.h>
 #include "str.h"
 
-/**
- * Determine how many times the character `ch` appears in `sptr` string
- * @param sptr string to scan
- * @param ch character to find
- * @return count of characters found
- */
 int num_chars(const char *sptr, int ch) {
     int result = 0;
     for (int i = 0; sptr[i] != '\0'; i++) {
@@ -20,13 +14,6 @@ int num_chars(const char *sptr, int ch) {
     return result;
 }
 
-/**
- * Scan for `pattern` string at the beginning of `sptr`
- *
- * @param sptr string to scan
- * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
- */
 int startswith(const char *sptr, const char *pattern) {
     if (!sptr || !pattern) {
         return -1;
@@ -39,13 +26,7 @@ int startswith(const char *sptr, const char *pattern) {
     return 1;
 }
 
-/**
- * Scan for `pattern` string at the end of `sptr`
- *
- * @param sptr string to scan
- * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
- */
+
 int endswith(const char *sptr, const char *pattern) {
     if (!sptr || !pattern) {
         return -1;
@@ -75,12 +56,6 @@ int endswith(const char *sptr, const char *pattern) {
     return 1;
 }
 
-/**
- * Deletes any characters matching `chars` from `sptr` string
- *
- * @param sptr string to be modified in-place
- * @param chars a string containing characters (e.g. " \n" would delete whitespace and line feeds)
- */
 void strchrdel(char *sptr, const char *chars) {
     if (sptr == NULL || chars == NULL) {
         return;
@@ -96,22 +71,7 @@ void strchrdel(char *sptr, const char *chars) {
     }
 }
 
-/**
- * Find the integer offset of the first occurrence of `ch` in `sptr`
- *
- * ~~~{.c}
- * char buffer[255];
- * char string[] = "abc=123";
- * long int separator_offset = strchroff(string, '=');
- * for (long int i = 0; i < separator_offset); i++) {
- *     buffer[i] = string[i];
- * }
- * ~~~
- *
- * @param sptr string to scan
- * @param ch character to find
- * @return offset to character in string, or 0 on failure
- */
+
 long int strchroff(const char *sptr, int ch) {
     char *orig = strdup(sptr);
     char *tmp = orig;
@@ -139,13 +99,6 @@ long int strchroff(const char *sptr, int ch) {
     return result;
 }
 
-/**
- * This function scans `sptr` from right to left removing any matches to `suffix`
- * from the string.
- *
- * @param sptr string to be modified
- * @param suffix string to be removed from `sptr`
- */
 void strdelsuffix(char *sptr, const char *suffix) {
     if (!sptr || !suffix) {
         return;
@@ -169,15 +122,6 @@ void strdelsuffix(char *sptr, const char *suffix) {
     }
 }
 
-/**
- * Split a string by every delimiter in `delim` string.
- *
- * Callee should free memory using `GENERIC_ARRAY_FREE()`
- *
- * @param sptr string to split
- * @param delim characters to split on
- * @return success=parts of string, failure=NULL
- */
 char** split(char *_sptr, const char* delim, size_t max)
 {
     if (_sptr == NULL || delim == NULL) {
@@ -239,31 +183,6 @@ char** split(char *_sptr, const char* delim, size_t max)
     return result;
 }
 
-/**
- * Create new a string from an array of strings
- *
- * ~~~{.c}
- * char *array[] = {
- *     "this",
- *     "is",
- *     "a",
- *     "test",
- *     NULL,
- * }
- *
- * char *test = join(array, " ");    // "this is a test"
- * char *test2 = join(array, "_");   // "this_is_a_test"
- * char *test3 = join(array, ", ");  // "this, is, a, test"
- *
- * free(test);
- * free(test2);
- * free(test3);
- * ~~~
- *
- * @param arr
- * @param separator characters to insert between elements in string
- * @return new joined string
- */
 char *join(char **arr, const char *separator) {
     char *result = NULL;
     int records = 0;
@@ -289,12 +208,6 @@ char *join(char **arr, const char *separator) {
     return result;
 }
 
-/**
- * Join two or more strings by a `separator` string
- * @param separator
- * @param ...
- * @return string
- */
 char *join_ex(char *separator, ...) {
     va_list ap;                 // Variadic argument list
     size_t separator_len = 0;   // Length of separator string
@@ -355,19 +268,6 @@ char *join_ex(char *separator, ...) {
     return result;
 }
 
-/**
- * Extract the string encapsulated by characters listed in `delims`
- *
- * ~~~{.c}
- * char *str = "this is [some data] in a string";
- * char *data = substring_between(string, "[]");
- * // data = "some data";
- * ~~~
- *
- * @param sptr string to parse
- * @param delims two characters surrounding a string
- * @return success=text between delimiters, failure=NULL
- */
 char *substring_between(char *sptr, const char *delims) {
     if (sptr == NULL || delims == NULL) {
         return NULL;
@@ -462,15 +362,6 @@ static int _strsort_dsc_compare(const void *a, const void *b) {
     return len_a < len_b;
 }
 
-/**
- * Sort an array of strings
- * @param arr a NULL terminated array of strings
- * @param sort_mode
- *     - OMC_SORT_LEN_DESCENDING
- *     - OMC_SORT_LEN_ASCENDING
- *     - OMC_SORT_ALPHA
- *     - OMC_SORT_NUMERIC
- */
 void strsort(char **arr, unsigned int sort_mode) {
     if (arr == NULL) {
         return;
@@ -501,12 +392,7 @@ void strsort(char **arr, unsigned int sort_mode) {
     qsort(arr, arr_size, sizeof(char *), fn);
 }
 
-/**
- * Search for string in an array of strings
- * @param arr array of strings
- * @param str string to search for
- * @return yes=`pointer to string`, no=`NULL`, failure=`NULL`
- */
+
 char *strstr_array(char **arr, const char *str) {
     if (arr == NULL || str == NULL) {
         return NULL;
@@ -520,11 +406,7 @@ char *strstr_array(char **arr, const char *str) {
     return NULL;
 }
 
-/**
- * Remove duplicate strings from an array of strings
- * @param arr
- * @return success=array of unique strings, failure=NULL
- */
+
 char **strdeldup(char **arr) {
     if (!arr) {
         return NULL;
@@ -567,10 +449,6 @@ char **strdeldup(char **arr) {
     return result;
 }
 
-/** Remove leading whitespace from a string
- * @param sptr pointer to string
- * @return pointer to first non-whitespace character in string
- */
 char *lstrip(char *sptr) {
     char *tmp = sptr;
     size_t bytes = 0;
@@ -590,11 +468,6 @@ char *lstrip(char *sptr) {
     return sptr;
 }
 
-/**
- * Remove trailing whitespace from a string
- * @param sptr string
- * @return truncated string
- */
 char *strip(char *sptr) {
     if (sptr == NULL) {
         return NULL;
@@ -622,11 +495,6 @@ char *strip(char *sptr) {
     return sptr;
 }
 
-/**
- * Determine if a string is empty
- * @param sptr pointer to string
- * @return 0=not empty, 1=empty
- */
 int isempty(char *sptr) {
     if (sptr == NULL) {
         return -1;
@@ -642,11 +510,7 @@ int isempty(char *sptr) {
     return 1;
 }
 
-/**
- * Determine if a string is encapsulated by quotes
- * @param sptr pointer to string
- * @return 0=not quoted, 1=quoted
- */
+
 int isquoted(char *sptr) {
     const char *quotes = "'\"";
 
@@ -665,12 +529,6 @@ int isquoted(char *sptr) {
     return 1;
 }
 
-/**
- * Determine whether the input character is a relational operator
- * Note: `~` is non-standard
- * @param ch
- * @return 0=no, 1=yes
- */
 int isrelational(char ch) {
     char symbols[] = "~!=<>";
     char *symbol = symbols;
@@ -683,11 +541,6 @@ int isrelational(char ch) {
     return 0;
 }
 
-/**
- * Print characters in `s`, `len` times
- * @param s
- * @param len
- */
 void print_banner(const char *s, int len) {
     size_t s_len = strlen(s);
     if (!s_len) {
@@ -758,11 +611,6 @@ char *normalize_space(char *s) {
     return result;
 }
 
-/**
- * Duplicate an array of strings
- * @param array
- * @return
- */
 char **strdup_array(char **array) {
     char **result = NULL;
     size_t elems = 0;
@@ -776,7 +624,7 @@ char **strdup_array(char **array) {
     for (elems = 0; array[elems] != NULL; elems++);
 
     // Create new array
-    result = calloc(elems + 1, sizeof(char *));
+    result = calloc(elems + 1, sizeof(result));
     for (size_t i = 0; i < elems; i++) {
         result[i] = strdup(array[i]);
     }
@@ -784,15 +632,6 @@ char **strdup_array(char **array) {
     return result;
 }
 
-/**
- * Compare two arrays of strings
- *
- * `a` and/or `b` may be `NULL`. You should test for `NULL` in advance if _your_ program considers this an error condition.
- *
- * @param a array of strings
- * @param b array of strings
- * @return 0 = identical
- */
 int strcmp_array(const char **a, const char **b) {
     size_t a_len = 0;
     size_t b_len = 0;
@@ -825,11 +664,6 @@ int strcmp_array(const char **a, const char **b) {
     return result;
 }
 
-/**
- * Determine whether a string is comprised of digits
- * @param s
- * @return 0=no, 1=yes
- */
 int isdigit_s(const char *s) {
     for (size_t i = 0; s[i] != '\0'; i++) {
         if (isdigit(s[i]) == 0) {
@@ -839,11 +673,6 @@ int isdigit_s(const char *s) {
     return 1;   // all digits, succeed
 }
 
-/**
- * Convert input string to lowercase
- * @param s
- * @return pointer to input string
- */
 char *tolower_s(char *s) {
     for (size_t i = 0; s[i] != '\0'; i++) {
         s[i] = (char)tolower(s[i]);

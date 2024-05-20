@@ -102,7 +102,7 @@ struct JUNIT_Testsuite {
  *             //   JUNIT_RESULT_STATE_FAILURE
  *             //   JUNIT_RESULT_STATE_ERROR
  *             //   JUNIT_RESULT_STATE_SKIPPED
- *             struct JUNIT_Testcase testcase = testsuite->testcase[i];
+ *             struct JUNIT_Testcase *testcase = testsuite->testcase[i];
  *             if (testcase->tc_result_state_type) {
  *                 if (testcase->tc_result_state_type == JUNIT_RESULT_STATE_FAILURE) {
  *                     // Display information from failed test case

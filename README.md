@@ -7,7 +7,7 @@ OMC consolidate the steps required to build, test, and deploy calibration pipeli
 - Linux, or MacOS (Darwin)
 - cmake
 - libcurl
-- libxml2 (optional)
+- libxml2
 - rsync
 
 # Installation
