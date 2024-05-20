@@ -7,44 +7,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build-windows:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-
-      matrix:
-        os: [windows-latest]
-        build_type: [RelWithDebInfo]
-        sys:
-          - mingw64
-
-    name: ${{ matrix.sys }}
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@v4
-
-      - name: 'Setup MSYS2 ${{ matrix.sys }}'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{matrix.sys}}
-          install: >-
-            git
-            make
-          pacboy: >-
-            toolchain:p
-            cmake:p
-            libxml2:p
-            libcurl:p
-      - name: 'Build'
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} 
-          cmake --build build
-
-  build-nix:
+  build:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -54,6 +17,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         build_type: [RelWithDebInfo]
         c_compiler: [gcc, clang]
+        c_win_sys: [mingw64]
         include:
           - os: macos-latest
             c_compiler: clang
@@ -64,6 +28,11 @@ jobs:
         exclude:
           - os: macos-latest
             c_compiler: gcc
+
+    defaults:
+      if: matrix.os == 'windows-latest'
+      run:
+        shell: msys2 {0}
 
     steps:
     - uses: actions/checkout@v4
@@ -78,6 +47,20 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: >
         sudo apt install -y libcurl4-openssl-dev libxml2-dev rsync
+
+    - name: 'Install MSYS2 ${{ matrix.sys }} dependencies'
+      if: matrix.os == 'windows-latest'
+      shell: msys2 {0}
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{matrix.c_win_sys}}
+        install: >-
+          git
+          make
+        pacboy: >-
+          toolchain:p
+          cmake:p
+          libxml2:p
 
     - name: Configure CMake
       run: >
