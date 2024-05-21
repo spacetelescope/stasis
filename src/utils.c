@@ -385,13 +385,6 @@ char *git_rev_parse(const char *path, char *args) {
     return version;
 }
 
-#define OMC_COLOR_RED "\e[1;91m"
-#define OMC_COLOR_GREEN "\e[1;92m"
-#define OMC_COLOR_YELLOW "\e[1;93m"
-#define OMC_COLOR_BLUE "\e[1;94m"
-#define OMC_COLOR_WHITE "\e[1;97m"
-#define OMC_COLOR_RESET "\e[0;37m\e[0m"
-
 void msg(unsigned type, char *fmt, ...) {
     FILE *stream = NULL;
     char header[255];

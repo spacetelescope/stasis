@@ -188,6 +188,28 @@ char *git_rev_parse(const char *path, char *args);
  */
 int path_store(char **destptr, size_t maxlen, const char *base, const char *path);
 
+#if defined(OMC_DUMB_TERMINAL)
+#define OMC_COLOR_RED ""
+#define OMC_COLOR_GREEN ""
+#define OMC_COLOR_YELLOW ""
+#define OMC_COLOR_BLUE ""
+#define OMC_COLOR_WHITE ""
+#define OMC_COLOR_RESET ""
+#else
+//! Set output color to red
+#define OMC_COLOR_RED "\e[1;91m"
+//! Set output color to green
+#define OMC_COLOR_GREEN "\e[1;92m"
+//! Set output color to yellow
+#define OMC_COLOR_YELLOW "\e[1;93m"
+//! Set output color to blue
+#define OMC_COLOR_BLUE "\e[1;94m"
+//! Set output color to white
+#define OMC_COLOR_WHITE "\e[1;97m"
+//! Reset output color to terminal default
+#define OMC_COLOR_RESET "\e[0;37m\e[0m"
+#endif
+
 #define OMC_MSG_SUCCESS 0
 //! Suppress printing of the message text
 #define OMC_MSG_NOP 1 << 0
@@ -309,6 +331,24 @@ char *collapse_whitespace(char **s);
  */
 int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen);
 
+/**
+ * Given a directory path, return a list of files
+ *
+ * ~~~{.c}
+ * struct StrList *files;
+ *
+ * basepath = ".";
+ * files = listdir(basepath);
+ * for (size_t i = 0; i < strlist_count(files); i++) {
+ *     char *filename = strlist_item(files, i);
+ *     printf("%s/%s\n", basepath, filename);
+ * }
+ * guard_strlist_free(&files);
+ * ~~~
+ *
+ * @param path of a directory
+ * @return a StrList containing file names
+ */
 struct StrList *listdir(const char *path);
 
 #endif //OMC_UTILS_H
