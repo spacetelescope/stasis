@@ -5,6 +5,10 @@
 #define OMC_TEST_SUITE_FATAL 1
 #define OMC_TEST_SUITE_SKIP 127
 
+#ifndef __FILE_NAME__
+#define __FILE_NAME__ __FILE__
+#endif
+
 typedef void(OMC_TEST_FUNC)();
 struct omc_test_result_t {
     const char *filename;
