@@ -32,6 +32,8 @@ void test_docker_sanitize_tag() {
 }
 
 void test_docker_build_and_script_and_save() {
+    OMC_SKIP_IF(docker_exec("pull alpine:latest", OMC_DOCKER_QUIET), "unable to pull an image");
+
     const char *dockerfile_contents = "FROM alpine:latest\nCMD [\"sh\", \"-l\"]\n";
     mkdir("test_docker_build", 0755);
     if (!pushd("test_docker_build")) {
