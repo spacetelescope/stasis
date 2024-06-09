@@ -4,7 +4,6 @@
 do { \
     struct StrList *list; \
     list = strlist_init(); \
-    puts("----");                                                 \
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) { \
         strlist_append(&list, (char *) tc[i].data); \
         result = FUNC(list, i);                      \
