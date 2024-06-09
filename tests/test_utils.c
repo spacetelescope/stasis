@@ -199,6 +199,8 @@ void test_git_clone_and_describe() {
 
     // interact with it
     touch("README.md");
+    system("git config user.name omc");
+    system("git config user.email null@null.null");
     system("git add README.md");
     system("git commit --no-gpg-sign -m Test");
     system("git push -u origin");
