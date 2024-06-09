@@ -36,7 +36,7 @@ void test_docker_build_and_script_and_save() {
     mkdir("test_docker_build", 0755);
     if (!pushd("test_docker_build")) {
         omc_testing_write_ascii("Dockerfile", dockerfile_contents);
-        OMC_ASSERT(docker_build(".", "--arch $(uname -m) -t test_docker_build", cap_suite.build) == 0, "docker build test failed");
+        OMC_ASSERT(docker_build(".", "-t test_docker_build", cap_suite.build) == 0, "docker build test failed");
         OMC_ASSERT(docker_script("test_docker_build", "uname -a", 0) == 0, "simple docker container script execution failed");
         OMC_ASSERT(docker_save("test_docker_build", ".", OMC_DOCKER_IMAGE_COMPRESSION) == 0, "saving a simple image failed");
         OMC_ASSERT(docker_exec("load < test_docker_build.tar.*", 0) == 0, "loading a simple image failed");
