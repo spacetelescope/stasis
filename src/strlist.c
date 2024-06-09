@@ -3,7 +3,6 @@
  * @file strlist.c
  */
 #include "strlist.h"
-//#include "url.h"
 #include "utils.h"
 
 /**
@@ -71,6 +70,7 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     char *path = NULL;
     char *filename = NULL;
     char **data = NULL;
+    int is_url = strstr(_path, "://") != NULL;
 
     if (readerFn == NULL) {
         readerFn = reader_strlist_append_file;
@@ -78,17 +78,32 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
 
     path = strdup(_path);
     if (path == NULL) {
-
         retval = -1;
         goto fatal;
     }
 
-    filename = expandpath(path);
+    if (is_url) {
+        int fd;
+        char tempfile[PATH_MAX] = {0};
+        strcpy(tempfile, "/tmp/.remote_file.XXXXXX");
+        if ((fd = mkstemp(tempfile)) < 0) {
+            retval = -1;
+            goto fatal;
+        }
+        close(fd);
+        filename = tempfile;
+        long http_code = download(path, filename, NULL);
+        if (HTTP_ERROR(http_code)) {
+            retval = -1;
+            goto fatal;
+        }
 
-    if (filename == NULL) {
-
-        retval = -1;
-        goto fatal;
+    } else {
+        filename = expandpath(path);
+        if (filename == NULL) {
+            retval = -1;
+            goto fatal;
+        }
     }
 
     data = file_readlines(filename, 0, 0, readerFn);
@@ -96,15 +111,18 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
         retval = 1;
         goto fatal;
     }
-
     for (size_t record = 0; data[record] != NULL; record++) {
         strlist_append(&pStrList, data[record]);
         guard_free(data[record]);
     }
+    if (is_url) {
+        // remove temporary data
+        remove(filename);
+    }
     guard_free(data);
 
 fatal:
-    if (filename != NULL) {
+    if (!is_url && filename != NULL) {
         guard_free(filename);
     }
     if (path != NULL) {
@@ -115,7 +133,7 @@ fatal:
 }
 
 /**
- * Append the contents of a `StrList` to another `StrList`
+ * Append the contents of `pStrList2` to `pStrList1`
  * @param pStrList1 `StrList`
  * @param pStrList2 `StrList`
  */
@@ -203,13 +221,17 @@ void strlist_remove(struct StrList *pStrList, size_t index) {
 
     for (size_t i = index; i < count; i++) {
         char *next = pStrList->data[i + 1];
-        pStrList->data[i] = next;
         if (next == NULL) {
             break;
         }
+        pStrList->data[i] = next;
+        count = strlist_count(pStrList);
+        pStrList->data[count - 1] = NULL;
     }
-
-    pStrList->num_inuse--;
+    if (pStrList->num_inuse) {
+        guard_free(pStrList->data[pStrList->num_inuse]);
+        pStrList->num_inuse--;
+    }
 }
 
 /**
@@ -227,13 +249,10 @@ int strlist_cmp(struct StrList *a, struct StrList *b) {
         return -2;
     }
 
-    if (a->num_alloc != b->num_alloc) {
+    if (a->num_alloc != b->num_alloc || a->num_inuse != b->num_inuse) {
         return 1;
     }
 
-    if (a->num_inuse != b->num_inuse) {
-        return 1;
-    }
 
     for (size_t i = 0; i < strlist_count(a); i++) {
         if (strcmp(strlist_item(a, i), strlist_item(b, i)) != 0) {
@@ -321,6 +340,29 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value) {
     }
 }
 
+const char *strlist_error_msgs[] = {
+        "success",
+        "index out of range",
+        "invalid value for type",
+        "unknown error",
+};
+int strlist_errno = 0;
+
+void strlist_set_error(int flag) {
+    strlist_errno = flag;
+}
+
+const char *strlist_get_error(int flag) {
+    if (flag < STRLIST_E_SUCCESS || flag > STRLIST_E_UNKNOWN) {
+        return strlist_error_msgs[STRLIST_E_UNKNOWN];
+    }
+    return strlist_error_msgs[flag];
+}
+
+void strlist_clear_error() {
+    strlist_errno = STRLIST_E_SUCCESS;
+}
+
 /**
  * Retrieve data from a `StrList`
  * @param pStrList
@@ -351,7 +393,17 @@ char *strlist_item_as_str(struct StrList *pStrList, size_t index) {
  * @return `char`
  */
 char strlist_item_as_char(struct StrList *pStrList, size_t index) {
-    return (char) strtol(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    char result;
+
+    strlist_clear_error();
+    result = (char) strtol(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -361,7 +413,17 @@ char strlist_item_as_char(struct StrList *pStrList, size_t index) {
  * @return `unsigned char`
  */
 unsigned char strlist_item_as_uchar(struct StrList *pStrList, size_t index) {
-    return (unsigned char) strtol(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    unsigned char result;
+
+    strlist_clear_error();
+    result = (unsigned char) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -371,7 +433,17 @@ unsigned char strlist_item_as_uchar(struct StrList *pStrList, size_t index) {
  * @return `short`
  */
 short strlist_item_as_short(struct StrList *pStrList, size_t index) {
-    return (short)strtol(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    short result;
+
+    strlist_clear_error();
+    result = (short) strtol(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -381,7 +453,17 @@ short strlist_item_as_short(struct StrList *pStrList, size_t index) {
  * @return `unsigned short`
  */
 unsigned short strlist_item_as_ushort(struct StrList *pStrList, size_t index) {
-    return (unsigned short)strtoul(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    unsigned short result;
+
+    strlist_clear_error();
+    result = (unsigned short) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -391,7 +473,17 @@ unsigned short strlist_item_as_ushort(struct StrList *pStrList, size_t index) {
  * @return `int`
  */
 int strlist_item_as_int(struct StrList *pStrList, size_t index) {
-    return (int)strtol(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    int result;
+
+    strlist_clear_error();
+    result = (int) strtol(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -401,7 +493,17 @@ int strlist_item_as_int(struct StrList *pStrList, size_t index) {
  * @return `unsigned int`
  */
 unsigned int strlist_item_as_uint(struct StrList *pStrList, size_t index) {
-    return (unsigned int)strtoul(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    unsigned int result;
+
+    strlist_clear_error();
+    result = (unsigned int) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -411,7 +513,17 @@ unsigned int strlist_item_as_uint(struct StrList *pStrList, size_t index) {
  * @return `long`
  */
 long strlist_item_as_long(struct StrList *pStrList, size_t index) {
-    return strtol(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    long result;
+
+    strlist_clear_error();
+    result = (long) strtol(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -421,7 +533,17 @@ long strlist_item_as_long(struct StrList *pStrList, size_t index) {
  * @return `unsigned long`
  */
 unsigned long strlist_item_as_ulong(struct StrList *pStrList, size_t index) {
-    return strtoul(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    unsigned long result;
+
+    strlist_clear_error();
+    result = (unsigned long) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -431,7 +553,17 @@ unsigned long strlist_item_as_ulong(struct StrList *pStrList, size_t index) {
  * @return `long long`
  */
 long long strlist_item_as_long_long(struct StrList *pStrList, size_t index) {
-    return strtoll(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    long long result;
+
+    strlist_clear_error();
+    result = (long long) strtoll(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -441,7 +573,17 @@ long long strlist_item_as_long_long(struct StrList *pStrList, size_t index) {
  * @return `unsigned long long`
  */
 unsigned long long strlist_item_as_ulong_long(struct StrList *pStrList, size_t index) {
-    return strtoull(strlist_item(pStrList, index), NULL, 10);
+    char *error_p;
+    unsigned long long result;
+
+    strlist_clear_error();
+    result = (unsigned long long) strtol(strlist_item(pStrList, index), &error_p, 10);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -451,7 +593,17 @@ unsigned long long strlist_item_as_ulong_long(struct StrList *pStrList, size_t i
  * @return `float`
  */
 float strlist_item_as_float(struct StrList *pStrList, size_t index) {
-    return (float)atof(strlist_item(pStrList, index));
+    char *error_p;
+    float result;
+
+    strlist_clear_error();
+    result = (float) strtof(strlist_item(pStrList, index), &error_p);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -461,7 +613,17 @@ float strlist_item_as_float(struct StrList *pStrList, size_t index) {
  * @return `double`
  */
 double strlist_item_as_double(struct StrList *pStrList, size_t index) {
-    return atof(strlist_item(pStrList, index));
+    char *error_p;
+    double result;
+
+    strlist_clear_error();
+    result = (double) strtod(strlist_item(pStrList, index), &error_p);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**
@@ -471,7 +633,17 @@ double strlist_item_as_double(struct StrList *pStrList, size_t index) {
  * @return `long double`
  */
 long double strlist_item_as_long_double(struct StrList *pStrList, size_t index) {
-    return (long double)atof(strlist_item(pStrList, index));
+    char *error_p;
+    long double result;
+
+    strlist_clear_error();
+    result = (long double) strtold(strlist_item(pStrList, index), &error_p);
+    if (!result && error_p && *error_p != 0) {
+        strlist_set_error(STRLIST_E_INVALID_VALUE);
+        return 0;
+    }
+    error_p = NULL;
+    return result;
 }
 
 /**

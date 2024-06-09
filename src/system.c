@@ -1,17 +1,26 @@
-//
-// Created by jhunk on 10/4/23.
-//
-
 #include "system.h"
 #include "omc.h"
 
 int shell(struct Process *proc, char *args) {
+    struct Process selfproc;
     FILE *fp_out = NULL;
     FILE *fp_err = NULL;
     pid_t pid;
     pid_t status;
     status = 0;
     errno = 0;
+
+    if (!proc) {
+        // provide our own proc structure
+        // albeit not accessible to the user
+        memset(&selfproc, 0, sizeof(selfproc));
+        proc = &selfproc;
+    }
+
+    if (!args) {
+        proc->returncode = -1;
+        return -1;
+    }
 
     FILE *tp = NULL;
     char *t_name;
@@ -31,22 +40,20 @@ int shell(struct Process *proc, char *args) {
         exit(1);
     } else if (pid == 0) {
         int retval;
-        if (proc != NULL) {
-            if (strlen(proc->f_stdout)) {
-                fp_out = freopen(proc->f_stdout, "w+", stdout);
-            }
+        if (strlen(proc->f_stdout)) {
+            fp_out = freopen(proc->f_stdout, "w+", stdout);
+        }
 
-            if (strlen(proc->f_stderr)) {
-                fp_err = freopen(proc->f_stderr, "w+", stderr);
-            }
+        if (strlen(proc->f_stderr)) {
+            fp_err = freopen(proc->f_stderr, "w+", stderr);
+        }
 
-            if (proc->redirect_stderr) {
-                if (fp_err) {
-                    fclose(fp_err);
-                    fclose(stderr);
-                }
-                dup2(fileno(stdout), fileno(stderr));
+        if (proc->redirect_stderr) {
+            if (fp_err) {
+                fclose(fp_err);
+                fclose(stderr);
             }
+            dup2(fileno(stdout), fileno(stderr));
         }
 
         retval = execl("/bin/bash", "bash", "-c", t_name, (char *) NULL);
@@ -54,7 +61,7 @@ int shell(struct Process *proc, char *args) {
             remove(t_name);
         }
 
-        if (proc != NULL && strlen(proc->f_stdout)) {
+        if (strlen(proc->f_stdout)) {
             if (fp_out != NULL) {
                 fflush(fp_out);
                 fclose(fp_out);
@@ -62,7 +69,7 @@ int shell(struct Process *proc, char *args) {
             fflush(stdout);
             fclose(stdout);
         }
-        if (proc != NULL && strlen(proc->f_stderr)) {
+        if (strlen(proc->f_stderr)) {
             if (fp_err) {
                 fflush(fp_err);
                 fclose(fp_err);
@@ -89,10 +96,7 @@ int shell(struct Process *proc, char *args) {
         remove(t_name);
     }
 
-    if (proc != NULL) {
-        proc->returncode = status;
-    }
-
+    proc->returncode = status;
     guard_free(t_name);
     return WEXITSTATUS(status);
 }
@@ -102,7 +106,7 @@ int shell_safe(struct Process *proc, char *args) {
     char buf[1024] = {0};
     int result;
 
-    char *invalid_ch = strpbrk(args, ";&|()");
+    char *invalid_ch = strpbrk(args, OMC_SHELL_SAFE_RESTRICT);
     if (invalid_ch) {
         args = NULL;
     }
@@ -168,6 +172,6 @@ char *shell_output(const char *command, int *status) {
         strcat(result, line);
         memset(line, 0, sizeof(line));
     }
-    pclose(pp);
+    *status = pclose(pp);
     return result;
 }

@@ -28,7 +28,7 @@ int docker_script(const char *image, char *data, unsigned flags) {
     char buffer[OMC_BUFSIZ];
 
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/bash -", image);
+    snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
 
     outfile = popen(cmd, "w");
     if (!outfile) {
@@ -103,7 +103,7 @@ static int docker_exists() {
     return false;
 }
 
-char *docker_ident() {
+static char *docker_ident() {
     FILE *fp = NULL;
     char *tempfile = NULL;
     char line[PATH_MAX];

@@ -26,7 +26,6 @@ int startswith(const char *sptr, const char *pattern) {
     return 1;
 }
 
-
 int endswith(const char *sptr, const char *pattern) {
     if (!sptr || !pattern) {
         return -1;
@@ -61,64 +60,10 @@ void strchrdel(char *sptr, const char *chars) {
         return;
     }
 
-    while (*sptr != '\0') {
-        for (int i = 0; chars[i] != '\0'; i++) {
-            if (*sptr == chars[i]) {
-                memmove(sptr, sptr + 1, strlen(sptr));
-            }
-        }
-        sptr++;
-    }
-}
-
-
-long int strchroff(const char *sptr, int ch) {
-    char *orig = strdup(sptr);
-    char *tmp = orig;
-    long int result = 0;
-
-    int found = 0;
-    size_t i = 0;
-
-    while (*tmp != '\0') {
-        if (*tmp == ch) {
-            found = 1;
-            break;
-        }
-        tmp++;
-        i++;
-    }
-
-    if (found == 0 && i == strlen(sptr)) {
-        return -1;
-    }
-
-    result = tmp - orig;
-    guard_free(orig);
-
-    return result;
-}
-
-void strdelsuffix(char *sptr, const char *suffix) {
-    if (!sptr || !suffix) {
-        return;
-    }
-    size_t sptr_len = strlen(sptr);
-    size_t suffix_len = strlen(suffix);
-    intptr_t target_offset = sptr_len - suffix_len;
-
-    // Prevent access to memory below input string
-    if (target_offset < 0) {
-        return;
-    }
-
-    // Create a pointer to
-    char *target = sptr + target_offset;
-    if (!strcmp(target, suffix)) {
-        // Purge the suffix
-        memset(target, '\0', suffix_len);
-        // Recursive call continues removing suffix until it is gone
-        strip(sptr);
+    for (size_t i = 0; i < strlen(chars); i++) {
+        char ch[2] = {0};
+        strncpy(ch, &chars[i], 1);
+        replace_text(sptr, ch, "", 0);
     }
 }
 
@@ -141,7 +86,7 @@ char** split(char *_sptr, const char* delim, size_t max)
         if (max && i > max) {
             break;
         }
-        split_alloc = num_chars(sptr, delim[i]);
+        split_alloc += num_chars(sptr, delim[i]);
     }
 
     // Preallocate enough records based on the number of delimiters
@@ -158,27 +103,35 @@ char** split(char *_sptr, const char* delim, size_t max)
     }
 
     // Separate the string into individual parts and store them in the result array
-    int i = 0;
-    size_t x = max;
     char *token = NULL;
     char *sptr_tmp = sptr;
-    while((token = strsep(&sptr_tmp, delim)) != NULL) {
-        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
-        if (x < max) {
-            strcat(result[i], strstr(orig, delim) + 1);
+    size_t pos = 0;
+    size_t i;
+    for (i = 0; (token = strsep(&sptr_tmp, delim)) != NULL; i++) {
+        // When max is zero, record all tokens
+        if (max > 0 && i == max) {
+            // Maximum number of splits occurred.
+            // Record position in string
+            pos = token - sptr;
             break;
-        } else {
-            if (!result[i]) {
-                return NULL;
-            }
-            strcpy(result[i], token);
         }
-        i++;
-        if (x > 0) {
-            --x;
+        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
+        if (!result[i]) {
+            return NULL;
         }
-        //memcpy(result[i], token, strlen(token) + 1);   // copy the string contents into the record
+        strcpy(result[i], token);
     }
+
+    // pos is non-zero when maximum split is reached
+    if (pos) {
+        // append the remaining string contents to array
+        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
+        if (!result[i]) {
+            return NULL;
+        }
+        strcpy(result[i], &orig[pos]);
+    }
+
     guard_free(sptr);
     return result;
 }
@@ -244,8 +197,9 @@ char *join_ex(char *separator, ...) {
         if (tmp == NULL) {
             perror("join_ex realloc failed");
             return NULL;
+        } else if (tmp != argv) {
+            argv = tmp;
         }
-        argv = tmp;
         size += strlen(current) + separator_len;
         argv[argc] = strdup(current);
     }
@@ -275,43 +229,37 @@ char *substring_between(char *sptr, const char *delims) {
 
     // Ensure we have enough delimiters to continue
     size_t delim_count = strlen(delims);
-    if (delim_count != 2) {
+    if (delim_count < 2 || delim_count % 2) {
         return NULL;
     }
 
+    char delim_open[255] = {0};
+    strncpy(delim_open, delims, delim_count / 2);
+
+    char delim_close[255] = {0};
+    strcpy(delim_close, &delims[delim_count / 2]);
+
     // Create pointers to the delimiters
-    char *start = strchr(sptr, delims[0]);
+    char *start = strstr(sptr, delim_open);
     if (start == NULL || strlen(start) == 0) {
         return NULL;
     }
 
-    char *end = strchr(start + 1, delims[1]);
+    char *end = strstr(start + 1, delim_close);
     if (end == NULL) {
         return NULL;
     }
 
-    start++;    // ignore leading delimiter
+    start += delim_count / 2;    // ignore leading delimiter
 
     // Get length of the substring
-    size_t length = strlen(start);
+    size_t length = strlen(start) - strlen(end);
     if (!length) {
         return NULL;
     }
 
-    char *result = (char *)calloc(length + 1, sizeof(char));
-    if (!result) {
-        return NULL;
-    }
-
-    // Copy the contents of the substring to the result
-    char *tmp = result;
-    while (start != end) {
-        *tmp = *start;
-        tmp++;
-        start++;
-    }
-
-    return result;
+    // Return the contents of the substring
+    return strndup(start, length);
 }
 
 /*
@@ -476,19 +424,16 @@ char *strip(char *sptr) {
     size_t len = strlen(sptr);
     if (len == 0) {
         return sptr;
-    }
-    else if (len == 1 && (isblank(*sptr) || isspace(*sptr))) {
+    } else if (len == 1 && (isblank(*sptr) || isspace(*sptr))) {
         *sptr = '\0';
         return sptr;
-    }
-    for (size_t i = len; i != 0; --i) {
+    } for (size_t i = len; i != 0; --i) {
         if (sptr[i] == '\0') {
             continue;
         }
         if (isspace(sptr[i]) || isblank(sptr[i])) {
             sptr[i] = '\0';
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -665,6 +610,9 @@ int strcmp_array(const char **a, const char **b) {
 }
 
 int isdigit_s(const char *s) {
+    if (!s || !strlen(s)) {
+        return 0;   // nothing to do, fail
+    }
     for (size_t i = 0; s[i] != '\0'; i++) {
         if (isdigit(s[i]) == 0) {
             return 0;   // non-digit found, fail
