@@ -110,6 +110,7 @@ void test_strlist_append_file() {
             "Do not delete this file.\n",
             "Do not delete this file.\n",
             "Do not delete this file.\n",
+            NULL,
     };
     const char *local_filename = "test_strlist_append_file.txt";
 
@@ -123,7 +124,7 @@ void test_strlist_append_file() {
     if (!fp) {
         OMC_ASSERT(false, "unable to open local file for writing");
     }
-    for (size_t i = 0; i < sizeof(expected) / sizeof(*expected); i++) {
+    for (size_t i = 0; expected[i] != NULL; i++) {
         fprintf(fp, "%s", expected[i]);
     }
     fclose(fp);
@@ -136,11 +137,12 @@ void test_strlist_append_file() {
             return;
         }
         strlist_append_file(list, (char *) tc[i].origin, NULL);
-        for (size_t z = 0; z < strlist_count(list) && expected[z] != NULL; z++) {
+        for (size_t z = 0; z < strlist_count(list); z++) {
             const char *left;
             const char *right;
             left = strlist_item(list, z);
             right = expected[z];
+            printf("left = '%s', right = '%s'\n", left, right);
             OMC_ASSERT(strcmp(left, right) == 0, "file content is different than expected");
         }
         OMC_ASSERT(strcmp_array(list->data, expected) == 0, "file contents does not match expected values");
