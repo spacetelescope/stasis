@@ -55,4 +55,4 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest -V --build-config ${{ matrix.build_type }}
+      run: ctest -V --build-config ${{ matrix.build_type }} --output-junit results.xml --test-output-size-passed 65536 --test-output-size-failed 65536
