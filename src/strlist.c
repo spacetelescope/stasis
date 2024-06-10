@@ -91,13 +91,12 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
             goto fatal;
         }
         close(fd);
-        filename = tempfile;
+        filename = strdup(tempfile);
         long http_code = download(path, filename, NULL);
         if (HTTP_ERROR(http_code)) {
             retval = -1;
             goto fatal;
         }
-
     } else {
         filename = expandpath(path);
         if (filename == NULL) {
@@ -122,9 +121,7 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     guard_free(data);
 
 fatal:
-    if (!is_url && filename != NULL) {
-        guard_free(filename);
-    }
+    guard_free(filename);
     if (path != NULL) {
         guard_free(path);
     }
