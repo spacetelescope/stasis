@@ -142,7 +142,6 @@ void test_strlist_append_file() {
             const char *right;
             left = strlist_item(list, z);
             right = expected[z];
-            printf("left = '%s', right = '%s'\n", left, right);
             OMC_ASSERT(strcmp(left, right) == 0, "file content is different than expected");
         }
         OMC_ASSERT(strcmp_array(list->data, expected) == 0, "file contents does not match expected values");

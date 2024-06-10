@@ -269,7 +269,6 @@ void test_substring_between() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = substring_between(tc[i].data, tc[i].delim);
-        printf("data = '%s', delim = '%s', expected = '%s', result = '%s'\n", tc[i].data, tc[i].delim, tc[i].expected, result);
         OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "unable to extract substring");
         guard_free(result);
     }
@@ -345,7 +344,6 @@ void test_strip() {
         char *result;
         strcpy(buf, tc[i].data);
         result = strip(buf);
-        printf("result = '%s', expected = '%s'\n", result, tc[i].expected);
         OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
         guard_free(buf);
     }
