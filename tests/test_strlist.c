@@ -131,6 +131,10 @@ void test_strlist_append_file() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct StrList *list;
         list = strlist_init();
+        if (!list) {
+            OMC_ASSERT(false, "failed to create list");
+            return;
+        }
         strlist_append_file(list, (char *) tc[i].origin, NULL);
         for (size_t z = 0; z < strlist_count(list); z++) {
             const char *left;
@@ -266,10 +270,10 @@ void test_strlist_cmp() {
 
 void test_strlist_reverse() {
     const char *data[] = {
-        "a", "b", "c", "d"
+        "a", "b", "c", "d", NULL
     };
     const char *expected[] = {
-        "d", "c", "b", "a"
+        "d", "c", "b", "a", NULL
     };
     struct StrList *list;
     list = strlist_init();
@@ -300,10 +304,10 @@ void test_strlist_count() {
 
 void test_strlist_sort_alphabetic() {
     const char *data[] = {
-        "b", "c", "d", "a"
+        "b", "c", "d", "a", NULL
     };
     const char *expected[] = {
-        "a", "b", "c", "d"
+        "a", "b", "c", "d", NULL
     };
     struct StrList *list;
     list = strlist_init();
@@ -321,10 +325,10 @@ void test_strlist_sort_alphabetic() {
 
 void test_strlist_sort_len_ascending() {
     const char *data[] = {
-            "bb", "ccc", "dddd", "a"
+        "bb", "ccc", "dddd", "a", NULL
     };
     const char *expected[] = {
-            "a", "bb", "ccc", "dddd"
+        "a", "bb", "ccc", "dddd", NULL
     };
     struct StrList *list;
     list = strlist_init();
@@ -342,10 +346,10 @@ void test_strlist_sort_len_ascending() {
 
 void test_strlist_sort_len_descending() {
     const char *data[] = {
-            "bb", "ccc", "dddd", "a"
+        "bb", "ccc", "dddd", "a", NULL
     };
     const char *expected[] = {
-            "dddd", "ccc", "bb", "a"
+        "dddd", "ccc", "bb", "a", NULL
     };
     struct StrList *list;
     list = strlist_init();
