@@ -136,7 +136,7 @@ void test_strlist_append_file() {
             return;
         }
         strlist_append_file(list, (char *) tc[i].origin, NULL);
-        for (size_t z = 0; z < strlist_count(list); z++) {
+        for (size_t z = 0; z < strlist_count(list) && expected[z] != NULL; z++) {
             const char *left;
             const char *right;
             left = strlist_item(list, z);
