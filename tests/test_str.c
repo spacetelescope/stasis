@@ -132,9 +132,9 @@ void test_endswith() {
             {.data = "I have a pencil box.", .input = "I have a pencil box.", .expected = true},
             {.data = ".    ", .input = ".", .expected = false},
             {.data = "I have a pencil box.", .input = "pencil box", .expected = false},
-            {.data = NULL, .input = "test", .expected = -1},
-            {.data = "I have a pencil box", .input = NULL, .expected = -1},
-            {.data = NULL, .input = NULL, .expected = -1},
+            {.data = NULL, .input = "test", .expected = false},
+            {.data = "I have a pencil box", .input = NULL, .expected = false},
+            {.data = NULL, .input = NULL, .expected = false},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         int result = endswith(tc[i].data, tc[i].input);
@@ -157,9 +157,9 @@ void test_startswith() {
             {.data = "I have a pencil box.", .input = "I have a pencil box.", .expected = true},
             {.data = "    I have a pencil box.", .input = "I have", .expected = false},
             {.data = "I have a pencil box.", .input = "pencil box", .expected = false},
-            {.data = NULL, .input = "test", .expected = -1},
-            {.data = "I have a pencil box", .input = NULL, .expected = -1},
-            {.data = NULL, .input = NULL, .expected = -1},
+            {.data = NULL, .input = "test", .expected = false},
+            {.data = "I have a pencil box", .input = NULL, .expected = false},
+            {.data = NULL, .input = NULL, .expected = false},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         int result = startswith(tc[i].data, tc[i].input);
