@@ -16,7 +16,7 @@ void ini_section_init(struct INIFILE **ini) {
     (*ini)->section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
 }
 
-struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char *value) {
+struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value) {
     struct INISection *result = NULL;
     for (size_t i = 0; i < (*ini)->section_count; i++) {
         if ((*ini)->section[i]->key != NULL) {
