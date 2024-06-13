@@ -16,7 +16,7 @@ int num_chars(const char *sptr, int ch) {
 
 int startswith(const char *sptr, const char *pattern) {
     if (!sptr || !pattern) {
-        return -1;
+        return 0;
     }
     for (size_t i = 0; i < strlen(pattern); i++) {
         if (sptr[i] != pattern[i]) {
@@ -28,7 +28,7 @@ int startswith(const char *sptr, const char *pattern) {
 
 int endswith(const char *sptr, const char *pattern) {
     if (!sptr || !pattern) {
-        return -1;
+        return 0;
     }
     ssize_t sptr_size = (ssize_t) strlen(sptr);
     ssize_t pattern_size = (ssize_t) strlen(pattern);

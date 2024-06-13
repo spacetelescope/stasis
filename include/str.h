@@ -29,7 +29,7 @@ int num_chars(const char *sptr, int ch);
  *
  * @param sptr string to scan
  * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
+ * @return 1 = found, 0 = not found / error
  */
 int startswith(const char *sptr, const char *pattern);
 
@@ -38,7 +38,7 @@ int startswith(const char *sptr, const char *pattern);
  *
  * @param sptr string to scan
  * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
+ * @return 1 = found, 0 = not found / error
  */
 int endswith(const char *sptr, const char *pattern);
 
