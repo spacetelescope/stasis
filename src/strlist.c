@@ -215,19 +215,13 @@ void strlist_remove(struct StrList *pStrList, size_t index) {
     if (count == 0) {
         return;
     }
-
-    for (size_t i = index; i < count; i++) {
-        char *next = pStrList->data[i + 1];
-        if (next == NULL) {
-            break;
+    if (pStrList->data[index] != NULL) {
+        for (size_t i = index; i < count; i++) {
+            pStrList->data[i] = pStrList->data[i + 1];
         }
-        pStrList->data[i] = next;
-        count = strlist_count(pStrList);
-        pStrList->data[count - 1] = NULL;
-    }
-    if (pStrList->num_inuse) {
-        guard_free(pStrList->data[pStrList->num_inuse]);
-        pStrList->num_inuse--;
+        if (pStrList->num_inuse) {
+            pStrList->num_inuse--;
+        }
     }
 }
 
