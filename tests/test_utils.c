@@ -44,7 +44,7 @@ void test_redact_sensitive() {
     for (size_t i = 0; i < sizeof(data) / sizeof(*data); i++) {
         char *input = strdup(data[i]);
         char output[100] = {0};
-        redact_sensitive(to_redact, input, output, sizeof(output) - 1);
+        redact_sensitive(to_redact, sizeof(to_redact) / sizeof(*to_redact), input, output, sizeof(output) - 1);
         OMC_ASSERT(strcmp(output, expected[i]) == 0, "incorrect redaction");
     }
 }

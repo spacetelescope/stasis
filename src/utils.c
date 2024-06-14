@@ -707,7 +707,7 @@ char *collapse_whitespace(char **s) {
  * @param maxlen maximum length of dest string
  * @return 0 on success, -1 on error
  */
-int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen) {
+int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, char *dest, size_t maxlen) {
     const char *redacted = "***REDACTED***";
 
     char *tmp = calloc(strlen(redacted) + strlen(src) + 1, sizeof(*tmp));
@@ -716,8 +716,8 @@ int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxle
     }
     strcpy(tmp, src);
 
-    for (size_t i = 0; to_redact[i] != NULL; i++) {
-        if (strstr(tmp, to_redact[i])) {
+    for (size_t i = 0; i < to_redact_size; i++) {
+        if (to_redact[i] && strstr(tmp, to_redact[i])) {
             replace_text(tmp, to_redact[i], redacted, 0);
             break;
         }

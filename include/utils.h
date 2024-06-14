@@ -329,7 +329,7 @@ char *collapse_whitespace(char **s);
  * @param maxlen maximum length of dest byte array
  * @return 0 on success, -1 on error
  */
-int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen);
+int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, char *dest, size_t maxlen);
 
 /**
  * Given a directory path, return a list of files
