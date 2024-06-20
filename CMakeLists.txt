@@ -25,7 +25,7 @@ add_subdirectory(src)
 
 option(BUILD_TESTING_DEBUG OFF)
 if (BUILD_TESTING_DEBUG)
-	add_compile_options(DEBUG)
+	add_compile_options(-DDEBUG)
 endif()
 option(BUILD_TESTING OFF)
 if (BUILD_TESTING)
