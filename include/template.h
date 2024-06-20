@@ -42,7 +42,7 @@ int tpl_render_to_file(char *str, const char *filename);
 
 struct tplfunc_frame *tpl_getfunc(char *key);
 struct tplfunc_frame;
-typedef int tplfunc(struct tplfunc_frame *frame);
+typedef int tplfunc(struct tplfunc_frame *frame, void *result);
 struct tplfunc_frame {
     char *key;
     tplfunc *func;

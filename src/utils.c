@@ -6,9 +6,15 @@ const ssize_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);
 ssize_t dirstack_len = 0;
 
 int pushd(const char *path) {
-    if (dirstack_len + 1 > dirstack_max) {
+    if (access(path, F_OK)) {
+        // the requested path doesn't exist.
         return -1;
     }
+    if (dirstack_len + 1 > dirstack_max) {
+        // the stack is full
+        return -1;
+    }
+
     dirstack[dirstack_len] = realpath(".", NULL);
     dirstack_len++;
     return chdir(path);
@@ -151,7 +157,7 @@ char *path_dirname(char *path) {
     if (!pos) {
         return ".";
     }
-    *path = '\0';
+    *pos = '\0';
 
     return path;
 }
@@ -701,30 +707,26 @@ char *collapse_whitespace(char **s) {
  * @param maxlen maximum length of dest string
  * @return 0 on success, -1 on error
  */
-int redact_sensitive(const char **to_redact, char *src, char *dest, size_t maxlen) {
-    char **parts = split(src, " ", 0);
-    if (!parts) {
-        fprintf(stderr, "Unable to split source string\n");
+int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, char *dest, size_t maxlen) {
+    const char *redacted = "***REDACTED***";
+
+    char *tmp = calloc(strlen(redacted) + strlen(src) + 1, sizeof(*tmp));
+    if (!tmp) {
         return -1;
     }
+    strcpy(tmp, src);
 
-    for (size_t i = 0; to_redact[i] != NULL; i++) {
-        for (size_t p = 0; parts[p] != NULL; p++) {
-            if (strstr(parts[p], to_redact[i])) {
-                replace_text(parts[p], to_redact[i], "***REDACTED***", REPLACE_TRUNCATE_AFTER_MATCH);
-            }
+    for (size_t i = 0; i < to_redact_size; i++) {
+        if (to_redact[i] && strstr(tmp, to_redact[i])) {
+            replace_text(tmp, to_redact[i], redacted, 0);
+            break;
         }
     }
 
-    char *dest_tmp = join(parts, " ");
-    if (!dest_tmp) {
-        fprintf(stderr, "Unable to join message array\n");
-        return -1;
-    }
-    strncpy(dest, dest_tmp, maxlen);
+    memset(dest, 0, maxlen);
+    strncpy(dest, tmp, maxlen - 1);
+    guard_free(tmp);
 
-    GENERIC_ARRAY_FREE(parts);
-    guard_free(dest_tmp);
     return 0;
 }
 

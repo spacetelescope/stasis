@@ -229,16 +229,15 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     }
 
     const char *redactable[] = {
-            "--access-token=",
-            "--ssh-key-path=",
-            "--ssh-passphrase=",
-            "--client-cert-key-path=",
-            "--client-cert-path=",
-            "--password=",
-            NULL,
+            auth->access_token,
+            auth->ssh_key_path,
+            auth->ssh_passphrase,
+            auth->client_cert_key_path,
+            auth->client_cert_path,
+            auth->password,
     };
     snprintf(cmd, sizeof(cmd) - 1, "jf %s %s", args, auth_args);
-    redact_sensitive(redactable, cmd, cmd_redacted, sizeof(cmd_redacted) - 1);
+    redact_sensitive(redactable, sizeof(redactable) / sizeof (*redactable), cmd, cmd_redacted, sizeof(cmd_redacted) - 1);
 
     guard_free(auth_args);
     guard_strlist_free(&arg_map);

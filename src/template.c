@@ -16,9 +16,14 @@ struct tpl_item {
 };
 struct tpl_item *tpl_pool[1024] = {0};
 unsigned tpl_pool_used = 0;
+struct tplfunc_frame *tpl_pool_func[1024] = {0};
 unsigned tpl_pool_func_used = 0;
 
-struct tplfunc_frame *tpl_pool_func[1024] = {0};
+extern void tpl_reset() {
+    tpl_free();
+    tpl_pool_used = 0;
+    tpl_pool_func_used = 0;
+}
 
 void tpl_register_func(char *key, struct tplfunc_frame *frame) {
     (void) key;  // TODO: placeholder
@@ -84,6 +89,10 @@ void tpl_free() {
 #endif
             item->ptr = NULL;
         }
+        guard_free(item);
+    }
+    for (unsigned i = 0; i < tpl_pool_func_used; i++) {
+        struct tplfunc_frame *item = tpl_pool_func[i];
         guard_free(item);
     }
 }
@@ -167,7 +176,9 @@ char *tpl_render(char *str) {
             size_t key_len = 0;
             while (isalnum(pos[off]) || pos[off] != '}') {
                 if (isspace(pos[off]) || isblank(pos[off])) {
-                    break;
+                    // skip whitespace in key
+                    off++;
+                    continue;
                 }
                 key[key_len] = pos[off];
                 key_len++;
@@ -205,7 +216,44 @@ char *tpl_render(char *str) {
                 char *env_val = getenv(key);
                 value = strdup(env_val ? env_val : "");
             } else if (do_func) { // {{ func:NAME(a, ...) }}
-                // TODO
+                char func_name_temp[OMC_NAME_MAX] = {0};
+                strcpy(func_name_temp, type_stop + 1);
+                char *param_begin = strchr(func_name_temp, '(');
+                if (!param_begin) {
+                    fprintf(stderr, "offset %zu: function name must be followed by a '('\n", off);
+                    guard_free(output);
+                    return NULL;
+                }
+                *param_begin = 0;
+                param_begin++;
+                char *param_end = strrchr(param_begin, ')');
+                if (!param_end) {
+                    fprintf(stderr, "offset %zu: function arguments must be closed with a ')'\n", off);
+                    guard_free(output);
+                    return NULL;
+                }
+                *param_end = 0;
+                char *k = func_name_temp;
+                char **params = split(param_begin, ",", 0);
+                int params_count;
+                for (params_count = 0; params[params_count] != NULL; params_count++);
+
+                struct tplfunc_frame *frame = tpl_getfunc(k);
+                if (params_count > frame->argc) {
+                    fprintf(stderr, "offset %zu: Too many arguments for function: %s()\n", off, frame->key);
+                    value = strdup("");
+                } else {
+                    for (size_t p = 0; p < sizeof(frame->argv) / sizeof(*frame->argv) && params[p] != NULL; p++) {
+                        lstrip(params[p]);
+                        strip(params[p]);
+                        frame->argv[p].t_char_ptr = params[p];
+                    }
+                    char func_result[100];
+                    char *fres = func_result;
+                    frame->func(frame, fres);
+                    value = strdup(fres);
+                }
+                GENERIC_ARRAY_FREE(params);
             } else {
                 // Read replacement value
                 value = strdup(tpl_getval(key) ? tpl_getval(key) : "");

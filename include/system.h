@@ -14,6 +14,8 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 
+#define OMC_SHELL_SAFE_RESTRICT ";&|()"
+
 struct Process {
     // Write stdout stream to file
     char f_stdout[PATH_MAX];

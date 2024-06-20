@@ -98,7 +98,7 @@ struct INIFILE *ini_open(const char *filename);
  * @param value
  * @return
  */
-struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, char *value);
+struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value);
 
 /**
  * 

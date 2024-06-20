@@ -44,4 +44,12 @@ struct StrList *strlist_copy(struct StrList *pStrList);
 int strlist_cmp(struct StrList *a, struct StrList *b);
 void strlist_free(struct StrList **pStrList);
 
+#define STRLIST_E_SUCCESS 0
+#define STRLIST_E_OUT_OF_RANGE 1
+#define STRLIST_E_INVALID_VALUE 2
+#define STRLIST_E_UNKNOWN 3
+extern int strlist_errno;
+const char *strlist_get_error(int flag);
+
+
 #endif //OMC_STRLIST_H

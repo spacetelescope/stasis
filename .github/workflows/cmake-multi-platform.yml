@@ -29,7 +29,7 @@ jobs:
             c_compiler: gcc
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set reusable strings
       id: strings
@@ -40,19 +40,19 @@ jobs:
     - name: Install Linux dependencies
       if: matrix.os == 'ubuntu-latest'
       run: >
-        sudo apt install -y libcurl4-openssl-dev libxml2-dev rsync
+        sudo apt install -y libcurl4-openssl-dev libxml2-dev libxml2-utils rsync
 
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DBUILD_TESTING=ON
         -S ${{ github.workspace }}
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    # TODO: Write ctests
-    #- name: Test
-    #  working-directory: ${{ steps.strings.outputs.build-output-dir }}
-    #  run: ctest --build-config ${{ matrix.build_type }}
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      run: ctest -V --build-config ${{ matrix.build_type }} --output-junit results.xml --test-output-size-passed 65536 --test-output-size-failed 65536

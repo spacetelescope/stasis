@@ -29,7 +29,7 @@ int num_chars(const char *sptr, int ch);
  *
  * @param sptr string to scan
  * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
+ * @return 1 = found, 0 = not found / error
  */
 int startswith(const char *sptr, const char *pattern);
 
@@ -38,7 +38,7 @@ int startswith(const char *sptr, const char *pattern);
  *
  * @param sptr string to scan
  * @param pattern string to search for
- * @return 1 = found, 0 = not found, -1 = error
+ * @return 1 = found, 0 = not found / error
  */
 int endswith(const char *sptr, const char *pattern);
 
@@ -49,33 +49,6 @@ int endswith(const char *sptr, const char *pattern);
  * @param chars a string containing characters (e.g. " \n" would delete whitespace and line feeds)
  */
 void strchrdel(char *sptr, const char *chars);
-
-/**
- * Find the integer offset of the first occurrence of `ch` in `sptr`
- *
- * ~~~{.c}
- * char buffer[255];
- * char string[] = "abc=123";
- * long int separator_offset = strchroff(string, '=');
- * for (long int i = 0; i < separator_offset); i++) {
- *     buffer[i] = string[i];
- * }
- * ~~~
- *
- * @param sptr string to scan
- * @param ch character to find
- * @return offset to character in string, or 0 on failure
- */
-long int strchroff(const char *sptr, int ch);
-
-/**
- * This function scans `sptr` from right to left removing any matches to `suffix`
- * from the string.
- *
- * @param sptr string to be modified
- * @param suffix string to be removed from `sptr`
- */
-void strdelsuffix(char *sptr, const char *suffix);
 
 /**
  * Split a string by every delimiter in `delim` string.
