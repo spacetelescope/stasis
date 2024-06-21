@@ -2,8 +2,8 @@
  * String array convenience functions
  * @file strlist.h
  */
-#ifndef OMC_STRLIST_H
-#define OMC_STRLIST_H
+#ifndef STASIS_STRLIST_H
+#define STASIS_STRLIST_H
 #include <stdlib.h>
 #include "utils.h"
 #include "str.h"
@@ -52,4 +52,4 @@ extern int strlist_errno;
 const char *strlist_get_error(int flag);
 
 
-#endif //OMC_STRLIST_H
+#endif //STASIS_STRLIST_H

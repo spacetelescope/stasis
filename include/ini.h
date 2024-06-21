@@ -1,7 +1,7 @@
 /// @file ini.h
 
-#ifndef OMC_INI_H
-#define OMC_INI_H
+#ifndef STASIS_INI_H
+#define STASIS_INI_H
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -217,4 +217,4 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode);
  * @param ini
  */
 void ini_free(struct INIFILE **ini);
-#endif //OMC_INI_H
+#endif //STASIS_INI_H

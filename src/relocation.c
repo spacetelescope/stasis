@@ -24,7 +24,7 @@
  * @return 0 on success, -1 on error
  */
 int replace_text(char *original, const char *target, const char *replacement, unsigned flags) {
-    char buffer[OMC_BUFSIZ];
+    char buffer[STASIS_BUFSIZ];
     char *pos = original;
     char *match = NULL;
     size_t original_len = strlen(original);
@@ -104,7 +104,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
  */
 int file_replace_text(const char* filename, const char* target, const char* replacement, unsigned flags) {
     int result;
-    char buffer[OMC_BUFSIZ];
+    char buffer[STASIS_BUFSIZ];
     char tempfilename[] = "tempfileXXXXXX";
     FILE *fp;
     FILE *tfp;

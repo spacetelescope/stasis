@@ -1,7 +1,7 @@
 #include <stdarg.h>
-#include "omc.h"
+#include "core.h"
 
-char *dirstack[OMC_DIRSTACK_MAX];
+char *dirstack[STASIS_DIRSTACK_MAX];
 const ssize_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);
 ssize_t dirstack_len = 0;
 
@@ -186,8 +186,8 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // Allocate buffer
-    if ((buffer = calloc(OMC_BUFSIZ, sizeof(char))) == NULL) {
-        SYSERROR("unable to allocate %d bytes for buffer", OMC_BUFSIZ);
+    if ((buffer = calloc(STASIS_BUFSIZ, sizeof(char))) == NULL) {
+        SYSERROR("unable to allocate %d bytes for buffer", STASIS_BUFSIZ);
         if (!use_stdin) {
             fclose(fp);
         }
@@ -195,7 +195,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // count number the of lines in the file
-    while ((fgets(buffer, OMC_BUFSIZ - 1, fp)) != NULL) {
+    while ((fgets(buffer, STASIS_BUFSIZ - 1, fp)) != NULL) {
         lines++;
     }
 
@@ -232,7 +232,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
             continue;
         }
 
-        if (fgets(buffer, OMC_BUFSIZ - 1, fp) == NULL) {
+        if (fgets(buffer, STASIS_BUFSIZ - 1, fp) == NULL) {
             break;
         }
 
@@ -249,7 +249,7 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
             }
         }
         result[i] = strdup(buffer);
-        memset(buffer, '\0', OMC_BUFSIZ);
+        memset(buffer, '\0', STASIS_BUFSIZ);
     }
 
     guard_free(buffer);
@@ -396,12 +396,12 @@ void msg(unsigned type, char *fmt, ...) {
     char header[255];
     char status[20];
 
-    if (type & OMC_MSG_NOP) {
+    if (type & STASIS_MSG_NOP) {
         // quiet mode
         return;
     }
 
-    if (!globals.verbose && type & OMC_MSG_RESTRICT) {
+    if (!globals.verbose && type & STASIS_MSG_RESTRICT) {
         // Verbose mode is not active
         return;
     }
@@ -413,39 +413,39 @@ void msg(unsigned type, char *fmt, ...) {
     va_start(args, fmt);
 
     stream = stdout;
-    fprintf(stream, "%s", OMC_COLOR_RESET);
-    if (type & OMC_MSG_ERROR) {
+    fprintf(stream, "%s", STASIS_COLOR_RESET);
+    if (type & STASIS_MSG_ERROR) {
         // for error output
         stream = stderr;
-        fprintf(stream, "%s", OMC_COLOR_RED);
+        fprintf(stream, "%s", STASIS_COLOR_RED);
         strcpy(status, " ERROR: ");
-    } else if (type & OMC_MSG_WARN) {
+    } else if (type & STASIS_MSG_WARN) {
         stream = stderr;
-        fprintf(stream, "%s", OMC_COLOR_YELLOW);
+        fprintf(stream, "%s", STASIS_COLOR_YELLOW);
         strcpy(status, " WARNING: ");
     } else {
-        fprintf(stream, "%s", OMC_COLOR_GREEN);
+        fprintf(stream, "%s", STASIS_COLOR_GREEN);
         strcpy(status, " ");
     }
 
-    if (type & OMC_MSG_L1) {
-        sprintf(header, "==>%s" OMC_COLOR_RESET OMC_COLOR_WHITE, status);
-    } else if (type & OMC_MSG_L2) {
-        sprintf(header, " ->%s" OMC_COLOR_RESET, status);
-    } else if (type & OMC_MSG_L3) {
-        sprintf(header, OMC_COLOR_BLUE "  ->%s" OMC_COLOR_RESET, status);
+    if (type & STASIS_MSG_L1) {
+        sprintf(header, "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
+    } else if (type & STASIS_MSG_L2) {
+        sprintf(header, " ->%s" STASIS_COLOR_RESET, status);
+    } else if (type & STASIS_MSG_L3) {
+        sprintf(header, STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
     }
 
     fprintf(stream, "%s", header);
     vfprintf(stream, fmt, args);
-    fprintf(stream, "%s", OMC_COLOR_RESET);
+    fprintf(stream, "%s", STASIS_COLOR_RESET);
     va_end(args);
 }
 
 void debug_shell() {
-    msg(OMC_MSG_L1 | OMC_MSG_WARN, "ENTERING OMC DEBUG SHELL\n" OMC_COLOR_RESET);
-    system("/bin/bash -c 'PS1=\"(OMC DEBUG) \\W $ \" bash --norc --noprofile'");
-    msg(OMC_MSG_L1 | OMC_MSG_WARN, "EXITING OMC DEBUG SHELL\n" OMC_COLOR_RESET);
+    msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "ENTERING STASIS DEBUG SHELL\n" STASIS_COLOR_RESET);
+    system("/bin/bash -c 'PS1=\"(STASIS DEBUG) \\W $ \" bash --norc --noprofile'");
+    msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "EXITING STASIS DEBUG SHELL\n" STASIS_COLOR_RESET);
     exit(255);
 }
 
@@ -460,7 +460,7 @@ char *xmkstemp(FILE **fp, const char *mode) {
         strcpy(tmpdir, "/tmp");
     }
     memset(t_name, 0, sizeof(t_name));
-    sprintf(t_name, "%s/%s", tmpdir, "OMC.XXXXXX");
+    sprintf(t_name, "%s/%s", tmpdir, "STASIS.XXXXXX");
 
     fd = mkstemp(t_name);
     *fp = fdopen(fd, mode);

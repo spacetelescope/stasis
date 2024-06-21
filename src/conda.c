@@ -5,13 +5,11 @@
 #include <unistd.h>
 #include "conda.h"
 
-extern struct OMC_GLOBAL globals;
-
 int python_exec(const char *args) {
     char command[PATH_MAX];
     memset(command, 0, sizeof(command));
     snprintf(command, sizeof(command) - 1, "python %s", args);
-    msg(OMC_MSG_L3, "Executing: %s\n", command);
+    msg(STASIS_MSG_L3, "Executing: %s\n", command);
     return system(command);
 }
 
@@ -19,7 +17,7 @@ int pip_exec(const char *args) {
     char command[PATH_MAX];
     memset(command, 0, sizeof(command));
     snprintf(command, sizeof(command) - 1, "python -m pip %s", args);
-    msg(OMC_MSG_L3, "Executing: %s\n", command);
+    msg(STASIS_MSG_L3, "Executing: %s\n", command);
     return system(command);
 }
 
@@ -51,7 +49,7 @@ int conda_exec(const char *args) {
     }
 
     snprintf(command, sizeof(command) - 1, "%s %s", conda_as, args);
-    msg(OMC_MSG_L3, "Executing: %s\n", command);
+    msg(STASIS_MSG_L3, "Executing: %s\n", command);
     return system(command);
 }
 
@@ -109,7 +107,7 @@ int conda_activate(const char *root, const char *env_name) {
 
     // Parse the log file:
     // 1. Extract the environment keys and values from the sub-shell
-    // 2. Apply it to OMC's runtime environment
+    // 2. Apply it to STASIS's runtime environment
     // 3. Now we're ready to execute conda commands anywhere
     fp = fopen(proc.f_stdout, "r");
     if (!fp) {
@@ -118,7 +116,7 @@ int conda_activate(const char *root, const char *env_name) {
     }
     int i = 0;
     while (!feof(fp)) {
-        char buf[OMC_BUFSIZ] = {0};
+        char buf[STASIS_BUFSIZ] = {0};
         int ch = 0;
         size_t z = 0;
         // We are ingesting output from "env -0", can't use fgets()
@@ -142,10 +140,10 @@ int conda_activate(const char *root, const char *env_name) {
             return -1;
         }
         if (!part[0]) {
-            msg(OMC_MSG_WARN | OMC_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
+            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
             i++;
         } else if (!part[1]) {
-            msg(OMC_MSG_WARN | OMC_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
+            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
             i++;
         } else {
             setenv(part[0], part[1], 1);
@@ -193,7 +191,7 @@ int conda_check_required() {
         guard_free(cmd_out);
         guard_strlist_free(&result);
     } else {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "The base package requirement check could not be performed\n");
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "The base package requirement check could not be performed\n");
         return 2;
     }
     return 0;
@@ -234,7 +232,7 @@ void conda_setup_headless() {
         }
 
         if (conda_exec(cmd)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to install user-defined base packages (conda)\n");
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (conda)\n");
             exit(1);
         }
     }
@@ -256,13 +254,13 @@ void conda_setup_headless() {
         }
 
         if (pip_exec(cmd)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to install user-defined base packages (pip)\n");
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (pip)\n");
             exit(1);
         }
     }
 
     if (conda_check_required()) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Your OMC configuration lacks the bare"
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Your STASIS configuration lacks the bare"
                                                   " minimum software required to build conda packages."
                                                   " Please fix it.\n");
         exit(1);

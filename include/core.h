@@ -1,6 +1,6 @@
-//! @file omc.h
-#ifndef OMC_OMC_H
-#define OMC_OMC_H
+//! @file stasis.h
+#ifndef STASIS_CORE_H
+#define STASIS_CORE_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,10 +14,10 @@
     fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno) ? "info" : strerror(errno)); \
     fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
 } while (0)
-#define OMC_BUFSIZ 8192
-#define OMC_NAME_MAX 255
-#define OMC_DIRSTACK_MAX 1024
-#define OMC_TIME_STR_MAX 128
+#define STASIS_BUFSIZ 8192
+#define STASIS_NAME_MAX 255
+#define STASIS_DIRSTACK_MAX 1024
+#define STASIS_TIME_STR_MAX 128
 #define HTTP_ERROR(X) X >= 400
 
 #include "config.h"
@@ -29,7 +29,7 @@
 #include "environment.h"
 #include "artifactory.h"
 #include "docker.h"
-#include "deliverable.h"
+#include "delivery.h"
 #include "str.h"
 #include "strlist.h"
 #include "system.h"
@@ -52,12 +52,12 @@
 #define COE_CHECK_ABORT(COND, MSG) \
     do {\
         if (!globals.continue_on_error && COND) { \
-            msg(OMC_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
+            msg(STASIS_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
             exit(1);                       \
         } \
     } while (0)
 
-struct OMC_GLOBAL {
+struct STASIS_GLOBAL {
     bool verbose; //!< Enable verbose output
     bool always_update_base_environment; //!< Update base environment immediately after activation
     bool continue_on_error; //!< Do not stop on test failures
@@ -69,7 +69,7 @@ struct OMC_GLOBAL {
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory
     char *conda_install_prefix; //!< Path to install conda
-    char *sysconfdir; //!< Path where OMC reads its configuration files (mission directory, etc)
+    char *sysconfdir; //!< Path where STASIS reads its configuration files (mission directory, etc)
     struct {
         char *tox_posargs;
     } workaround;
@@ -85,7 +85,7 @@ struct OMC_GLOBAL {
         char *url;
     } jfrog;
 };
-extern struct OMC_GLOBAL globals;
+extern struct STASIS_GLOBAL globals;
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;
@@ -96,4 +96,4 @@ extern const char *BANNER;
  */
 void globals_free();
 
-#endif //OMC_OMC_H
+#endif //STASIS_CORE_H

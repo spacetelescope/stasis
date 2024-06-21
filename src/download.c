@@ -17,7 +17,7 @@ long download(char *url, const char *filename, char **errmsg) {
     long http_code = -1;
     FILE *fp;
     char user_agent[20];
-    sprintf(user_agent, "omc/%s", VERSION);
+    sprintf(user_agent, "stasis/%s", VERSION);
 
     curl_global_init(CURL_GLOBAL_ALL);
     c = curl_easy_init();

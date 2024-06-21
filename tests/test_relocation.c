@@ -16,8 +16,8 @@ void test_replace_text() {
         char input[BUFSIZ] = {0};
         strcpy(input, test_string);
 
-        OMC_ASSERT(replace_text(input, target, "^^^", 0) == 0, "string replacement failed");
-        OMC_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
+        STASIS_ASSERT(replace_text(input, target, "^^^", 0) == 0, "string replacement failed");
+        STASIS_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
     }
 
 }
@@ -33,9 +33,9 @@ void test_file_replace_text() {
         if (fp) {
             fprintf(fp, "%s", test_string);
             fclose(fp);
-            OMC_ASSERT(file_replace_text(filename, target, "^^^", 0) == 0, "string replacement failed");
+            STASIS_ASSERT(file_replace_text(filename, target, "^^^", 0) == 0, "string replacement failed");
         } else {
-            OMC_ASSERT(false, "failed to open file for writing");
+            STASIS_ASSERT(false, "failed to open file for writing");
             return;
         }
 
@@ -43,20 +43,20 @@ void test_file_replace_text() {
         fp = fopen(filename, "r");
         if (fp) {
             fread(input, sizeof(*input), sizeof(input), fp);
-            OMC_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
+            STASIS_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
         } else {
-            OMC_ASSERT(false, "failed to open file for reading");
+            STASIS_ASSERT(false, "failed to open file for reading");
             return;
         }
     }
 }
 
 int main(int argc, char *argv[]) {
-    OMC_TEST_BEGIN_MAIN();
-    OMC_TEST_FUNC *tests[] = {
+    STASIS_TEST_BEGIN_MAIN();
+    STASIS_TEST_FUNC *tests[] = {
         test_replace_text,
         test_file_replace_text,
     };
-    OMC_TEST_RUN(tests);
-    OMC_TEST_END_MAIN();
+    STASIS_TEST_RUN(tests);
+    STASIS_TEST_END_MAIN();
 }

@@ -1,4 +1,4 @@
-#include "omc.h"
+#include "core.h"
 #include "docker.h"
 
 
@@ -9,11 +9,11 @@ int docker_exec(const char *args, unsigned flags) {
     memset(&proc, 0, sizeof(proc));
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker %s", args);
-    if (flags & OMC_DOCKER_QUIET) {
+    if (flags & STASIS_DOCKER_QUIET) {
         strcpy(proc.f_stdout, "/dev/null");
         strcpy(proc.f_stderr, "/dev/null");
     } else {
-        msg(OMC_MSG_L2, "Executing: %s\n", cmd);
+        msg(STASIS_MSG_L2, "Executing: %s\n", cmd);
     }
 
     shell(&proc, cmd);
@@ -25,7 +25,7 @@ int docker_script(const char *image, char *data, unsigned flags) {
     FILE *infile;
     FILE *outfile;
     char cmd[PATH_MAX];
-    char buffer[OMC_BUFSIZ];
+    char buffer[STASIS_BUFSIZ];
 
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
@@ -59,10 +59,10 @@ int docker_build(const char *dirpath, const char *args, int engine) {
     memset(build, 0, sizeof(build));
     memset(cmd, 0, sizeof(cmd));
 
-    if (engine & OMC_DOCKER_BUILD) {
+    if (engine & STASIS_DOCKER_BUILD) {
         strcpy(build, "build");
     }
-    if (engine & OMC_DOCKER_BUILD_X) {
+    if (engine & STASIS_DOCKER_BUILD_X) {
         strcpy(build, "buildx build");
     }
     snprintf(cmd, sizeof(cmd) - 1, "%s %s %s", build, args, dirpath);
@@ -149,7 +149,7 @@ int docker_capable(struct DockerCapabilities *result) {
     }
     result->available = true;
 
-    if (docker_exec("ps", OMC_DOCKER_QUIET)) {
+    if (docker_exec("ps", STASIS_DOCKER_QUIET)) {
         // user cannot connect to the socket
         return false;
     }
@@ -160,11 +160,11 @@ int docker_capable(struct DockerCapabilities *result) {
     }
     guard_free(version);
 
-    if (!docker_exec("buildx build --help", OMC_DOCKER_QUIET)) {
-        result->build |= OMC_DOCKER_BUILD_X;
+    if (!docker_exec("buildx build --help", STASIS_DOCKER_QUIET)) {
+        result->build |= STASIS_DOCKER_BUILD_X;
     }
-    if (!docker_exec("build --help", OMC_DOCKER_QUIET)) {
-        result->build |= OMC_DOCKER_BUILD;
+    if (!docker_exec("build --help", STASIS_DOCKER_QUIET)) {
+        result->build |= STASIS_DOCKER_BUILD;
     }
     if (!result->build) {
         // can't use docker without a build plugin

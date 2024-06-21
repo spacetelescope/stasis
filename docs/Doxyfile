@@ -4,7 +4,7 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 DOXYFILE_ENCODING      = UTF-8
-PROJECT_NAME           = "Oh My Cal"
+PROJECT_NAME           = "STASIS"
 PROJECT_NUMBER         =
 PROJECT_BRIEF          = "A pipeline delivery generator"
 PROJECT_LOGO           = logo.png

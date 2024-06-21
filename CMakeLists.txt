@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(OMC C)
+project(STASIS C)
 include(GNUInstallDirs)
 
 set(nix_cflags -Wall -Wextra -fPIC)
@@ -35,5 +35,5 @@ endif()
 
 set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h @ONLY)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/omc.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/omc)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mission DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/omc)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/stasis.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/stasis)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mission DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/stasis)

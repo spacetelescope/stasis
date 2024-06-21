@@ -1,17 +1,17 @@
 //! @file docker.h
-#ifndef OMC_DOCKER_H
-#define OMC_DOCKER_H
+#ifndef STASIS_DOCKER_H
+#define STASIS_DOCKER_H
 
 //! Flag to squelch output from docker_exec()
-#define OMC_DOCKER_QUIET 1 << 1
+#define STASIS_DOCKER_QUIET 1 << 1
 
 //! Flag for older style docker build
-#define OMC_DOCKER_BUILD 1 << 1
+#define STASIS_DOCKER_BUILD 1 << 1
 //! Flag for docker buildx
-#define OMC_DOCKER_BUILD_X 1 << 2
+#define STASIS_DOCKER_BUILD_X 1 << 2
 
 //! Compress "docker save"ed images with a compression program
-#define OMC_DOCKER_IMAGE_COMPRESSION "zstd"
+#define STASIS_DOCKER_IMAGE_COMPRESSION "zstd"
 
 struct DockerCapabilities {
     int podman;  //!< Is "docker" really podman?
@@ -42,7 +42,7 @@ int docker_capable(struct DockerCapabilities *result);
 /**
  * Execute a docker command
  *
- * Use the `OMC_DOCKER_QUIET` flag to suppress all output from stdout and stderr.
+ * Use the `STASIS_DOCKER_QUIET` flag to suppress all output from stdout and stderr.
  *
  * ```c
  * if (docker_exec("run --rm -t ubuntu:latest /bin/bash -c 'echo Hello world'", 0)) {
@@ -87,4 +87,4 @@ void docker_sanitize_tag(char *str);
 int docker_validate_compression_program(char *prog);
 
 
-#endif //OMC_DOCKER_H
+#endif //STASIS_DOCKER_H

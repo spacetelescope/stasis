@@ -15,8 +15,8 @@ void test_to_short_version() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = to_short_version(tc[i].data);
-        OMC_ASSERT_FATAL(result != NULL, "should not be NULL");
-        OMC_ASSERT(strcmp(result, tc[i].expected) == 0, "unexpected result");
+        STASIS_ASSERT_FATAL(result != NULL, "should not be NULL");
+        STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "unexpected result");
         guard_free(result);
     }
 
@@ -38,7 +38,7 @@ void test_tolower_s() {
         char input[100] = {0};
         strcpy(input, tc[i].data);
         tolower_s(input);
-        OMC_ASSERT(strcmp(input, tc[i].expected) == 0, "unexpected result");
+        STASIS_ASSERT(strcmp(input, tc[i].expected) == 0, "unexpected result");
     }
 }
 
@@ -59,7 +59,7 @@ void test_isdigit_s() {
     };
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        OMC_ASSERT(isdigit_s(tc[i].data) == tc[i].expected, "unexpected result");
+        STASIS_ASSERT(isdigit_s(tc[i].data) == tc[i].expected, "unexpected result");
     }
 }
 
@@ -75,10 +75,10 @@ void test_strdup_array_and_strcmp_array() {
          .expected = (const char *[]) {"I", "have", "a", "pencil", "box", NULL}},
     };
 
-    OMC_ASSERT(strdup_array(NULL) == NULL, "returned non-NULL on NULL argument");
+    STASIS_ASSERT(strdup_array(NULL) == NULL, "returned non-NULL on NULL argument");
     for (size_t outer = 0; outer < sizeof(tc) / sizeof(*tc); outer++) {
         char **result = strdup_array((char **) tc[outer].data);
-        OMC_ASSERT(strcmp_array((const char **) result, tc[outer].expected) == 0, "array members were different");
+        STASIS_ASSERT(strcmp_array((const char **) result, tc[outer].expected) == 0, "array members were different");
     }
 
     const struct testcase tc_bad[] = {
@@ -88,12 +88,12 @@ void test_strdup_array_and_strcmp_array() {
                     .expected = (const char *[]) {"I", "have", "a", "pencil", "box", NULL}},
     };
 
-    OMC_ASSERT(strcmp_array(tc[0].data, NULL) > 0, "right argument is NULL, expected positive return");
-    OMC_ASSERT(strcmp_array(NULL, tc[0].data) < 0, "left argument is NULL, expected negative return");
-    OMC_ASSERT(strcmp_array(NULL, NULL) == 0, "left and right arguments are NULL, expected zero return");
+    STASIS_ASSERT(strcmp_array(tc[0].data, NULL) > 0, "right argument is NULL, expected positive return");
+    STASIS_ASSERT(strcmp_array(NULL, tc[0].data) < 0, "left argument is NULL, expected negative return");
+    STASIS_ASSERT(strcmp_array(NULL, NULL) == 0, "left and right arguments are NULL, expected zero return");
     for (size_t outer = 0; outer < sizeof(tc_bad) / sizeof(*tc_bad); outer++) {
         char **result = strdup_array((char **) tc_bad[outer].data);
-        OMC_ASSERT(strcmp_array((const char **) result, tc_bad[outer].expected) != 0, "array members were identical");
+        STASIS_ASSERT(strcmp_array((const char **) result, tc_bad[outer].expected) != 0, "array members were identical");
     }
 }
 
@@ -112,7 +112,7 @@ void test_strchrdel() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *data = strdup(tc[i].data);
         strchrdel(data, tc[i].input);
-        OMC_ASSERT(strcmp(data, tc[i].expected) == 0, "wrong status for condition");
+        STASIS_ASSERT(strcmp(data, tc[i].expected) == 0, "wrong status for condition");
         guard_free(data);
     }
 }
@@ -138,7 +138,7 @@ void test_endswith() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         int result = endswith(tc[i].data, tc[i].input);
-        OMC_ASSERT(result == tc[i].expected, "wrong status for condition");
+        STASIS_ASSERT(result == tc[i].expected, "wrong status for condition");
     }
 }
 
@@ -163,7 +163,7 @@ void test_startswith() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         int result = startswith(tc[i].data, tc[i].input);
-        OMC_ASSERT(result == tc[i].expected, "wrong status for condition");
+        STASIS_ASSERT(result == tc[i].expected, "wrong status for condition");
     }
 }
 
@@ -180,7 +180,7 @@ void test_num_chars() {
             {.data = "abc\t\ndef\nabc\ndef\n", .input = '\t', .expected = 1},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        OMC_ASSERT(num_chars(tc[i].data, tc[i].input) == tc[i].expected, "incorrect number of characters detected");
+        STASIS_ASSERT(num_chars(tc[i].data, tc[i].input) == tc[i].expected, "incorrect number of characters detected");
     }
 }
 
@@ -204,7 +204,7 @@ void test_split() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result;
         result = split(tc[i].data, tc[i].delim, tc[i].max_split);
-        OMC_ASSERT(strcmp_array(result, tc[i].expected) == 0, "Split failed");
+        STASIS_ASSERT(strcmp_array(result, tc[i].expected) == 0, "Split failed");
         GENERIC_ARRAY_FREE(result);
     }
 }
@@ -224,7 +224,7 @@ void test_join() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result;
         result = join(tc[i].data, tc[i].delim);
-        OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
+        STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }
 }
@@ -243,7 +243,7 @@ void test_join_ex() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result;
         result = join_ex(tc[i].delim, "a", "b", "c", "d", "e", NULL);
-        OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
+        STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }
 }
@@ -269,7 +269,7 @@ void test_substring_between() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = substring_between(tc[i].data, tc[i].delim);
-        OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "unable to extract substring");
+        STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "unable to extract substring");
         guard_free(result);
     }
 }
@@ -288,7 +288,7 @@ void test_strdeldup() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result = strdeldup(tc[i].data);
-        OMC_ASSERT(strcmp_array(result, tc[i].expected) == 0, "incorrect number of duplicates removed");
+        STASIS_ASSERT(strcmp_array(result, tc[i].expected) == 0, "incorrect number of duplicates removed");
         GENERIC_ARRAY_FREE(result);
     }
 }
@@ -313,13 +313,13 @@ void test_lstrip() {
         {.data = "    I    am a string.\n", .expected = "I    am a string.\n"},
     };
 
-    OMC_ASSERT(lstrip(NULL) == NULL, "incorrect return type");
+    STASIS_ASSERT(lstrip(NULL) == NULL, "incorrect return type");
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
         char *result;
         strcpy(buf, tc[i].data);
         result = lstrip(buf);
-        OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-left");
+        STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-left");
         guard_free(buf);
     }
 }
@@ -338,13 +338,13 @@ void test_strip() {
             {.data = " ", .expected = ""},
     };
 
-    OMC_ASSERT(strip(NULL) == NULL, "incorrect return type");
+    STASIS_ASSERT(strip(NULL) == NULL, "incorrect return type");
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
         char *result;
         strcpy(buf, tc[i].data);
         result = strip(buf);
-        OMC_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
+        STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
         guard_free(buf);
     }
 }
@@ -354,8 +354,8 @@ void test_isempty() {
 }
 
 int main(int argc, char *argv[]) {
-    OMC_TEST_BEGIN_MAIN();
-    OMC_TEST_FUNC *tests[] = {
+    STASIS_TEST_BEGIN_MAIN();
+    STASIS_TEST_FUNC *tests[] = {
             test_to_short_version,
             test_tolower_s,
             test_isdigit_s,
@@ -372,6 +372,6 @@ int main(int argc, char *argv[]) {
             test_join_ex,
             test_substring_between,
     };
-    OMC_TEST_RUN(tests);
-    OMC_TEST_END_MAIN();
+    STASIS_TEST_RUN(tests);
+    STASIS_TEST_END_MAIN();
 }

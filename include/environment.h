@@ -1,8 +1,8 @@
 /**
  * @file environment.h
  */
-#ifndef OMC_ENVIRONMENT_H
-#define OMC_ENVIRONMENT_H
+#ifndef STASIS_ENVIRONMENT_H
+#define STASIS_ENVIRONMENT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,4 +20,4 @@ char *runtime_expand_var(RuntimeEnv *env, char *input);
 void runtime_export(RuntimeEnv *env, char **keys);
 void runtime_apply(RuntimeEnv *env);
 void runtime_free(RuntimeEnv *env);
-#endif //OMC_ENVIRONMENT_H
+#endif //STASIS_ENVIRONMENT_H

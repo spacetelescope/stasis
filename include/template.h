@@ -1,8 +1,8 @@
 //! @file template.h
-#ifndef OMC_TEMPLATE_H
-#define OMC_TEMPLATE_H
+#ifndef STASIS_TEMPLATE_H
+#define STASIS_TEMPLATE_H
 
-#include "omc.h"
+#include "core.h"
 
 /**
  * Map a text value to a pointer in memory
@@ -64,4 +64,4 @@ struct tplfunc_frame {
 };
 void tpl_register_func(char *key, struct tplfunc_frame *frame);
 
-#endif //OMC_TEMPLATE_H
+#endif //STASIS_TEMPLATE_H

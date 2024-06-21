@@ -1,6 +1,6 @@
 #include <getopt.h>
 #include <fnmatch.h>
-#include "omc.h"
+#include "core.h"
 
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
@@ -26,7 +26,7 @@ static void usage(char *name) {
     for (int i = 0; i < maxopts; i++) {
         opts[i] = long_options[i].val;
     }
-    printf("usage: %s [-%s] {{OMC_ROOT}...}\n", name, opts);
+    printf("usage: %s [-%s] {{STASIS_ROOT}...}\n", name, opts);
     guard_free(opts);
 
     for (int i = 0; i < maxopts - 1; i++) {
@@ -62,7 +62,7 @@ int indexer_wheels(struct Delivery *ctx) {
 }
 
 int indexer_load_metadata(struct Delivery *ctx, const char *filename) {
-    char line[OMC_NAME_MAX] = {0};
+    char line[STASIS_NAME_MAX] = {0};
     FILE *fp;
 
     fp = fopen(filename, "r");
@@ -229,7 +229,7 @@ int micromamba(const char *write_to, const char *prefix, char *command, ...) {
         system(untarcmd);
     }
 
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "%s -r %s -p %s ", mmbin, prefix, prefix);
     va_list args;
@@ -615,7 +615,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!rootdirs || !rootdirs_total) {
-        fprintf(stderr, "You must specify at least one OMC root directory to index\n");
+        fprintf(stderr, "You must specify at least one STASIS root directory to index\n");
         exit(1);
     } else {
         for (size_t i = 0; i < rootdirs_total; i++) {
@@ -634,7 +634,7 @@ int main(int argc, char *argv[]) {
     } else {
         strcat(workdir_template, "/tmp");
     }
-    strcat(workdir_template, "/omc-combine.XXXXXX");
+    strcat(workdir_template, "/stasis-combine.XXXXXX");
     workdir = mkdtemp(workdir_template);
     if (!workdir) {
         SYSERROR("Unable to create temporary directory: %s", workdir_template);
@@ -651,7 +651,7 @@ int main(int argc, char *argv[]) {
 
     indexer_init_dirs(&ctx, workdir);
 
-    msg(OMC_MSG_L1, "%s delivery root %s\n",
+    msg(STASIS_MSG_L1, "%s delivery root %s\n",
         rootdirs_total > 1 ? "Merging" : "Indexing",
         rootdirs_total > 1 ? "directories" : "directory");
     if (indexer_combine_rootdirs(workdir, rootdirs, rootdirs_total)) {
@@ -668,22 +668,22 @@ int main(int argc, char *argv[]) {
         mkdirs(ctx.storage.wheel_artifact_dir, 0755);
     }
 
-    msg(OMC_MSG_L1, "Indexing conda packages\n");
+    msg(STASIS_MSG_L1, "Indexing conda packages\n");
     if (indexer_conda(&ctx)) {
         SYSERROR("%s", "Conda package indexing operation failed");
         exit(1);
     }
 
-    msg(OMC_MSG_L1, "Indexing wheel packages\n");
+    msg(STASIS_MSG_L1, "Indexing wheel packages\n");
     if (indexer_wheels(&ctx)) {
         SYSERROR("%s", "Python package indexing operation failed");
         exit(1);
     }
 
-    msg(OMC_MSG_L1, "Loading metadata\n");
+    msg(STASIS_MSG_L1, "Loading metadata\n");
     struct StrList *metafiles = NULL;
-    indexer_get_files(&metafiles, ctx.storage.meta_dir, "*.omc");
-    strlist_sort(metafiles, OMC_SORT_LEN_ASCENDING);
+    indexer_get_files(&metafiles, ctx.storage.meta_dir, "*.stasis");
+    strlist_sort(metafiles, STASIS_SORT_LEN_ASCENDING);
     struct Delivery local[strlist_count(metafiles)];
 
     for (size_t i = 0; i < strlist_count(metafiles); i++) {
@@ -698,33 +698,33 @@ int main(int argc, char *argv[]) {
         indexer_load_metadata(&local[i], path);
     }
 
-    msg(OMC_MSG_L1, "Generating links to latest release iteration\n");
+    msg(STASIS_MSG_L1, "Generating links to latest release iteration\n");
     if (indexer_symlinks(local, strlist_count(metafiles))) {
         SYSERROR("%s", "Link generation failed");
         exit(1);
     }
 
-    msg(OMC_MSG_L1, "Generating README.md\n");
+    msg(STASIS_MSG_L1, "Generating README.md\n");
     if (indexer_readmes(local, strlist_count(metafiles))) {
         SYSERROR("%s", "README indexing operation failed");
         exit(1);
     }
 
-    msg(OMC_MSG_L1, "Indexing test results\n");
+    msg(STASIS_MSG_L1, "Indexing test results\n");
     if (indexer_junitxml_report(local, strlist_count(metafiles))) {
         SYSERROR("%s", "Test result indexing operation failed");
         exit(1);
     }
 
     if (do_html) {
-        msg(OMC_MSG_L1, "Generating HTML indexes\n");
+        msg(STASIS_MSG_L1, "Generating HTML indexes\n");
         if (indexer_make_website(local)) {
             SYSERROR("%s", "Site creation failed");
             exit(1);
         }
     }
 
-    msg(OMC_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
+    msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX];
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
@@ -740,7 +740,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    msg(OMC_MSG_L1, "Removing work directory: %s\n", workdir);
+    msg(STASIS_MSG_L1, "Removing work directory: %s\n", workdir);
     if (rmtree(workdir)) {
         SYSERROR("Failed to remove work directory: %s", strerror(errno));
     }
@@ -748,6 +748,6 @@ int main(int argc, char *argv[]) {
     guard_strlist_free(&metafiles);
     delivery_free(&ctx);
     globals_free();
-    msg(OMC_MSG_L1, "Done!\n");
+    msg(STASIS_MSG_L1, "Done!\n");
     return 0;
 }

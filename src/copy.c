@@ -3,7 +3,7 @@
 int copy2(const char *src, const char *dest, unsigned int op) {
     size_t bytes_read;
     size_t bytes_written;
-    char buf[OMC_BUFSIZ];
+    char buf[STASIS_BUFSIZ];
     struct stat src_stat, dnamest;
     FILE *fp1, *fp2;
 

@@ -2,8 +2,8 @@
  * System functions
  * @file system.h
  */
-#ifndef OMC_SYSTEM_H
-#define OMC_SYSTEM_H
+#ifndef STASIS_SYSTEM_H
+#define STASIS_SYSTEM_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +14,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 
-#define OMC_SHELL_SAFE_RESTRICT ";&|()"
+#define STASIS_SHELL_SAFE_RESTRICT ";&|()"
 
 struct Process {
     // Write stdout stream to file
@@ -31,4 +31,4 @@ int shell(struct Process *proc, char *args);
 int shell_safe(struct Process *proc, char *args);
 char *shell_output(const char *command, int *status);
 
-#endif //OMC_SYSTEM_H
+#endif //STASIS_SYSTEM_H
