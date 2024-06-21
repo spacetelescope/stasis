@@ -162,7 +162,7 @@ stasis mydelivery.ini
 
 ## Template strings
 
-Template strings can be accessed using the `{{ subject.key }}` notation in any Ohmycal configuration file.
+Template strings can be accessed using the `{{ subject.key }}` notation in any STASIS configuration file.
 
 | Name                       | Purpose                                                                                                                |
 |----------------------------|------------------------------------------------------------------------------------------------------------------------|
@@ -177,12 +177,12 @@ Template strings can be accessed using the `{{ subject.key }}` notation in any O
 | info.build_name            | Rendered delivery build name                                                                                           |
 | info.build_number          | Rendered delivery build number                                                                                         |
 | storage.tmpdir             | Ohymcal temp directory                                                                                                 |
-| storage.delivery_dir       | Ohmycal delivery output directory                                                                                      |
-| storage.results_dir        | Ohmycal test results directory                                                                                         |
-| storage.conda_artifact_dir | Ohmycal conda package directory                                                                                        |
-| storage.wheel_artifact_dir | Ohmycal wheel package directory                                                                                        |
-| storage.build_sources_dir  | Ohmycal sources directory                                                                                              |
-| storage.build_docker_dir   | Ohmycal docker directory                                                                                               |
+| storage.delivery_dir       | STASIS delivery output directory                                                                                      |
+| storage.results_dir        | STASIS test results directory                                                                                         |
+| storage.conda_artifact_dir | STASIS conda package directory                                                                                        |
+| storage.wheel_artifact_dir | STASIS wheel package directory                                                                                        |
+| storage.build_sources_dir  | STASIS sources directory                                                                                              |
+| storage.build_docker_dir   | STASIS docker directory                                                                                               |
 | conda.installer_name       | Conda distribution name                                                                                                |
 | conda.installer_version    | Conda distribution version                                                                                             |
 | conda.installer_platform   | Conda target platform                                                                                                  |
