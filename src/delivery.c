@@ -1031,7 +1031,22 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
 
                 char command[PATH_MAX];
-                sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+
+                if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
+                    char selector[STASIS_NAME_MAX] = {0};
+                    sprintf(selector, "%s_", ctx->system.platform[DELIVERY_PLATFORM]);
+                    if (strstr(ctx->system.arch, "64")) {
+                        strcat(selector, "64");
+                    } else if (strstr(ctx->system.arch, "arm64")) {
+                        strcat(selector, "arm64");
+                    } else {
+                        strcat(selector, "32"); // blind guess
+                    }
+                    tolower_s(selector);
+                    sprintf(command, "mambabuild --python=%s -m ../.ci_support/%s_.yaml .", ctx->meta.python, selector);
+                } else {
+                    sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+                }
                 status = conda_exec(command);
                 if (status) {
                     return -1;
