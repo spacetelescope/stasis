@@ -115,7 +115,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             pos = token - sptr;
             break;
         }
-        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
+        result[i] = calloc(STASIS_BUFSIZ, sizeof(char));
         if (!result[i]) {
             return NULL;
         }
@@ -125,7 +125,7 @@ char** split(char *_sptr, const char* delim, size_t max)
     // pos is non-zero when maximum split is reached
     if (pos) {
         // append the remaining string contents to array
-        result[i] = calloc(OMC_BUFSIZ, sizeof(char));
+        result[i] = calloc(STASIS_BUFSIZ, sizeof(char));
         if (!result[i]) {
             return NULL;
         }
@@ -319,13 +319,13 @@ void strsort(char **arr, unsigned int sort_mode) {
     // Default mode is alphabetic sort
     compar fn = _strsort_alpha_compare;
 
-    if (sort_mode == OMC_SORT_LEN_DESCENDING) {
+    if (sort_mode == STASIS_SORT_LEN_DESCENDING) {
         fn = _strsort_dsc_compare;
-    } else if (sort_mode == OMC_SORT_LEN_ASCENDING) {
+    } else if (sort_mode == STASIS_SORT_LEN_ASCENDING) {
         fn = _strsort_asc_compare;
-    } else if (sort_mode == OMC_SORT_ALPHA) {
+    } else if (sort_mode == STASIS_SORT_ALPHA) {
         fn = _strsort_alpha_compare; // ^ still selectable though ^
-    } else if (sort_mode == OMC_SORT_NUMERIC) {
+    } else if (sort_mode == STASIS_SORT_NUMERIC) {
         fn = _strsort_numeric_compare;
     }
 

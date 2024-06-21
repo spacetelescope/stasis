@@ -1,28 +1,28 @@
-#ifndef OMC_CONFIG_H
-#define OMC_CONFIG_H
+#ifndef STASIS_CONFIG_H
+#define STASIS_CONFIG_H
 
-#define OMC_SYSCONFDIR "@SYSCONFDIR@/omc"
+#define STASIS_SYSCONFDIR "@SYSCONFDIR@/stasis"
 
 #if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__)
-#define OMC_OS_WINDOWS
+#define STASIS_OS_WINDOWS
 
 #elif defined(__linux__)
-#define OMC_OS_LINUX
+#define STASIS_OS_LINUX
 #include "os_linux.h"
 
 #elif defined(unix) || defined(__unix__) || defined(__unix)
-#define OMC_OS_UNIX
+#define STASIS_OS_UNIX
 
 #elif defined(__APPLE__)
-#define OMC_OS_DARWIN
+#define STASIS_OS_DARWIN
 #include "os_darwin.h"
 
 #else
-#define OMC_OS_UNKNOWN
+#define STASIS_OS_UNKNOWN
 #error Operating system unknown/unsupported
 
 #endif // OS detection
 
 
 
-#endif // OMC_CONFIG_H
+#endif // STASIS_CONFIG_H

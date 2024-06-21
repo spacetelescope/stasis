@@ -1,5 +1,5 @@
-#ifndef OMC_WHEEL_H
-#define OMC_WHEEL_H
+#ifndef STASIS_WHEEL_H
+#define STASIS_WHEEL_H
 
 #include <dirent.h>
 #include <string.h>
@@ -18,4 +18,4 @@ struct Wheel {
 };
 
 struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_match[]);
-#endif //OMC_WHEEL_H
+#endif //STASIS_WHEEL_H

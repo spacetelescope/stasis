@@ -8,7 +8,7 @@ do { \
         strlist_append(&list, (char *) tc[i].data); \
         result = FUNC(list, i);                      \
         if (!strlist_errno) { \
-            OMC_ASSERT(result == (TYPE) tc[i].expected, "unexpected numeric result"); \
+            STASIS_ASSERT(result == (TYPE) tc[i].expected, "unexpected numeric result"); \
         } \
     } \
     guard_strlist_free(&list); \
@@ -17,9 +17,9 @@ do { \
 void test_strlist_init() {
     struct StrList *list;
     list = strlist_init();
-    OMC_ASSERT(list != NULL, "list should not be NULL");
-    OMC_ASSERT(list->num_alloc == 1, "fresh list should have one record allocated");
-    OMC_ASSERT(list->num_inuse == 0, "fresh list should have no records in use");
+    STASIS_ASSERT(list != NULL, "list should not be NULL");
+    STASIS_ASSERT(list->num_alloc == 1, "fresh list should have one record allocated");
+    STASIS_ASSERT(list->num_inuse == 0, "fresh list should have no records in use");
     guard_strlist_free(&list);
 }
 
@@ -47,9 +47,9 @@ void test_strlist_append() {
     list = strlist_init();
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         strlist_append(&list, (char *) tc[i].data);
-        OMC_ASSERT(list->num_inuse == tc[i].expected_in_use, "incorrect number of records in use");
-        OMC_ASSERT(list->num_alloc == tc[i].expected_in_use + 1, "incorrect number of records allocated");
-        OMC_ASSERT(strcmp(strlist_item(list, i), tc[i].data) == 0, "value was appended incorrectly. data mismatch.");
+        STASIS_ASSERT(list->num_inuse == tc[i].expected_in_use, "incorrect number of records in use");
+        STASIS_ASSERT(list->num_alloc == tc[i].expected_in_use + 1, "incorrect number of records allocated");
+        STASIS_ASSERT(strcmp(strlist_item(list, i), tc[i].data) == 0, "value was appended incorrectly. data mismatch.");
     }
     guard_strlist_free(&list);
 }
@@ -62,7 +62,7 @@ void test_strlist_append_many_records() {
     for (size_t i = 0; i < maxrec; i++) {
         strlist_append(&list, (char *) data);
     }
-    OMC_ASSERT(strlist_count(list) == maxrec, "record count mismatch");
+    STASIS_ASSERT(strlist_count(list) == maxrec, "record count mismatch");
     guard_strlist_free(&list);
 }
 
@@ -86,7 +86,7 @@ void test_strlist_set() {
         result = strcmp(strlist_item(list, i), replacement_long) == 0;
         set_resize_long_all_ok += result;
     }
-    OMC_ASSERT(set_resize_long_all_ok == (int) maxrec, "Replacing record with longer strings failed");
+    STASIS_ASSERT(set_resize_long_all_ok == (int) maxrec, "Replacing record with longer strings failed");
 
     for (size_t i = 0; i < maxrec; i++) {
         int result;
@@ -94,9 +94,9 @@ void test_strlist_set() {
         result = strcmp(strlist_item(list, i), replacement_short) == 0;
         set_resize_short_all_ok += result;
     }
-    OMC_ASSERT(set_resize_short_all_ok == (int) maxrec, "Replacing record with shorter strings failed");
+    STASIS_ASSERT(set_resize_short_all_ok == (int) maxrec, "Replacing record with shorter strings failed");
 
-    OMC_ASSERT(strlist_count(list) == maxrec, "record count mismatch");
+    STASIS_ASSERT(strlist_count(list) == maxrec, "record count mismatch");
     guard_strlist_free(&list);
 }
 
@@ -115,14 +115,14 @@ void test_strlist_append_file() {
     const char *local_filename = "test_strlist_append_file.txt";
 
     struct testcase tc[] = {
-            {.origin = "https://ssb.stsci.edu/jhunk/omc_test/test_strlist_append_file_from_remote.txt", .expected = expected},
+            {.origin = "https://ssb.stsci.edu/jhunk/stasis_test/test_strlist_append_file_from_remote.txt", .expected = expected},
             {.origin = local_filename, .expected = expected},
     };
 
     FILE *fp;
     fp = fopen(local_filename, "w");
     if (!fp) {
-        OMC_ASSERT(false, "unable to open local file for writing");
+        STASIS_ASSERT(false, "unable to open local file for writing");
     }
     for (size_t i = 0; expected[i] != NULL; i++) {
         fprintf(fp, "%s", expected[i]);
@@ -133,7 +133,7 @@ void test_strlist_append_file() {
         struct StrList *list;
         list = strlist_init();
         if (!list) {
-            OMC_ASSERT(false, "failed to create list");
+            STASIS_ASSERT(false, "failed to create list");
             return;
         }
         strlist_append_file(list, (char *) tc[i].origin, NULL);
@@ -142,9 +142,9 @@ void test_strlist_append_file() {
             const char *right;
             left = strlist_item(list, z);
             right = expected[z];
-            OMC_ASSERT(strcmp(left, right) == 0, "file content is different than expected");
+            STASIS_ASSERT(strcmp(left, right) == 0, "file content is different than expected");
         }
-        OMC_ASSERT(strcmp_array(list->data, expected) == 0, "file contents does not match expected values");
+        STASIS_ASSERT(strcmp_array(list->data, expected) == 0, "file contents does not match expected values");
         guard_strlist_free(&list);
     }
 }
@@ -159,10 +159,10 @@ void test_strlist_append_strlist() {
     strlist_append(&right, "B");
     strlist_append(&right, "C");
     strlist_append_strlist(left, right);
-    OMC_ASSERT(strlist_cmp(left, right) == 0, "left and right should be identical");
+    STASIS_ASSERT(strlist_cmp(left, right) == 0, "left and right should be identical");
     strlist_append_strlist(left, right);
-    OMC_ASSERT(strlist_cmp(left, right) == 1, "left and right should be different");
-    OMC_ASSERT(strlist_count(left) > strlist_count(right), "left should be larger than right");
+    STASIS_ASSERT(strlist_cmp(left, right) == 1, "left and right should be different");
+    STASIS_ASSERT(strlist_count(left) > strlist_count(right), "left should be larger than right");
     guard_strlist_free(&left);
     guard_strlist_free(&right);
 }
@@ -182,7 +182,7 @@ void test_strlist_append_array() {
         char *item = strlist_item(list, i);
         result += strcmp(item, data[i]) == 0;
     }
-    OMC_ASSERT(result == strlist_count(list), "result is not identical to input");
+    STASIS_ASSERT(result == strlist_count(list), "result is not identical to input");
     guard_strlist_free(&list);
 }
 
@@ -193,9 +193,9 @@ void test_strlist_append_tokenize() {
     list = strlist_init();
     strlist_append_tokenize(list, (char *) data, "\n");
     // note: the trailing '\n' in the data is parsed as a token
-    OMC_ASSERT(line_count + 1 == strlist_count(list), "unexpected number of lines in array");
+    STASIS_ASSERT(line_count + 1 == strlist_count(list), "unexpected number of lines in array");
     int trailing_item_is_empty = isempty(strlist_item(list, strlist_count(list) - 1));
-    OMC_ASSERT(trailing_item_is_empty, "trailing record should be an empty string");
+    STASIS_ASSERT(trailing_item_is_empty, "trailing record should be an empty string");
     guard_strlist_free(&list);
 }
 
@@ -207,10 +207,10 @@ void test_strlist_copy() {
     strlist_append(&list, "of this data");
     strlist_append(&list, "1:1, please");
 
-    OMC_ASSERT(strlist_copy(NULL) == NULL, "NULL argument should return NULL");
+    STASIS_ASSERT(strlist_copy(NULL) == NULL, "NULL argument should return NULL");
 
     list_copy = strlist_copy(list);
-    OMC_ASSERT(strlist_cmp(list, list_copy) == 0, "list was copied incorrectly");
+    STASIS_ASSERT(strlist_cmp(list, list_copy) == 0, "list was copied incorrectly");
     guard_strlist_free(&list);
     guard_strlist_free(&list_copy);
 }
@@ -241,8 +241,8 @@ void test_strlist_remove() {
         }
     }
     size_t len_after = strlist_count(list);
-    OMC_ASSERT(len_before == data_size, "list length before modification is incorrect. new records?");
-    OMC_ASSERT(len_after == (len_before - removed), "list length after modification is incorrect. not enough records removed.");
+    STASIS_ASSERT(len_before == data_size, "list length before modification is incorrect. new records?");
+    STASIS_ASSERT(len_after == (len_before - removed), "list length after modification is incorrect. not enough records removed.");
     
     guard_strlist_free(&list);
 }
@@ -253,18 +253,18 @@ void test_strlist_cmp() {
 
     left = strlist_init();
     right = strlist_init();
-    OMC_ASSERT(strlist_cmp(NULL, NULL) == -1, "NULL first argument should return -1");
-    OMC_ASSERT(strlist_cmp(left, NULL) == -2, "NULL second argument should return -2");
-    OMC_ASSERT(strlist_cmp(left, right) == 0, "should be the same");
+    STASIS_ASSERT(strlist_cmp(NULL, NULL) == -1, "NULL first argument should return -1");
+    STASIS_ASSERT(strlist_cmp(left, NULL) == -2, "NULL second argument should return -2");
+    STASIS_ASSERT(strlist_cmp(left, right) == 0, "should be the same");
     strlist_append(&left, "left");
-    OMC_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
+    STASIS_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
     strlist_append(&right, "right");
-    OMC_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
+    STASIS_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
     strlist_append(&left, "left again");
     strlist_append(&left, "left again");
     strlist_append(&left, "left again");
-    OMC_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
-    OMC_ASSERT(strlist_cmp(right, left) == 1, "should return 1");
+    STASIS_ASSERT(strlist_cmp(left, right) == 1, "should return 1");
+    STASIS_ASSERT(strlist_cmp(right, left) == 1, "should return 1");
     guard_strlist_free(&left);
     guard_strlist_free(&right);
 }
@@ -286,7 +286,7 @@ void test_strlist_reverse() {
         char *item = strlist_item(list, i);
         result += strcmp(item, expected[i]) == 0;
     }
-    OMC_ASSERT(result == (int) strlist_count(list), "alphabetic sort failed");
+    STASIS_ASSERT(result == (int) strlist_count(list), "alphabetic sort failed");
     guard_strlist_free(&list);
 }
 
@@ -297,8 +297,8 @@ void test_strlist_count() {
     strlist_append(&list, "123");
     strlist_append(&list, "def");
     strlist_append(&list, "456");
-    OMC_ASSERT(strlist_count(NULL) == 0, "NULL input should produce a zero result");
-    OMC_ASSERT(strlist_count(list) == 4, "incorrect record count");
+    STASIS_ASSERT(strlist_count(NULL) == 0, "NULL input should produce a zero result");
+    STASIS_ASSERT(strlist_count(list) == 4, "incorrect record count");
 
     guard_strlist_free(&list);
 }
@@ -314,13 +314,13 @@ void test_strlist_sort_alphabetic() {
     list = strlist_init();
     strlist_append_array(list, (char **) data);
 
-    strlist_sort(list, OMC_SORT_ALPHA);
+    strlist_sort(list, STASIS_SORT_ALPHA);
     int result = 0;
     for (size_t i = 0; i < strlist_count(list); i++) {
         char *item = strlist_item(list, i);
         result += strcmp(item, expected[i]) == 0;
     }
-    OMC_ASSERT(result == (int) strlist_count(list), "alphabetic sort failed");
+    STASIS_ASSERT(result == (int) strlist_count(list), "alphabetic sort failed");
     guard_strlist_free(&list);
 }
 
@@ -335,13 +335,13 @@ void test_strlist_sort_len_ascending() {
     list = strlist_init();
     strlist_append_array(list, (char **) data);
 
-    strlist_sort(list, OMC_SORT_LEN_ASCENDING);
+    strlist_sort(list, STASIS_SORT_LEN_ASCENDING);
     int result = 0;
     for (size_t i = 0; i < strlist_count(list); i++) {
         char *item = strlist_item(list, i);
         result += strcmp(item, expected[i]) == 0;
     }
-    OMC_ASSERT(result == (int) strlist_count(list), "ascending sort failed");
+    STASIS_ASSERT(result == (int) strlist_count(list), "ascending sort failed");
     guard_strlist_free(&list);
 }
 
@@ -356,13 +356,13 @@ void test_strlist_sort_len_descending() {
     list = strlist_init();
     strlist_append_array(list, (char **) data);
 
-    strlist_sort(list, OMC_SORT_LEN_DESCENDING);
+    strlist_sort(list, STASIS_SORT_LEN_DESCENDING);
     int result = 0;
     for (size_t i = 0; i < strlist_count(list); i++) {
         char *item = strlist_item(list, i);
         result += strcmp(item, expected[i]) == 0;
     }
-    OMC_ASSERT(result == (int) strlist_count(list), "descending sort failed");
+    STASIS_ASSERT(result == (int) strlist_count(list), "descending sort failed");
     guard_strlist_free(&list);
 }
 
@@ -370,7 +370,7 @@ void test_strlist_item_as_str() {
     struct StrList *list;
     list = strlist_init();
     strlist_append(&list, "hello");
-    OMC_ASSERT(strcmp(strlist_item_as_str(list, 0), "hello") == 0, "unexpected string result");
+    STASIS_ASSERT(strcmp(strlist_item_as_str(list, 0), "hello") == 0, "unexpected string result");
     guard_strlist_free(&list);
 }
 
@@ -578,8 +578,8 @@ void test_strlist_item_as_long_double() {
 }
 
 int main(int argc, char *argv[]) {
-    OMC_TEST_BEGIN_MAIN();
-    OMC_TEST_FUNC *tests[] = {
+    STASIS_TEST_BEGIN_MAIN();
+    STASIS_TEST_FUNC *tests[] = {
         test_strlist_init,
         test_strlist_free,
         test_strlist_append,
@@ -612,6 +612,6 @@ int main(int argc, char *argv[]) {
         test_strlist_item_as_double,
         test_strlist_item_as_long_double,
     };
-    OMC_TEST_RUN(tests);
-    OMC_TEST_END_MAIN();
+    STASIS_TEST_RUN(tests);
+    STASIS_TEST_END_MAIN();
 }

@@ -216,7 +216,7 @@ char *tpl_render(char *str) {
                 char *env_val = getenv(key);
                 value = strdup(env_val ? env_val : "");
             } else if (do_func) { // {{ func:NAME(a, ...) }}
-                char func_name_temp[OMC_NAME_MAX] = {0};
+                char func_name_temp[STASIS_NAME_MAX] = {0};
                 strcpy(func_name_temp, type_stop + 1);
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {

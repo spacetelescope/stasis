@@ -1,10 +1,10 @@
 //! @file conda.h
-#ifndef OMC_CONDA_H
-#define OMC_CONDA_H
+#ifndef STASIS_CONDA_H
+#define STASIS_CONDA_H
 
 #include <stdio.h>
 #include <string.h>
-#include "omc.h"
+#include "core.h"
 
 #define CONDA_INSTALL_PREFIX "conda"
 
@@ -167,4 +167,4 @@ int conda_env_export(char *name, char *output_dir, char *output_filename);
  * @return exit code from "conda"
  */
 int conda_index(const char *path);
-#endif //OMC_CONDA_H
+#endif //STASIS_CONDA_H

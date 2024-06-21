@@ -32,7 +32,7 @@ subprocess.run("doxygen", shell=True)
 
 # -- Project information -----------------------------------------------------
 
-project = 'Oh My Cal'
+project = 'STASIS'
 copyright = '2023-2024, Space Telescope Science Institute'
 author = 'Joseph Hunkeler'
 

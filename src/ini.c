@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "omc.h"
+#include "core.h"
 #include "ini.h"
 
 struct INIFILE *ini_init() {
@@ -114,7 +114,7 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
 
 int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, union INIVal *result) {
     char *token = NULL;
-    char tbuf[OMC_BUFSIZ];
+    char tbuf[STASIS_BUFSIZ];
     char *tbufp = tbuf;
     struct INIData *data;
     data = ini_data_get(ini, section_name, key);
@@ -282,7 +282,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
     for (size_t x = 0; x < ini->section_count; x++) {
         fprintf(*stream, "[%s]" LINE_SEP, ini->section[x]->key);
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
-            char outvalue[OMC_BUFSIZ];
+            char outvalue[STASIS_BUFSIZ];
             memset(outvalue, 0, sizeof(outvalue));
             if (ini->section[x]->data[y]->value) {
                 char **parts = split(ini->section[x]->data[y]->value, LINE_SEP, 0);
@@ -354,8 +354,8 @@ void ini_free(struct INIFILE **ini) {
 
 struct INIFILE *ini_open(const char *filename) {
     FILE *fp;
-    char line[OMC_BUFSIZ] = {0};
-    char current_section[OMC_BUFSIZ] = {0};
+    char line[STASIS_BUFSIZ] = {0};
+    char current_section[STASIS_BUFSIZ] = {0};
     char reading_value = 0;
 
     struct INIFILE *ini = ini_init();
@@ -382,7 +382,7 @@ struct INIFILE *ini_open(const char *filename) {
     char inikey[2][255];
     char *key = inikey[0];
     char *key_last = inikey[1];
-    char value[OMC_BUFSIZ];
+    char value[STASIS_BUFSIZ];
 
     memset(value, 0, sizeof(value));
     memset(inikey, 0, sizeof(inikey));

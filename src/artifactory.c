@@ -1,6 +1,6 @@
-#include "omc.h"
+#include "core.h"
 
-extern struct OMC_GLOBAL globals;
+extern struct STASIS_GLOBAL globals;
 
 int artifactory_download_cli(char *dest,
                              char *jfrog_artifactory_base_url,
@@ -12,8 +12,8 @@ int artifactory_download_cli(char *dest,
                              char *remote_filename) {
     char url[PATH_MAX] = {0};
     char path[PATH_MAX] = {0};
-    char os_ident[OMC_NAME_MAX] = {0};
-    char arch_ident[OMC_NAME_MAX] = {0};
+    char os_ident[STASIS_NAME_MAX] = {0};
+    char arch_ident[STASIS_NAME_MAX] = {0};
 
     // convert platform string to lower-case
     strcpy(os_ident, os);
@@ -73,7 +73,7 @@ int artifactory_download_cli(char *dest,
 }
 
 void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[OMC_BUFSIZ];
+    char data[STASIS_BUFSIZ];
     memset(data, 0, sizeof(data));
 
     if (jfrt_val == NULL) {
@@ -85,7 +85,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
 }
 
 void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[OMC_BUFSIZ];
+    char data[STASIS_BUFSIZ];
     memset(data, 0, sizeof(data));
 
     if (jfrt_val == false) {
@@ -97,7 +97,7 @@ void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList 
 }
 
 void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[OMC_BUFSIZ];
+    char data[STASIS_BUFSIZ];
     memset(data, 0, sizeof(data));
 
     if (jfrt_val == 0) {
@@ -109,7 +109,7 @@ void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **
 }
 
 void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[OMC_BUFSIZ];
+    char data[STASIS_BUFSIZ];
     memset(data, 0, sizeof(data));
 
     if (jfrt_val == 0) {
@@ -141,18 +141,18 @@ static int auth_required(char *cmd) {
 }
 
 int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
-    char *url = getenv("OMC_JF_ARTIFACTORY_URL");
-    char *user = getenv("OMC_JF_USER");
-    char *access_token = getenv("OMC_JF_ACCESS_TOKEN");
-    char *password = getenv("OMC_JF_PASSWORD");
-    char *ssh_key_path = getenv("OMC_JF_SSH_KEY_PATH");
-    char *ssh_passphrase = getenv("OMC_JF_SSH_PASSPHRASE");
-    char *client_cert_key_path = getenv("OMC_JF_CLIENT_CERT_KEY_PATH");
-    char *client_cert_path = getenv("OMC_JF_CLIENT_CERT_PATH");
+    char *url = getenv("STASIS_JF_ARTIFACTORY_URL");
+    char *user = getenv("STASIS_JF_USER");
+    char *access_token = getenv("STASIS_JF_ACCESS_TOKEN");
+    char *password = getenv("STASIS_JF_PASSWORD");
+    char *ssh_key_path = getenv("STASIS_JF_SSH_KEY_PATH");
+    char *ssh_passphrase = getenv("STASIS_JF_SSH_PASSPHRASE");
+    char *client_cert_key_path = getenv("STASIS_JF_CLIENT_CERT_KEY_PATH");
+    char *client_cert_path = getenv("STASIS_JF_CLIENT_CERT_PATH");
 
     if (!url) {
         fprintf(stderr, "Artifactory URL is not configured:\n");
-        fprintf(stderr, "please set OMC_JF_ARTIFACTORY_URL\n");
+        fprintf(stderr, "please set STASIS_JF_ARTIFACTORY_URL\n");
         return -1;
     }
     auth_ctx->url = url;
@@ -184,10 +184,10 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
         auth_ctx->client_cert_path = client_cert_path;
     } else {
         fprintf(stderr, "Artifactory authentication is not configured:\n");
-        fprintf(stderr, "set OMC_JF_USER and OMC_JF_PASSWORD\n");
-        fprintf(stderr, "or, set OMC_JF_ACCESS_TOKEN\n");
-        fprintf(stderr, "or, set OMC_JF_SSH_KEY_PATH and OMC_JF_SSH_KEY_PASSPHRASE\n");
-        fprintf(stderr, "or, set OMC_JF_CLIENT_CERT_KEY_PATH and OMC_JF_CLIENT_CERT_PATH\n");
+        fprintf(stderr, "set STASIS_JF_USER and STASIS_JF_PASSWORD\n");
+        fprintf(stderr, "or, set STASIS_JF_ACCESS_TOKEN\n");
+        fprintf(stderr, "or, set STASIS_JF_SSH_KEY_PATH and STASIS_JF_SSH_KEY_PASSPHRASE\n");
+        fprintf(stderr, "or, set STASIS_JF_CLIENT_CERT_KEY_PATH and STASIS_JF_CLIENT_CERT_PATH\n");
         return -1;
     }
     return 0;
@@ -195,8 +195,8 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
 
 int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     struct Process proc;
-    char cmd[OMC_BUFSIZ];
-    char cmd_redacted[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
+    char cmd_redacted[STASIS_BUFSIZ];
     int status;
 
     memset(&proc, 0, sizeof(proc));
@@ -244,7 +244,7 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
 
     // Pings are noisy. Squelch them.
     if (!strstr(args, "rt ping")) {
-        msg(OMC_MSG_L2, "Executing: %s\n", cmd_redacted);
+        msg(STASIS_MSG_L2, "Executing: %s\n", cmd_redacted);
     }
 
     if (!globals.verbose) {
@@ -256,28 +256,28 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
 }
 
 int jfrog_cli_rt(struct JFRT_Auth *auth, char *args) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "rt %s", args);
     return jfrog_cli(auth, args);
 }
 
 int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "rt build-collect-env \"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, cmd);
 }
 
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "rt build-publish \"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, cmd);
 }
 
 int jfrog_cli_rt_ping(struct JFRT_Auth *auth) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
 
     snprintf(cmd, sizeof(cmd) - 1, "rt ping");
@@ -285,7 +285,7 @@ int jfrog_cli_rt_ping(struct JFRT_Auth *auth) {
 }
 
 int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, char *repo_path, char *dest) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
 
     if (isempty(repo_path)) {
@@ -352,7 +352,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
 }
 
 int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *src, char *repo_path) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
 
     if (isempty(src)) {

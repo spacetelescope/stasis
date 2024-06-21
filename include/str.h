@@ -1,20 +1,20 @@
 /**
  * @file str.h
  */
-#ifndef OMC_STR_H
-#define OMC_STR_H
+#ifndef STASIS_STR_H
+#define STASIS_STR_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "omc.h"
+#include "core.h"
 
-#define OMC_SORT_ALPHA 1 << 0
-#define OMC_SORT_NUMERIC 1 << 1
-#define OMC_SORT_LEN_ASCENDING 1 << 2
-#define OMC_SORT_LEN_DESCENDING 1 << 3
+#define STASIS_SORT_ALPHA 1 << 0
+#define STASIS_SORT_NUMERIC 1 << 1
+#define STASIS_SORT_LEN_ASCENDING 1 << 2
+#define STASIS_SORT_LEN_DESCENDING 1 << 3
 
 /**
  * Determine how many times the character `ch` appears in `sptr` string
@@ -115,10 +115,10 @@ char *substring_between(char *sptr, const char *delims);
  * Sort an array of strings
  * @param arr a NULL terminated array of strings
  * @param sort_mode
- *     - OMC_SORT_LEN_DESCENDING
- *     - OMC_SORT_LEN_ASCENDING
- *     - OMC_SORT_ALPHA
- *     - OMC_SORT_NUMERIC
+ *     - STASIS_SORT_LEN_DESCENDING
+ *     - STASIS_SORT_LEN_ASCENDING
+ *     - STASIS_SORT_ALPHA
+ *     - STASIS_SORT_NUMERIC
  */
 void strsort(char **arr, unsigned int sort_mode);
 
@@ -307,4 +307,4 @@ char *tolower_s(char *s);
  */
 char *to_short_version(const char *s);
 
-#endif //OMC_STR_H
+#endif //STASIS_STR_H

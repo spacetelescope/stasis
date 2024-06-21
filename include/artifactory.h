@@ -1,10 +1,10 @@
 //! @file artifactory.h
-#ifndef OMC_ARTIFACTORY_H
-#define OMC_ARTIFACTORY_H
+#ifndef STASIS_ARTIFACTORY_H
+#define STASIS_ARTIFACTORY_H
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "omc.h"
+#include "core.h"
 
 //! JFrog Artifactory Authentication struct
 struct JFRT_Auth {
@@ -276,13 +276,13 @@ int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, cha
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number);
 
 /**
- * Configure JFrog CLI authentication according to OMC specs
+ * Configure JFrog CLI authentication according to STASIS specs
  *
- * This function will use the OMC_JF_* environment variables to configure the authentication
- * context. With this in mind, if an OMC_JF_* environment variable is not defined, the original value of
+ * This function will use the STASIS_JF_* environment variables to configure the authentication
+ * context. With this in mind, if an STASIS_JF_* environment variable is not defined, the original value of
  * the structure member will be used instead.
  *
- * Use OMC_JF_* variables to configure context
+ * Use STASIS_JF_* variables to configure context
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
@@ -299,7 +299,7 @@ int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *b
  * jfrt_auth_init(&auth_ctx);
  * ```
  *
- * Use your own input without OMC's help. Purely an illustrative example.
+ * Use your own input without STASIS's help. Purely an illustrative example.
  *
  * ```c
  * struct JFRT_Auth auth_ctx;
@@ -320,4 +320,4 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx);
  */
 void jfrt_upload_init(struct JFRT_Upload *ctx);
 
-#endif //OMC_ARTIFACTORY_H
+#endif //STASIS_ARTIFACTORY_H

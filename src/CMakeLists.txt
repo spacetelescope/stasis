@@ -2,7 +2,7 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR})
 
-add_library(ohmycal STATIC
+add_library(stasis_core STATIC
         globals.c
         str.c
         strlist.c
@@ -12,7 +12,7 @@ add_library(ohmycal STATIC
         utils.c
         system.c
         download.c
-        deliverable.c
+        delivery.c
         recipe.c
         relocation.c
         wheel.c
@@ -24,13 +24,13 @@ add_library(ohmycal STATIC
         junitxml.c
 )
 
-add_executable(omc
-        omc_main.c
+add_executable(stasis
+        stasis_main.c
 )
-target_link_libraries(omc PRIVATE ohmycal)
-target_link_libraries(omc PUBLIC LibXml2::LibXml2)
-add_executable(omc_indexer
-        omc_indexer.c
+target_link_libraries(stasis PRIVATE stasis_core)
+target_link_libraries(stasis PUBLIC LibXml2::LibXml2)
+add_executable(stasis_indexer
+        stasis_indexer.c
 )
-target_link_libraries(omc_indexer PRIVATE ohmycal)
-install(TARGETS omc omc_indexer RUNTIME)
+target_link_libraries(stasis_indexer PRIVATE stasis_core)
+install(TARGETS stasis stasis_indexer RUNTIME)

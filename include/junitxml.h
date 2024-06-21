@@ -1,6 +1,6 @@
 /// @file junitxml.h
-#ifndef OMC_JUNITXML_H
-#define OMC_JUNITXML_H
+#ifndef STASIS_JUNITXML_H
+#define STASIS_JUNITXML_H
 #include <libxml/xmlreader.h>
 
 #define JUNIT_RESULT_STATE_NONE 0
@@ -132,4 +132,4 @@ struct JUNIT_Testsuite *junitxml_testsuite_read(const char *filename);
  */
 void junitxml_testsuite_free(struct JUNIT_Testsuite **testsuite);
 
-#endif //OMC_JUNITXML_H
+#endif //STASIS_JUNITXML_H

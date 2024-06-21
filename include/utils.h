@@ -1,6 +1,6 @@
 //! @file utils.h
-#ifndef OMC_UTILS_H
-#define OMC_UTILS_H
+#ifndef STASIS_UTILS_H
+#define STASIS_UTILS_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -10,7 +10,7 @@
 #include <errno.h>
 #include "system.h"
 
-#if defined(OMC_OS_WINDOWS)
+#if defined(STASIS_OS_WINDOWS)
 #define PATH_ENV_VAR "path"
 #define DIR_SEP "\\"
 #define PATH_SEP ";"
@@ -22,8 +22,8 @@
 #define LINE_SEP "\n"
 #endif
 
-#define OMC_XML_PRETTY_PRINT_PROG "xmllint"
-#define OMC_XML_PRETTY_PRINT_ARGS "--format"
+#define STASIS_XML_PRETTY_PRINT_PROG "xmllint"
+#define STASIS_XML_PRETTY_PRINT_ARGS "--format"
 
 typedef int (ReaderFn)(size_t line, char **);
 
@@ -167,7 +167,7 @@ char *git_describe(const char *path);
 char *git_rev_parse(const char *path, char *args);
 
 /**
- * Helper function to initialize simple OMC internal path strings
+ * Helper function to initialize simple STASIS internal path strings
  *
  * ```c
  * char *mypath = NULL;
@@ -188,43 +188,43 @@ char *git_rev_parse(const char *path, char *args);
  */
 int path_store(char **destptr, size_t maxlen, const char *base, const char *path);
 
-#if defined(OMC_DUMB_TERMINAL)
-#define OMC_COLOR_RED ""
-#define OMC_COLOR_GREEN ""
-#define OMC_COLOR_YELLOW ""
-#define OMC_COLOR_BLUE ""
-#define OMC_COLOR_WHITE ""
-#define OMC_COLOR_RESET ""
+#if defined(STASIS_DUMB_TERMINAL)
+#define STASIS_COLOR_RED ""
+#define STASIS_COLOR_GREEN ""
+#define STASIS_COLOR_YELLOW ""
+#define STASIS_COLOR_BLUE ""
+#define STASIS_COLOR_WHITE ""
+#define STASIS_COLOR_RESET ""
 #else
 //! Set output color to red
-#define OMC_COLOR_RED "\e[1;91m"
+#define STASIS_COLOR_RED "\e[1;91m"
 //! Set output color to green
-#define OMC_COLOR_GREEN "\e[1;92m"
+#define STASIS_COLOR_GREEN "\e[1;92m"
 //! Set output color to yellow
-#define OMC_COLOR_YELLOW "\e[1;93m"
+#define STASIS_COLOR_YELLOW "\e[1;93m"
 //! Set output color to blue
-#define OMC_COLOR_BLUE "\e[1;94m"
+#define STASIS_COLOR_BLUE "\e[1;94m"
 //! Set output color to white
-#define OMC_COLOR_WHITE "\e[1;97m"
+#define STASIS_COLOR_WHITE "\e[1;97m"
 //! Reset output color to terminal default
-#define OMC_COLOR_RESET "\e[0;37m\e[0m"
+#define STASIS_COLOR_RESET "\e[0;37m\e[0m"
 #endif
 
-#define OMC_MSG_SUCCESS 0
+#define STASIS_MSG_SUCCESS 0
 //! Suppress printing of the message text
-#define OMC_MSG_NOP 1 << 0
+#define STASIS_MSG_NOP 1 << 0
 //! The message is an error
-#define OMC_MSG_ERROR 1 << 1
+#define STASIS_MSG_ERROR 1 << 1
 //! The message is a warning
-#define OMC_MSG_WARN 1 << 2
+#define STASIS_MSG_WARN 1 << 2
 //! The message will be indented once
-#define OMC_MSG_L1 1 << 3
+#define STASIS_MSG_L1 1 << 3
 //! The message will be indented twice
-#define OMC_MSG_L2 1 << 4
+#define STASIS_MSG_L2 1 << 4
 //! The message will be indented thrice
-#define OMC_MSG_L3 1 << 5
+#define STASIS_MSG_L3 1 << 5
 //! The message will only be printed in verbose mode
-#define OMC_MSG_RESTRICT 1 << 6
+#define STASIS_MSG_RESTRICT 1 << 6
 
 void msg(unsigned type, char *fmt, ...);
 
@@ -278,7 +278,7 @@ int isempty_dir(const char *path);
 int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args);
 
 /**
- * Applies OMC fixups to a tox ini config
+ * Applies STASIS fixups to a tox ini config
  * @param filename path to tox.ini
  * @param result path to processed configuration
  * @return 0 on success, -1 on error
@@ -351,4 +351,4 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
  */
 struct StrList *listdir(const char *path);
 
-#endif //OMC_UTILS_H
+#endif //STASIS_UTILS_H

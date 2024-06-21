@@ -1,5 +1,5 @@
 #include "system.h"
-#include "omc.h"
+#include "core.h"
 
 int shell(struct Process *proc, char *args) {
     struct Process selfproc;
@@ -106,7 +106,7 @@ int shell_safe(struct Process *proc, char *args) {
     char buf[1024] = {0};
     int result;
 
-    char *invalid_ch = strpbrk(args, OMC_SHELL_SAFE_RESTRICT);
+    char *invalid_ch = strpbrk(args, STASIS_SHELL_SAFE_RESTRICT);
     if (invalid_ch) {
         args = NULL;
     }
@@ -138,10 +138,10 @@ int shell_safe(struct Process *proc, char *args) {
 }
 
 char *shell_output(const char *command, int *status) {
-    const size_t initial_size = OMC_BUFSIZ;
+    const size_t initial_size = STASIS_BUFSIZ;
     size_t current_size = initial_size;
     char *result = NULL;
-    char line[OMC_BUFSIZ];
+    char line[STASIS_BUFSIZ];
     FILE *pp;
 
     errno = 0;

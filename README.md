@@ -1,6 +1,6 @@
-[![CMake on multiple platforms](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/spacetelescope/ohmycal/actions/workflows/cmake-multi-platform.yml) [![Documentation Status](https://readthedocs.org/projects/oh-my-cal/badge/?version=latest)](https://oh-my-cal.readthedocs.io/en/latest/?badge=latest)
+[![CMake on multiple platforms](https://github.com/spacetelescope/stasis/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/spacetelescope/stasis/actions/workflows/cmake-multi-platform.yml) [![Documentation Status](https://readthedocs.org/projects/stasis-docs/badge/?version=latest)](https://stasis-docs.readthedocs.io/en/latest/?badge=latest)
 
-OMC consolidate the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
+STASIS consolidates the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
 
 # Requirements
 
@@ -15,8 +15,8 @@ OMC consolidate the steps required to build, test, and deploy calibration pipeli
 Download the source code
 
 ```shell
-git clone https://github.com/jhunkeler/ohmycal.git
-cd ohmycal
+git clone https://github.com/spacetelescope/stasis.git
+cd stasis
 ```
 
 Create and enter the build directory
@@ -29,26 +29,26 @@ cd build
 Run cmake
 
 ```shell
-cmake .. -DCMAKE_INSTALL_PREFIX="$HOME/programs/ohmycal"
+cmake .. -DCMAKE_INSTALL_PREFIX="$HOME/programs/stasis"
 ```
 
-Compile and install ohmycal
+Compile and install stasis
 
 ```shell
 make
 make install
-export PATH="$HOME/programs/ohmycal/bin:$PATH"
+export PATH="$HOME/programs/stasis/bin:$PATH"
 ```
 
 # Quickstart
 
 ## Step 1: Create a mission
 
-Missions definitions live in OMC's `etc/mission` directory. Let's create a new one specifically geared toward generic data analysis tools. You may override the path to the `etc` directory by setting the `OMC_SYSCONFDIR` environment variable to different location.
+Missions definitions live in STASIS's `etc/mission` directory. Let's create a new one specifically geared toward generic data analysis tools. You may override the path to the `etc` directory by setting the `STASIS_SYSCONFDIR` environment variable to different location.
 
 ```shell
-mkdir $HOME/programs/ohmycal/etc/missions/mymission
-touch $HOME/programs/ohmycal/etc/missions/mymission/mymission.ini
+mkdir $HOME/programs/stasis/etc/missions/mymission
+touch $HOME/programs/stasis/etc/missions/mymission/mymission.ini
 ```
 
 Now populate the new data analysis mission configuration. Refer to the [release formatters](#release-formatters) section to see a list of what each `%` formatter does.
@@ -65,7 +65,7 @@ build_number_fmt = %v.%r
 ; e.g. 1.2.3.1
 ```
 
-Text files containing OMC template strings can be stored at the same level as the mission configuration, and rendered to anywhere inside the output directory. This will can you time if you plan to release for multiple platforms and architectures.
+Text files containing STASIS template strings can be stored at the same level as the mission configuration, and rendered to anywhere inside the output directory. This will can you time if you plan to release for multiple platforms and architectures.
 
 ```ini
 [template:readme.md.in]
@@ -79,7 +79,7 @@ destination = {{ storage.build_docker_dir }}/Dockerfile
 
 ## Step 2: Create a delivery configuration
 
-OMC's configuration parser does not distinguish input files by extension, so `mydelivery.ini`, `mydelivery.cfg`, `mydelivery.txt`, and `abc123.zyx987` are all perfectly valid file names.
+STASIS's configuration parser does not distinguish input files by extension, so `mydelivery.ini`, `mydelivery.cfg`, `mydelivery.txt`, and `abc123.zyx987` are all perfectly valid file names.
 
 All deliveries require a `[meta]` section. Here global metadata such as the delivery's `name`, `version`, and any programs/dependencies that make up the deliverable.
 
@@ -92,15 +92,15 @@ rc = 1
 python = 3.12
 ```
 
-The `[conda]` section instructs OMC how to obtain the conda installer of your choice, and defines the packages to be installed into the delivery's release environment.
+The `[conda]` section instructs STASIS how to obtain the conda installer of your choice, and defines the packages to be installed into the delivery's release environment.
 
 ```ini
 [conda]
 ; e.g. Download Miniforge3-23.11.0-0 for the current system platform and architecture
 installer_name = Miniforge3
 installer_version = 23.11.0-0
-installer_platform = {{env:OMC_CONDA_PLATFORM}}
-installer_arch = {{env:OMC_CONDA_ARCH}}
+installer_platform = {{env:STASIS_CONDA_PLATFORM}}
+installer_arch = {{env:STASIS_CONDA_ARCH}}
 installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/{{conda.installer_version}}
 
 conda_packages =
@@ -133,10 +133,10 @@ script =
         tests/
 ```
 
-## Step 3: Run OMC
+## Step 3: Run STASIS
 
 ```shell
-omc mydelivery.ini
+stasis mydelivery.ini
 ```
 
 # Configuration
@@ -146,17 +146,17 @@ omc mydelivery.ini
 | Name                         | Purpose                                               | 
 |------------------------------|-------------------------------------------------------|
 | TMPDIR                       | Change default path to store temporary data           |
-| OMC_ROOT                     | Change default path to write OMC's data               |
-| OMC_SYSCONFDIR               | Change default path to search for configuration files | 
-| OMC_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)    | 
-| OMC_JF_ACCESS_TOKEN          | Artifactory Access Token                              | 
-| OMC_JF_USER                  | Artifactory username                                  | 
-| OMC_JF_PASSWORD              | Artifactory password                                  | 
-| OMC_JF_SSH_KEY_PATH          | Path to SSH public key file                           |
-| OMC_JF_SSH_PASSPHRASE        | Password associated with SSH public key file          | 
-| OMC_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                            | 
-| OMC_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                       | 
-| OMC_JF_REPO                  | Artifactory "generic" repository to write to          | 
+| STASIS_ROOT                     | Change default path to write STASIS's data               |
+| STASIS_SYSCONFDIR               | Change default path to search for configuration files | 
+| STASIS_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)    | 
+| STASIS_JF_ACCESS_TOKEN          | Artifactory Access Token                              | 
+| STASIS_JF_USER                  | Artifactory username                                  | 
+| STASIS_JF_PASSWORD              | Artifactory password                                  | 
+| STASIS_JF_SSH_KEY_PATH          | Path to SSH public key file                           |
+| STASIS_JF_SSH_PASSPHRASE        | Password associated with SSH public key file          | 
+| STASIS_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                            | 
+| STASIS_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                       | 
+| STASIS_JF_REPO                  | Artifactory "generic" repository to write to          | 
 
 # Variable expansion
 
@@ -236,7 +236,7 @@ All configuration section names and keys are _case-sensitive_.
 
 ### runtime
 
-Environment variables exported are _global_ to all programs executed by ohmycal. There is no limit to the number of environment variables that can be set.
+Environment variables exported are _global_ to all programs executed by stasis. There is no limit to the number of environment variables that can be set.
 
 | Key                    | Type   | Purpose                                                    | Required |
 |------------------------|--------|------------------------------------------------------------|----------|
@@ -245,7 +245,7 @@ Environment variables exported are _global_ to all programs executed by ohmycal.
 
 ### test:_name_
 
-Sections starting with `test:` will be used during the testing phase of the ohmycal pipeline. Where the value of `name` following the colon is an arbitrary value, and only used for reporting which test-run is executing. Section names must be unique.
+Sections starting with `test:` will be used during the testing phase of the stasis pipeline. Where the value of `name` following the colon is an arbitrary value, and only used for reporting which test-run is executing. Section names must be unique.
 
 | Key          | Type   | Purpose                                               | Required |
 |--------------|--------|-------------------------------------------------------|----------|
@@ -277,10 +277,10 @@ The `deploy:docker` section controls how Docker images are created, when a `Dock
 
 # Mission files
 
-Mission rules are defined in the `OMC_SYCONFDIR/mission` directory. Each mission configuration file shares the same name as the directory. To create a new mission, `example`, the directory structure will be as follows:
+Mission rules are defined in the `STASIS_SYCONFDIR/mission` directory. Each mission configuration file shares the same name as the directory. To create a new mission, `example`, the directory structure will be as follows:
 
 ```text
-OMC_SYSCONFDIR/
+STASIS_SYSCONFDIR/
     mission/
         example/
             example.ini

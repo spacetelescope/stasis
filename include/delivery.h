@@ -1,13 +1,13 @@
-/// @file deliverable.h
+/// @file delivery.h
 
-#ifndef OMC_DELIVERABLE_H
-#define OMC_DELIVERABLE_H
+#ifndef STASIS_DELIVERY_H
+#define STASIS_DELIVERY_H
 
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/utsname.h>
-#include "omc.h"
+#include "core.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65
@@ -37,17 +37,17 @@ struct Content {
  *  \brief A structure describing a full delivery object
  */
 struct Delivery {
-    /*! \struct OMC_INI_FP
+    /*! \struct STASIS_INI_FP
      * \brief Container for INIFILE handles
     */
-    struct OMC_INI_FP {
+    struct STASIS_INI_FP {
         struct INIFILE *delivery;
         struct INIFILE *cfg;
         struct INIFILE *mission;
         char *delivery_path;
         char *cfg_path;
         char *mission_path;
-    } _omc_ini_fp;
+    } _stasis_ini_fp;
 
     /*! \struct System
      * \brief System information
@@ -110,7 +110,7 @@ struct Delivery {
         char *build_name;
         char *build_number;
         struct tm *time_info;          ///< Delivery time structure
-        time_t time_now;               ///< Time stamp for when OMC execution started
+        time_t time_now;               ///< Time stamp for when STASIS execution started
         char *time_str_epoch;          ///< String representation of Unix epoch
     } info;
 
@@ -391,4 +391,4 @@ int *bootstrap_build_info(struct Delivery *ctx);
 
 int delivery_dump_metadata(struct Delivery *ctx);
 
-#endif //OMC_DELIVERABLE_H
+#endif //STASIS_DELIVERY_H

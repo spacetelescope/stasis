@@ -21,7 +21,7 @@ foreach(file ${files})
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${file_without_ext} PRIVATE ${win_cflags} ${win_msvc_cflags})
     endif()
-    target_link_libraries(${file_without_ext} PRIVATE ohmycal)
+    target_link_libraries(${file_without_ext} PRIVATE stasis_core)
     add_test(${file_without_ext} ${file_without_ext})
     set_tests_properties(${file_without_ext}
             PROPERTIES

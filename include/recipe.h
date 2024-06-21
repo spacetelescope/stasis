@@ -1,6 +1,6 @@
 //! @file recipe.h
-#ifndef OMC_RECIPE_H
-#define OMC_RECIPE_H
+#ifndef STASIS_RECIPE_H
+#define STASIS_RECIPE_H
 
 #include "str.h"
 #include "utils.h"
@@ -69,4 +69,4 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result);
  */
 int recipe_get_type(char *repopath);
 
-#endif //OMC_RECIPE_H
+#endif //STASIS_RECIPE_H

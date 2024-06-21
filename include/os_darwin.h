@@ -1,5 +1,5 @@
-#ifndef OMC_OS_DARWIN_H
-#define OMC_OS_DARWIN_H
+#ifndef STASIS_OS_DARWIN_H
+#define STASIS_OS_DARWIN_H
 
 #include <sys/mount.h>
 

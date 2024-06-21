@@ -1,9 +1,9 @@
 #define _GNU_SOURCE
 
 #include <fnmatch.h>
-#include "omc.h"
+#include "core.h"
 
-extern struct OMC_GLOBAL globals;
+extern struct STASIS_GLOBAL globals;
 
 static void ini_has_key_required(struct INIFILE *ini, const char *section_name, char *key) {
     int status = ini_has_key(ini, section_name, key);
@@ -87,14 +87,14 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     // If the directory doesn't exist, create it
     if (access(tmpdir, F_OK) < 0) {
         if (mkdirs(tmpdir, 0755) < 0) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
             goto l_delivery_init_tmpdir_fatal;
         }
     }
 
     // If we can't read, write, or execute, then die
     if (access(tmpdir, R_OK | W_OK | X_OK) < 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s requires at least 0755 permissions.\n");
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s requires at least 0755 permissions.\n");
         goto l_delivery_init_tmpdir_fatal;
     }
 
@@ -103,15 +103,15 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
-#if defined(OMC_OS_LINUX)
+#if defined(STASIS_OS_LINUX)
     // If we can't execute programs, or write data to the file system at all, then die
     if ((st.f_flag & ST_NOEXEC) != 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted with noexec\n", tmpdir);
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s is mounted with noexec\n", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
 #endif
     if ((st.f_flag & ST_RDONLY) != 0) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "%s is mounted read-only\n", tmpdir);
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s is mounted read-only\n", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
 
@@ -208,21 +208,21 @@ void delivery_free(struct Delivery *ctx) {
         guard_strlist_free(&ctx->deploy.jfrog[i].files);
     }
 
-    if (ctx->_omc_ini_fp.delivery) {
-        ini_free(&ctx->_omc_ini_fp.delivery);
+    if (ctx->_stasis_ini_fp.delivery) {
+        ini_free(&ctx->_stasis_ini_fp.delivery);
     }
-    guard_free(ctx->_omc_ini_fp.delivery_path);
+    guard_free(ctx->_stasis_ini_fp.delivery_path);
 
-    if (ctx->_omc_ini_fp.cfg) {
+    if (ctx->_stasis_ini_fp.cfg) {
         // optional extras
-        ini_free(&ctx->_omc_ini_fp.cfg);
+        ini_free(&ctx->_stasis_ini_fp.cfg);
     }
-    guard_free(ctx->_omc_ini_fp.cfg_path);
+    guard_free(ctx->_stasis_ini_fp.cfg_path);
 
-    if (ctx->_omc_ini_fp.mission) {
-        ini_free(&ctx->_omc_ini_fp.mission);
+    if (ctx->_stasis_ini_fp.mission) {
+        ini_free(&ctx->_stasis_ini_fp.mission);
     }
-    guard_free(ctx->_omc_ini_fp.mission_path);
+    guard_free(ctx->_stasis_ini_fp.mission_path);
 }
 
 void delivery_init_dirs_stage2(struct Delivery *ctx) {
@@ -243,21 +243,21 @@ void delivery_init_dirs_stage2(struct Delivery *ctx) {
 }
 
 void delivery_init_dirs_stage1(struct Delivery *ctx) {
-    char *rootdir = getenv("OMC_ROOT");
+    char *rootdir = getenv("STASIS_ROOT");
     if (rootdir) {
         if (isempty(rootdir)) {
-            fprintf(stderr, "OMC_ROOT is set, but empty. Please assign a file system path to this environment variable.\n");
+            fprintf(stderr, "STASIS_ROOT is set, but empty. Please assign a file system path to this environment variable.\n");
             exit(1);
         }
         path_store(&ctx->storage.root, PATH_MAX, rootdir, ctx->info.build_name);
     } else {
-        // use "omc" in current working directory
-        path_store(&ctx->storage.root, PATH_MAX, "omc", ctx->info.build_name);
+        // use "stasis" in current working directory
+        path_store(&ctx->storage.root, PATH_MAX, "stasis", ctx->info.build_name);
     }
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
     if (delivery_init_tmpdir(ctx)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
         if (globals.tmpdir)
             guard_free(globals.tmpdir);
         exit(1);
@@ -271,7 +271,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
     }
 
     if (access(ctx->storage.mission_dir, F_OK)) {
-        msg(OMC_MSG_L1, "%s: %s\n", ctx->storage.mission_dir, strerror(errno));
+        msg(STASIS_MSG_L1, "%s: %s\n", ctx->storage.mission_dir, strerror(errno));
         exit(1);
     }
 
@@ -281,7 +281,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
         globals.conda_fresh_start = false;
         /*
         if (mkdirs(globals.conda_install_prefix, 0755)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L1, "Unable to create directory: %s: %s\n",
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to create directory: %s: %s\n",
                 strerror(errno), globals.conda_install_prefix);
             exit(1);
         }
@@ -289,24 +289,24 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
         /*
         ctx->storage.conda_install_prefix = realpath(globals.conda_install_prefix, NULL);
         if (!ctx->storage.conda_install_prefix) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L1, "realpath(): Conda installation prefix reassignment failed\n");
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "realpath(): Conda installation prefix reassignment failed\n");
             exit(1);
         }
         ctx->storage.conda_install_prefix = strdup(globals.conda_install_prefix);
          */
         path_store(&ctx->storage.conda_install_prefix, PATH_MAX, globals.conda_install_prefix, "conda");
     } else {
-        // install conda under the OMC tree
+        // install conda under the STASIS tree
         path_store(&ctx->storage.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
     }
 }
 
 int delivery_init_platform(struct Delivery *ctx) {
-    msg(OMC_MSG_L2, "Setting architecture\n");
+    msg(STASIS_MSG_L2, "Setting architecture\n");
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "uname() failed: %s\n", strerror(errno));
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "uname() failed: %s\n", strerror(errno));
         return -1;
     }
 
@@ -331,7 +331,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         strcpy(archsuffix, ctx->system.arch);
     }
 
-    msg(OMC_MSG_L2, "Setting platform\n");
+    msg(STASIS_MSG_L2, "Setting platform\n");
     strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
@@ -350,11 +350,11 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
 
     // Declare some important bits as environment variables
-    setenv("OMC_ARCH", ctx->system.arch, 1);
-    setenv("OMC_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM], 1);
-    setenv("OMC_CONDA_ARCH", ctx->system.arch, 1);
-    setenv("OMC_CONDA_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
-    setenv("OMC_CONDA_PLATFORM_SUBDIR", ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
+    setenv("STASIS_ARCH", ctx->system.arch, 1);
+    setenv("STASIS_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM], 1);
+    setenv("STASIS_CONDA_ARCH", ctx->system.arch, 1);
+    setenv("STASIS_CONDA_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
+    setenv("STASIS_CONDA_PLATFORM_SUBDIR", ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
 
     // Register template variables
     // These were moved out of main() because we can't take the address of system.platform[x]
@@ -369,28 +369,28 @@ static int populate_mission_ini(struct Delivery **ctx) {
     union INIVal val;
     struct INIFILE *ini;
 
-    if ((*ctx)->_omc_ini_fp.mission) {
+    if ((*ctx)->_stasis_ini_fp.mission) {
         return 0;
     }
 
     // Now populate the rules
     char missionfile[PATH_MAX] = {0};
-    if (getenv("OMC_SYSCONFDIR")) {
+    if (getenv("STASIS_SYSCONFDIR")) {
         sprintf(missionfile, "%s/%s/%s/%s.ini",
-                getenv("OMC_SYSCONFDIR"), "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
+                getenv("STASIS_SYSCONFDIR"), "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     } else {
         sprintf(missionfile, "%s/%s/%s/%s.ini",
                 globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 
-    msg(OMC_MSG_L2, "Reading mission configuration: %s\n", missionfile);
-    (*ctx)->_omc_ini_fp.mission = ini_open(missionfile);
-    ini = (*ctx)->_omc_ini_fp.mission;
+    msg(STASIS_MSG_L2, "Reading mission configuration: %s\n", missionfile);
+    (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
+    ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
-        msg(OMC_MSG_ERROR | OMC_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read misson configuration: %s, %s\n", missionfile, strerror(errno));
         exit(1);
     }
-    (*ctx)->_omc_ini_fp.mission_path = strdup(missionfile);
+    (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);
 
     ini_getval_required(ini, "meta", "release_fmt", INIVAL_TYPE_STR, &val);
     conv_str(&(*ctx)->rules.release_fmt, val);
@@ -455,7 +455,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
 
 static int populate_delivery_ini(struct Delivery *ctx) {
     union INIVal val;
-    struct INIFILE *ini = ctx->_omc_ini_fp.delivery;
+    struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
     RuntimeEnv *rt;
 
@@ -464,7 +464,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     // keys in the configuration
     rt = runtime_copy(__environ);
     while ((rtdata = ini_getall(ini, "runtime")) != NULL) {
-        char rec[OMC_BUFSIZ];
+        char rec[STASIS_BUFSIZ];
         sprintf(rec, "%s=%s", lstrip(strip(rtdata->key)), lstrip(strip(rtdata->value)));
         runtime_set(rt, rtdata->key, rtdata->value);
     }
@@ -680,7 +680,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
 
 static int populate_delivery_cfg(struct Delivery *ctx) {
     union INIVal val;
-    struct INIFILE *cfg = ctx->_omc_ini_fp.cfg;
+    struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
         return -1;
     }
@@ -734,12 +734,12 @@ static int populate_info(struct Delivery *ctx) {
         time(&ctx->info.time_now);
         ctx->info.time_info = localtime(&ctx->info.time_now);
 
-        ctx->info.time_str_epoch = calloc(OMC_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
+        ctx->info.time_str_epoch = calloc(STASIS_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
         if (!ctx->info.time_str_epoch) {
-            msg(OMC_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+            msg(STASIS_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
             return -1;
         }
-        snprintf(ctx->info.time_str_epoch, OMC_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
+        snprintf(ctx->info.time_str_epoch, STASIS_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
     }
     return 0;
 }
@@ -747,8 +747,8 @@ static int populate_info(struct Delivery *ctx) {
 int *bootstrap_build_info(struct Delivery *ctx) {
     struct Delivery local;
     memset(&local, 0, sizeof(local));
-    local._omc_ini_fp.cfg = ini_open(ctx->_omc_ini_fp.cfg_path);
-    local._omc_ini_fp.delivery = ini_open(ctx->_omc_ini_fp.delivery_path);
+    local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
+    local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
     delivery_init_platform(&local);
     populate_delivery_cfg(&local);
     populate_delivery_ini(&local);
@@ -768,7 +768,7 @@ int delivery_init(struct Delivery *ctx) {
     populate_delivery_cfg(ctx);
 
     // Set artifactory URL via environment variable if possible
-    char *jfurl = getenv("OMC_JF_ARTIFACTORY_URL");
+    char *jfurl = getenv("STASIS_JF_ARTIFACTORY_URL");
     if (jfurl) {
         if (globals.jfrog.url) {
             guard_free(globals.jfrog.url);
@@ -777,7 +777,7 @@ int delivery_init(struct Delivery *ctx) {
     }
 
     // Set artifactory repository via environment if possible
-    char *jfrepo = getenv("OMC_JF_REPO");
+    char *jfrepo = getenv("STASIS_JF_REPO");
     if (jfrepo) {
         if (globals.jfrog.repo) {
             guard_free(globals.jfrog.repo);
@@ -788,7 +788,7 @@ int delivery_init(struct Delivery *ctx) {
     // Configure architecture and platform information
     delivery_init_platform(ctx);
 
-    // Create OMC directory structure
+    // Create STASIS directory structure
     delivery_init_dirs_stage1(ctx);
 
     char config_local[PATH_MAX];
@@ -800,7 +800,7 @@ int delivery_init(struct Delivery *ctx) {
     setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
 
     // add tools to PATH
-    char pathvar_tmp[OMC_BUFSIZ];
+    char pathvar_tmp[STASIS_BUFSIZ];
     sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
     setenv("PATH", pathvar_tmp, 1);
 
@@ -829,7 +829,7 @@ int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
     size_t fmt_len = strlen(fmt);
 
     if (!*dest) {
-        *dest = calloc(OMC_NAME_MAX, sizeof(**dest));
+        *dest = calloc(STASIS_NAME_MAX, sizeof(**dest));
         if (!*dest) {
             return -1;
         }
@@ -968,13 +968,13 @@ void delivery_runtime_show(struct Delivery *ctx) {
         // no data
         return;
     }
-    strlist_sort(rt, OMC_SORT_ALPHA);
+    strlist_sort(rt, STASIS_SORT_ALPHA);
     size_t total = strlist_count(rt);
     for (size_t i = 0; i < total; i++) {
         char *item = strlist_item(rt, i);
         if (!item) {
             // not supposed to occur
-            msg(OMC_MSG_WARN | OMC_MSG_L1, "Encountered unexpected NULL at record %zu of %zu of runtime array.\n", i);
+            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Encountered unexpected NULL at record %zu of %zu of runtime array.\n", i);
             return;
         }
         printf("%s\n", item);
@@ -1150,7 +1150,7 @@ static const struct Test *requirement_from_test(struct Delivery *ctx, const char
 
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char cmd[PATH_MAX];
-    char pkgs[OMC_BUFSIZ];
+    char pkgs[STASIS_BUFSIZ];
     char *env_current = getenv("CONDA_DEFAULT_ENV");
 
     if (env_current) {
@@ -1251,7 +1251,7 @@ int delivery_get_installer(struct Delivery *ctx, char *installer_url) {
             return -1;
         }
     } else {
-        msg(OMC_MSG_RESTRICT | OMC_MSG_L3, "Skipped, installer already exists\n", script_path);
+        msg(STASIS_MSG_RESTRICT | STASIS_MSG_L3, "Skipped, installer already exists\n", script_path);
     }
 
     ctx->conda.installer_path = strdup(script_path);
@@ -1264,7 +1264,7 @@ int delivery_get_installer(struct Delivery *ctx, char *installer_url) {
 }
 
 int delivery_copy_conda_artifacts(struct Delivery *ctx) {
-    char cmd[OMC_BUFSIZ];
+    char cmd[STASIS_BUFSIZ];
     char conda_build_dir[PATH_MAX];
     char subdir[PATH_MAX];
     memset(cmd, 0, sizeof(cmd));
@@ -1275,7 +1275,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
     // One must run conda build at least once to create the "conda-bld" directory.
     // When this directory is missing there can be no build artifacts.
     if (access(conda_build_dir, F_OK) < 0) {
-        msg(OMC_MSG_RESTRICT | OMC_MSG_WARN | OMC_MSG_L3,
+        msg(STASIS_MSG_RESTRICT | STASIS_MSG_WARN | STASIS_MSG_L3,
             "Skipped: 'conda build' has never been executed.\n");
         return 0;
     }
@@ -1393,7 +1393,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
             }
         }
     } else {
-        msg(OMC_MSG_L3, "Conda removal disabled by configuration\n");
+        msg(STASIS_MSG_L3, "Conda removal disabled by configuration\n");
     }
 }
 
@@ -1405,7 +1405,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
 
     // Setting the CONDARC environment variable appears to be the only consistent
     // way to make sure the file is used. Not setting this variable leads to strange
-    // behavior, especially if a conda environment is already active when OMC is loaded.
+    // behavior, especially if a conda environment is already active when STASIS is loaded.
     char rcpath[PATH_MAX];
     sprintf(rcpath, "%s/%s", conda_install_dir, ".condarc");
     setenv("CONDARC", rcpath, 1);
@@ -1435,7 +1435,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         deferred = ctx->conda.pip_packages_defer;
         strcpy(mode, "pip");
     }
-    msg(OMC_MSG_L2, "Filtering %s packages by test definition...\n", mode);
+    msg(STASIS_MSG_L2, "Filtering %s packages by test definition...\n", mode);
 
     struct StrList *filtered = NULL;
     filtered = strlist_init();
@@ -1447,7 +1447,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             // no data
             continue;
         }
-        msg(OMC_MSG_L3, "package '%s': ", name);
+        msg(STASIS_MSG_L3, "package '%s': ", name);
 
         // Compile a list of packages that are *also* to be tested.
         char *version;
@@ -1479,7 +1479,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 
     if (!strlist_count(deferred)) {
-        msg(OMC_MSG_WARN | OMC_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
     } else {
         if (DEFER_CONDA == type) {
             strlist_free(&ctx->conda.conda_packages);
@@ -1501,7 +1501,7 @@ const char *release_header = "# delivery_name: %s\n"
                      "# conda_build_ident: %s\n";
 
 char *delivery_get_release_header(struct Delivery *ctx) {
-    char output[OMC_BUFSIZ];
+    char output[STASIS_BUFSIZ];
     char stamp[100];
     strftime(stamp, sizeof(stamp) - 1, "%c", ctx->info.time_info);
     sprintf(output, release_header,
@@ -1516,7 +1516,7 @@ char *delivery_get_release_header(struct Delivery *ctx) {
 int delivery_dump_metadata(struct Delivery *ctx) {
     FILE *fp;
     char filename[PATH_MAX];
-    sprintf(filename, "%s/meta-%s.omc", ctx->storage.meta_dir, ctx->info.release_name);
+    sprintf(filename, "%s/meta-%s.stasis", ctx->storage.meta_dir, ctx->info.release_name);
     fp = fopen(filename, "w+");
     if (!fp) {
         return -1;
@@ -1563,12 +1563,12 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
     if (stage == DELIVERY_REWRITE_SPEC_STAGE_1) {
         header = delivery_get_release_header(ctx);
         if (!header) {
-            msg(OMC_MSG_ERROR, "failed to generate release header string\n", filename);
+            msg(STASIS_MSG_ERROR, "failed to generate release header string\n", filename);
             exit(1);
         }
         tempfile = xmkstemp(&tp, "w+");
         if (!tempfile || !tp) {
-            msg(OMC_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
+            msg(STASIS_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
             exit(1);
         }
         fprintf(tp, "%s", header);
@@ -1576,7 +1576,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         // Read the original file
         char **contents = file_readlines(filename, 0, 0, NULL);
         if (!contents) {
-            msg(OMC_MSG_ERROR, "%s: unable to read %s", filename);
+            msg(STASIS_MSG_ERROR, "%s: unable to read %s", filename);
             exit(1);
         }
 
@@ -1629,7 +1629,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             sprintf(output, "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
-            msg(OMC_MSG_WARN, "conda_staging_url is not configured\n", filename);
+            msg(STASIS_MSG_WARN, "conda_staging_url is not configured\n", filename);
             file_replace_text(filename, "  - @CONDA_CHANNEL@", "", 0);
         }
 
@@ -1651,16 +1651,16 @@ void delivery_tests_run(struct Delivery *ctx) {
     memset(&proc, 0, sizeof(proc));
 
     if (!ctx->tests[0].name) {
-        msg(OMC_MSG_WARN | OMC_MSG_L2, "no tests are defined!\n");
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
         for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
             if (!ctx->tests[i].name && !ctx->tests[i].repository && !ctx->tests[i].script) {
                 // skip unused test records
                 continue;
             }
-            msg(OMC_MSG_L2, "Executing tests for %s %s\n", ctx->tests[i].name, ctx->tests[i].version);
+            msg(STASIS_MSG_L2, "Executing tests for %s %s\n", ctx->tests[i].name, ctx->tests[i].version);
             if (!ctx->tests[i].script || !strlen(ctx->tests[i].script)) {
-                msg(OMC_MSG_WARN | OMC_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
+                msg(STASIS_MSG_WARN | STASIS_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
                     ctx->tests[i].name);
                 continue;
             }
@@ -1669,12 +1669,12 @@ void delivery_tests_run(struct Delivery *ctx) {
             sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(ctx->tests[i].repository));
 
             if (!access(destdir, F_OK)) {
-                msg(OMC_MSG_L3, "Purging repository %s\n", destdir);
+                msg(STASIS_MSG_L3, "Purging repository %s\n", destdir);
                 if (rmtree(destdir)) {
                     COE_CHECK_ABORT(1, "Unable to remove repository\n");
                 }
             }
-            msg(OMC_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
+            msg(STASIS_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
             if (!git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version)) {
                 ctx->tests[i].repository_info_tag = strdup(git_describe(destdir));
                 ctx->tests[i].repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
@@ -1693,14 +1693,14 @@ void delivery_tests_run(struct Delivery *ctx) {
                 int status;
                 char cmd[PATH_MAX];
 
-                msg(OMC_MSG_L3, "Testing %s\n", ctx->tests[i].name);
+                msg(STASIS_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
 
                 // Apply workaround for tox positional arguments
                 char *toxconf = NULL;
                 if (!access("tox.ini", F_OK)) {
                     if (!fix_tox_conf("tox.ini", &toxconf)) {
-                        msg(OMC_MSG_L3, "Fixing tox positional arguments\n");
+                        msg(STASIS_MSG_L3, "Fixing tox positional arguments\n");
                         if (!globals.workaround.tox_posargs) {
                             globals.workaround.tox_posargs = calloc(PATH_MAX, sizeof(*globals.workaround.tox_posargs));
                         } else {
@@ -1724,7 +1724,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 
                 status = shell(&proc, cmd);
                 if (status) {
-                    msg(OMC_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
+                    msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
                     COE_CHECK_ABORT(1, "Test failure");
                 }
 
@@ -1734,7 +1734,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
                 popd();
 #else
-                msg(OMC_MSG_WARNING | OMC_MSG_L3, "TESTING DISABLED BY CODE!\n");
+                msg(STASIS_MSG_WARNING | STASIS_MSG_L3, "TESTING DISABLED BY CODE!\n");
 #endif
             }
         }
@@ -1763,12 +1763,12 @@ int delivery_init_artifactory(struct Delivery *ctx) {
 
     if (!access(filepath, F_OK)) {
         // already have it
-        msg(OMC_MSG_L3, "Skipped download, %s already exists\n", filepath);
+        msg(STASIS_MSG_L3, "Skipped download, %s already exists\n", filepath);
         goto delivery_init_artifactory_envsetup;
     }
 
     char *platform = ctx->system.platform[DELIVERY_PLATFORM];
-    msg(OMC_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, platform, ctx->system.arch);
+    msg(STASIS_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, platform, ctx->system.arch);
     if ((status = artifactory_download_cli(dest,
             globals.jfrog.jfrog_artifactory_base_url,
             globals.jfrog.jfrog_artifactory_product,
@@ -1809,8 +1809,8 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         jfrt_upload_init(&ctx->deploy.jfrog[i].upload_ctx);
 
         if (!globals.jfrog.repo) {
-            msg(OMC_MSG_WARN, "Artifactory repository path is not configured!\n");
-            fprintf(stderr, "set OMC_JF_REPO environment variable...\nOr append to configuration file:\n\n");
+            msg(STASIS_MSG_WARN, "Artifactory repository path is not configured!\n");
+            fprintf(stderr, "set STASIS_JF_REPO environment variable...\nOr append to configuration file:\n\n");
             fprintf(stderr, "[deploy:artifactory]\nrepo = example/generic/repo/path\n\n");
             status++;
             break;
@@ -1820,7 +1820,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
         if (!ctx->deploy.jfrog[i].repo || isempty(ctx->deploy.jfrog[i].repo) || !strlen(ctx->deploy.jfrog[i].repo)) {
             // Unlikely to trigger if the config parser is working correctly
-            msg(OMC_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
+            msg(STASIS_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
             status++;
             break;
         }
@@ -1833,7 +1833,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         char dest[PATH_MAX];  // repo + remote dir
 
         if (jfrog_cli_rt_ping(&ctx->deploy.jfrog_auth)) {
-            msg(OMC_MSG_ERROR | OMC_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog_auth.url);
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog_auth.url);
             return -1;
         }
 
@@ -1865,7 +1865,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         char *src;
         char *dest;
     } data;
-    struct INIFILE *cfg = ctx->_omc_ini_fp.mission;
+    struct INIFILE *cfg = ctx->_stasis_ini_fp.mission;
     union INIVal val;
 
     memset(&data, 0, sizeof(data));
@@ -1886,7 +1886,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
             return 1;
         }
         sprintf(data.src, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
-        msg(OMC_MSG_L2, "%s\n", data.src);
+        msg(STASIS_MSG_L2, "%s\n", data.src);
 
         ini_getval_required(cfg, section_name, "destination", INIVAL_TYPE_STR, &val);
         conv_str(&data.dest, val);
@@ -1924,7 +1924,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         }
         fclose(fp);
 
-        msg(OMC_MSG_L3, "Writing %s\n", data.dest);
+        msg(STASIS_MSG_L3, "Writing %s\n", data.dest);
         if (tpl_render_to_file(contents, data.dest)) {
             guard_free(contents);
             guard_free(data.dest);
@@ -1942,19 +1942,19 @@ int delivery_docker(struct Delivery *ctx) {
     if (!docker_capable(&ctx->deploy.docker.capabilities)) {
         return -1;
     }
-    char tag[OMC_NAME_MAX];
+    char tag[STASIS_NAME_MAX];
     char args[PATH_MAX];
     int has_registry = ctx->deploy.docker.registry != NULL;
     size_t total_tags = strlist_count(ctx->deploy.docker.tags);
     size_t total_build_args = strlist_count(ctx->deploy.docker.build_args);
 
     if (!has_registry) {
-        msg(OMC_MSG_WARN | OMC_MSG_L2, "No docker registry defined. You will need to manually retag the resulting image.\n");
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker registry defined. You will need to manually retag the resulting image.\n");
     }
 
     if (!total_tags) {
         char default_tag[PATH_MAX];
-        msg(OMC_MSG_WARN | OMC_MSG_L2, "No docker tags defined by configuration. Generating default tag(s).\n");
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker tags defined by configuration. Generating default tag(s).\n");
         // generate local tag
         memset(default_tag, 0, sizeof(default_tag));
         sprintf(default_tag, "%s:%s-py%s", ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
@@ -2018,7 +2018,7 @@ int delivery_docker(struct Delivery *ctx) {
     memset(dest, 0, sizeof(dest));
     sprintf(dest, "%s/packages", ctx->storage.build_docker_dir);
 
-    msg(OMC_MSG_L2, "Copying conda packages\n");
+    msg(STASIS_MSG_L2, "Copying conda packages\n");
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
     sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.conda_artifact_dir, dest);
     if (system(rsync_cmd)) {
@@ -2026,7 +2026,7 @@ int delivery_docker(struct Delivery *ctx) {
         return -1;
     }
 
-    msg(OMC_MSG_L2, "Copying wheel packages\n");
+    msg(STASIS_MSG_L2, "Copying wheel packages\n");
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
     sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
     if (system(rsync_cmd)) {
@@ -2043,20 +2043,20 @@ int delivery_docker(struct Delivery *ctx) {
     strcpy(tag, strlist_item(ctx->deploy.docker.tags, 0));
     docker_sanitize_tag(tag);
 
-    msg(OMC_MSG_L2, "Executing image test script for %s\n", tag);
+    msg(STASIS_MSG_L2, "Executing image test script for %s\n", tag);
     if (ctx->deploy.docker.test_script) {
         if (isempty(ctx->deploy.docker.test_script)) {
-            msg(OMC_MSG_L2 | OMC_MSG_WARN, "Image test script has no content\n");
+            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Image test script has no content\n");
         } else {
             int state;
             if ((state = docker_script(tag, ctx->deploy.docker.test_script, 0))) {
-                msg(OMC_MSG_L2 | OMC_MSG_ERROR, "Non-zero exit (%d) from test script. %s image archive will not be generated.\n", state >> 8, tag);
+                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Non-zero exit (%d) from test script. %s image archive will not be generated.\n", state >> 8, tag);
                 // test failed -- don't save the image
                 return -1;
             }
         }
     } else {
-        msg(OMC_MSG_L2 | OMC_MSG_WARN, "No image test script defined\n");
+        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "No image test script defined\n");
     }
 
     // Test successful, save image
@@ -2089,9 +2089,9 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
         }
 
         sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
-        msg(OMC_MSG_L2, "%s\n", rec->d_name);
-        if (xml_pretty_print_in_place(path, OMC_XML_PRETTY_PRINT_PROG, OMC_XML_PRETTY_PRINT_ARGS)) {
-            msg(OMC_MSG_L3 | OMC_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
+        msg(STASIS_MSG_L2, "%s\n", rec->d_name);
+        if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
+            msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
         }
     }
 

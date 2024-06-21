@@ -1,5 +1,5 @@
-#ifndef OMC_OS_LINUX_H
-#define OMC_OS_LINUX_H
+#ifndef STASIS_OS_LINUX_H
+#define STASIS_OS_LINUX_H
 
 #include <limits.h>
 

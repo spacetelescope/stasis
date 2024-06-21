@@ -2,10 +2,10 @@
 // Created by jhunk on 12/18/23.
 //
 
-#ifndef OMC_RULES_H
-#define OMC_RULES_H
+#ifndef STASIS_RULES_H
+#define STASIS_RULES_H
 
-#include "omc.h"
+#include "core.h"
 
 
-#endif //OMC_RULES_H
+#endif //STASIS_RULES_H
