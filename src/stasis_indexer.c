@@ -580,7 +580,7 @@ int main(int argc, char *argv[]) {
     }
 
     char *workdir;
-    char workdir_template[PATH_MAX];
+    char workdir_template[PATH_MAX] = {0};
     char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
         strcat(workdir_template, system_tmp);
