@@ -351,4 +351,10 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
  */
 struct StrList *listdir(const char *path);
 
+/**
+ * Get CPU count
+ * @return CPU count on success, zero on error
+ */
+long get_cpu_count();
+
 #endif //STASIS_UTILS_H

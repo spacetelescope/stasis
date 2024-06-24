@@ -353,7 +353,17 @@ int delivery_init_platform(struct Delivery *ctx) {
         tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
     }
 
+    long cpu_count = get_cpu_count();
+    if (!cpu_count) {
+        fprintf(stderr, "Unable to determine CPU count. Falling back to 1.\n");
+        cpu_count = 1;
+    }
+    char ncpus[100] = {0};
+    sprintf(ncpus, "%ld", cpu_count);
+
     // Declare some important bits as environment variables
+    setenv("CPU_COUNT", ncpus, 1);
+    setenv("STASIS_CPU_COUNT", ncpus, 1);
     setenv("STASIS_ARCH", ctx->system.arch, 1);
     setenv("STASIS_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM], 1);
     setenv("STASIS_CONDA_ARCH", ctx->system.arch, 1);

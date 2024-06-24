@@ -758,3 +758,10 @@ struct StrList *listdir(const char *path) {
     return node;
 }
 
+long get_cpu_count() {
+#if defined(STASIS_OS_LINUX) || defined(STASIS_OS_DARWIN)
+        return sysconf(_SC_NPROCESSORS_ONLN);
+#else
+        return 0;
+#endif
+}
