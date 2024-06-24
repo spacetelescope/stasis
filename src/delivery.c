@@ -1735,7 +1735,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             } else {
 #if 1
                 int status;
-                char cmd[PATH_MAX];
+                char *cmd = calloc(strlen(ctx->tests[i].script) + STASIS_BUFSIZ, sizeof(*cmd));
 
                 msg(STASIS_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
@@ -1755,22 +1755,45 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
 
                 // enable trace mode before executing each test script
-                memset(cmd, 0, sizeof(cmd));
-                sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
 
+                strcpy(cmd, ctx->tests[i].script);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
                         strcpy(cmd, cmd_rendered);
+                        cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
                 }
 
-                status = shell(&proc, cmd);
+                FILE *runner_fp;
+                char *runner_filename = xmkstemp(&runner_fp, "w");
+
+                fprintf(runner_fp, "#!/bin/bash\n"
+                                   "eval `conda shell.posix reactivate`\n"
+                                   "set -x\n"
+                                   "%s\n",
+                        cmd);
+                fclose(runner_fp);
+                chmod(runner_filename, 0755);
+
+                puts(cmd);
+                char runner_cmd[PATH_MAX] = {0};
+                sprintf(runner_cmd, "%s", runner_filename);
+                status = shell(&proc, runner_cmd);
                 if (status) {
                     msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
+                    remove(runner_filename);
+                    popd();
+                    guard_free(cmd);
+                    tpl_free();
+                    delivery_free(ctx);
+                    globals_free();
                     COE_CHECK_ABORT(1, "Test failure");
                 }
+                guard_free(cmd);
+                remove(runner_filename);
+                guard_free(runner_filename);
 
                 if (toxconf) {
                     remove(toxconf);
