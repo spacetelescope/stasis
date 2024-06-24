@@ -1035,22 +1035,30 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
 
                 char command[PATH_MAX];
-
                 if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
-                    char selector[STASIS_NAME_MAX] = {0};
-                    sprintf(selector, "%s_", ctx->system.platform[DELIVERY_PLATFORM]);
-                    if (strstr(ctx->system.arch, "64")) {
-                        strcat(selector, "64");
-                    } else if (strstr(ctx->system.arch, "arm64")) {
-                        strcat(selector, "arm64");
-                    } else {
-                        strcat(selector, "32"); // blind guess
+                    char arch[STASIS_NAME_MAX] = {0};
+                    char platform[STASIS_NAME_MAX] = {0};
+
+                    strcpy(platform, ctx->system.platform[DELIVERY_PLATFORM]);
+                    if (strstr(platform, "Darwin")) {
+                        memset(platform, 0, sizeof(platform));
+                        strcpy(platform, "osx");
                     }
-                    tolower_s(selector);
-                    sprintf(command, "mambabuild --python=%s -m ../.ci_support/%s_.yaml .", ctx->meta.python, selector);
-                } else {
-                    sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
-                }
+                    tolower_s(platform);
+                    if (strstr(ctx->system.arch, "arm64")) {
+                        strcpy(arch, "arm64");
+                    } else if (strstr(ctx->system.arch, "64")) {
+                        strcpy(arch, "64");
+                    } else {
+                        strcat(arch, "32"); // blind guess
+                    }
+                    tolower_s(arch);
+
+                    sprintf(command, "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
+                        ctx->meta.python, platform, arch);
+                    } else {
+                        sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+                    }
                 status = conda_exec(command);
                 if (status) {
                     return -1;
