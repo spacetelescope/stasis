@@ -72,6 +72,7 @@ struct STASIS_GLOBAL {
     char *sysconfdir; //!< Path where STASIS reads its configuration files (mission directory, etc)
     struct {
         char *tox_posargs;
+        char *conda_reactivate;
     } workaround;
     struct Jfrog {
         char *jfrog_artifactory_base_url;

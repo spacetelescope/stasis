@@ -54,4 +54,5 @@ void globals_free() {
     guard_free(globals.jfrog.jfrog_artifactory_product);
     guard_free(globals.jfrog.remote_filename);
     guard_free(globals.workaround.tox_posargs);
+    guard_free(globals.workaround.conda_reactivate);
 }

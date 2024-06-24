@@ -1687,6 +1687,13 @@ void delivery_tests_run(struct Delivery *ctx) {
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
+    if (!globals.workaround.conda_reactivate) {
+        globals.workaround.conda_reactivate = calloc(PATH_MAX, sizeof(*globals.workaround.conda_reactivate));
+    } else {
+        memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
+    }
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x\neval `conda shell.posix reactivate`\nset -x\n");
+
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
