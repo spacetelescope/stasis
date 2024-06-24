@@ -162,6 +162,9 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_docker_dir);
     guard_free(ctx->storage.mission_dir);
     guard_free(ctx->storage.docker_artifact_dir);
+    guard_free(ctx->storage.meta_dir);
+    guard_free(ctx->storage.package_dir);
+    guard_free(ctx->storage.cfgdump_dir);
     guard_free(ctx->info.time_str_epoch);
     guard_free(ctx->info.build_name);
     guard_free(ctx->info.build_number);
@@ -186,6 +189,7 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests[i].repository);
         guard_free(ctx->tests[i].repository_info_ref);
         guard_free(ctx->tests[i].repository_info_tag);
+        guard_strlist_free(&ctx->tests[i].repository_remove_tags);
         guard_free(ctx->tests[i].script);
         guard_free(ctx->tests[i].build_recipe);
         // test-specific runtime variables
