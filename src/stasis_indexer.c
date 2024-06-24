@@ -208,6 +208,7 @@ int indexer_make_website(struct Delivery *ctx) {
     };
 
     if (!find_program("pandoc")) {
+        fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
         return 0;
     }
 
