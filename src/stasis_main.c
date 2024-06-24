@@ -248,6 +248,7 @@ int main(int argc, char *argv[]) {
     tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
     tpl_register("storage.build_docker_dir", &ctx.storage.build_docker_dir);
     tpl_register("storage.results_dir", &ctx.storage.results_dir);
+    tpl_register("storage.tools_dir", &ctx.storage.tools_dir);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
