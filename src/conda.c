@@ -169,12 +169,12 @@ int conda_activate(const char *root, const char *env_name) {
         perror(logfile);
         return -1;
     }
-    int i = 0;
+
     while (!feof(fp)) {
         char buf[STASIS_BUFSIZ] = {0};
         int ch = 0;
         size_t z = 0;
-        // We are ingesting output from "env -0", can't use fgets()
+        // We are ingesting output from "env -0" and can't use fgets()
         // Copy each character into the buffer until we encounter '\0' or EOF
         while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
             if (ch == EOF) {
@@ -196,15 +196,12 @@ int conda_activate(const char *root, const char *env_name) {
         }
         if (!part[0]) {
             msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
-            i++;
         } else if (!part[1]) {
             msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
-            i++;
         } else {
             setenv(part[0], part[1], 1);
         }
         GENERIC_ARRAY_FREE(part);
-        i++;
     }
     fclose(fp);
     remove(logfile);
