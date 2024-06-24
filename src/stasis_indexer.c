@@ -518,6 +518,15 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+
+    char newpath[PATH_MAX] = {0};
+    if (getenv("PATH")) {
+        sprintf(newpath, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+        setenv("PATH", newpath, 1);
+    } else {
+        SYSERROR("%s", "environment variable PATH is undefined. Unable to continue.");
+        exit(1);
+    }
 }
 
 int main(int argc, char *argv[]) {
