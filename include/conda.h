@@ -8,6 +8,20 @@
 
 #define CONDA_INSTALL_PREFIX "conda"
 
+struct MicromambaInfo {
+    char *micromamba_prefix;
+    char *conda_prefix;
+};
+
+/**
+ * Execute micromamba
+ * @param info MicromambaInfo data structure (must be populated before use)
+ * @param command printf-style formatter string
+ * @param ... variadic arguments
+ * @return exit code
+ */
+int micromamba(struct MicromambaInfo *info, char *command, ...);
+
 /**
  * Execute Python
  * Python interpreter is determined by PATH
