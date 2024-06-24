@@ -248,6 +248,7 @@ int main(int argc, char *argv[]) {
     tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
     tpl_register("storage.build_docker_dir", &ctx.storage.build_docker_dir);
     tpl_register("storage.results_dir", &ctx.storage.results_dir);
+    tpl_register("storage.tools_dir", &ctx.storage.tools_dir);
     tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
     tpl_register("conda.installer_name", &ctx.conda.installer_name);
     tpl_register("conda.installer_version", &ctx.conda.installer_version);
@@ -257,6 +258,7 @@ int main(int argc, char *argv[]) {
     tpl_register("deploy.jfrog.url", &globals.jfrog.url);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
     tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
+    tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR

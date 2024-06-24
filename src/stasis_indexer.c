@@ -200,57 +200,6 @@ struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     return result;
 }
 
-int micromamba(const char *write_to, const char *prefix, char *command, ...) {
-    struct utsname sys;
-    uname(&sys);
-
-    tolower_s(sys.sysname);
-    if (!strcmp(sys.sysname, "darwin")) {
-        strcpy(sys.sysname, "osx");
-    }
-
-    if (!strcmp(sys.machine, "x86_64")) {
-        strcpy(sys.machine, "64");
-    }
-
-    char url[PATH_MAX];
-    sprintf(url, "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
-    if (access("latest", F_OK)) {
-        download(url, "latest", NULL);
-    }
-
-    char mmbin[PATH_MAX];
-    sprintf(mmbin, "%s/micromamba", write_to);
-
-    if (access(mmbin, F_OK)) {
-        char untarcmd[PATH_MAX];
-        mkdirs(write_to, 0755);
-        sprintf(untarcmd, "tar -xvf latest -C %s --strip-components=1 bin/micromamba 1>/dev/null", write_to);
-        system(untarcmd);
-    }
-
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "%s -r %s -p %s ", mmbin, prefix, prefix);
-    va_list args;
-    va_start(args, command);
-    vsprintf(cmd + strlen(cmd), command, args);
-    va_end(args);
-
-    mkdirs(prefix, 0755);
-
-    char rcpath[PATH_MAX];
-    sprintf(rcpath, "%s/.condarc", prefix);
-    touch(rcpath);
-
-    setenv("CONDARC", rcpath, 1);
-    setenv("MAMBA_ROOT_PREFIX", prefix, 1);
-    int status = system(cmd);
-    unsetenv("MAMBA_ROOT_PREFIX");
-
-    return status;
-}
-
 int indexer_make_website(struct Delivery *ctx) {
     char cmd[PATH_MAX];
     char *inputs[] = {
@@ -259,6 +208,7 @@ int indexer_make_website(struct Delivery *ctx) {
     };
 
     if (!find_program("pandoc")) {
+        fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
         return 0;
     }
 
@@ -291,16 +241,17 @@ int indexer_make_website(struct Delivery *ctx) {
 
 int indexer_conda(struct Delivery *ctx) {
     int status = 0;
-    char prefix[PATH_MAX];
-    sprintf(prefix, "%s/%s", ctx->storage.tmpdir, "indexer");
+    char micromamba_prefix[PATH_MAX] = {0};
+    sprintf(micromamba_prefix, "%s/bin", ctx->storage.tools_dir);
+    struct MicromambaInfo m = {.conda_prefix = globals.conda_install_prefix, .micromamba_prefix = micromamba_prefix};
 
-    status += micromamba(ctx->storage.tmpdir, prefix, "config prepend --env channels conda-forge");
+    status += micromamba(&m, "config prepend --env channels conda-forge");
     if (!globals.verbose) {
-        status += micromamba(ctx->storage.tmpdir, prefix, "config set --env quiet true");
+        status += micromamba(&m, "config set --env quiet true");
     }
-    status += micromamba(ctx->storage.tmpdir, prefix, "config set --env always_yes true");
-    status += micromamba(ctx->storage.tmpdir, prefix, "install conda-build");
-    status += micromamba(ctx->storage.tmpdir, prefix, "run conda index %s", ctx->storage.conda_artifact_dir);
+    status += micromamba(&m, "config set --env always_yes true");
+    status += micromamba(&m, "install conda-build");
+    status += micromamba(&m, "run conda index %s", ctx->storage.conda_artifact_dir);
     return status;
 }
 
@@ -558,6 +509,8 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
         exit(1);
     }
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
+    path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.output_dir, "tools");
+    path_store(&globals.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
     path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
     path_store(&ctx->storage.meta_dir, PATH_MAX, ctx->storage.output_dir, "meta");
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
@@ -565,6 +518,15 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+
+    char newpath[PATH_MAX] = {0};
+    if (getenv("PATH")) {
+        sprintf(newpath, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+        setenv("PATH", newpath, 1);
+    } else {
+        SYSERROR("%s", "environment variable PATH is undefined. Unable to continue.");
+        exit(1);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -627,7 +589,7 @@ int main(int argc, char *argv[]) {
     }
 
     char *workdir;
-    char workdir_template[PATH_MAX];
+    char workdir_template[PATH_MAX] = {0};
     char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
         strcat(workdir_template, system_tmp);

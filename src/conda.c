@@ -5,6 +5,61 @@
 #include <unistd.h>
 #include "conda.h"
 
+int micromamba(struct MicromambaInfo *info, char *command, ...) {
+    struct utsname sys;
+    uname(&sys);
+
+    tolower_s(sys.sysname);
+    if (!strcmp(sys.sysname, "darwin")) {
+        strcpy(sys.sysname, "osx");
+    }
+
+    if (!strcmp(sys.machine, "x86_64")) {
+        strcpy(sys.machine, "64");
+    }
+
+    char url[PATH_MAX];
+    sprintf(url, "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
+
+    char installer_path[PATH_MAX];
+    sprintf(installer_path, "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+
+    if (access(installer_path, F_OK)) {
+        download(url, installer_path, NULL);
+    }
+
+    char mmbin[PATH_MAX];
+    sprintf(mmbin, "%s/micromamba", info->micromamba_prefix);
+
+    if (access(mmbin, F_OK)) {
+        char untarcmd[PATH_MAX];
+        mkdirs(info->micromamba_prefix, 0755);
+        sprintf(untarcmd, "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
+        system(untarcmd);
+    }
+
+    char cmd[STASIS_BUFSIZ];
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
+    va_list args;
+    va_start(args, command);
+    vsprintf(cmd + strlen(cmd), command, args);
+    va_end(args);
+
+    mkdirs(info->conda_prefix, 0755);
+
+    char rcpath[PATH_MAX];
+    sprintf(rcpath, "%s/.condarc", info->conda_prefix);
+    touch(rcpath);
+
+    setenv("CONDARC", rcpath, 1);
+    setenv("MAMBA_ROOT_PREFIX", info->conda_prefix, 1);
+    int status = system(cmd);
+    unsetenv("MAMBA_ROOT_PREFIX");
+
+    return status;
+}
+
 int python_exec(const char *args) {
     char command[PATH_MAX];
     memset(command, 0, sizeof(command));
@@ -114,12 +169,12 @@ int conda_activate(const char *root, const char *env_name) {
         perror(logfile);
         return -1;
     }
-    int i = 0;
+
     while (!feof(fp)) {
         char buf[STASIS_BUFSIZ] = {0};
         int ch = 0;
         size_t z = 0;
-        // We are ingesting output from "env -0", can't use fgets()
+        // We are ingesting output from "env -0" and can't use fgets()
         // Copy each character into the buffer until we encounter '\0' or EOF
         while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
             if (ch == EOF) {
@@ -141,15 +196,12 @@ int conda_activate(const char *root, const char *env_name) {
         }
         if (!part[0]) {
             msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
-            i++;
         } else if (!part[1]) {
             msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
-            i++;
         } else {
             setenv(part[0], part[1], 1);
         }
         GENERIC_ARRAY_FREE(part);
-        i++;
     }
     fclose(fp);
     remove(logfile);

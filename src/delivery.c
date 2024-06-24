@@ -162,6 +162,9 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->storage.build_docker_dir);
     guard_free(ctx->storage.mission_dir);
     guard_free(ctx->storage.docker_artifact_dir);
+    guard_free(ctx->storage.meta_dir);
+    guard_free(ctx->storage.package_dir);
+    guard_free(ctx->storage.cfgdump_dir);
     guard_free(ctx->info.time_str_epoch);
     guard_free(ctx->info.build_name);
     guard_free(ctx->info.build_number);
@@ -186,6 +189,7 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests[i].repository);
         guard_free(ctx->tests[i].repository_info_ref);
         guard_free(ctx->tests[i].repository_info_tag);
+        guard_strlist_free(&ctx->tests[i].repository_remove_tags);
         guard_free(ctx->tests[i].script);
         guard_free(ctx->tests[i].build_recipe);
         // test-specific runtime variables
@@ -349,7 +353,17 @@ int delivery_init_platform(struct Delivery *ctx) {
         tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
     }
 
+    long cpu_count = get_cpu_count();
+    if (!cpu_count) {
+        fprintf(stderr, "Unable to determine CPU count. Falling back to 1.\n");
+        cpu_count = 1;
+    }
+    char ncpus[100] = {0};
+    sprintf(ncpus, "%ld", cpu_count);
+
     // Declare some important bits as environment variables
+    setenv("CPU_COUNT", ncpus, 1);
+    setenv("STASIS_CPU_COUNT", ncpus, 1);
     setenv("STASIS_ARCH", ctx->system.arch, 1);
     setenv("STASIS_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM], 1);
     setenv("STASIS_CONDA_ARCH", ctx->system.arch, 1);
@@ -1031,7 +1045,30 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
 
                 char command[PATH_MAX];
-                sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+                if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
+                    char arch[STASIS_NAME_MAX] = {0};
+                    char platform[STASIS_NAME_MAX] = {0};
+
+                    strcpy(platform, ctx->system.platform[DELIVERY_PLATFORM]);
+                    if (strstr(platform, "Darwin")) {
+                        memset(platform, 0, sizeof(platform));
+                        strcpy(platform, "osx");
+                    }
+                    tolower_s(platform);
+                    if (strstr(ctx->system.arch, "arm64")) {
+                        strcpy(arch, "arm64");
+                    } else if (strstr(ctx->system.arch, "64")) {
+                        strcpy(arch, "64");
+                    } else {
+                        strcat(arch, "32"); // blind guess
+                    }
+                    tolower_s(arch);
+
+                    sprintf(command, "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
+                        ctx->meta.python, platform, arch);
+                    } else {
+                        sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+                    }
                 status = conda_exec(command);
                 if (status) {
                     return -1;
@@ -1650,6 +1687,13 @@ void delivery_tests_run(struct Delivery *ctx) {
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
+    if (!globals.workaround.conda_reactivate) {
+        globals.workaround.conda_reactivate = calloc(PATH_MAX, sizeof(*globals.workaround.conda_reactivate));
+    } else {
+        memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
+    }
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x\neval `conda shell.posix reactivate`\nset -x\n");
+
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
@@ -1691,7 +1735,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             } else {
 #if 1
                 int status;
-                char cmd[PATH_MAX];
+                char *cmd = calloc(strlen(ctx->tests[i].script) + STASIS_BUFSIZ, sizeof(*cmd));
 
                 msg(STASIS_MSG_L3, "Testing %s\n", ctx->tests[i].name);
                 memset(&proc, 0, sizeof(proc));
@@ -1711,22 +1755,45 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
 
                 // enable trace mode before executing each test script
-                memset(cmd, 0, sizeof(cmd));
-                sprintf(cmd, "set -x ; %s", ctx->tests[i].script);
 
+                strcpy(cmd, ctx->tests[i].script);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
                         strcpy(cmd, cmd_rendered);
+                        cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
                 }
 
-                status = shell(&proc, cmd);
+                FILE *runner_fp;
+                char *runner_filename = xmkstemp(&runner_fp, "w");
+
+                fprintf(runner_fp, "#!/bin/bash\n"
+                                   "eval `conda shell.posix reactivate`\n"
+                                   "set -x\n"
+                                   "%s\n",
+                        cmd);
+                fclose(runner_fp);
+                chmod(runner_filename, 0755);
+
+                puts(cmd);
+                char runner_cmd[PATH_MAX] = {0};
+                sprintf(runner_cmd, "%s", runner_filename);
+                status = shell(&proc, runner_cmd);
                 if (status) {
                     msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
+                    remove(runner_filename);
+                    popd();
+                    guard_free(cmd);
+                    tpl_free();
+                    delivery_free(ctx);
+                    globals_free();
                     COE_CHECK_ABORT(1, "Test failure");
                 }
+                guard_free(cmd);
+                remove(runner_filename);
+                guard_free(runner_filename);
 
                 if (toxconf) {
                     remove(toxconf);
