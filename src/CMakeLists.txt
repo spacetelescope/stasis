@@ -22,6 +22,7 @@ add_library(stasis_core STATIC
         rules.c
         docker.c
         junitxml.c
+        github.c
 )
 
 add_executable(stasis
