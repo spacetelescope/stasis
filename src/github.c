@@ -119,15 +119,15 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
             fprintf(stderr, "GitHub API Error: '%s'\n", data_offset);
             fprintf(stderr, "URL: %s\n", endpoint_url);
             fprintf(stderr, "POST: %s\n", endpoint_post_fields);
-            free(content.data);
+            guard_free(content.data);
             return -1;
         }
     } else {
         fprintf(stderr, "Unknown error\n");
-        free(content.data);
+        guard_free(content.data);
         return -1;
     }
 
-    free(content.data);
+    guard_free(content.data);
     return 0;
 }
