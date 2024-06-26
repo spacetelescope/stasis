@@ -260,6 +260,10 @@ int main(int argc, char *argv[]) {
     tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
     tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
 
+    // Expose function(s) to the template engine
+    // Prototypes can be found in template_func_proto.h
+    tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3);
+
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR
     // environment variable
