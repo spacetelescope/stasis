@@ -1419,7 +1419,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
 
             // Proceed with the installation
             // -b = batch mode (non-interactive)
-            char cmd[255] = {0};
+            char cmd[PATH_MAX] = {0};
             snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
                      find_program("bash"),
                      install_script,
