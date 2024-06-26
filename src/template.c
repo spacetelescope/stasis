@@ -223,7 +223,7 @@ char *tpl_render(char *str) {
                 strcpy(func_name_temp, type_stop + 1);
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {
-                    fprintf(stderr, "offset %zu: function name must be followed by a '('\n", off);
+                    fprintf(stderr, "At position %zu in %s\nfunction name must be followed by a '('\n", off, key);
                     guard_free(output);
                     return NULL;
                 }
@@ -231,7 +231,7 @@ char *tpl_render(char *str) {
                 param_begin++;
                 char *param_end = strrchr(param_begin, ')');
                 if (!param_end) {
-                    fprintf(stderr, "offset %zu: function arguments must be closed with a ')'\n", off);
+                    fprintf(stderr, "At position %zu in %s\nfunction arguments must be closed with a ')'\n", off, key);
                     guard_free(output);
                     return NULL;
                 }
@@ -242,8 +242,8 @@ char *tpl_render(char *str) {
                 for (params_count = 0; params[params_count] != NULL; params_count++);
 
                 struct tplfunc_frame *frame = tpl_getfunc(k);
-                if (params_count > frame->argc) {
-                    fprintf(stderr, "offset %zu: Too many arguments for function: %s()\n", off, frame->key);
+                if (params_count > frame->argc || params_count < frame->argc) {
+                    fprintf(stderr, "At position %zu in %s\nIncorrect number of arguments for function: %s (expected %d, got %d)\n", off, key, frame->key, frame->argc, params_count);
                     value = strdup("");
                 } else {
                     for (size_t p = 0; p < sizeof(frame->argv) / sizeof(*frame->argv) && params[p] != NULL; p++) {
@@ -251,10 +251,13 @@ char *tpl_render(char *str) {
                         strip(params[p]);
                         frame->argv[p].t_char_ptr = params[p];
                     }
-                    char func_result[100];
-                    char *fres = func_result;
-                    frame->func(frame, fres);
-                    value = strdup(fres);
+                    char *func_result = NULL;
+                    int func_status = 0;
+                    if ((func_status = frame->func(frame, &func_result))) {
+                        fprintf(stderr, "%s returned non-zero status: %d\n", frame->key, func_status);
+                    }
+                    value = strdup(func_result ? func_result : "");
+                    guard_free(func_result);
                 }
                 GENERIC_ARRAY_FREE(params);
             } else {
