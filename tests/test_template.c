@@ -59,17 +59,22 @@ void test_tpl_register() {
 
 void test_tpl_register_func() {
     tpl_reset();
-    struct tplfunc_frame tasks[] = {
+    struct testcase {
+        const char *key;
+        int argc;
+        void *func;
+    };
+    struct testcase tc[] = {
             {.key = "add", .argc = 2, .func = adder},
             {.key = "sub", .argc = 2, .func = subtractor},
             {.key = "mul", .argc = 2, .func = multiplier},
             {.key = "div", .argc = 2, .func = divider},
     };
-    tpl_register_func("add", &tasks[0]);
-    tpl_register_func("sub", &tasks[1]);
-    tpl_register_func("mul", &tasks[2]);
-    tpl_register_func("div", &tasks[3]);
-    STASIS_ASSERT(tpl_pool_func_used == sizeof(tasks) / sizeof(*tasks), "unexpected function pool used");
+    tpl_register_func("add", &tc[0].func, tc[0].argc);
+    tpl_register_func("sub", &tc[1].func, tc[1].argc);
+    tpl_register_func("mul", &tc[2].func, tc[2].argc);
+    tpl_register_func("div", &tc[3].func, tc[3].argc);
+    STASIS_ASSERT(tpl_pool_func_used == sizeof(tc) / sizeof(*tc), "unexpected function pool used");
 
     char *result = NULL;
     result = tpl_render("{{ func:add(0,3) }}");
