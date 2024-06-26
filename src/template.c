@@ -25,10 +25,13 @@ extern void tpl_reset() {
     tpl_pool_func_used = 0;
 }
 
-void tpl_register_func(char *key, struct tplfunc_frame *frame) {
-    (void) key;  // TODO: placeholder
-    tpl_pool_func[tpl_pool_func_used] = calloc(1, sizeof(*tpl_pool_func[tpl_pool_func_used]));
-    memcpy(tpl_pool_func[tpl_pool_func_used], frame, sizeof(*frame));
+void tpl_register_func(char *key, void *tplfunc_ptr, int argc) {
+    struct tplfunc_frame *frame = calloc(1, sizeof(*frame));
+    frame->key = strdup(key);
+    frame->argc = argc;
+    frame->func = tplfunc_ptr;
+
+    tpl_pool_func[tpl_pool_func_used] = frame;
     tpl_pool_func_used++;
 }
 

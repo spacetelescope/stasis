@@ -40,9 +40,8 @@ char *tpl_render(char *str);
  */
 int tpl_render_to_file(char *str, const char *filename);
 
-struct tplfunc_frame *tpl_getfunc(char *key);
-struct tplfunc_frame;
-typedef int tplfunc(struct tplfunc_frame *frame, void *result);
+typedef int tplfunc(void *frame, void *result);
+
 struct tplfunc_frame {
     char *key;
     tplfunc *func;
@@ -62,6 +61,20 @@ struct tplfunc_frame {
         double t_double;
     } argv[10]; // accept up to 10 arguments
 };
-void tpl_register_func(char *key, struct tplfunc_frame *frame);
+
+/**
+ * Register a template function
+ * @param key function name to expose to "func:" interface
+ * @param tplfunc_ptr pointer to function of type tplfunc
+ * @param argc number of function arguments to accept
+ */
+void tpl_register_func(char *key, void *tplfunc_ptr, int argc);
+
+/**
+ * Get the function frame associated with a template function
+ * @param key function name
+ * @return tplfunc_frame structure
+ */
+struct tplfunc_frame *tpl_getfunc(char *key);
 
 #endif //STASIS_TEMPLATE_H
