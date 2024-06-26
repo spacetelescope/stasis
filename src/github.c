@@ -4,8 +4,6 @@
 #include <curl/curl.h>
 #include "github.h"
 
-extern const char *VERSION;
-
 struct GHContent {
     char *data;
     size_t len;
