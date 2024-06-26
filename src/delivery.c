@@ -1476,7 +1476,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
     struct StrList *filtered = NULL;
     filtered = strlist_init();
-    for (size_t i = 0, z = 0; i < strlist_count(dataptr); i++) {
+    for (size_t i = 0; i < strlist_count(dataptr); i++) {
         int ignore_pkg = 0;
 
         name = strlist_item(dataptr, i);
@@ -1494,7 +1494,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 if (strstr(name, ctx->tests[x].name)) {
                     version = ctx->tests[x].version;
                     ignore_pkg = 1;
-                    z++;
                     break;
                 }
             }
