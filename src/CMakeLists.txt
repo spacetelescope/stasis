@@ -23,6 +23,7 @@ add_library(stasis_core STATIC
         docker.c
         junitxml.c
         github.c
+        template_func_proto.c
 )
 
 add_executable(stasis
