@@ -78,10 +78,10 @@ void test_tpl_register_func() {
             {.key = "mul", .argc = 2, .func = &multiplier},
             {.key = "div", .argc = 2, .func = &divider},
     };
-    tpl_register_func("add", tc[0].func, tc[0].argc);
-    tpl_register_func("sub", tc[1].func, tc[1].argc);
-    tpl_register_func("mul", tc[2].func, tc[2].argc);
-    tpl_register_func("div", tc[3].func, tc[3].argc);
+    tpl_register_func("add", tc[0].func, tc[0].argc, NULL);
+    tpl_register_func("sub", tc[1].func, tc[1].argc, NULL);
+    tpl_register_func("mul", tc[2].func, tc[2].argc, NULL);
+    tpl_register_func("div", tc[3].func, tc[3].argc, NULL);
     STASIS_ASSERT(tpl_pool_func_used == sizeof(tc) / sizeof(*tc), "unexpected function pool used");
 
     char *result = NULL;
