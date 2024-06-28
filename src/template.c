@@ -25,11 +25,12 @@ extern void tpl_reset() {
     tpl_pool_func_used = 0;
 }
 
-void tpl_register_func(char *key, void *tplfunc_ptr, int argc) {
+void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in) {
     struct tplfunc_frame *frame = calloc(1, sizeof(*frame));
     frame->key = strdup(key);
     frame->argc = argc;
     frame->func = tplfunc_ptr;
+    frame->data_in = data_in;
 
     tpl_pool_func[tpl_pool_func_used] = frame;
     tpl_pool_func_used++;

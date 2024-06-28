@@ -262,7 +262,8 @@ int main(int argc, char *argv[]) {
 
     // Expose function(s) to the template engine
     // Prototypes can be found in template_func_proto.h
-    tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3);
+    tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3, NULL);
+    tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, &ctx);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR
