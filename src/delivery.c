@@ -2164,3 +2164,20 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
     closedir(dp);
     return 0;
 }
+
+int delivery_exists(struct Delivery *ctx) {
+    // TODO: scan artifactory repo for the same information
+    char release_pattern[PATH_MAX] = {0};
+    sprintf(release_pattern, "*%s*", ctx->info.release_name);
+    struct StrList *files = listdir(ctx->storage.delivery_dir);
+    for (size_t i = 0; i < strlist_count(files); i++) {
+        char *filename = strlist_item(files, i);
+        int release_exists = fnmatch(release_pattern, filename, FNM_PATHNAME);
+        if (!globals.enable_overwrite && !release_exists) {
+            guard_strlist_free(&files);
+            return 1;
+        }
+    }
+    guard_strlist_free(&files);
+    return 0;
+}

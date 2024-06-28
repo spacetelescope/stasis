@@ -67,6 +67,7 @@ struct STASIS_GLOBAL {
     bool enable_docker; //!< Enable docker image builds
     bool enable_artifactory; //!< Enable artifactory uploads
     bool enable_testing; //!< Enable package testing
+    bool enable_overwrite; //!< Enable release file clobbering
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory
