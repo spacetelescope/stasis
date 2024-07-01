@@ -1,7 +1,7 @@
 #ifndef STASIS_GITHUB_H
 #define STASIS_GITHUB_H
 
-#include "core.h"
+#include <curl/curl.h>
 
 #define STASIS_GITHUB_API_VERSION "2022-11-28"
 
