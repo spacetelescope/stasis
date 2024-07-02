@@ -36,6 +36,22 @@ struct STASIS_GLOBAL globals = {
         .enable_docker = true,
         .enable_artifactory = true,
         .enable_testing = true,
+        .envctl = {
+            {.flags = STASIS_ENVCTL_PASSTHRU, .name = {"TMPDIR", NULL}},
+            {.flags = STASIS_ENVCTL_PASSTHRU, .name = {"STASIS_ROOT", NULL}},
+            {.flags = STASIS_ENVCTL_PASSTHRU, .name = {"STASIS_SYSCONFDIR", NULL}},
+            {.flags = STASIS_ENVCTL_PASSTHRU, .name = {"STASIS_CPU_COUNT", "CPU_COUNT", NULL}},
+            {.flags = STASIS_ENVCTL_REQUIRED | STASIS_ENVCTL_REDACT, .name={"STASIS_GH_TOKEN", "GITHUB_TOKEN", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_ACCESS_TOKEN", NULL}},
+            {.flags = STASIS_ENVCTL_PASSTHRU, .name = {"STASIS_JF_USER", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_PASSWORD", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_SSH_KEY_PATH", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_SSH_PASSPHRASE", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_CLIENT_CERT_CERT_PATH", NULL}},
+            {.flags = STASIS_ENVCTL_REDACT, .name = {"STASIS_JF_CLIENT_CERT_KEY_PATH", NULL}},
+            {.flags = STASIS_ENVCTL_REQUIRED, .name = {"STASIS_JF_REPO", NULL}},
+            {.flags = 0, .name = {NULL}},
+        }
 };
 
 void globals_free() {

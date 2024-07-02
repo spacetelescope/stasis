@@ -98,7 +98,32 @@ static void usage(char *progname) {
     }
 }
 
+static const char *has_envctl_key_(size_t i) {
+    for (size_t x = 0; globals.envctl[i].name[x] != NULL; x++) {
+        const char *name = globals.envctl[i].name[x];
+        const char *data = getenv(name);
+        if (data) {
+            return name;
+        }
+    }
+    return NULL;
+}
 
+static void check_system_env_requirements() {
+    msg(STASIS_MSG_L1, "Checking environment\n");
+    for (size_t i = 0; globals.envctl[i].name[0] != NULL; i++) {
+        unsigned int flags = globals.envctl[i].flags;
+        const char *key = has_envctl_key_(i);
+        if ((flags & STASIS_ENVCTL_REQUIRED) && !(key && strlen(getenv(key)))) {
+            if (!strcmp(key, "STASIS_JF_REPO") && !globals.enable_artifactory) {
+                continue;
+            }
+            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Environment variable '%s' must be configured.\n", globals.envctl[i].name[0]);
+            exit(1);
+        }
+
+    }
+}
 
 static void check_system_requirements(struct Delivery *ctx) {
     const char *tools_required[] = {
@@ -140,6 +165,11 @@ static void check_system_requirements(struct Delivery *ctx) {
         // disable docker builds
         globals.enable_docker = false;
     }
+}
+
+static void check_requirements(struct Delivery *ctx) {
+    check_system_requirements(ctx);
+    check_system_env_requirements();
 }
 
 int main(int argc, char *argv[]) {
@@ -336,7 +366,7 @@ int main(int argc, char *argv[]) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
-    check_system_requirements(&ctx);
+    check_requirements(&ctx);
 
     msg(STASIS_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {

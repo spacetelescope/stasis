@@ -143,21 +143,22 @@ stasis mydelivery.ini
 
 ## Environment variables
 
-| Name                                | Purpose                                               | 
-|-------------------------------------|-------------------------------------------------------|
-| TMPDIR                              | Change default path to store temporary data           |
-| STASIS_ROOT                         | Change default path to write STASIS's data            |
-| STASIS_SYSCONFDIR                   | Change default path to search for configuration files | 
-| STASIS_CPU_COUNT (alias: CPU_COUNT) | Number of available CPUS                              |
-| STASIS_JF_ARTIFACTORY_URL           | Artifactory service URL (ending in `/artifactory`)    | 
-| STASIS_JF_ACCESS_TOKEN              | Artifactory Access Token                              | 
-| STASIS_JF_USER                      | Artifactory username                                  | 
-| STASIS_JF_PASSWORD                  | Artifactory password                                  | 
-| STASIS_JF_SSH_KEY_PATH              | Path to SSH public key file                           |
-| STASIS_JF_SSH_PASSPHRASE            | Password associated with SSH public key file          | 
-| STASIS_JF_CLIENT_CERT_CERT_PATH     | Path to OpenSSL cert files                            | 
-| STASIS_JF_CLIENT_CERT_KEY_PATH      | OpenSSL key file (in cert path)                       | 
-| STASIS_JF_REPO                      | Artifactory "generic" repository to write to          | 
+| Name                                      | Purpose                                                                 | 
+|-------------------------------------------|-------------------------------------------------------------------------|
+| TMPDIR                                    | Change default path to store temporary data                             |
+| STASIS_ROOT                               | Change default path to write STASIS's data                              |
+| STASIS_SYSCONFDIR                         | Change default path to search for configuration files                   | 
+| STASIS_CPU_COUNT<br/>(alias: CPU_COUNT)   | Number of available CPUs                                                |
+| STASIS_GH_TOKEN<br/>(alias: GITHUB_TOKEN) | GitHub API token<br/>(Scope: "Contents" repository permissions (write)) |
+| STASIS_JF_ARTIFACTORY_URL                 | Artifactory service URL (ending in `/artifactory`)                      | 
+| STASIS_JF_ACCESS_TOKEN                    | Artifactory Access Token                                                | 
+| STASIS_JF_USER                            | Artifactory username                                                    | 
+| STASIS_JF_PASSWORD                        | Artifactory password                                                    | 
+| STASIS_JF_SSH_KEY_PATH                    | Path to SSH public key file                                             |
+| STASIS_JF_SSH_PASSPHRASE                  | Password associated with SSH public key file                            | 
+| STASIS_JF_CLIENT_CERT_CERT_PATH           | Path to OpenSSL cert files                                              | 
+| STASIS_JF_CLIENT_CERT_KEY_PATH            | OpenSSL key file (in cert path)                                         | 
+| STASIS_JF_REPO                            | Artifactory "generic" repository to write to                            | 
 
 # Variable expansion
 
@@ -204,6 +205,14 @@ name = {{ env:MY_DYNAMIC_DELIVERY_NAME }}
 version = {{ env:MY_DYNAMIC_DELIVERY_VERSION }}
 python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
 ```
+
+## Template Functions
+
+Template functions can be accessed using the `{{ func:NAME(ARG,...) }}` notation.
+
+| Name                          | Purpose                                      |
+|-------------------------------|----------------------------------------------|
+| get_github_release_notes_auto | Generate release notes for all test contexts |
 
 # Delivery files
 

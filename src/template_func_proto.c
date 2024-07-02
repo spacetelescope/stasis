@@ -4,7 +4,7 @@ int get_github_release_notes_tplfunc_entrypoint(void *frame, void *data_out) {
     int result;
     char **output = (char **) data_out;
     struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
-    char *api_token = getenv("STASIS_GITHUB_TOKEN");
+    char *api_token = getenv("STASIS_GH_TOKEN");
     if (!api_token) {
         api_token = getenv("GITHUB_TOKEN");
     }

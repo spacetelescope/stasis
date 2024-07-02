@@ -59,6 +59,11 @@
         } \
     } while (0)
 
+struct EnvCtl {
+    unsigned flags;
+    const char *name[10];
+};
+
 struct STASIS_GLOBAL {
     bool verbose; //!< Enable verbose output
     bool always_update_base_environment; //!< Update base environment immediately after activation
@@ -88,8 +93,13 @@ struct STASIS_GLOBAL {
         char *repo;
         char *url;
     } jfrog;
+    struct EnvCtl envctl[];
 };
 extern struct STASIS_GLOBAL globals;
+
+#define STASIS_ENVCTL_PASSTHRU 0 << 1
+#define STASIS_ENVCTL_REQUIRED 1 << 1
+#define STASIS_ENVCTL_REDACT 2 << 1
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;
