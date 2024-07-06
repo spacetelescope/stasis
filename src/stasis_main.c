@@ -9,6 +9,7 @@
 #define OPT_NO_DOCKER 1001
 #define OPT_NO_ARTIFACTORY 1002
 #define OPT_NO_TESTING 1003
+#define OPT_OVERWRITE 1004
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
@@ -18,6 +19,7 @@ static struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
         {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
+        {"overwrite", no_argument, 0, OPT_OVERWRITE},
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
         {"no-testing", no_argument, 0, OPT_NO_TESTING},
@@ -33,6 +35,7 @@ const char *long_options_help[] = {
         "Increase output verbosity",
         "Disable line buffering",
         "Update conda installation prior to STASIS environment creation",
+        "Overwrite an existing release",
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
         "Do not execute test scripts",
@@ -95,7 +98,32 @@ static void usage(char *progname) {
     }
 }
 
+static const char *has_envctl_key_(size_t i) {
+    for (size_t x = 0; globals.envctl[i].name[x] != NULL; x++) {
+        const char *name = globals.envctl[i].name[x];
+        const char *data = getenv(name);
+        if (data) {
+            return name;
+        }
+    }
+    return NULL;
+}
 
+static void check_system_env_requirements() {
+    msg(STASIS_MSG_L1, "Checking environment\n");
+    for (size_t i = 0; globals.envctl[i].name[0] != NULL; i++) {
+        unsigned int flags = globals.envctl[i].flags;
+        const char *key = has_envctl_key_(i);
+        if ((flags & STASIS_ENVCTL_REQUIRED) && !(key && strlen(getenv(key)))) {
+            if (!strcmp(key, "STASIS_JF_REPO") && !globals.enable_artifactory) {
+                continue;
+            }
+            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Environment variable '%s' must be configured.\n", globals.envctl[i].name[0]);
+            exit(1);
+        }
+
+    }
+}
 
 static void check_system_requirements(struct Delivery *ctx) {
     const char *tools_required[] = {
@@ -137,6 +165,11 @@ static void check_system_requirements(struct Delivery *ctx) {
         // disable docker builds
         globals.enable_docker = false;
     }
+}
+
+static void check_requirements(struct Delivery *ctx) {
+    check_system_requirements(ctx);
+    check_system_env_requirements();
 }
 
 int main(int argc, char *argv[]) {
@@ -192,6 +225,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 globals.verbose = true;
+                break;
+            case OPT_OVERWRITE:
+                globals.enable_overwrite = true;
                 break;
             case OPT_NO_DOCKER:
                 globals.enable_docker = false;
@@ -260,6 +296,11 @@ int main(int argc, char *argv[]) {
     tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
     tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
 
+    // Expose function(s) to the template engine
+    // Prototypes can be found in template_func_proto.h
+    tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3, NULL);
+    tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, &ctx);
+
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR
     // environment variable
@@ -325,7 +366,7 @@ int main(int argc, char *argv[]) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
-    check_system_requirements(&ctx);
+    check_requirements(&ctx);
 
     msg(STASIS_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(&ctx)) {
@@ -344,6 +385,12 @@ int main(int argc, char *argv[]) {
     delivery_tests_show(&ctx);
     if (globals.verbose) {
         //delivery_runtime_show(&ctx);
+    }
+
+    // Safety gate: Avoid clobbering a delivery unless the user wants that behavior
+    if (delivery_exists(&ctx)) {
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite delivery: %s\nUse --overwrite to enable release clobbering.\n", ctx.info.release_name);
+        exit(1);
     }
 
     msg(STASIS_MSG_L1, "Conda setup\n");

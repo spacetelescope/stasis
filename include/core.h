@@ -38,6 +38,8 @@
 #include "relocation.h"
 #include "wheel.h"
 #include "junitxml.h"
+#include "github.h"
+#include "template_func_proto.h"
 
 #define guard_runtime_free(X) do { if (X) { runtime_free(X); X = NULL; } } while (0)
 #define guard_strlist_free(X) do { if ((*X)) { strlist_free(X); (*X) = NULL; } } while (0)
@@ -57,6 +59,11 @@
         } \
     } while (0)
 
+struct EnvCtl {
+    unsigned flags;
+    const char *name[10];
+};
+
 struct STASIS_GLOBAL {
     bool verbose; //!< Enable verbose output
     bool always_update_base_environment; //!< Update base environment immediately after activation
@@ -65,6 +72,7 @@ struct STASIS_GLOBAL {
     bool enable_docker; //!< Enable docker image builds
     bool enable_artifactory; //!< Enable artifactory uploads
     bool enable_testing; //!< Enable package testing
+    bool enable_overwrite; //!< Enable release file clobbering
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory
@@ -85,8 +93,13 @@ struct STASIS_GLOBAL {
         char *repo;
         char *url;
     } jfrog;
+    struct EnvCtl envctl[];
 };
 extern struct STASIS_GLOBAL globals;
+
+#define STASIS_ENVCTL_PASSTHRU 0 << 1
+#define STASIS_ENVCTL_REQUIRED 1 << 1
+#define STASIS_ENVCTL_REDACT 2 << 1
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;
