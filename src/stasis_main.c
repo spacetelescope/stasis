@@ -98,30 +98,35 @@ static void usage(char *progname) {
     }
 }
 
-static const char *has_envctl_key_(size_t i) {
-    for (size_t x = 0; globals.envctl[i].name[x] != NULL; x++) {
+static int get_envctl_key_index_(size_t i) {
+    for (int x = 0; x < (int)(sizeof(globals.envctl[i].name) / sizeof(*globals.envctl[i].name)); x++) {
         const char *name = globals.envctl[i].name[x];
+        if (!name) {
+            return -1;
+        }
         const char *data = getenv(name);
-        if (data) {
-            return name;
+        if (data != NULL) {
+            return x;
         }
     }
-    return NULL;
+    return -1;
 }
 
 static void check_system_env_requirements() {
     msg(STASIS_MSG_L1, "Checking environment\n");
     for (size_t i = 0; globals.envctl[i].name[0] != NULL; i++) {
         unsigned int flags = globals.envctl[i].flags;
-        const char *key = has_envctl_key_(i);
-        if ((flags & STASIS_ENVCTL_REQUIRED) && !(key && strlen(getenv(key)))) {
-            if (!strcmp(key, "STASIS_JF_REPO") && !globals.enable_artifactory) {
-                continue;
+        int key = get_envctl_key_index_(i);
+        if (key < 0) {
+            if (flags & STASIS_ENVCTL_REQUIRED) {
+                if (!strcmp(globals.envctl[i].name[0], "STASIS_JF_REPO") && !globals.enable_artifactory) {
+                    continue;
+                }
+                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Environment variable '%s' must be defined.\n",
+                    globals.envctl[i].name[0]);
+                exit(1);
             }
-            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Environment variable '%s' must be configured.\n", globals.envctl[i].name[0]);
-            exit(1);
         }
-
     }
 }
 
