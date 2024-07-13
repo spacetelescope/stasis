@@ -35,7 +35,10 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
         char untarcmd[PATH_MAX * 2];
         mkdirs(info->micromamba_prefix, 0755);
         sprintf(untarcmd, "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
-        system(untarcmd);
+        int untarcmd_status = system(untarcmd);
+        if (untarcmd_status) {
+            return -1;
+        }
     }
 
     char cmd[STASIS_BUFSIZ];
