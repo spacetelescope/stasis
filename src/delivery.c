@@ -1467,7 +1467,10 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
-    conda_setup_headless();
+    if (conda_setup_headless()) {
+        // no COE check. this call must succeed.
+        exit(1);
+    }
 }
 
 void delivery_defer_packages(struct Delivery *ctx, int type) {
