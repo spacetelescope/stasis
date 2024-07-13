@@ -249,7 +249,7 @@ int conda_check_required() {
     return 0;
 }
 
-void conda_setup_headless() {
+int conda_setup_headless() {
     if (globals.verbose) {
         conda_exec("config --system --set quiet false");
     } else {
@@ -285,7 +285,7 @@ void conda_setup_headless() {
 
         if (conda_exec(cmd)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (conda)\n");
-            exit(1);
+            return 1;
         }
     }
 
@@ -307,7 +307,7 @@ void conda_setup_headless() {
 
         if (pip_exec(cmd)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (pip)\n");
-            exit(1);
+            return 1;
         }
     }
 
@@ -315,15 +315,17 @@ void conda_setup_headless() {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Your STASIS configuration lacks the bare"
                                                   " minimum software required to build conda packages."
                                                   " Please fix it.\n");
-        exit(1);
+        return 1;
     }
 
     if (globals.always_update_base_environment) {
         if (conda_exec("update --all")) {
             fprintf(stderr, "conda update was unsuccessful\n");
-            exit(1);
+            return 1;
         }
     }
+
+    return 0;
 }
 
 int conda_env_create_from_uri(char *name, char *uri) {
