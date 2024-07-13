@@ -3,6 +3,7 @@
 //
 
 #include <string.h>
+#include <stdlib.h>
 #include "download.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
@@ -18,6 +19,8 @@ long download(char *url, const char *filename, char **errmsg) {
     FILE *fp;
     char user_agent[20];
     sprintf(user_agent, "stasis/%s", VERSION);
+    long timeout = 30L;
+    char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
 
     curl_global_init(CURL_GLOBAL_ALL);
     c = curl_easy_init();
@@ -27,11 +30,18 @@ long download(char *url, const char *filename, char **errmsg) {
     if (!fp) {
         return -1;
     }
+
     curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(c, CURLOPT_USERAGENT, user_agent);
     curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(c, CURLOPT_WRITEDATA, fp);
+
+    if (timeout_str) {
+        timeout = strtol(timeout_str, NULL, 10);
+    }
+    curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
+
     curl_code = curl_easy_perform(c);
     if (curl_code != CURLE_OK) {
         if (errmsg) {
