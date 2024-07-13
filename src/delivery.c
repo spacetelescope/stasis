@@ -420,6 +420,10 @@ static int populate_mission_ini(struct Delivery **ctx) {
 }
 
 void validate_delivery_ini(struct INIFILE *ini) {
+    if (!ini) {
+        SYSERROR("%s", "INIFILE is NULL!");
+        exit(1);
+    }
     if (ini_section_search(&ini, INI_SEARCH_EXACT, "meta")) {
         ini_has_key_required(ini, "meta", "name");
         ini_has_key_required(ini, "meta", "version");
