@@ -1801,9 +1801,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                     remove(runner_filename);
                     popd();
                     guard_free(cmd);
-                    tpl_free();
-                    delivery_free(ctx);
-                    globals_free();
+                    if (!globals.continue_on_error) {
+                        tpl_free();
+                        delivery_free(ctx);
+                        globals_free();
+                    }
                     COE_CHECK_ABORT(1, "Test failure");
                 }
                 guard_free(cmd);
