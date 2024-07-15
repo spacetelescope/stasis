@@ -420,6 +420,10 @@ static int populate_mission_ini(struct Delivery **ctx) {
 }
 
 void validate_delivery_ini(struct INIFILE *ini) {
+    if (!ini) {
+        SYSERROR("%s", "INIFILE is NULL!");
+        exit(1);
+    }
     if (ini_section_search(&ini, INI_SEARCH_EXACT, "meta")) {
         ini_has_key_required(ini, "meta", "name");
         ini_has_key_required(ini, "meta", "version");
@@ -1428,6 +1432,18 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
                 fprintf(stderr, "conda installation failed\n");
                 exit(1);
             }
+        } else {
+            // Proceed with the installation
+            // -b = batch mode (non-interactive)
+            char cmd[PATH_MAX] = {0};
+            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+                     find_program("bash"),
+                     install_script,
+                     conda_install_dir);
+            if (shell_safe(&proc, cmd)) {
+                fprintf(stderr, "conda installation failed\n");
+                exit(1);
+            }
         }
     } else {
         msg(STASIS_MSG_L3, "Conda removal disabled by configuration\n");
@@ -1451,7 +1467,10 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
-    conda_setup_headless();
+    if (conda_setup_headless()) {
+        // no COE check. this call must succeed.
+        exit(1);
+    }
 }
 
 void delivery_defer_packages(struct Delivery *ctx, int type) {

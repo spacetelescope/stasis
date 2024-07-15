@@ -101,6 +101,14 @@ struct INIFILE *ini_open(const char *filename);
 struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value);
 
 /**
+ *
+ * @param ini
+ * @param key
+ * @return
+ */
+int ini_section_create(struct INIFILE **ini, char *key);
+
+/**
  * 
  * @param ini 
  * @param section 
