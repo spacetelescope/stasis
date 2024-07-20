@@ -141,80 +141,83 @@ stasis mydelivery.ini
 
 # Configuration
 
+## Command Line Options
+
+| Long Option         | Short Option | Purpose                                                        |
+|:--------------------|:------------:|:---------------------------------------------------------------|
+| --help              |      -h      | Display usage statement                                        |
+| --version           |      -V      | Display program version                                        |
+| --continue-on-error |      -C      | Allow tests to fail                                            |
+| --config ARG        |    -c ARG    | Read STASIS configuration file                                 |
+| --python ARG        |    -p ARG    | Override version of Python in configuration                    |
+| --verbose           |      -v      | Increase output verbosity                                      |
+| --unbuffered        |      -U      | Disable line buffering                                         |
+| --update-base       |     n/a      | Update conda installation prior to STATIS environment creation |
+| --overwrite         |     n/a      | Overwrite an existing release                                  |
+| --no-docker         |     n/a      | Do not build docker images                                     |
+| --no-artifactory    |     n/a      | Do not upload artifacts to Artifactory                         |
+| --no-testing        |     n/a      | Do not execute test scripts                                    |
+| --no-rewrite        |     n/a      | Do not rewrite paths and URLs in output files                  |
+| DELIVERY_FILE       |     n/a      | STASIS delivery file                                           |
+
+
+
 ## Environment variables
 
-| Name                                      | Purpose                                                                 | 
-|-------------------------------------------|-------------------------------------------------------------------------|
-| TMPDIR                                    | Change default path to store temporary data                             |
-| STASIS_ROOT                               | Change default path to write STASIS's data                              |
-| STASIS_SYSCONFDIR                         | Change default path to search for configuration files                   | 
-| STASIS_CPU_COUNT<br/>(alias: CPU_COUNT)   | Number of available CPUs                                                |
-| STASIS_GH_TOKEN<br/>(alias: GITHUB_TOKEN) | GitHub API token<br/>(Scope: "Contents" repository permissions (write)) |
-| STASIS_JF_ARTIFACTORY_URL                 | Artifactory service URL (ending in `/artifactory`)                      | 
-| STASIS_JF_ACCESS_TOKEN                    | Artifactory Access Token                                                | 
-| STASIS_JF_USER                            | Artifactory username                                                    | 
-| STASIS_JF_PASSWORD                        | Artifactory password                                                    | 
-| STASIS_JF_SSH_KEY_PATH                    | Path to SSH public key file                                             |
-| STASIS_JF_SSH_PASSPHRASE                  | Password associated with SSH public key file                            | 
-| STASIS_JF_CLIENT_CERT_CERT_PATH           | Path to OpenSSL cert files                                              | 
-| STASIS_JF_CLIENT_CERT_KEY_PATH            | OpenSSL key file (in cert path)                                         | 
-| STASIS_JF_REPO                            | Artifactory "generic" repository to write to                            | 
+| Name                            | Purpose                                                                 | 
+|---------------------------------|-------------------------------------------------------------------------|
+| TMPDIR                          | Change default path to store temporary data                             |
+| STASIS_ROOT                     | Change default path to write STASIS's data                              |
+| STASIS_SYSCONFDIR               | Change default path to search for configuration files                   | 
+| STASIS_CPU_COUNT                | Number of available CPUs                                                |
+| STASIS_GH_TOKEN                 | GitHub API token<br/>(Scope: "Contents" repository permissions (write)) |
+| STASIS_JF_ARTIFACTORY_URL       | Artifactory service URL (ending in `/artifactory`)                      | 
+| STASIS_JF_ACCESS_TOKEN          | Artifactory Access Token                                                | 
+| STASIS_JF_USER                  | Artifactory username                                                    | 
+| STASIS_JF_PASSWORD              | Artifactory password                                                    | 
+| STASIS_JF_SSH_KEY_PATH          | Path to SSH public key file                                             |
+| STASIS_JF_SSH_PASSPHRASE        | Password associated with SSH public key file                            | 
+| STASIS_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                                              | 
+| STASIS_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                                         | 
+| STASIS_JF_REPO                  | Artifactory "generic" repository to write to                            | 
 
-# Variable expansion
+## Main configuration (stasis.ini)
 
-## Template strings
+The default path to the configuration file is `[CMAKE_INSTALL_PREFIX]/etc/stasis/stasis.ini`. You may override this by setting the `STASIS_SYSCONFDIR` environment variable to a path that points elsewhere. 
 
-Template strings can be accessed using the `{{ subject.key }}` notation in any STASIS configuration file.
+### Sections
 
-| Name                        | Purpose                                                                                                                 |
-|-----------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| meta.name                   | Delivery name                                                                                                           |
-| meta.version                | Delivery version                                                                                                        |
-| meta.codename               | Delivery codename                                                                                                       |
-| meta.mission                | Delivery mission                                                                                                        |
-| meta.python                 | Python version (e.g. 3.11)                                                                                              |
-| meta.python_compact         | Python (e.g. 311)                                                                                                       |
-| info.time_str_epoch         | UNIX Epoch timestamp                                                                                                    |
-| info.release_name           | Rendered delivery release name                                                                                          |
-| info.build_name             | Rendered delivery build name                                                                                            |
-| info.build_number           | Rendered delivery build number                                                                                          |
-| storage.tmpdir              | Ohymcal temp directory                                                                                                  |
-| storage.delivery_dir        | STASIS delivery output directory                                                                                        |
-| storage.results_dir         | STASIS test results directory                                                                                           |
-| storage.conda_artifact_dir  | STASIS conda package directory                                                                                          |
-| storage.wheel_artifact_dir  | STASIS wheel package directory                                                                                          |
-| storage.build_sources_dir   | STASIS sources directory                                                                                                |
-| storage.build_docker_dir    | STASIS docker directory                                                                                                 |
-| conda.installer_name        | Conda distribution name                                                                                                 |
-| conda.installer_version     | Conda distribution version                                                                                              |
-| conda.installer_platform    | Conda target platform                                                                                                   |
-| conda.installer_arch        | Conda target architecture                                                                                               |
-| conda.installer_baseurl     | Conda installer URL                                                                                                     |
-| system.arch                 | System CPU Architecture                                                                                                 |
-| system.platform             | System Platform (OS)                                                                                                    |
-| deploy.docker.registry      | Docker registry                                                                                                         |
-| deploy.jfrog.repo           | Artifactory destination repository                                                                                      |
-| workaround.tox_posargs      | Return populated `-c` and `--root` tox arguments.<br/>Force-enables positional arguments in tox's command line parser.  |
-| workaround.conda_reactivate | Reinitialize the conda runtime environment.<br/>Use this after calling `conda install` from within a `[test:*].script`. |
+#### default 
 
-The template engine also provides an interface to environment variables using the `{{ env:VARIABLE_NAME }}` notation.
+| Name                           |  Type   | Purpose                                                              |
+|--------------------------------|:-------:|----------------------------------------------------------------------|
+| continue_on_error              | Boolean | Keep going even if a test fails                                      |
+| always_update_base_environment | Boolean | Update all packages in the base to the latest release                |
+| conda_fresh_start              | Boolean | Remove conda installation during initialization                      |
+| conda_install_prefix           | String  | Install conda in a custom prefix path                                |
+| conda_packages                 |  List   | Conda packages to be installed/overridden in the `base` environment  |
+| pip_packages                   |  List   | Python packages to be installed/overridden in the `base` environment |
+| conda_staging_url              | String  | URL to conda channel                                                 |
 
-```ini
-[meta]
-name = {{ env:MY_DYNAMIC_DELIVERY_NAME }}
-version = {{ env:MY_DYNAMIC_DELIVERY_VERSION }}
-python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
-```
+### jfrog_cli_download
 
-## Template Functions
+| Name           |  Type  | Purpose                                                               |
+|----------------|:------:|-----------------------------------------------------------------------|
+| url            | String | Base URL of JFrog CLI release server                                  |
+| project        | String | Product identifier (i.e. `jfrog-cli`)                                 |
+| version_series | String | Product version series (i.e. `v2-jf`)                                 |
+| version        | String | Product version to install. `[RELEASE]` downloads the latest version. |
+| filename       | String | Product file name (i.e. `jf`)                                         |
 
-Template functions can be accessed using the `{{ func:NAME(ARG,...) }}` notation.
+### deploy:artifactory
 
-| Name                          | Purpose                                      |
-|-------------------------------|----------------------------------------------|
-| get_github_release_notes_auto | Generate release notes for all test contexts |
+| Name |  Type  | Purpose                                              |
+|------|:------:|------------------------------------------------------|
+| url  | String | Set artifactory service URL (ending in /artifactory) |
+| repo | String | Set artifactory repository                           |
 
-# Delivery files
+
+# Delivery configuration
 
 ## Sections
 
@@ -285,6 +288,60 @@ The `deploy:docker` section controls how Docker images are created, when a `Dock
 | image_compression | String | Compression program (with arguments)         | N        |
 | build_args        | List   | Values passed to `docker build --build-args` | N        |
 | tags              | List   | Docker image tag(s)                          | Y        |
+# Variable expansion
+
+## Template strings
+
+Template strings can be accessed using the `{{ subject.key }}` notation in any STASIS configuration file.
+
+| Name                        | Purpose                                                                                                                 |
+|-----------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| meta.name                   | Delivery name                                                                                                           |
+| meta.version                | Delivery version                                                                                                        |
+| meta.codename               | Delivery codename                                                                                                       |
+| meta.mission                | Delivery mission                                                                                                        |
+| meta.python                 | Python version (e.g. 3.11)                                                                                              |
+| meta.python_compact         | Python (e.g. 311)                                                                                                       |
+| info.time_str_epoch         | UNIX Epoch timestamp                                                                                                    |
+| info.release_name           | Rendered delivery release name                                                                                          |
+| info.build_name             | Rendered delivery build name                                                                                            |
+| info.build_number           | Rendered delivery build number                                                                                          |
+| storage.tmpdir              | Ohymcal temp directory                                                                                                  |
+| storage.delivery_dir        | STASIS delivery output directory                                                                                        |
+| storage.results_dir         | STASIS test results directory                                                                                           |
+| storage.conda_artifact_dir  | STASIS conda package directory                                                                                          |
+| storage.wheel_artifact_dir  | STASIS wheel package directory                                                                                          |
+| storage.build_sources_dir   | STASIS sources directory                                                                                                |
+| storage.build_docker_dir    | STASIS docker directory                                                                                                 |
+| conda.installer_name        | Conda distribution name                                                                                                 |
+| conda.installer_version     | Conda distribution version                                                                                              |
+| conda.installer_platform    | Conda target platform                                                                                                   |
+| conda.installer_arch        | Conda target architecture                                                                                               |
+| conda.installer_baseurl     | Conda installer URL                                                                                                     |
+| system.arch                 | System CPU Architecture                                                                                                 |
+| system.platform             | System Platform (OS)                                                                                                    |
+| deploy.docker.registry      | Docker registry                                                                                                         |
+| deploy.jfrog.repo           | Artifactory destination repository                                                                                      |
+| workaround.tox_posargs      | Return populated `-c` and `--root` tox arguments.<br/>Force-enables positional arguments in tox's command line parser.  |
+| workaround.conda_reactivate | Reinitialize the conda runtime environment.<br/>Use this after calling `conda install` from within a `[test:*].script`. |
+
+The template engine also provides an interface to environment variables using the `{{ env:VARIABLE_NAME }}` notation.
+
+```ini
+[meta]
+name = {{ env:MY_DYNAMIC_DELIVERY_NAME }}
+version = {{ env:MY_DYNAMIC_DELIVERY_VERSION }}
+python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
+```
+
+## Template Functions
+
+Template functions can be accessed using the `{{ func:NAME(ARG,...) }}` notation.
+
+| Name                          | Purpose                                      |
+|-------------------------------|----------------------------------------------|
+| get_github_release_notes_auto | Generate release notes for all test contexts |
+
 
 # Mission files
 

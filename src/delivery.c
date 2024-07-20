@@ -1676,7 +1676,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         }
         remove(tempfile);
         guard_free(tempfile);
-    } else if (stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
+    } else if (globals.enable_rewrite_spec_stage_2 && stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
         // Replace "local" channel with the staging URL
         if (ctx->storage.conda_staging_url) {
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
@@ -1684,14 +1684,18 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             sprintf(output, "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
-            msg(STASIS_MSG_WARN, "conda_staging_url is not configured\n", filename);
-            file_replace_text(filename, "  - @CONDA_CHANNEL@", "", 0);
+            msg(STASIS_MSG_WARN, "conda_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.conda_artifact_dir);
+            file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_artifact_dir, 0);
         }
 
         if (ctx->storage.wheel_staging_url) {
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
-        } else if (globals.jfrog.repo) {
+        } else if (globals.jfrog.url && globals.jfrog.repo) {
             sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
+            file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
+        } else {
+            msg(STASIS_MSG_WARN, "wheel_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.wheel_artifact_dir);
+            sprintf(output, "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
     }
