@@ -24,6 +24,7 @@ add_library(stasis_core STATIC
         junitxml.c
         github.c
         template_func_proto.c
+        envctl.c
 )
 
 add_executable(stasis

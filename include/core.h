@@ -21,6 +21,7 @@
 #define HTTP_ERROR(X) X >= 400
 
 #include "config.h"
+#include "envctl.h"
 #include "template.h"
 #include "utils.h"
 #include "copy.h"
@@ -59,11 +60,6 @@
         } \
     } while (0)
 
-struct EnvCtl {
-    unsigned flags;
-    const char *name[10];
-};
-
 struct STASIS_GLOBAL {
     bool verbose; //!< Enable verbose output
     bool always_update_base_environment; //!< Update base environment immediately after activation
@@ -73,6 +69,7 @@ struct STASIS_GLOBAL {
     bool enable_artifactory; //!< Enable artifactory uploads
     bool enable_testing; //!< Enable package testing
     bool enable_overwrite; //!< Enable release file clobbering
+    bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory
@@ -93,13 +90,10 @@ struct STASIS_GLOBAL {
         char *repo;
         char *url;
     } jfrog;
-    struct EnvCtl envctl[];
+    struct EnvCtl *envctl;
 };
 extern struct STASIS_GLOBAL globals;
 
-#define STASIS_ENVCTL_PASSTHRU 0 << 1
-#define STASIS_ENVCTL_REQUIRED 1 << 1
-#define STASIS_ENVCTL_REDACT 2 << 1
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;

@@ -10,6 +10,7 @@
 #define OPT_NO_ARTIFACTORY 1002
 #define OPT_NO_TESTING 1003
 #define OPT_OVERWRITE 1004
+#define OPT_NO_REWRITE_SPEC_STAGE_2 1005
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
@@ -23,6 +24,7 @@ static struct option long_options[] = {
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
         {"no-testing", no_argument, 0, OPT_NO_TESTING},
+        {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
         {0, 0, 0, 0},
 };
 
@@ -39,6 +41,7 @@ const char *long_options_help[] = {
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
         "Do not execute test scripts",
+        "Do not rewrite paths and URLs in output files",
         NULL,
 };
 
@@ -98,36 +101,53 @@ static void usage(char *progname) {
     }
 }
 
-static int get_envctl_key_index_(size_t i) {
-    for (int x = 0; x < (int)(sizeof(globals.envctl[i].name) / sizeof(*globals.envctl[i].name)); x++) {
-        const char *name = globals.envctl[i].name[x];
-        if (!name) {
-            return -1;
-        }
-        const char *data = getenv(name);
-        if (data != NULL) {
-            return x;
+static int callback_except_jf(const void *a, const void *b) {
+    const struct EnvCtl_Item *item = a;
+    const char *name = b;
+
+    if (!globals.enable_artifactory) {
+        return STASIS_ENVCTL_RET_IGNORE;
+    }
+
+    if (envctl_check_required(item->flags)) {
+        const char *content = getenv(name);
+        if (!content || isempty((char *) content)) {
+            return STASIS_ENVCTL_RET_FAIL;
         }
     }
-    return -1;
+
+    return STASIS_ENVCTL_RET_SUCCESS;
+}
+
+static int callback_except_gh(const void *a, const void *b) {
+    const struct EnvCtl_Item *item = a;
+    const char *name = b;
+    //printf("GH exception check: %s\n", name);
+    if (envctl_check_required(item->flags) && envctl_check_present(item, name)) {
+        return STASIS_ENVCTL_RET_SUCCESS;
+    }
+
+    return STASIS_ENVCTL_RET_FAIL;
 }
 
 static void check_system_env_requirements() {
     msg(STASIS_MSG_L1, "Checking environment\n");
-    for (size_t i = 0; globals.envctl[i].name[0] != NULL; i++) {
-        unsigned int flags = globals.envctl[i].flags;
-        int key = get_envctl_key_index_(i);
-        if (key < 0) {
-            if (flags & STASIS_ENVCTL_REQUIRED) {
-                if (!strcmp(globals.envctl[i].name[0], "STASIS_JF_REPO") && !globals.enable_artifactory) {
-                    continue;
-                }
-                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Environment variable '%s' must be defined.\n",
-                    globals.envctl[i].name[0]);
-                exit(1);
-            }
-        }
-    }
+    globals.envctl = envctl_init();
+    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "TMPDIR");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_ROOT");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_SYSCONFDIR");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_CPU_COUNT");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED | STASIS_ENVCTL_REDACT, callback_except_gh, "STASIS_GH_TOKEN");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_ARTIFACTORY_URL");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_ACCESS_TOKEN");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_JF_USER");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_PASSWORD");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_KEY_PATH");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_PASSPHRASE");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_CERT_PATH");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_KEY_PATH");
+    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_REPO");
+    envctl_do_required(globals.envctl, globals.verbose);
 }
 
 static void check_system_requirements(struct Delivery *ctx) {
@@ -243,6 +263,9 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_NO_TESTING:
                 globals.enable_testing = false;
+                break;
+            case OPT_NO_REWRITE_SPEC_STAGE_2:
+                globals.enable_rewrite_spec_stage_2 = false;
                 break;
             case '?':
             default:
@@ -649,10 +672,10 @@ int main(int argc, char *argv[]) {
             msg(STASIS_MSG_L1, "Uploading artifacts\n");
             delivery_artifact_upload(&ctx);
         } else {
-            msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifact uploading is disabled\n");
+            msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifactory upload is disabled by CLI argument\n");
         }
     } else {
-        msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifact uploading is disabled. deploy:artifactory is not configured\n");
+        msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifactory upload is disabled. deploy:artifactory is not configured\n");
     }
 
     msg(STASIS_MSG_L1, "Cleaning up\n");
