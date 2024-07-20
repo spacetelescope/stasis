@@ -29,7 +29,7 @@ pushd "$ws"
     type -P stasis
     type -P stasis_indexer
 
-    stasis --no-docker --no-artifactory --unbuffered -v "$topdir"/bare_minimum.ini
+    stasis --no-docker --no-artifactory --unbuffered -v "$topdir"/generic.ini
     retcode=$?
 
     set +x
