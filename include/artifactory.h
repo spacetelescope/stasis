@@ -88,6 +88,31 @@ struct JFRT_Download {
     bool validate_symlinks;
 };
 
+struct JFRT_Search {
+    char *bundle;
+    bool count;
+    char *sort_by;
+    char *sort_order;
+    int limit;
+    int offset;
+    char *spec;
+    char *spec_vars;
+    char *props;
+    bool recursive;
+    char *build;
+    bool fail_no_op;
+    char *exclusions;
+    char *exclude_artifacts;
+    char *exclude_patterns;
+    char *exclude_props;
+    char *archive_entries;
+    char *include;
+    char *include_deps;
+    char *include_dirs;
+    char *project;
+    char *transitive;
+};
+
 /**
  * Download the JFrog CLI tool from jfrog.com
  * ```c
@@ -135,17 +160,19 @@ int artifactory_download_cli(char *dest,
  * auth_ctx.url = strdup("https://myserver.tld/artifactory");
  * jfrt_auth_init(&auth_ctx);
  *
- * if (jfrog_cli(&auth_ctx, "ping") {
+ * if (jfrog_cli(&auth_ctx, "rt", "ping", NULL) {
  *     fprintf(stderr, "Failed to ping artifactory server: %s\n", auth_ctx.url);
  *     exit(1);
  * }
  * ```
  *
  * @param auth JFRT_Auth structure
+ * @param subsystem "jf" tool subsystem (i.e. "rt")
+ * @param task "jf" tool task "upload", "download", etc
  * @param args Command line arguments to pass to "jf" tool
  * @return exit code from "jf"
  */
-int jfrog_cli(struct JFRT_Auth *auth, char *args);
+int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, char *args);
 
 /**
  * Issue an Artifactory server ping
@@ -223,6 +250,17 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
  * @return exit code from "jf"
  */
 int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, char *repo_path, char *dest);
+
+/**
+ * Search for files in an Artifactory repository
+ *
+ * @param auth JFRT_Auth structure
+ * @param ctx  JFRT_Search structure
+ * @param repo_path Remote repository w/ file pattern
+ * @param dest Local destination path
+ * @return exit code from "jf"
+ */
+int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *repo_path, char *pattern);
 
 /**
  * Collect runtime data for Artifactory build object.

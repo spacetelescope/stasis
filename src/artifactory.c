@@ -127,9 +127,9 @@ void jfrt_upload_init(struct JFRT_Upload *ctx) {
     ctx->retries = 3;
 }
 
-static int auth_required(char *cmd) {
+static int auth_required(const char *cmd) {
     const char *modes[] = {
-            "rt build-collect-env",
+            "build-collect-env",
             NULL,
     };
     for (size_t i = 0; modes[i] != NULL; i++) {
@@ -193,7 +193,7 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
     return 0;
 }
 
-int jfrog_cli(struct JFRT_Auth *auth, char *args) {
+int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, char *args) {
     struct Process proc;
     char cmd[STASIS_BUFSIZ];
     char cmd_redacted[STASIS_BUFSIZ];
@@ -209,7 +209,7 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     }
 
     char *auth_args = NULL;
-    if (auth_required(args)) {
+    if (auth_required(task)) {
         // String options
         jfrt_register_opt_str(auth->url, "url", &arg_map);
         jfrt_register_opt_str(auth->user, "user", &arg_map);
@@ -236,14 +236,14 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
             auth->client_cert_path,
             auth->password,
     };
-    snprintf(cmd, sizeof(cmd) - 1, "jf %s %s", args, auth_args);
+    snprintf(cmd, sizeof(cmd) - 1, "jf %s %s %s %s", subsystem, task, auth_args, args ? args : "");
     redact_sensitive(redactable, sizeof(redactable) / sizeof (*redactable), cmd, cmd_redacted, sizeof(cmd_redacted) - 1);
 
     guard_free(auth_args);
     guard_strlist_free(&arg_map);
 
     // Pings are noisy. Squelch them.
-    if (!strstr(args, "rt ping")) {
+    if (task && !strstr(task, "ping")) {
         msg(STASIS_MSG_L2, "Executing: %s\n", cmd_redacted);
     }
 
@@ -255,33 +255,26 @@ int jfrog_cli(struct JFRT_Auth *auth, char *args) {
     return status;
 }
 
-int jfrog_cli_rt(struct JFRT_Auth *auth, char *args) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "rt %s", args);
-    return jfrog_cli(auth, args);
+static int jfrog_cli_rt(struct JFRT_Auth *auth, char *task, char *args) {
+    return jfrog_cli(auth, "rt", task, args);
 }
 
 int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "rt build-collect-env \"%s\" \"%s\"", build_name, build_number);
-    return jfrog_cli(auth, cmd);
+    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    return jfrog_cli(auth, "rt", "build-collect-env", cmd);
 }
 
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "rt build-publish \"%s\" \"%s\"", build_name, build_number);
-    return jfrog_cli(auth, cmd);
+    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    return jfrog_cli(auth, "rt", "build-publish", cmd);
 }
 
 int jfrog_cli_rt_ping(struct JFRT_Auth *auth) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
-
-    snprintf(cmd, sizeof(cmd) - 1, "rt ping");
-    return jfrog_cli_rt(auth, cmd);
+    return jfrog_cli_rt(auth, "ping", NULL);
 }
 
 int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, char *repo_path, char *dest) {
@@ -343,11 +336,11 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "rt download %s '%s' %s", args, repo_path, dest ? dest : "");
+    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' %s", args, repo_path, dest ? dest : "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 
-    int status = jfrog_cli_rt(auth, cmd);
+    int status = jfrog_cli_rt(auth, "download", cmd);
     return status;
 }
 
@@ -434,11 +427,11 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         pushd(new_src);
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "rt upload %s '%s' \"%s\"", args, src, repo_path);
+    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' \"%s\"", args, src, repo_path);
     guard_free(args);
     guard_strlist_free(&arg_map);
 
-    int status = jfrog_cli_rt(auth, cmd);
+    int status = jfrog_cli_rt(auth, "upload", cmd);
     if (new_src) {
         popd();
         guard_free(new_src);
@@ -447,5 +440,57 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         guard_free(base);
     }
 
+    return status;
+}
+
+int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *repo_path, char *pattern) {
+    char cmd[STASIS_BUFSIZ];
+    memset(cmd, 0, sizeof(cmd));
+
+    if (isempty(repo_path)) {
+        fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");
+        return -1;
+    }
+
+    struct StrList *arg_map = strlist_init();
+    if (!arg_map) {
+        return -1;
+    }
+
+    jfrt_register_opt_str(ctx->archive_entries, "archive-entries", &arg_map);
+    jfrt_register_opt_str(ctx->build, "build", &arg_map);
+    jfrt_register_opt_str(ctx->bundle, "bundle", &arg_map);
+    jfrt_register_opt_str(ctx->exclusions, "exclusions", &arg_map);
+    jfrt_register_opt_str(ctx->exclude_patterns, "exclude-patterns", &arg_map);
+    jfrt_register_opt_str(ctx->exclude_artifacts, "exclude-artifacts", &arg_map);
+    jfrt_register_opt_str(ctx->exclude_props, "exclude-props", &arg_map);
+    jfrt_register_opt_str(ctx->include, "include", &arg_map);
+    jfrt_register_opt_str(ctx->include_deps, "include_deps", &arg_map);
+    jfrt_register_opt_str(ctx->include_dirs, "include_dirs", &arg_map);
+    jfrt_register_opt_str(ctx->project, "project", &arg_map);
+    jfrt_register_opt_str(ctx->props, "props", &arg_map);
+    jfrt_register_opt_str(ctx->sort_by, "sort-by", &arg_map);
+    jfrt_register_opt_str(ctx->sort_order, "sort-order", &arg_map);
+    jfrt_register_opt_str(ctx->spec, "spec", &arg_map);
+    jfrt_register_opt_str(ctx->spec_vars, "spec-vars", &arg_map);
+
+    jfrt_register_opt_bool(ctx->count, "count", &arg_map);
+    jfrt_register_opt_bool(ctx->fail_no_op, "fail-no-op", &arg_map);
+    jfrt_register_opt_bool(ctx->recursive, "recursive", &arg_map);
+    jfrt_register_opt_bool(ctx->transitive, "transitive", &arg_map);
+
+    jfrt_register_opt_int(ctx->limit, "limit", &arg_map);
+    jfrt_register_opt_int(ctx->offset, "offset", &arg_map);
+
+    char *args = join(arg_map->data, " ");
+    if (!args) {
+        return -1;
+    }
+
+    snprintf(cmd, sizeof(cmd) - 1, "%s '%s/%s'", args, repo_path, pattern ? pattern: "");
+    guard_free(args);
+    guard_strlist_free(&arg_map);
+
+    int status = jfrog_cli_rt(auth, "search", cmd);
     return status;
 }
