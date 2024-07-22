@@ -2191,18 +2191,36 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
 }
 
 int delivery_exists(struct Delivery *ctx) {
-    // TODO: scan artifactory repo for the same information
+    int release_exists = 0;
     char release_pattern[PATH_MAX] = {0};
     sprintf(release_pattern, "*%s*", ctx->info.release_name);
-    struct StrList *files = listdir(ctx->storage.delivery_dir);
-    for (size_t i = 0; i < strlist_count(files); i++) {
-        char *filename = strlist_item(files, i);
-        int release_exists = fnmatch(release_pattern, filename, FNM_PATHNAME);
-        if (!globals.enable_overwrite && !release_exists) {
-            guard_strlist_free(&files);
-            return 1;
+
+    if (globals.enable_artifactory) {
+        if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
+            fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+            return -1;  // error
         }
+
+        struct JFRT_Search search = {.fail_no_op = true};
+        release_exists = jfrog_cli_rt_search(&ctx->deploy.jfrog_auth, &search, globals.jfrog.repo, release_pattern);
+        if (release_exists != 2) {
+            if (!globals.enable_overwrite && !release_exists) {
+                // --fail_no_op returns 2 on failure
+                // without: it returns an empty list "[]" and exit code 0
+                return 1;  // found
+            }
+        }
+    } else {
+        struct StrList *files = listdir(ctx->storage.delivery_dir);
+        for (size_t i = 0; i < strlist_count(files); i++) {
+            char *filename = strlist_item(files, i);
+            release_exists = fnmatch(release_pattern, filename, FNM_PATHNAME);
+            if (!globals.enable_overwrite && !release_exists) {
+                guard_strlist_free(&files);
+                return 1;  // found
+            }
+        }
+        guard_strlist_free(&files);
     }
-    guard_strlist_free(&files);
-    return 0;
+    return 0;  // not found
 }

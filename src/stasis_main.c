@@ -415,9 +415,10 @@ int main(int argc, char *argv[]) {
         //delivery_runtime_show(&ctx);
     }
 
-    // Safety gate: Avoid clobbering a delivery unless the user wants that behavior
+    // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
+    msg(STASIS_MSG_L1, "Checking release history\n");
     if (delivery_exists(&ctx)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite delivery: %s\nUse --overwrite to enable release clobbering.\n", ctx.info.release_name);
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx.info.release_name);
         exit(1);
     }
 
