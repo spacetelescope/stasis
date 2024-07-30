@@ -407,14 +407,6 @@ int main(int argc, char *argv[]) {
     strcpy(env_name_testing, env_name);
     strcat(env_name_testing, "-test");
 
-    msg(STASIS_MSG_L1, "Overview\n");
-    delivery_meta_show(&ctx);
-    delivery_conda_show(&ctx);
-    delivery_tests_show(&ctx);
-    if (globals.verbose) {
-        //delivery_runtime_show(&ctx);
-    }
-
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
     msg(STASIS_MSG_L1, "Checking release history\n");
     if (delivery_exists(&ctx)) {
@@ -509,20 +501,28 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    msg(STASIS_MSG_L1, "Filter deliverable packages\n");
+    delivery_defer_packages(&ctx, DEFER_CONDA);
+    delivery_defer_packages(&ctx, DEFER_PIP);
+
+    msg(STASIS_MSG_L1, "Overview\n");
+    delivery_meta_show(&ctx);
+    delivery_conda_show(&ctx);
+    if (globals.verbose) {
+        //delivery_runtime_show(&ctx);
+    }
+
     // Execute configuration-defined tests
     if (globals.enable_testing) {
+        delivery_tests_show(&ctx);
+
         msg(STASIS_MSG_L1, "Begin test execution\n");
         delivery_tests_run(&ctx);
-        msg(STASIS_MSG_L1, "Rewriting test results\n");
+        msg(STASIS_MSG_L2, "Rewriting test results\n");
         delivery_fixup_test_results(&ctx);
     } else {
         msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Test execution is disabled\n");
     }
-
-    msg(STASIS_MSG_L1, "Generating deferred package listing\n");
-    // Test succeeded so move on to producing package artifacts
-    delivery_defer_packages(&ctx, DEFER_CONDA);
-    delivery_defer_packages(&ctx, DEFER_PIP);
 
     if (ctx.conda.conda_packages_defer && strlist_count(ctx.conda.conda_packages_defer)) {
         msg(STASIS_MSG_L2, "Building Conda recipe(s)\n");
