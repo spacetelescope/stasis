@@ -452,7 +452,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
             if (name && strlen(name) > 1) {
                 name = &name[1];
             }
-            ini_has_key_required(ini, section->key, "version");
+            //ini_has_key_required(ini, section->key, "version");
             ini_has_key_required(ini, section->key, "repository");
             ini_has_key_required(ini, section->key, "script");
         }
@@ -606,7 +606,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             }
             conv_str(&ctx->tests[z].name, val);
 
-            ini_getval_required(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR, &val);
+            ini_getval(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR, &val);
             conv_str(&ctx->tests[z].version, val);
 
             ini_getval_required(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR, &val);
