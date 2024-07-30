@@ -452,7 +452,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
             if (name && strlen(name) > 1) {
                 name = &name[1];
             }
-            ini_has_key_required(ini, section->key, "version");
+            //ini_has_key_required(ini, section->key, "version");
             ini_has_key_required(ini, section->key, "repository");
             ini_has_key_required(ini, section->key, "script");
         }
@@ -606,7 +606,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             }
             conv_str(&ctx->tests[z].name, val);
 
-            ini_getval_required(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR, &val);
+            ini_getval(ini, ini->section[i]->key, "version", INIVAL_TYPE_STR, &val);
             conv_str(&ctx->tests[z].version, val);
 
             ini_getval_required(ini, ini->section[i]->key, "repository", INIVAL_TYPE_STR, &val);
@@ -1237,9 +1237,39 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
-                const struct Test *info = requirement_from_test(ctx, name);
+                struct Test *info = (struct Test *) requirement_from_test(ctx, name);
                 if (info) {
-                    sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, info->version);
+                    if (!strcmp(info->version, "HEAD")) {
+                        struct StrList *tag_data = strlist_init();
+                        if (!tag_data) {
+                            SYSERROR("%s", "Unable to allocate memory for tag data\n");
+                            return -1;
+                        }
+                        strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
+
+                        struct Wheel *whl = NULL;
+                        char *post_commit = NULL;
+                        char *hash = NULL;
+                        if (strlist_count(tag_data) > 1) {
+                            post_commit = strlist_item(tag_data, 1);
+                            hash = strlist_item(tag_data, 2);
+                        }
+
+                        // We can't match on version here (index 0). The wheel's version is not guaranteed to be
+                        // equal to the tag; setuptools_scm auto-increments the value, the user can change it manually,
+                        // etc.
+                        whl = get_wheel_file(ctx->storage.wheel_artifact_dir, info->name,
+                                             (char *[]) {ctx->meta.python_compact, ctx->system.arch,
+                                                         "none", "any",
+                                                         post_commit, hash,
+                                                         NULL}, WHEEL_MATCH_ANY);
+
+                        guard_strlist_free(&tag_data);
+                        info->version = whl->version;
+                        sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, whl->version);
+                    } else {
+                        sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, info->version);
+                    }
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     return -1;
@@ -1507,10 +1537,27 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
         // Compile a list of packages that are *also* to be tested.
         char *version;
+        char *spec_begin = strpbrk(name, "~=<>!");
+        char *spec_end = spec_begin;
+        if (spec_end) {
+            // A version is present in the package name. Jump past operator(s).
+            while (*spec_end != '\0' && !isalnum(*spec_end)) {
+                spec_end++;
+            }
+        }
+
+        // When spec is present in name, set ctx->tests[x].version to the version detected in the name
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
             version = NULL;
             if (ctx->tests[x].name) {
                 if (strstr(name, ctx->tests[x].name)) {
+                    guard_free(ctx->tests[x].version);
+                    if (spec_begin && spec_end) {
+                        *spec_begin = '\0';
+                        ctx->tests[x].version = strdup(spec_end);
+                    } else {
+                        ctx->tests[x].version = strdup("HEAD");
+                    }
                     version = ctx->tests[x].version;
                     ignore_pkg = 1;
                     break;
@@ -1690,7 +1737,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
 
         if (ctx->storage.wheel_staging_url) {
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
-        } else if (globals.jfrog.url && globals.jfrog.repo) {
+        } else if (globals.enable_artifactory && globals.jfrog.url && globals.jfrog.repo) {
             sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
@@ -2180,7 +2227,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
         }
 
         sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
-        msg(STASIS_MSG_L2, "%s\n", rec->d_name);
+        msg(STASIS_MSG_L3, "%s\n", rec->d_name);
         if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
             msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
         }

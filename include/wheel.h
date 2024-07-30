@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include "str.h"
 
+#define WHEEL_MATCH_EXACT 0
+#define WHEEL_MATCH_ANY 1
+
 struct Wheel {
     char *distribution;
     char *version;
@@ -17,5 +20,5 @@ struct Wheel {
     char *file_name;
 };
 
-struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_match[]);
+struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
 #endif //STASIS_WHEEL_H

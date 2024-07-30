@@ -20,7 +20,7 @@ bdir="$ws"/build
 mkdir -p "$bdir"
 
 pushd "$bdir"
-cmake -DCMAKE_INSTALL_PREFIX="$prefix" "${topdir}"/../..
+cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_BUILD_TYPE=Debug "${topdir}"/../..
 make install
 export PATH="$prefix/bin:$PATH"
 popd
