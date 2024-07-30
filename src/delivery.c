@@ -1736,7 +1736,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
 
         if (ctx->storage.wheel_staging_url) {
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
-        } else if (globals.jfrog.url && globals.jfrog.repo) {
+        } else if (globals.enable_artifactory && globals.jfrog.url && globals.jfrog.repo) {
             sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
