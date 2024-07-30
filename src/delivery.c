@@ -1552,7 +1552,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             if (ctx->tests[x].name) {
                 if (strstr(name, ctx->tests[x].name)) {
                     guard_free(ctx->tests[x].version);
-                    if (spec_end) {
+                    if (spec_begin && spec_end) {
+                        *spec_begin = '\0';
                         ctx->tests[x].version = strdup(spec_end);
                     } else {
                         ctx->tests[x].version = strdup("HEAD");
