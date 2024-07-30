@@ -1,6 +1,6 @@
 #include "wheel.h"
 
-struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_match[]) {
+struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_match[], unsigned match_mode) {
     DIR *dp;
     struct dirent *rec;
     struct Wheel *result = NULL;
@@ -38,7 +38,11 @@ struct Wheel *get_wheel_file(const char *basepath, const char *name, char *to_ma
             }
         }
 
-        if (!startswith(rec->d_name, name) || match != pattern_count) {
+        if (!startswith(rec->d_name, name)) {
+            continue;
+        }
+
+        if (match_mode == WHEEL_MATCH_EXACT && match != pattern_count) {
             continue;
         }
 
