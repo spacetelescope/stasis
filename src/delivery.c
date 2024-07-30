@@ -2226,7 +2226,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
         }
 
         sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
-        msg(STASIS_MSG_L2, "%s\n", rec->d_name);
+        msg(STASIS_MSG_L3, "%s\n", rec->d_name);
         if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
             msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
         }
