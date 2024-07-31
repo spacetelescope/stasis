@@ -940,9 +940,11 @@ void delivery_conda_show(struct Delivery *ctx) {
     printf("%-20s %-10s\n", "Prefix:", ctx->storage.conda_install_prefix);
 
     puts("Native Packages:");
-    if (strlist_count(ctx->conda.conda_packages)) {
+    if (strlist_count(ctx->conda.conda_packages) || strlist_count(ctx->conda.conda_packages_defer)) {
         struct StrList *list_conda = strlist_init();
-        strlist_append_strlist(list_conda, ctx->conda.conda_packages);
+        if (strlist_count(ctx->conda.conda_packages)) {
+            strlist_append_strlist(list_conda, ctx->conda.conda_packages);
+        }
         if (strlist_count(ctx->conda.conda_packages_defer)) {
             strlist_append_strlist(list_conda, ctx->conda.conda_packages_defer);
         }
@@ -961,9 +963,11 @@ void delivery_conda_show(struct Delivery *ctx) {
     }
 
     puts("Python Packages:");
-    if (strlist_count(ctx->conda.pip_packages)) {
+    if (strlist_count(ctx->conda.pip_packages) || strlist_count(ctx->conda.pip_packages_defer)) {
         struct StrList *list_python = strlist_init();
-        strlist_append_strlist(list_python, ctx->conda.pip_packages);
+        if (strlist_count(ctx->conda.pip_packages)) {
+            strlist_append_strlist(list_python, ctx->conda.pip_packages);
+        }
         if (strlist_count(ctx->conda.pip_packages_defer)) {
             strlist_append_strlist(list_python, ctx->conda.pip_packages_defer);
         }
