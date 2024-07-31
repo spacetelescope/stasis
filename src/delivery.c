@@ -940,27 +940,47 @@ void delivery_conda_show(struct Delivery *ctx) {
     printf("%-20s %-10s\n", "Prefix:", ctx->storage.conda_install_prefix);
 
     puts("Native Packages:");
-    if (strlist_count(ctx->conda.conda_packages)) {
-        for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
-            char *token = strlist_item(ctx->conda.conda_packages, i);
+    if (strlist_count(ctx->conda.conda_packages) || strlist_count(ctx->conda.conda_packages_defer)) {
+        struct StrList *list_conda = strlist_init();
+        if (strlist_count(ctx->conda.conda_packages)) {
+            strlist_append_strlist(list_conda, ctx->conda.conda_packages);
+        }
+        if (strlist_count(ctx->conda.conda_packages_defer)) {
+            strlist_append_strlist(list_conda, ctx->conda.conda_packages_defer);
+        }
+        strlist_sort(list_conda, STASIS_SORT_ALPHA);
+        
+        for (size_t i = 0; i < strlist_count(list_conda); i++) {
+            char *token = strlist_item(list_conda, i);
             if (isempty(token) || isblank(*token) || startswith(token, "-")) {
                 continue;
             }
             printf("%21s%s\n", "", token);
         }
+        guard_strlist_free(&list_conda);
     } else {
        printf("%21s%s\n", "", "N/A");
     }
 
     puts("Python Packages:");
-    if (strlist_count(ctx->conda.pip_packages)) {
-        for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
-            char *token = strlist_item(ctx->conda.pip_packages, i);
+    if (strlist_count(ctx->conda.pip_packages) || strlist_count(ctx->conda.pip_packages_defer)) {
+        struct StrList *list_python = strlist_init();
+        if (strlist_count(ctx->conda.pip_packages)) {
+            strlist_append_strlist(list_python, ctx->conda.pip_packages);
+        }
+        if (strlist_count(ctx->conda.pip_packages_defer)) {
+            strlist_append_strlist(list_python, ctx->conda.pip_packages_defer);
+        }
+        strlist_sort(list_python, STASIS_SORT_ALPHA);
+
+        for (size_t i = 0; i < strlist_count(list_python); i++) {
+            char *token = strlist_item(list_python, i);
             if (isempty(token) || isblank(*token) || startswith(token, "-")) {
                 continue;
             }
             printf("%21s%s\n", "", token);
         }
+        guard_strlist_free(&list_python);
     } else {
         printf("%21s%s\n", "", "N/A");
     }
