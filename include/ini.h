@@ -29,7 +29,7 @@
 #define INIVAL_TO_LIST 1 << 1
 
 /*! \union INIVal
- * \brief Consolidation possible value types
+ * \brief Consolidate possible value types
  */
 union INIVal {
     int as_int;                      ///< Integer
@@ -52,6 +52,7 @@ union INIVal {
 struct INIData {
     char *key;                       ///< INI variable name
     char *value;                     ///< INI variable value
+    unsigned type_hint;
 };
 
 /*! \struct INISection

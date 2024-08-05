@@ -292,13 +292,18 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                     char *render = NULL;
                     if (mode == INI_WRITE_PRESERVE) {
                         render = tpl_render(parts[p]);
+                        replace_text(render, "\n", "\n    ", 0);
                     } else {
                         render = parts[p];
                     }
                     if (p == 0) {
                         sprintf(outvalue, "%s" LINE_SEP, render);
                     } else {
-                        sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
+                        if (!isspace(render[0])) {
+                            sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
+                        } else {
+                            sprintf(outvalue + strlen(outvalue), "%s" LINE_SEP, render);
+                        }
                     }
                     if (mode == INI_WRITE_PRESERVE) {
                         guard_free(render);
@@ -307,9 +312,9 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 GENERIC_ARRAY_FREE(parts);
                 strip(outvalue);
                 strcat(outvalue, LINE_SEP);
-                fprintf(*stream, "%s=%s%s", ini->section[x]->data[y]->key, parts_total > 1 ? LINE_SEP "    " : "", outvalue);
+                fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->type_hint || parts_total > 1 ? LINE_SEP "    " : "", outvalue);
             } else {
-                fprintf(*stream, "%s=%s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
+                fprintf(*stream, "%s = %s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
             }
         }
         fprintf(*stream, LINE_SEP);
@@ -350,6 +355,13 @@ void ini_free(struct INIFILE **ini) {
     }
     guard_free((*ini)->section);
     guard_free((*ini));
+}
+
+static void ini_data_set_hint(struct INIFILE **ini, char *section_name, char *key, int hint) {
+    struct INIData *data = ini_data_get(*ini, section_name, key);
+    if (data) {
+        data->type_hint = hint;
+    }
 }
 
 struct INIFILE *ini_open(const char *filename) {
@@ -440,8 +452,10 @@ struct INIFILE *ini_open(const char *filename) {
             ini_section_create(&ini, section_name);
 
             // Record the name of the section. This is used until another section is found.
+            memset(current_section, 0, sizeof(current_section));
             strcpy(current_section, section_name);
             guard_free(section_name);
+            memset(line, 0, sizeof(line));
             continue;
         }
 
@@ -473,6 +487,7 @@ struct INIFILE *ini_open(const char *filename) {
             }
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
+                ini_data_set_hint(&ini, current_section, key, INIVAL_TYPE_STR_ARRAY);
                 multiline_data = 1;
                 no_data = 1;
             } else {
@@ -484,15 +499,14 @@ struct INIFILE *ini_open(const char *filename) {
             strcpy(key, key_last);
             strcpy(value, line);
         }
+        memset(line, 0, sizeof(line));
 
         // Store key value pair in section's data array
         if (strlen(key)) {
             lstrip(key);
             strip(key);
             unquote(value);
-            lstrip(value);
             if (!multiline_data) {
-                strip(value);
                 reading_value = 0;
                 ini_data_append(&ini, current_section, key, value);
                 continue;

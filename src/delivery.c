@@ -54,7 +54,15 @@ static void conv_strlist(struct StrList **x, char *tok, union INIVal val) {
     if (val.as_char_p) {
         char *tplop = tpl_render(val.as_char_p);
         if (tplop) {
+            lstrip(tplop);
             strip(tplop);
+            // Special handler for space delimited lists
+            if (strpbrk(tok, " ")) {
+                // crunch all spaces
+                normalize_space(tplop);
+                // replace spaces with line feeds
+                replace_text(tplop, " ", "\n", 0);
+            }
             strlist_append_tokenize((*x), tplop, tok);
             guard_free(tplop);
         }
@@ -548,7 +556,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     conv_str(&ctx->conda.installer_baseurl, val);
 
     ini_getval(ini, "conda", "conda_packages", INIVAL_TYPE_STR_ARRAY, &val);
-    conv_strlist(&ctx->conda.conda_packages, LINE_SEP, val);
+    conv_strlist(&ctx->conda.conda_packages, " "LINE_SEP, val);
 
     for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
         char *pkg = strlist_item(ctx->conda.conda_packages, i);
@@ -558,7 +566,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     }
 
     ini_getval(ini, "conda", "pip_packages", INIVAL_TYPE_STR_ARRAY, &val);
-    conv_strlist(&ctx->conda.pip_packages, LINE_SEP, val);
+    conv_strlist(&ctx->conda.pip_packages, " "LINE_SEP, val);
 
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
         char *pkg = strlist_item(ctx->conda.pip_packages, i);
@@ -1201,7 +1209,7 @@ static const struct Test *requirement_from_test(struct Delivery *ctx, const char
 
     result = NULL;
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        if (strstr(name, ctx->tests[i].name)) {
+        if (ctx->tests[i].name && strstr(name, ctx->tests[i].name)) {
             result = &ctx->tests[i];
             break;
         }
