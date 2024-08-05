@@ -97,6 +97,7 @@ void tpl_free() {
     }
     for (unsigned i = 0; i < tpl_pool_func_used; i++) {
         struct tplfunc_frame *item = tpl_pool_func[i];
+        guard_free(item->key);
         guard_free(item);
     }
 }
