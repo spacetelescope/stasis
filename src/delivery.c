@@ -1229,7 +1229,7 @@ int delivery_get_installer(struct Delivery *ctx, char *installer_url) {
     sprintf(script_path, "%s/%s", ctx->storage.tmpdir, installer);
     if (access(script_path, F_OK)) {
         // Script doesn't exist
-        int fetch_status = download(installer_url, script_path, NULL);
+        long fetch_status = download(installer_url, script_path, NULL);
         if (HTTP_ERROR(fetch_status) || fetch_status < 0) {
             // download failed
             return -1;
