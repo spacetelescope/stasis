@@ -343,7 +343,7 @@ int delivery_init_platform(struct Delivery *ctx) {
     return 0;
 }
 
-static int populate_mission_ini(struct Delivery **ctx) {
+static int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     int err = 0;
     struct INIFILE *ini;
 
@@ -370,13 +370,13 @@ static int populate_mission_ini(struct Delivery **ctx) {
     }
     (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);
 
-    (*ctx)->rules.release_fmt = ini_getval_str(ini, "meta", "release_fmt", &err);
+    (*ctx)->rules.release_fmt = ini_getval_str(ini, "meta", "release_fmt", render_mode, &err);
 
     // Used for setting artifactory build info
-    (*ctx)->rules.build_name_fmt = ini_getval_str(ini, "meta", "build_name_fmt", &err);
+    (*ctx)->rules.build_name_fmt = ini_getval_str(ini, "meta", "build_name_fmt", render_mode, &err);
 
     // Used for setting artifactory build info
-    (*ctx)->rules.build_number_fmt = ini_getval_str(ini, "meta", "build_number_fmt", &err);
+    (*ctx)->rules.build_number_fmt = ini_getval_str(ini, "meta", "build_number_fmt", render_mode, &err);
     return 0;
 }
 
@@ -432,7 +432,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
     }
 }
 
-static int populate_delivery_ini(struct Delivery *ctx) {
+static int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     union INIVal val;
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
@@ -451,34 +451,34 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     ctx->runtime.environ = rt;
 
     int err = 0;
-    ctx->meta.mission = ini_getval_str(ini, "meta", "mission", &err);
+    ctx->meta.mission = ini_getval_str(ini, "meta", "mission", render_mode, &err);
 
     if (!strcasecmp(ctx->meta.mission, "hst")) {
-        ctx->meta.codename = ini_getval_str(ini, "meta", "codename", &err);
+        ctx->meta.codename = ini_getval_str(ini, "meta", "codename", render_mode, &err);
     } else {
         ctx->meta.codename = NULL;
     }
 
-    ctx->meta.version = ini_getval_str(ini, "meta", "version", &err);
-    ctx->meta.name = ini_getval_str(ini, "meta", "name", &err);
-    ctx->meta.rc = ini_getval_int(ini, "meta", "rc", &err);
-    ctx->meta.final = ini_getval_bool(ini, "meta", "final", &err);
-    ctx->meta.based_on = ini_getval_str(ini, "meta", "based_on", &err);
+    ctx->meta.version = ini_getval_str(ini, "meta", "version", render_mode, &err);
+    ctx->meta.name = ini_getval_str(ini, "meta", "name", render_mode, &err);
+    ctx->meta.rc = ini_getval_int(ini, "meta", "rc", render_mode, &err);
+    ctx->meta.final = ini_getval_bool(ini, "meta", "final", render_mode, &err);
+    ctx->meta.based_on = ini_getval_str(ini, "meta", "based_on", render_mode, &err);
 
     if (!ctx->meta.python) {
-        ctx->meta.python = ini_getval_str(ini, "meta", "python", &err);
+        ctx->meta.python = ini_getval_str(ini, "meta", "python", render_mode, &err);
         guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
     } else {
         ini_setval(&ini, INI_SETVAL_REPLACE, "meta", "python", ctx->meta.python);
     }
 
-    ctx->conda.installer_name = ini_getval_str(ini, "conda", "installer_name", &err);
-    ctx->conda.installer_version = ini_getval_str(ini, "conda", "installer_version", &err);
-    ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", &err);
-    ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", &err);
-    ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", &err);
-    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", " "LINE_SEP, &err);
+    ctx->conda.installer_name = ini_getval_str(ini, "conda", "installer_name", render_mode, &err);
+    ctx->conda.installer_version = ini_getval_str(ini, "conda", "installer_version", render_mode, &err);
+    ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", render_mode, &err);
+    ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err);
+    ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err);
+    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", " "LINE_SEP, render_mode, &err);
 
     if (ctx->conda.conda_packages->data && ctx->conda.conda_packages->data[0] && strpbrk(ctx->conda.conda_packages->data[0], " \t")) {
         normalize_space(ctx->conda.conda_packages->data[0]);
@@ -487,7 +487,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         ini_setval(&ini, INI_SETVAL_REPLACE, "conda", "conda_packages", pip_packages_replacement);
         guard_free(pip_packages_replacement);
         guard_strlist_free(&ctx->conda.conda_packages);
-        ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, &err);
+        ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
     }
 
     for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
@@ -497,7 +497,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         }
     }
 
-    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, &err);
+    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
     if (ctx->conda.pip_packages->data && ctx->conda.pip_packages->data[0] && strpbrk(ctx->conda.pip_packages->data[0], " \t")) {
         normalize_space(ctx->conda.pip_packages->data[0]);
         replace_text(ctx->conda.pip_packages->data[0], " ", LINE_SEP, 0);
@@ -505,7 +505,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         ini_setval(&ini, INI_SETVAL_REPLACE, "conda", "pip_packages", pip_packages_replacement);
         guard_free(pip_packages_replacement);
         guard_strlist_free(&ctx->conda.pip_packages);
-        ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, &err);
+        ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
     }
 
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
@@ -516,7 +516,7 @@ static int populate_delivery_ini(struct Delivery *ctx) {
     }
 
     // Delivery metadata consumed
-    populate_mission_ini(&ctx);
+    populate_mission_ini(&ctx, render_mode);
 
     if (ctx->info.release_name) {
         guard_free(ctx->info.release_name);
@@ -556,12 +556,12 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             }
             conv_str(&test->name, val);
 
-            test->version = ini_getval_str(ini, section_name, "version", &err);
-            test->repository = ini_getval_str(ini, section_name, "repository", &err);
-            test->script = ini_getval_str(ini, section_name, "script", &err);
-            test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, &err);
-            test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", &err);
-            test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, &err);
+            test->version = ini_getval_str(ini, section_name, "version", render_mode, &err);
+            test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err);
+            test->script = ini_getval_str(ini, section_name, "script", render_mode, &err);
+            test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
+            test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
+            test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
             z++;
         }
     }
@@ -573,20 +573,20 @@ static int populate_delivery_ini(struct Delivery *ctx) {
             struct JFrog *jfrog = &deploy->jfrog[z];
             // Artifactory base configuration
 
-            jfrog->upload_ctx.workaround_parent_only = ini_getval_bool(ini, section_name, "workaround_parent_only", &err);
-            jfrog->upload_ctx.exclusions = ini_getval_str(ini, section_name, "exclusions", &err);
-            jfrog->upload_ctx.explode = ini_getval_bool(ini, section_name, "explode", &err);
-            jfrog->upload_ctx.recursive = ini_getval_bool(ini, section_name, "recursive", &err);
-            jfrog->upload_ctx.retries = ini_getval_int(ini, section_name, "retries", &err);
-            jfrog->upload_ctx.retry_wait_time = ini_getval_int(ini, section_name, "retry_wait_time", &err);
-            jfrog->upload_ctx.detailed_summary = ini_getval_bool(ini, section_name, "detailed_summary", &err);
-            jfrog->upload_ctx.quiet = ini_getval_bool(ini, section_name, "quiet", &err);
-            jfrog->upload_ctx.regexp = ini_getval_bool(ini, section_name, "regexp", &err);
-            jfrog->upload_ctx.spec = ini_getval_str(ini, section_name, "spec", &err);
-            jfrog->upload_ctx.flat = ini_getval_bool(ini, section_name, "flat", &err);
-            jfrog->repo = ini_getval_str(ini, section_name, "repo", &err);
-            jfrog->dest = ini_getval_str(ini, section_name, "dest", &err);
-            jfrog->files = ini_getval_strlist(ini, section_name, "dest", LINE_SEP, &err);
+            jfrog->upload_ctx.workaround_parent_only = ini_getval_bool(ini, section_name, "workaround_parent_only", render_mode, &err);
+            jfrog->upload_ctx.exclusions = ini_getval_str(ini, section_name, "exclusions", render_mode, &err);
+            jfrog->upload_ctx.explode = ini_getval_bool(ini, section_name, "explode", render_mode, &err);
+            jfrog->upload_ctx.recursive = ini_getval_bool(ini, section_name, "recursive", render_mode, &err);
+            jfrog->upload_ctx.retries = ini_getval_int(ini, section_name, "retries", render_mode, &err);
+            jfrog->upload_ctx.retry_wait_time = ini_getval_int(ini, section_name, "retry_wait_time", render_mode, &err);
+            jfrog->upload_ctx.detailed_summary = ini_getval_bool(ini, section_name, "detailed_summary", render_mode, &err);
+            jfrog->upload_ctx.quiet = ini_getval_bool(ini, section_name, "quiet", render_mode, &err);
+            jfrog->upload_ctx.regexp = ini_getval_bool(ini, section_name, "regexp", render_mode, &err);
+            jfrog->upload_ctx.spec = ini_getval_str(ini, section_name, "spec", render_mode, &err);
+            jfrog->upload_ctx.flat = ini_getval_bool(ini, section_name, "flat", render_mode, &err);
+            jfrog->repo = ini_getval_str(ini, section_name, "repo", render_mode, &err);
+            jfrog->dest = ini_getval_str(ini, section_name, "dest", render_mode, &err);
+            jfrog->files = ini_getval_strlist(ini, section_name, "files", LINE_SEP, render_mode, &err);
             z++;
         }
     }
@@ -597,44 +597,44 @@ static int populate_delivery_ini(struct Delivery *ctx) {
         if (startswith(ini->section[i]->key, "deploy:docker")) {
             struct Docker *docker = &deploy->docker;
 
-            docker->registry = ini_getval_str(ini, section_name, "registry", &err);
-            docker->image_compression = ini_getval_str(ini, section_name, "image_compression", &err);
-            docker->test_script = ini_getval_str(ini, section_name, "test_script", &err);
-            docker->build_args = ini_getval_strlist(ini, section_name, "build_args", LINE_SEP, &err);
-            docker->tags = ini_getval_strlist(ini, section_name, "tags", LINE_SEP, &err);
+            docker->registry = ini_getval_str(ini, section_name, "registry", render_mode, &err);
+            docker->image_compression = ini_getval_str(ini, section_name, "image_compression", render_mode, &err);
+            docker->test_script = ini_getval_str(ini, section_name, "test_script", render_mode, &err);
+            docker->build_args = ini_getval_strlist(ini, section_name, "build_args", LINE_SEP, render_mode, &err);
+            docker->tags = ini_getval_strlist(ini, section_name, "tags", LINE_SEP, render_mode, &err);
         }
     }
     return 0;
 }
 
-static int populate_delivery_cfg(struct Delivery *ctx) {
+static int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
         return -1;
     }
     int err = 0;
-    ctx->storage.conda_staging_dir = ini_getval_str(cfg, "default", "conda_staging_dir", &err);
-    ctx->storage.conda_staging_url = ini_getval_str(cfg, "default", "conda_staging_url", &err);
-    ctx->storage.wheel_staging_dir = ini_getval_str(cfg, "default", "wheel_staging_dir", &err);
-    ctx->storage.wheel_staging_url = ini_getval_str(cfg, "default", "wheel_staging_url", &err);
-    globals.conda_fresh_start = ini_getval_bool(cfg, "default", "conda_fresh_start", &err);
+    ctx->storage.conda_staging_dir = ini_getval_str(cfg, "default", "conda_staging_dir", render_mode, &err);
+    ctx->storage.conda_staging_url = ini_getval_str(cfg, "default", "conda_staging_url", render_mode, &err);
+    ctx->storage.wheel_staging_dir = ini_getval_str(cfg, "default", "wheel_staging_dir", render_mode, &err);
+    ctx->storage.wheel_staging_url = ini_getval_str(cfg, "default", "wheel_staging_url", render_mode, &err);
+    globals.conda_fresh_start = ini_getval_bool(cfg, "default", "conda_fresh_start", render_mode, &err);
     if (!globals.continue_on_error) {
-        globals.continue_on_error = ini_getval_bool(cfg, "default", "continue_on_error", &err);
+        globals.continue_on_error = ini_getval_bool(cfg, "default", "continue_on_error", render_mode, &err);
     }
     if (globals.always_update_base_environment) {
-        globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", &err);
+        globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", render_mode, &err);
     }
-    globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", &err);
-    globals.conda_packages = ini_getval_strlist(cfg, "default", "conda_packages", LINE_SEP, &err);
-    globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, &err);
+    globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", render_mode, &err);
+    globals.conda_packages = ini_getval_strlist(cfg, "default", "conda_packages", LINE_SEP, render_mode, &err);
+    globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, render_mode, &err);
 
-    globals.jfrog.jfrog_artifactory_base_url = ini_getval_str(cfg, "jfrog_cli_download", "url", &err);
-    globals.jfrog.jfrog_artifactory_product = ini_getval_str(cfg, "jfrog_cli_download", "product", &err);
-    globals.jfrog.cli_major_ver = ini_getval_str(cfg, "jfrog_cli_download", "version_series", &err);
-    globals.jfrog.version = ini_getval_str(cfg, "jfrog_cli_download", "version", &err);
-    globals.jfrog.remote_filename = ini_getval_str(cfg, "jfrog_cli_download", "filename", &err);
-    globals.jfrog.url = ini_getval_str(cfg, "deploy:artifactory", "url", &err);
-    globals.jfrog.repo = ini_getval_str(cfg, "deploy:artifactory", "repo", &err);
+    globals.jfrog.jfrog_artifactory_base_url = ini_getval_str(cfg, "jfrog_cli_download", "url", render_mode, &err);
+    globals.jfrog.jfrog_artifactory_product = ini_getval_str(cfg, "jfrog_cli_download", "product", render_mode, &err);
+    globals.jfrog.cli_major_ver = ini_getval_str(cfg, "jfrog_cli_download", "version_series", render_mode, &err);
+    globals.jfrog.version = ini_getval_str(cfg, "jfrog_cli_download", "version", render_mode, &err);
+    globals.jfrog.remote_filename = ini_getval_str(cfg, "jfrog_cli_download", "filename", render_mode, &err);
+    globals.jfrog.url = ini_getval_str(cfg, "deploy:artifactory", "url", render_mode, &err);
+    globals.jfrog.repo = ini_getval_str(cfg, "deploy:artifactory", "repo", render_mode, &err);
 
     return 0;
 }
@@ -661,8 +661,8 @@ int *bootstrap_build_info(struct Delivery *ctx) {
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
     delivery_init_platform(&local);
-    populate_delivery_cfg(&local);
-    populate_delivery_ini(&local);
+    populate_delivery_cfg(&local, 0);
+    populate_delivery_ini(&local, 0);
     populate_info(&local);
     ctx->info.build_name = strdup(local.info.build_name);
     ctx->info.build_number = strdup(local.info.build_number);
@@ -676,7 +676,7 @@ int *bootstrap_build_info(struct Delivery *ctx) {
 
 int delivery_init(struct Delivery *ctx) {
     populate_info(ctx);
-    populate_delivery_cfg(ctx);
+    populate_delivery_cfg(ctx, INI_READ_RENDER);
 
     // Set artifactory URL via environment variable if possible
     char *jfurl = getenv("STASIS_JF_ARTIFACTORY_URL");
@@ -718,7 +718,7 @@ int delivery_init(struct Delivery *ctx) {
     // Prevent git from paginating output
     setenv("GIT_PAGER", "", 1);
 
-    populate_delivery_ini(ctx);
+    populate_delivery_ini(ctx, 0);
 
     if (ctx->deploy.docker.tags) {
         for (size_t i = 0; i < strlist_count(ctx->deploy.docker.tags); i++) {
@@ -1940,7 +1940,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         msg(STASIS_MSG_L2, "%s\n", data.src);
 
         int err = 0;
-        data.dest = ini_getval_str(cfg, section_name, "destination", &err);
+        data.dest = ini_getval_str(cfg, section_name, "destination", INI_READ_RENDER, &err);
 
         char *contents;
         struct stat st;
