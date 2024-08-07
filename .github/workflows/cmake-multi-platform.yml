@@ -37,6 +37,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: Update apt
+      if: matrix.os == 'ubuntu-latest'
+      run: >
+        sudo apt update
+
     - name: Install Linux dependencies
       if: matrix.os == 'ubuntu-latest'
       run: >
