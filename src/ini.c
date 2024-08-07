@@ -168,17 +168,26 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, uni
             result->as_float = (float) strtod(data->value, NULL);
             break;
         case INIVAL_TYPE_STR:
-            result->as_char_p = lstrip(data->value);
+            result->as_char_p = strdup(data->value);
+            if (!result->as_char_p) {
+                return -1;
+            }
+            lstrip(result->as_char_p);
             break;
         case INIVAL_TYPE_STR_ARRAY:
             strcpy(tbufp, data->value);
-            *data->value = '\0';
+            char *value = NULL;
+            size_t lines = num_chars(tbufp, '\n');
+            value = calloc(strlen(tbufp) + lines + 1, sizeof(*value));
+            if (!value) {
+                return -1;
+            }
             while ((token = strsep(&tbufp, "\n")) != NULL) {
                 lstrip(token);
-                strcat(data->value, token);
-                strcat(data->value, "\n");
+                strcat(value, token);
+                strcat(value, "\n");
             }
-            result->as_char_p = data->value;
+            result->as_char_p = value;
             break;
         case INIVAL_TYPE_BOOL:
             result->as_bool = false;
