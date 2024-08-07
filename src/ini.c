@@ -122,6 +122,14 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, uni
         result->as_char_p = NULL;
         return -1;
     }
+
+    char *render = tpl_render(data->value);
+    if (render) {
+        guard_free(data->value);
+        data->value = render;
+    }
+    lstrip(data->value);
+
     switch (type) {
         case INIVAL_TYPE_CHAR:
             result->as_char = (char) strtol(data->value, NULL, 10);
