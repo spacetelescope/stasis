@@ -14,17 +14,21 @@
 #define INI_SEARCH_SUBSTR 2
                                     ///< expanded to preserve runtime state.
 
-#define INIVAL_TYPE_INT 1           ///< Integer
-#define INIVAL_TYPE_UINT 2          ///< Unsigned integer
-#define INIVAL_TYPE_LONG 3          ///< Long integer
-#define INIVAL_TYPE_ULONG 4         ///< Unsigned long integer
-#define INIVAL_TYPE_LLONG 5         ///< Long long integer
-#define INIVAL_TYPE_ULLONG 6        ///< Unsigned long long integer
-#define INIVAL_TYPE_DOUBLE 7        ///< Double precision float
-#define INIVAL_TYPE_FLOAT 8         ///< Single precision float
-#define INIVAL_TYPE_STR 9           ///< String
-#define INIVAL_TYPE_STR_ARRAY 10    ///< String Array
-#define INIVAL_TYPE_BOOL 11         ///< Boolean
+#define INIVAL_TYPE_CHAR 1          ///< Byte
+#define INIVAL_TYPE_UCHAR 2         ///< Unsigned byte
+#define INIVAL_TYPE_SHORT 3         ///< Short integer
+#define INIVAL_TYPE_USHORT 4        ///< Unsigned short integer
+#define INIVAL_TYPE_INT 5           ///< Integer
+#define INIVAL_TYPE_UINT 6          ///< Unsigned integer
+#define INIVAL_TYPE_LONG 7          ///< Long integer
+#define INIVAL_TYPE_ULONG 8         ///< Unsigned long integer
+#define INIVAL_TYPE_LLONG 9         ///< Long long integer
+#define INIVAL_TYPE_ULLONG 10       ///< Unsigned long long integer
+#define INIVAL_TYPE_DOUBLE 11       ///< Double precision float
+#define INIVAL_TYPE_FLOAT 12        ///< Single precision float
+#define INIVAL_TYPE_STR 13          ///< String
+#define INIVAL_TYPE_STR_ARRAY 14    ///< String Array
+#define INIVAL_TYPE_BOOL 15         ///< Boolean
 
 #define INIVAL_TO_LIST 1 << 1
 
@@ -32,6 +36,10 @@
  * \brief Consolidate possible value types
  */
 union INIVal {
+    char as_char;                    ///< Byte
+    unsigned char as_uchar;          ///< Unsigned byte
+    short as_short;                  ///< Short integer
+    unsigned short as_ushort;        ///< Unsigned short integer
     int as_int;                      ///< Integer
     unsigned as_uint;                ///< Unsigned integer
     long as_long;                    ///< Long integer
@@ -226,4 +234,23 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode);
  * @param ini
  */
 void ini_free(struct INIFILE **ini);
+
+int ini_getval_int(struct INIFILE *ini, char *section_name, char *key, int *state);
+unsigned int ini_getval_uint(struct INIFILE *ini, char *section_name, char *key, int *state);
+long ini_getval_long(struct INIFILE *ini, char *section_name, char *key, int *state);
+unsigned long ini_getval_ulong(struct INIFILE *ini, char *section_name, char *key, int *state);
+long long ini_getval_llong(struct INIFILE *ini, char *section_name, char *key, int *state);
+unsigned long long ini_getval_ullong(struct INIFILE *ini, char *section_name, char *key, int *state);
+float ini_getval_float(struct INIFILE *ini, char *section_name, char *key, int *state);
+double ini_getval_double(struct INIFILE *ini, char *section_name, char *key, int *state);
+bool ini_getval_bool(struct INIFILE *ini, char *section_name, char *key, int *state);
+short ini_getval_short(struct INIFILE *ini, char *section_name, char *key, int *state);
+unsigned short ini_getval_ushort(struct INIFILE *ini, char *section_name, char *key, int *state);
+char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int *state);
+unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int *state);
+char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int *state);
+char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int *state);
+char **ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int *state);
+char **ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int *state);
+struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int *state);
 #endif //STASIS_INI_H
