@@ -71,6 +71,7 @@ void test_fix_tox_conf() {
 
     char **lines = file_readlines(result, 0, 0, NULL);
     STASIS_ASSERT(strstr_array(lines, expected) != NULL, "{posargs} not found in result");
+    GENERIC_ARRAY_FREE(lines);
 
     remove(result);
     guard_free(result);
@@ -106,6 +107,7 @@ void test_xml_pretty_print_in_place() {
         STASIS_ASSERT(false, "failed to consume formatted xml file contents");
     }
     STASIS_ASSERT(strcmp(expected, buf) == 0, "xml file was not reformatted");
+    fclose(fp);
 }
 
 void test_path_store() {
