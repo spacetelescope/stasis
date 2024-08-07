@@ -54,6 +54,7 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
                     strlist_append(&notes_list, note);
                     guard_free(note);
                 }
+                guard_free(repository);
             }
         }
     }
@@ -61,5 +62,7 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
     if (strlist_count(notes_list)) {
         *output = join(notes_list->data, "\n\n");
     }
+    guard_strlist_free(&notes_list);
+
     return result;
 }
