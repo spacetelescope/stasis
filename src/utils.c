@@ -579,6 +579,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
         goto pretty_print_failed;
     }
 
+    fclose(fp);
     guard_free(tempfile);
     guard_free(result);
     return 0;
@@ -638,24 +639,31 @@ int fix_tox_conf(const char *filename, char **result) {
     for (size_t i = 0; i < toxini->section_count; i++) {
         struct INISection *section = toxini->section[i];
         if (section) {
-            if (startswith(section->key, "testenv")) {
-                for (size_t k = 0; k < section->data_count; k++) {
-                    struct INIData *data = section->data[k];
-                    if (data) {
-                        if (!strcmp(data->key, "commands") && (startswith(data->value, "pytest") && !strstr(data->value, "{posargs}"))) {
-                            strip(data->value);
+            char *section_name = section->key;
+            for (size_t k = 0; k < section->data_count; k++) {
+                struct INIData *data = section->data[k];
+                if (data) {
+                    int err = 0;
+                    char *key = data->key;
+                    char *value = ini_getval_str(toxini, section->key, data->key, &err);
+                    if (key && value) {
+                        if (startswith(value, "pytest") && !strstr(value, "{posargs}")) {
+                            strip(value);
                             char *tmp;
-                            tmp = realloc(data->value, strlen(data->value) + strlen(with_posargs) + 1);
+                            tmp = realloc(value, strlen(value) + strlen(with_posargs) + 1);
                             if (!tmp) {
-                                SYSERROR("failed to increase data->value size to +%zu bytes", strlen(data->value) + strlen(with_posargs) + 1);
+                                SYSERROR("failed to increase size to +%zu bytes",
+                                         strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
                                 return -1;
-                            } else if (tmp != data->value) {
-                                data->value = tmp;
+                            } else if (tmp != value) {
+                                value = tmp;
                             }
-                            strcat(data->value, with_posargs);
+                            strcat(value, with_posargs);
+                            ini_setval(&toxini, INI_SETVAL_REPLACE, section_name, key, value);
                         }
                     }
+                    guard_free(value);
                 }
             }
         }
