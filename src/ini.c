@@ -123,77 +123,83 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
         return -1;
     }
 
-    char *render = tpl_render(data->value);
-    if (render) {
-        guard_free(data->value);
-        data->value = render;
+    char *data_copy = strdup(data->value);
+    if (flags == INI_READ_RENDER) {
+        char *render = tpl_render(data_copy);
+        if (render && strcmp(render, data_copy) != 0) {
+            guard_free(data_copy);
+            data_copy = render;
+        } else {
+            guard_free(render);
+        }
     }
-    lstrip(data->value);
+    lstrip(data_copy);
 
     switch (type) {
         case INIVAL_TYPE_CHAR:
-            result->as_char = (char) strtol(data->value, NULL, 10);
+            result->as_char = (char) strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_UCHAR:
-            result->as_uchar = (unsigned char) strtoul(data->value, NULL, 10);
+            result->as_uchar = (unsigned char) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_SHORT:
-            result->as_short = (short) strtol(data->value, NULL, 10);
+            result->as_short = (short) strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_USHORT:
-            result->as_ushort = (unsigned short) strtoul(data->value, NULL, 10);
+            result->as_ushort = (unsigned short) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_INT:
-            result->as_int = (int) strtol(data->value, NULL, 10);
+            result->as_int = (int) strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_UINT:
-            result->as_uint = (unsigned int) strtoul(data->value, NULL, 10);
+            result->as_uint = (unsigned int) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LONG:
-            result->as_long = (long) strtol(data->value, NULL, 10);
+            result->as_long = (long) strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULONG:
-            result->as_ulong = (unsigned long) strtoul(data->value, NULL, 10);
+            result->as_ulong = (unsigned long) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LLONG:
-            result->as_llong = (long long) strtoll(data->value, NULL, 10);
+            result->as_llong = (long long) strtoll(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULLONG:
-            result->as_ullong = (unsigned long long) strtoull(data->value, NULL, 10);
+            result->as_ullong = (unsigned long long) strtoull(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_DOUBLE:
-            result->as_double = (double) strtod(data->value, NULL);
+            result->as_double = (double) strtod(data_copy, NULL);
             break;
         case INIVAL_TYPE_FLOAT:
-            result->as_float = (float) strtod(data->value, NULL);
+            result->as_float = (float) strtod(data_copy, NULL);
             break;
         case INIVAL_TYPE_STR:
-            result->as_char_p = strdup(data->value);
+            result->as_char_p = strdup(data_copy);
             if (!result->as_char_p) {
                 return -1;
             }
-            lstrip(result->as_char_p);
             break;
         case INIVAL_TYPE_STR_ARRAY:
-            strcpy(tbufp, data->value);
-            char *value = NULL;
-            size_t lines = num_chars(tbufp, '\n');
-            value = calloc(strlen(tbufp) + lines + 1, sizeof(*value));
-            if (!value) {
+            strcpy(tbufp, data_copy);
+            guard_free(data_copy);
+            data_copy = calloc(STASIS_BUFSIZ, sizeof(*data_copy));
+            if (!data_copy) {
                 return -1;
             }
             while ((token = strsep(&tbufp, "\n")) != NULL) {
-                lstrip(token);
-                strcat(value, token);
-                strcat(value, "\n");
+                //lstrip(token);
+                if (!isempty(token)) {
+                    strcat(data_copy, token);
+                    strcat(data_copy, "\n");
+                }
             }
-            result->as_char_p = value;
+            strip(data_copy);
+            result->as_char_p = strdup(data_copy);
             break;
         case INIVAL_TYPE_BOOL:
             result->as_bool = false;
-            if ((!strcmp(data->value, "true") || !strcmp(data->value, "True")) ||
-                    (!strcmp(data->value, "yes") || !strcmp(data->value, "Yes")) ||
-                    strtol(data->value, NULL, 10)) {
+            if ((!strcmp(data_copy, "true") || !strcmp(data_copy, "True")) ||
+                    (!strcmp(data_copy, "yes") || !strcmp(data_copy, "Yes")) ||
+                    strtol(data_copy, NULL, 10)) {
                 result->as_bool = true;
             }
             break;
@@ -201,6 +207,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             memset(result, 0, sizeof(*result));
             break;
     }
+    guard_free(data_copy);
     return 0;
 }
 
@@ -287,12 +294,12 @@ char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int fla
     return ini_getval_char_p(ini, section_name, key, flags, state);
 }
 
-char **ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
+char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
     getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
-    getval_returns(as_char_array_p);
+    getval_returns(as_char_p);
 }
 
-char **ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
+char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
     return ini_getval_char_array_p(ini, section_name, key, flags, state);
 }
 
@@ -305,7 +312,7 @@ struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char
     return list;
 }
 
-int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value) {
+int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value, unsigned int hint) {
     struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         return 1;
@@ -324,6 +331,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
             SYSERROR("Unable to allocate %zu bytes for section data", sizeof(*data[0]));
             return -1;
         }
+        data[section->data_count]->type_hint = hint;
         data[section->data_count]->key = key ? strdup(key) : strdup("");
         if (!data[section->data_count]->key) {
             SYSERROR("Unable to allocate data key%s", "");
@@ -361,7 +369,7 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
     }
     if (ini_has_key(*ini, section_name, key)) {
         if (!type) {
-            if (ini_data_append(ini, section_name, key, value)) {
+            if (ini_data_append(ini, section_name, key, value, 0)) {
                 // append failed
                 return -1;
             }
@@ -410,30 +418,48 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
         return -1;
     }
     for (size_t x = 0; x < ini->section_count; x++) {
-        fprintf(*stream, "[%s]" LINE_SEP, ini->section[x]->key);
+        struct INISection *section = ini->section[x];
+        char *section_name = section->key;
+        fprintf(*stream, "[%s]" LINE_SEP, section_name);
+
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
+            struct INIData *data = section->data[y];
             char outvalue[STASIS_BUFSIZ];
+            char *key = data->key;
+            char *value = data->value;
+            unsigned *hint = &data->type_hint;
             memset(outvalue, 0, sizeof(outvalue));
-            if (ini->section[x]->data[y]->value) {
-                char **parts = split(ini->section[x]->data[y]->value, LINE_SEP, 0);
+
+            if (key && value) {
+                int err = 0;
+                char *xvalue = NULL;
+                if (*hint == INIVAL_TYPE_STR_ARRAY) {
+                    xvalue = ini_getval_str_array(ini, section_name, key, (int) mode, &err);
+                    value = xvalue;
+                } else {
+                    xvalue = ini_getval_str(ini, section_name, key, (int) mode, &err);
+                    value = xvalue;
+                }
+                char **parts = split(value, LINE_SEP, 0);
                 size_t parts_total = 0;
                 for (; parts && parts[parts_total] != NULL; parts_total++);
                 for (size_t p = 0; parts && parts[p] != NULL; p++) {
                     char *render = NULL;
                     if (mode == INI_WRITE_PRESERVE) {
                         render = tpl_render(parts[p]);
-                        replace_text(render, "\n", "\n    ", 0);
                     } else {
                         render = parts[p];
                     }
-                    if (p == 0) {
-                        sprintf(outvalue, "%s" LINE_SEP, render);
-                    } else {
-                        if (!isspace(render[0])) {
-                            sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
-                        } else {
+
+                    if (*hint == INIVAL_TYPE_STR_ARRAY) {
+                        int leading_space = isspace(*render);
+                        if (leading_space) {
                             sprintf(outvalue + strlen(outvalue), "%s" LINE_SEP, render);
+                        } else {
+                            sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
                         }
+                    } else {
+                        sprintf(outvalue + strlen(outvalue), "%s", render);
                     }
                     if (mode == INI_WRITE_PRESERVE) {
                         guard_free(render);
@@ -442,7 +468,8 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 GENERIC_ARRAY_FREE(parts);
                 strip(outvalue);
                 strcat(outvalue, LINE_SEP);
-                fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->type_hint || parts_total > 1 ? LINE_SEP "    " : "", outvalue);
+                fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
+                guard_free(value);
             } else {
                 fprintf(*stream, "%s = %s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
             }
@@ -487,13 +514,6 @@ void ini_free(struct INIFILE **ini) {
     guard_free((*ini));
 }
 
-static void ini_data_set_hint(struct INIFILE **ini, char *section_name, char *key, int hint) {
-    struct INIData *data = ini_data_get(*ini, section_name, key);
-    if (data) {
-        data->type_hint = hint;
-    }
-}
-
 struct INIFILE *ini_open(const char *filename) {
     FILE *fp;
     char line[STASIS_BUFSIZ] = {0};
@@ -519,6 +539,7 @@ struct INIFILE *ini_open(const char *filename) {
         return NULL;
     }
 
+    unsigned hint = 0;
     int multiline_data = 0;
     int no_data = 0;
     char inikey[2][255];
@@ -617,11 +638,13 @@ struct INIFILE *ini_open(const char *filename) {
             }
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
-                ini_data_set_hint(&ini, current_section, key, INIVAL_TYPE_STR_ARRAY);
+                //ini_data_set_hint(&ini, current_section, key, INIVAL_TYPE_STR_ARRAY);
+                hint = INIVAL_TYPE_STR_ARRAY;
                 multiline_data = 1;
                 no_data = 1;
             } else {
                 //printf("%s is probably short data\n", key);
+                hint = INIVAL_TYPE_STR;
                 multiline_data = 0;
             }
             strip(value);
@@ -638,10 +661,10 @@ struct INIFILE *ini_open(const char *filename) {
             unquote(value);
             if (!multiline_data) {
                 reading_value = 0;
-                ini_data_append(&ini, current_section, key, value);
+                ini_data_append(&ini, current_section, key, value, hint);
                 continue;
             }
-            ini_data_append(&ini, current_section, key, value);
+            ini_data_append(&ini, current_section, key, value, hint);
             reading_value = 1;
         }
     }

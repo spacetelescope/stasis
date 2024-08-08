@@ -252,7 +252,7 @@ char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int fla
 unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
 char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
 char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
-char **ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
-char **ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
+char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
+char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state);
 struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state);
 #endif //STASIS_INI_H
