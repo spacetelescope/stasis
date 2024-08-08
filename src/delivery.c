@@ -674,7 +674,7 @@ int *bootstrap_build_info(struct Delivery *ctx) {
     return 0;
 }
 
-int delivery_init(struct Delivery *ctx) {
+int delivery_init(struct Delivery *ctx, int render_mode) {
     populate_info(ctx);
     populate_delivery_cfg(ctx, INI_READ_RENDER);
 
@@ -718,7 +718,7 @@ int delivery_init(struct Delivery *ctx) {
     // Prevent git from paginating output
     setenv("GIT_PAGER", "", 1);
 
-    populate_delivery_ini(ctx, 0);
+    populate_delivery_ini(ctx, render_mode);
 
     if (ctx->deploy.docker.tags) {
         for (size_t i = 0; i < strlist_count(ctx->deploy.docker.tags); i++) {

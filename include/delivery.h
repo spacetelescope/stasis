@@ -191,12 +191,11 @@ struct Delivery {
 /**
  * Initializes a Deliver structure
  * @param ctx pointer to Delivery context
- * @param ini pointer to INIFILE describing a delivery
- * @param cfg pointer to INIFILE describing extra configuration data
+ * @param render_mode INI_READ_RAW or INI_READ_RENDER
  * @return `0` on success
  * @return Non-zero on error
  */
-int delivery_init(struct Delivery *ctx);
+int delivery_init(struct Delivery *ctx, int render_mode);
 
 /**
  * Free memory allocated by delivery_init()
