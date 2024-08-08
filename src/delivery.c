@@ -621,7 +621,7 @@ static int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     if (!globals.continue_on_error) {
         globals.continue_on_error = ini_getval_bool(cfg, "default", "continue_on_error", render_mode, &err);
     }
-    if (globals.always_update_base_environment) {
+    if (!globals.always_update_base_environment) {
         globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", render_mode, &err);
     }
     globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", render_mode, &err);
