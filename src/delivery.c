@@ -661,8 +661,8 @@ int *bootstrap_build_info(struct Delivery *ctx) {
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
     delivery_init_platform(&local);
-    populate_delivery_cfg(&local, 0);
-    populate_delivery_ini(&local, 0);
+    populate_delivery_cfg(&local, INI_READ_RAW);
+    populate_delivery_ini(&local, INI_READ_RAW);
     populate_info(&local);
     ctx->info.build_name = strdup(local.info.build_name);
     ctx->info.build_number = strdup(local.info.build_number);
