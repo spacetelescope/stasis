@@ -174,13 +174,16 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
          return;
      }
 
-     token = split(str, delim, 0);
+     char *tmp = strdup(str);
+     token = split(tmp, delim, 0);
      if (token) {
          for (size_t i = 0; token[i] != NULL; i++) {
+             lstrip(token[i]);
              strlist_append(&pStrList, token[i]);
          }
          GENERIC_ARRAY_FREE(token);
      }
+    guard_free(tmp);
  }
 
 /**

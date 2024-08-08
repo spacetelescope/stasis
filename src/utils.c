@@ -645,7 +645,7 @@ int fix_tox_conf(const char *filename, char **result) {
                 if (data) {
                     int err = 0;
                     char *key = data->key;
-                    char *value = ini_getval_str(toxini, section->key, data->key, &err);
+                    char *value = ini_getval_str(toxini, section->key, data->key, INI_READ_RENDER, &err);
                     if (key && value) {
                         if (startswith(value, "pytest") && !strstr(value, "{posargs}")) {
                             strip(value);

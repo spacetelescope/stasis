@@ -73,6 +73,7 @@ void test_ini_has_key() {
 }
 
 void test_ini_setval_getval() {
+    int render_mode = INI_READ_RENDER;
     const char *filename = "ini_open.ini";
     const char *data = "[default]\na=1\nb=2\nc=3\n[section name here]\ntest=true\n";
     struct INIFILE *ini;
@@ -82,12 +83,12 @@ void test_ini_setval_getval() {
     ini = ini_open(filename);
     union INIVal val;
     STASIS_ASSERT(ini_setval(&ini, INI_SETVAL_REPLACE, "default", "a", "changed") == 0, "failed to set value");
-    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, &val) == 0, "failed to get value");
+    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "a") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") == 0, "unexpected value loaded from modified variable");
 
     STASIS_ASSERT(ini_setval(&ini, INI_SETVAL_APPEND, "default", "a", " twice") == 0, "failed to set value");
-    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, &val) == 0, "failed to get value");
+    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed twice") == 0, "unexpected value loaded from modified variable");
     ini_free(&ini);

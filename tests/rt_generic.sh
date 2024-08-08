@@ -39,7 +39,7 @@ pushd "$ws"
     echo
 
     echo "#### Contents ####"
-    files=$(find stasis/*/output -type f \( -name '*.yml' -o -name '*.md' -o -name '*.stasis' \) | sort)
+    files=$(find stasis/*/output -type f \( -name '*.yml' -o -name '*.md' -o -name '*.stasis' -o -name '*.ini' \) | sort)
     for x in $files; do
         echo
         echo "FILENAME: $x"

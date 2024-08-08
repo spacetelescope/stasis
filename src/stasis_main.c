@@ -390,7 +390,7 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L2, "Initializing delivery context\n");
-    if (delivery_init(&ctx)) {
+    if (delivery_init(&ctx, INI_READ_RENDER)) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to initialize delivery context\n");
         exit(1);
     }
