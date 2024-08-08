@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 
     setenv("LANG", "C", 1);
     bootstrap_build_info(&ctx);
-    delivery_init(&ctx);
+    delivery_init(&ctx, INI_READ_RENDER);
 
     STASIS_TEST_RUN(tests);
 
