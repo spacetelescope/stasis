@@ -61,7 +61,8 @@ RUN curl -q -OSsL ${DIST_URL}/${DIST_INSTALLER} \
 ENV PATH="${DIST_PATH}/bin:${PATH}"
 # Get delivery snapshot
 ADD ${SNAPSHOT_INPUT} ${HOME}/SNAPSHOT.yml
-ADD ${SNAPSHOT_PKGDIR}/conda ${SNAPSHOT_PKGDIR}/wheels ${HOME}/packages
+ADD ${SNAPSHOT_PKGDIR}/conda ${HOME}/packages/conda
+ADD ${SNAPSHOT_PKGDIR}/wheels ${HOME}/packages/wheels
 RUN chown -R developer: ${HOME}
 USER developer
 RUN conda config --set auto_update_conda false \
