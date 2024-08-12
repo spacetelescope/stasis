@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="2" skipped="1" tests="4" time="0.022" timestamp="2024-08-12T13:52:02.624944-04:00" hostname="examplehost"><testcase classname="test_simple" name="test_skip" time="0.000"><skipped type="pytest.skip" message="unconditional skip">/example/test_simple.py:4: unconditional skip</skipped></testcase><testcase classname="test_simple" name="test_fail" time="0.000"><failure message="assert False">def test_fail():
+        print("oh no, this test failed.", file=sys.stderr)
+&gt;       assert False
+E       assert False
+
+test_simple.py:10: AssertionError</failure></testcase><testcase classname="test_simple" name="test_success" time="0.000" /><testcase classname="test_simple" name="test_error" time="0.000"><failure message="RuntimeError: uh oh, a runtime error">def test_error():
+&gt;       raise RuntimeError("uh oh, a runtime error")
+E       RuntimeError: uh oh, a runtime error
+
+test_simple.py:17: RuntimeError</failure></testcase></testsuite></testsuites>

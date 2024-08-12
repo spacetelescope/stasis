@@ -6,7 +6,7 @@
 #define JUNIT_RESULT_STATE_NONE 0
 #define JUNIT_RESULT_STATE_FAILURE 1
 #define JUNIT_RESULT_STATE_SKIPPED 2
-#define JUNIT_RESULT_STATE_ERROR 2
+#define JUNIT_RESULT_STATE_ERROR 3
 
 /**
  * Represents a failed test case
