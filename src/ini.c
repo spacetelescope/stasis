@@ -170,7 +170,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             result->as_double = (double) strtod(data_copy, NULL);
             break;
         case INIVAL_TYPE_FLOAT:
-            result->as_float = (float) strtod(data_copy, NULL);
+            result->as_float = strtof(data_copy, NULL);
             break;
         case INIVAL_TYPE_STR:
             result->as_char_p = strdup(data_copy);
@@ -638,7 +638,6 @@ struct INIFILE *ini_open(const char *filename) {
             }
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
-                //ini_data_set_hint(&ini, current_section, key, INIVAL_TYPE_STR_ARRAY);
                 hint = INIVAL_TYPE_STR_ARRAY;
                 multiline_data = 1;
                 no_data = 1;
