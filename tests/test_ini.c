@@ -95,6 +95,104 @@ void test_ini_setval_getval() {
     remove(filename);
 }
 
+void test_ini_getval_wrappers() {
+    int render_mode = INI_READ_RENDER;
+    const char *filename = "ini_open.ini";
+    const char *data = "[default]\n"
+                       "char_01a=-1\n"
+                       "char_01b=127\n"
+                       "uchar_01a=0\n"
+                       "uchar_01b=255\n"
+                       "short_01a=-1\n"
+                       "short_01b=1\n"
+                       "ushort_01a=0\n"
+                       "ushort_01b=1\n"
+                       "int_01a=-1\n"
+                       "int_01b=1\n"
+                       "uint_01a=0\n"
+                       "uint_01b=1\n"
+                       "long_01a=-1\n"
+                       "long_01b=1\n"
+                       "ulong_01a=0\n"
+                       "ulong_01b=1\n"
+                       "llong_01a=-1\n"
+                       "llong_01b=1\n"
+                       "ullong_01a=0\n"
+                       "ullong_01b=1\n"
+                       "float_01a=-1.5\n"
+                       "float_01b=1.5\n"
+                       "double_01a=-1.5\n"
+                       "double_01b=1.5\n";
+    struct INIFILE *ini = NULL;
+    int err = 0;
+
+    stasis_testing_write_ascii(filename, data);
+    ini = ini_open(filename);
+    STASIS_ASSERT_FATAL(ini != NULL, "could not open test data");
+
+    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: char");
+    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01b", render_mode, &err) == 127, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: char");
+
+    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: uchar");
+    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01b", render_mode, &err) == 255, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: uchar");
+
+    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: short");
+    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: short");
+
+    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ushort");
+    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ushort");
+
+    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: int");
+    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: int");
+
+    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: uint");
+    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: uint");
+
+    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: long");
+    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: long");
+
+    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ulong");
+    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ulong");
+
+    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: llong");
+    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: llong");
+
+    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ullong");
+    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: ullong");
+
+    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01a", render_mode, &err) == -1.5F, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: float");
+    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01b", render_mode, &err) == 1.5F, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: float");
+
+    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01a", render_mode, &err) == -1.5L, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: double");
+    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01b", render_mode, &err) == 1.5L, "returned unexpected value");
+    STASIS_ASSERT(err == 0, "failed to convert type: double");
+
+    ini_free(&ini);
+}
+
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
@@ -103,6 +201,7 @@ int main(int argc, char *argv[]) {
         test_ini_section_search,
         test_ini_has_key,
         test_ini_setval_getval,
+        test_ini_getval_wrappers,
     };
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();

@@ -10,6 +10,8 @@ set(nix_clang_cflags -Wno-unused-parameter -Wno-incompatible-pointer-types-disca
 set(win_msvc_cflags /Wall)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/generic.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result.xml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result_error.xml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 file(GLOB files "test_*.c")
 
 if (BASH_PROGRAM)

@@ -607,7 +607,7 @@ static int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     return 0;
 }
 
-static int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
+int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
         return -1;

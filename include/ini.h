@@ -2,6 +2,7 @@
 
 #ifndef STASIS_INI_H
 #define STASIS_INI_H
+#include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
 

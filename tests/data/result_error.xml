@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.077" timestamp="2024-08-12T13:58:07.030762-04:00" hostname="examplehost"><testcase classname="" name="test_simple" time="0.000"><error message="collection failure">/example/miniforge3/envs/test/lib/python3.11/site-packages/_pytest/python.py:493: in importtestmodule
+    mod = import_path(
+/example/miniforge3/envs/test/lib/python3.11/site-packages/_pytest/pathlib.py:582: in import_path
+    importlib.import_module(module_name)
+/example/miniforge3/envs/test/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+&lt;frozen importlib._bootstrap&gt;:1204: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1176: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1147: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:690: in _load_unlocked
+    ???
+/example/miniforge3/envs/test/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:165: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+/example/miniforge3/envs/test/lib/python3.11/site-packages/_pytest/assertion/rewrite.py:345: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+/example/miniforge3/envs/test/lib/python3.11/ast.py:50: in parse
+    return compile(source, filename, mode, flags,
+E     File "/tmp/bleh/test_simple.py", line 17
+E       syntax error here
+E              ^^^^^
+E   SyntaxError: invalid syntax</error></testcase></testsuite></testsuites>

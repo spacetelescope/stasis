@@ -315,11 +315,12 @@ size_t strlist_count(struct StrList *pStrList) {
 void strlist_set(struct StrList **pStrList, size_t index, char *value) {
     char *tmp = NULL;
     if (*pStrList == NULL || index > strlist_count(*pStrList)) {
+        strlist_errno = STRLIST_E_OUT_OF_RANGE;
         return;
     }
 
     if (value == NULL) {
-        (*pStrList)->data[index] = NULL;
+        guard_free((*pStrList)->data[index]);
     } else {
         tmp = realloc((*pStrList)->data[index], (strlen(value) + 1) * sizeof(char *));
         if (!tmp) {
