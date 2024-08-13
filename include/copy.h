@@ -32,14 +32,6 @@
 int copytree(const char *srcdir, const char *destdir, unsigned op);
 
 /**
- * Create all leafs in directory path
- * @param _path directory path to create
- * @param mode mode_t permissions
- * @return
- */
-int mkdirs(const char *_path, mode_t mode);
-
-/**
  * Copy a single file
  *
  * ```c

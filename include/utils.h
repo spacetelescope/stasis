@@ -357,4 +357,12 @@ struct StrList *listdir(const char *path);
  */
 long get_cpu_count();
 
+/**
+ * Create all leafs in directory path
+ * @param _path directory path to create
+ * @param mode mode_t permissions
+ * @return
+ */
+int mkdirs(const char *_path, mode_t mode);
+
 #endif //STASIS_UTILS_H

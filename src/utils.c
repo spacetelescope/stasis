@@ -773,3 +773,30 @@ long get_cpu_count() {
         return 0;
 #endif
 }
+
+int mkdirs(const char *_path, mode_t mode) {
+    int status;
+    char *token;
+    char pathbuf[PATH_MAX] = {0};
+    char *path;
+    path = pathbuf;
+    strcpy(path, _path);
+    errno = 0;
+
+    char result[PATH_MAX] = {0};
+    status = 0;
+    while ((token = strsep(&path, "/")) != NULL && !status) {
+        if (token[0] == '.')
+            continue;
+        strcat(result, token);
+        strcat(result, "/");
+        status = mkdir(result, mode);
+        if (status && errno == EEXIST) {
+            status = 0;
+            errno = 0;
+            continue;
+        }
+    }
+    return status;
+}
+

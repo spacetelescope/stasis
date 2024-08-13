@@ -85,32 +85,6 @@ int copy2(const char *src, const char *dest, unsigned int op) {
     return 0;
 }
 
-int mkdirs(const char *_path, mode_t mode) {
-    int status;
-    char *token;
-    char pathbuf[PATH_MAX] = {0};
-    char *path;
-    path = pathbuf;
-    strcpy(path, _path);
-    errno = 0;
-
-    char result[PATH_MAX] = {0};
-    status = 0;
-    while ((token = strsep(&path, "/")) != NULL && !status) {
-        if (token[0] == '.')
-            continue;
-        strcat(result, token);
-        strcat(result, "/");
-        status = mkdir(result, mode);
-        if (status && errno == EEXIST) {
-            status = 0;
-            errno = 0;
-            continue;
-        }
-    }
-    return status;
-}
-
 int copytree(const char *srcdir, const char *destdir, unsigned int op) {
     DIR *dir;
     struct dirent *d;
