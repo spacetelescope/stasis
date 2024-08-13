@@ -28,9 +28,31 @@ void test_recipe_clone() {
         int expect_return;
     };
     struct testcase tc[] = {
-        {.recipe_dir = "recipe_condaforge", .url = "https://github.com/conda-forge/fitsverify-feedstock", "HEAD", RECIPE_TYPE_CONDA_FORGE, 0},
-        {.recipe_dir = "recipe_astroconda", .url = "https://github.com/astroconda/astroconda-contrib", "HEAD", RECIPE_TYPE_ASTROCONDA, 0},
-        {.recipe_dir = "recipe_generic", .url = "local_repo", "HEAD", RECIPE_TYPE_GENERIC, 0},
+        {.recipe_dir = "recipe_condaforge",
+         .url = "https://github.com/conda-forge/fitsverify-feedstock",
+         .gitref = "HEAD",
+         .expect_type = RECIPE_TYPE_CONDA_FORGE,
+         .expect_return = 0},
+        {.recipe_dir = "recipe_astroconda",
+         .url = "https://github.com/astroconda/astroconda-contrib",
+         .gitref = "HEAD",
+         .expect_type = RECIPE_TYPE_ASTROCONDA,
+         .expect_return = 0},
+        {.recipe_dir = "recipe_generic",
+         .url = "local_repo",
+         .gitref = "HEAD",
+         .expect_type = RECIPE_TYPE_GENERIC,
+         .expect_return = 0},
+        {.recipe_dir = "recipe_unknown",
+         .url = "https://github.com/astroconda/firewatch",
+         .gitref = "HEAD",
+         .expect_type = RECIPE_TYPE_UNKNOWN,
+         .expect_return = 0},
+        {.recipe_dir = "recipe_broken",
+         .url = "123_BAD_BAD_BAD_456",
+         .gitref = "HEAD",
+         .expect_type = RECIPE_TYPE_UNKNOWN,
+         .expect_return = 128},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
@@ -43,7 +65,7 @@ void test_recipe_clone() {
         }
 
         char *result_path = NULL;
-        int result;
+        int result = 0;
 
         // Clone the repository
         result = recipe_clone(test->recipe_dir, test->url, test->gitref, &result_path);
@@ -51,9 +73,16 @@ void test_recipe_clone() {
         STASIS_ASSERT(result == test->expect_return, "failed while cloning recipe");
         // Ensure a path to the repository was returned in the result argument
         STASIS_ASSERT(result_path != NULL, "result path should not be NULL");
-        STASIS_ASSERT(result_path && access(result_path, F_OK) == 0, "result path should be a valid directory");
         // Verify the repository was detected as the correct recipe type
         STASIS_ASSERT(recipe_get_type(result_path) == test->expect_type, "repository detected as the wrong type");
+
+        if (test->expect_return == 0) {
+            // Verify the result path exists
+            STASIS_ASSERT(result_path && access(result_path, F_OK) == 0, "result path should be a valid directory");
+        } else {
+            // Verify the result path does not exist
+            STASIS_ASSERT(result_path && access(result_path, F_OK) != 0, "result path should not exist");
+        }
     }
 
 }
