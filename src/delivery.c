@@ -414,8 +414,10 @@ void validate_delivery_ini(struct INIFILE *ini) {
                 name = &name[1];
             }
             //ini_has_key_required(ini, section->key, "version");
-            ini_has_key_required(ini, section->key, "repository");
-            ini_has_key_required(ini, section->key, "script");
+            //ini_has_key_required(ini, section->key, "repository");
+            if (globals.enable_testing) {
+                ini_has_key_required(ini, section->key, "script");
+            }
         }
     }
 
@@ -1450,7 +1452,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
         // Compile a list of packages that are *also* to be tested.
         char *version;
-        char *spec_begin = strpbrk(name, "~=<>!");
+        char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
         if (spec_end) {
             // A version is present in the package name. Jump past operator(s).
@@ -1459,22 +1461,45 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             }
         }
 
-        // When spec is present in name, set ctx->tests[x].version to the version detected in the name
-        for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]); x++) {
+        // When spec is present in name, set tests->version to the version detected in the name
+        for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]) && ctx->tests[x].name != NULL; x++) {
+            struct Test *test = &ctx->tests[x];
             version = NULL;
-            if (ctx->tests[x].name) {
-                if (strstr(name, ctx->tests[x].name)) {
-                    guard_free(ctx->tests[x].version);
-                    if (spec_begin && spec_end) {
-                        *spec_begin = '\0';
-                        ctx->tests[x].version = strdup(spec_end);
-                    } else {
-                        ctx->tests[x].version = strdup("HEAD");
-                    }
-                    version = ctx->tests[x].version;
-                    ignore_pkg = 1;
-                    break;
+
+            // Is the [test:NAME] in the package name?
+            if (strstr(name, test->name)) {
+                // Override test->version when a version is provided by the (pip|conda)_package list item
+                guard_free(test->version);
+                if (spec_begin && spec_end) {
+                    *spec_begin = '\0';
+                    test->version = strdup(spec_end);
+                } else {
+                    // There are too many possible default branches nowadays: master, main, develop, xyz, etc.
+                    // HEAD is a safe bet.
+                    test->version = strdup("HEAD");
                 }
+                version = test->version;
+
+                // Is the list item a git+schema:// URL?
+                if (strstr(name, "git+") && strstr(name, "://")) {
+                    char *xrepo = strstr(name, "+");
+                    if (xrepo) {
+                        xrepo++;
+                        guard_free(test->repository);
+                        test->repository = strdup(xrepo);
+                        xrepo = NULL;
+                    }
+                    // Extract the name of the package
+                    char *xbasename = path_basename(name);
+                    if (xbasename) {
+                        // Replace the git+schema:// URL with the package name
+                        strlist_set(&dataptr, i, xbasename);
+                        name = strlist_item(dataptr, i);
+                    }
+                }
+
+                ignore_pkg = 1;
+                break;
             }
         }
 
