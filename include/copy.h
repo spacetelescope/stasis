@@ -14,24 +14,6 @@
 #define CT_PERM 1 << 2
 
 /**
- * Recursively copy a directory, or a single file
- *
- * ```c
- * if (copytree("/source/path", "/destination/path", CT_PERM | CT_OWNER)) {
- *     fprintf(stderr, "Unable to copy files\n");
- *     exit(1);
- * }
- * ```
- *
- * @param srcdir source file or directory path
- * @param destdir destination directory
- * @param op CT_OWNER (preserve ownership)
- * @param op CT_PERM (preserve permission bits)
- * @return 0 on success, -1 on error
- */
-int copytree(const char *srcdir, const char *destdir, unsigned op);
-
-/**
  * Copy a single file
  *
  * ```c
