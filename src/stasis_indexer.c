@@ -508,7 +508,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
         fprintf(stderr, "Failed to configure temporary storage directory\n");
         exit(1);
     }
-    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
+    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "");
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.output_dir, "tools");
     path_store(&globals.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
     path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
@@ -542,7 +542,13 @@ int main(int argc, char *argv[]) {
                 usage(path_basename(argv[0]));
                 exit(0);
             case 'd':
-                destdir = strdup(optarg);
+                if (mkdir(optarg, 0755)) {
+                    if (errno != 0 && errno != EEXIST) {
+                        SYSERROR("Unable to create destination directory, '%s': %s", optarg, strerror(errno));
+                        exit(1);
+                    }
+                }
+                destdir = realpath(optarg, NULL);
                 break;
             case 'U':
                 fflush(stdout);
@@ -573,7 +579,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (isempty(destdir)) {
-        destdir = strdup("output");
+        if (mkdir("output", 0755)) {
+            if (errno != 0 && errno != EEXIST) {
+                SYSERROR("Unable to create destination directory, '%s': %s", "output", strerror(errno));
+                exit(1);
+            }
+        }
+        destdir = realpath("output", NULL);
     }
 
     if (!rootdirs || !rootdirs_total) {
