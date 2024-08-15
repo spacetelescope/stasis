@@ -39,13 +39,42 @@ static void usage(char *name) {
 
 int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t rootdirs_total) {
     char cmd[PATH_MAX];
+    char destdir_bare[PATH_MAX];
+    char destdir_with_output[PATH_MAX];
+    char *destdir = destdir_bare;
 
     memset(cmd, 0, sizeof(cmd));
+    memset(destdir_bare, 0, sizeof(destdir_bare));
+    memset(destdir_with_output, 0, sizeof(destdir_bare));
+
+    strcpy(destdir_bare, dest);
+    strcpy(destdir_with_output, dest);
+    strcat(destdir_with_output, "/output");
+
+    if (!access(destdir_with_output, F_OK)) {
+        destdir = destdir_with_output;
+    }
+
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
     for (size_t i = 0; i < rootdirs_total; i++) {
-        sprintf(cmd + strlen(cmd), "'%s'/ ", rootdirs[i]);
+        char srcdir_bare[PATH_MAX] = {0};
+        char srcdir_with_output[PATH_MAX] = {0};
+        char *srcdir = srcdir_bare;
+        strcpy(srcdir_bare, rootdirs[i]);
+        strcpy(srcdir_with_output, rootdirs[i]);
+        strcat(srcdir_with_output, "/output");
+
+        if (access(srcdir_bare, F_OK)) {
+            fprintf(stderr, "%s does not exist\n", srcdir_bare);
+            continue;
+        }
+
+        if (!access(srcdir_with_output, F_OK)) {
+            srcdir = srcdir_with_output;
+        }
+        sprintf(cmd + strlen(cmd), "'%s'/ ", srcdir);
     }
-    sprintf(cmd + strlen(cmd), "%s/", dest);
+    sprintf(cmd + strlen(cmd), "%s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
@@ -571,9 +600,13 @@ int main(int argc, char *argv[]) {
     int current_index = optind;
     if (optind < argc) {
         rootdirs_total = argc - current_index;
+        rootdirs = calloc(rootdirs_total + 1, sizeof(**rootdirs));
+
+        int i = 0;
         while (optind < argc) {
             // use first positional argument
-            rootdirs = &argv[optind++];
+            rootdirs[i] = realpath(argv[optind], NULL);
+            optind++;
             break;
         }
     }
@@ -719,6 +752,8 @@ int main(int argc, char *argv[]) {
         SYSERROR("Failed to remove work directory: %s", strerror(errno));
     }
 
+    guard_free(destdir);
+    GENERIC_ARRAY_FREE(rootdirs);
     guard_strlist_free(&metafiles);
     delivery_free(&ctx);
     globals_free();
