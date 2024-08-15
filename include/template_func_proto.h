@@ -5,5 +5,7 @@
 
 int get_github_release_notes_tplfunc_entrypoint(void *frame, void *data_out);
 int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out);
+int get_junitxml_result_auto_entrypoint(void *frame, void *data_out);
+int get_basetemp_result_auto_entrypoint(void *frame, void *data_out);
 
 #endif //TEMPLATE_FUNC_PROTO_H

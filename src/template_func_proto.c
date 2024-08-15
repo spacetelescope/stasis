@@ -66,3 +66,47 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
 
     return result;
 }
+
+int get_junitxml_result_auto_entrypoint(void *frame, void *data_out) {
+    int result = 0;
+    char **output = (char **) data_out;
+    struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
+    const struct Delivery *ctx = (const struct Delivery *) f->data_in;
+
+    char cwd[PATH_MAX] = {0};
+    getcwd(cwd, PATH_MAX - 1);
+    char nametmp[PATH_MAX] = {0};
+    strcpy(nametmp, cwd);
+    char *name = path_basename(nametmp);
+
+    *output = calloc(PATH_MAX, sizeof(**output));
+    if (!*output) {
+        SYSERROR("failed to allocate output string: %s", strerror(errno));
+        return -1;
+    }
+    sprintf(*output, "%s/results-%s-%s.xml", ctx->storage.results_dir, name, ctx->info.release_name);
+
+    return result;
+}
+
+int get_basetemp_result_auto_entrypoint(void *frame, void *data_out) {
+    int result = 0;
+    char **output = (char **) data_out;
+    struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
+    const struct Delivery *ctx = (const struct Delivery *) f->data_in;
+
+    char cwd[PATH_MAX] = {0};
+    getcwd(cwd, PATH_MAX - 1);
+    char nametmp[PATH_MAX] = {0};
+    strcpy(nametmp, cwd);
+    char *name = path_basename(nametmp);
+
+    *output = calloc(PATH_MAX, sizeof(**output));
+    if (!*output) {
+        SYSERROR("failed to allocate output string: %s", strerror(errno));
+        return -1;
+    }
+    sprintf(*output, "%s/truth-%s-%s", ctx->storage.tmpdir, name, ctx->info.release_name);
+
+    return result;
+}
