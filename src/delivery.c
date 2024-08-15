@@ -560,7 +560,7 @@ static int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
 
             test->version = ini_getval_str(ini, section_name, "version", render_mode, &err);
             test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err);
-            test->script = ini_getval_str(ini, section_name, "script", render_mode, &err);
+            test->script = ini_getval_str(ini, section_name, "script", INI_READ_RAW, &err);
             test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
             test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
             test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
@@ -1771,6 +1771,9 @@ void delivery_tests_run(struct Delivery *ctx) {
                         cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
+                } else {
+                    SYSERROR("An error occurred while rendering the following:\n%s", cmd);
+                    exit(1);
                 }
 
                 FILE *runner_fp;
