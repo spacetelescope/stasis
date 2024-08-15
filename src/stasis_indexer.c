@@ -39,13 +39,42 @@ static void usage(char *name) {
 
 int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t rootdirs_total) {
     char cmd[PATH_MAX];
+    char destdir_bare[PATH_MAX];
+    char destdir_with_output[PATH_MAX];
+    char *destdir = destdir_bare;
 
     memset(cmd, 0, sizeof(cmd));
+    memset(destdir_bare, 0, sizeof(destdir_bare));
+    memset(destdir_with_output, 0, sizeof(destdir_bare));
+
+    strcpy(destdir_bare, dest);
+    strcpy(destdir_with_output, dest);
+    strcat(destdir_with_output, "/output");
+
+    if (!access(destdir_with_output, F_OK)) {
+        destdir = destdir_with_output;
+    }
+
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
     for (size_t i = 0; i < rootdirs_total; i++) {
-        sprintf(cmd + strlen(cmd), "'%s'/ ", rootdirs[i]);
+        char srcdir_bare[PATH_MAX] = {0};
+        char srcdir_with_output[PATH_MAX] = {0};
+        char *srcdir = srcdir_bare;
+        strcpy(srcdir_bare, rootdirs[i]);
+        strcpy(srcdir_with_output, rootdirs[i]);
+        strcat(srcdir_with_output, "/output");
+
+        if (access(srcdir_bare, F_OK)) {
+            fprintf(stderr, "%s does not exist\n", srcdir_bare);
+            continue;
+        }
+
+        if (!access(srcdir_with_output, F_OK)) {
+            srcdir = srcdir_with_output;
+        }
+        sprintf(cmd + strlen(cmd), "'%s'/ ", srcdir);
     }
-    sprintf(cmd + strlen(cmd), "%s/", dest);
+    sprintf(cmd + strlen(cmd), "%s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
@@ -202,39 +231,73 @@ struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
 
 int indexer_make_website(struct Delivery *ctx) {
     char cmd[PATH_MAX];
-    char *inputs[] = {
-        ctx->storage.delivery_dir, "/README.md",
-        ctx->storage.results_dir, "/README.md",
-    };
+    const char *pattern = "*.md";
 
     if (!find_program("pandoc")) {
         fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
         return 0;
     }
 
-    for (size_t i = 0; i < sizeof(inputs) / sizeof(*inputs); i += 2) {
-        char fullpath[PATH_MAX];
-        memset(fullpath, 0, sizeof(fullpath));
-        sprintf(fullpath, "%s/%s", inputs[i], inputs[i + 1]);
-        if (access(fullpath, F_OK)) {
+    struct StrList *dirs = strlist_init();
+    strlist_append(&dirs, ctx->storage.delivery_dir);
+    strlist_append(&dirs, ctx->storage.results_dir);
+
+    struct StrList *inputs = NULL;
+    for (size_t i = 0; i < strlist_count(dirs); i++) {
+        if (indexer_get_files(&inputs, ctx->storage.delivery_dir, pattern)) {
+            SYSERROR("%s does not contain files with pattern: %s", ctx->storage.delivery_dir, pattern);
+            guard_strlist_free(&inputs);
             continue;
         }
-        // Converts a markdown file to html
-        strcpy(cmd, "pandoc ");
-        strcat(cmd, fullpath);
-        strcat(cmd, " ");
-        strcat(cmd, "-o ");
-        strcat(cmd, inputs[i]);
-        strcat(cmd, "/index.html");
-        if (globals.verbose) {
-            puts(cmd);
+        char *root = strlist_item(dirs, i);
+        for (size_t x = 0; x < strlist_count(inputs); x++) {
+            char *filename = strlist_item(inputs, x);
+            char fullpath_src[PATH_MAX] = {0};
+            char fullpath_dest[PATH_MAX] = {0};
+            sprintf(fullpath_src, "%s/%s", root, filename);
+            if (access(fullpath_src, F_OK)) {
+                continue;
+            }
+
+            // Replace *.md extension with *.html.
+            strcpy(fullpath_dest, fullpath_src);
+            char *ext = strrchr(fullpath_dest, '.');
+            if (ext) {
+                *ext = '\0';
+            }
+            strcat(fullpath_dest, ".html");
+
+            // Converts a markdown file to html
+            strcpy(cmd, "pandoc ");
+            strcat(cmd, fullpath_src);
+            strcat(cmd, " ");
+            strcat(cmd, "-o ");
+            strcat(cmd, fullpath_dest);
+            if (globals.verbose) {
+                puts(cmd);
+            }
+            // This might be negative when killed by a signal.
+            // Otherwise, the return code is not critical to us.
+            if (system(cmd) < 0) {
+                return 1;
+            }
+            if (file_replace_text(fullpath_dest, ".md", ".html", 0)) {
+                // inform-only
+                SYSERROR("%s: failed to rewrite *.md urls with *.html extension", fullpath_dest);
+            }
+
+            // Link the nearest README.html to index.html
+            if (!strcmp(filename, "README.md")) {
+                char link_from[PATH_MAX] = {0};
+                char link_dest[PATH_MAX] = {0};
+                strcpy(link_from, "README.html");
+                sprintf(link_dest, "%s/%s", root, "index.html");
+                symlink(link_from, link_dest);
+            }
         }
-        // This might be negative when killed by a signal.
-        // Otherwise, the return code is not critical to us.
-        if (system(cmd) < 0) {
-            return 1;
-        }
+        guard_strlist_free(&inputs);
     }
+    guard_strlist_free(&dirs);
 
     return 0;
 }
@@ -508,7 +571,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
         fprintf(stderr, "Failed to configure temporary storage directory\n");
         exit(1);
     }
-    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "output");
+    path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "");
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.output_dir, "tools");
     path_store(&globals.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
     path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
@@ -542,7 +605,13 @@ int main(int argc, char *argv[]) {
                 usage(path_basename(argv[0]));
                 exit(0);
             case 'd':
-                destdir = strdup(optarg);
+                if (mkdir(optarg, 0755)) {
+                    if (errno != 0 && errno != EEXIST) {
+                        SYSERROR("Unable to create destination directory, '%s': %s", optarg, strerror(errno));
+                        exit(1);
+                    }
+                }
+                destdir = realpath(optarg, NULL);
                 break;
             case 'U':
                 fflush(stdout);
@@ -565,15 +634,25 @@ int main(int argc, char *argv[]) {
     int current_index = optind;
     if (optind < argc) {
         rootdirs_total = argc - current_index;
+        rootdirs = calloc(rootdirs_total + 1, sizeof(**rootdirs));
+
+        int i = 0;
         while (optind < argc) {
             // use first positional argument
-            rootdirs = &argv[optind++];
+            rootdirs[i] = realpath(argv[optind], NULL);
+            optind++;
             break;
         }
     }
 
     if (isempty(destdir)) {
-        destdir = strdup("output");
+        if (mkdir("output", 0755)) {
+            if (errno != 0 && errno != EEXIST) {
+                SYSERROR("Unable to create destination directory, '%s': %s", "output", strerror(errno));
+                exit(1);
+            }
+        }
+        destdir = realpath("output", NULL);
     }
 
     if (!rootdirs || !rootdirs_total) {
@@ -707,6 +786,8 @@ int main(int argc, char *argv[]) {
         SYSERROR("Failed to remove work directory: %s", strerror(errno));
     }
 
+    guard_free(destdir);
+    GENERIC_ARRAY_FREE(rootdirs);
     guard_strlist_free(&metafiles);
     delivery_free(&ctx);
     globals_free();

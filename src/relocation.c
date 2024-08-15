@@ -115,7 +115,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
         return -1;
     }
 
-    tfp = fopen(tempfilename, "w");
+    tfp = fopen(tempfilename, "w+");
     if (!tfp) {
         SYSERROR("unable to open temporary fp for writing: %s", tempfilename);
         fclose(fp);
@@ -124,7 +124,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
 
     // Write modified strings to temporary file
     result = 0;
-    while (fgets(buffer, sizeof(buffer), fp)) {
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (strstr(buffer, target)) {
             if (replace_text(buffer, target, replacement, flags)) {
                 result = -1;
@@ -132,12 +132,24 @@ int file_replace_text(const char* filename, const char* target, const char* repl
         }
         fputs(buffer, tfp);
     }
+    fflush(tfp);
 
+    // Replace original with modified copy
+    fclose(fp);
+    fp = fopen(filename, "w+");
+    if (!fp) {
+        SYSERROR("unable to reopen %s for writing", filename);
+        return -1;
+    }
+
+    // Update original file
+    rewind(tfp);
+    while (fgets(buffer, sizeof(buffer), tfp) != NULL) {
+        fputs(buffer, fp);
+    }
     fclose(fp);
     fclose(tfp);
 
-    // Replace original with modified copy
-    remove(filename);
-    rename(tempfilename, filename);
+    remove(tempfilename);
     return result;
 }
