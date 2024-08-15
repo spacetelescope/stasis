@@ -1771,6 +1771,9 @@ void delivery_tests_run(struct Delivery *ctx) {
                         cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
+                } else {
+                    SYSERROR("An error occurred while rendering the following:\n%s", cmd);
+                    exit(1);
                 }
 
                 FILE *runner_fp;
