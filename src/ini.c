@@ -451,6 +451,11 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                         render = parts[p];
                     }
 
+                    if (!render) {
+                        SYSERROR("%s", "rendered string value can never be NULL!\n");
+                        return -1;
+                    }
+
                     if (*hint == INIVAL_TYPE_STR_ARRAY) {
                         int leading_space = isspace(*render);
                         if (leading_space) {
