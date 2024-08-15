@@ -69,6 +69,7 @@ pushd "$ws"
     logfile="stasis_indexer.log"
     set -x
     stasis_indexer --web --unbuffered -v stasis/* 2>&1 | tee "$logfile"
+    retcode=$?
 
     set +x
     find output
@@ -79,7 +80,6 @@ pushd "$ws"
             exit 1
         fi
     done
-
 popd
 
 rm -rf "$ws"
