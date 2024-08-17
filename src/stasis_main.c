@@ -8,9 +8,10 @@
 #define OPT_ALWAYS_UPDATE_BASE 1000
 #define OPT_NO_DOCKER 1001
 #define OPT_NO_ARTIFACTORY 1002
-#define OPT_NO_TESTING 1003
-#define OPT_OVERWRITE 1004
-#define OPT_NO_REWRITE_SPEC_STAGE_2 1005
+#define OPT_NO_ARTIFACTORY_BUILD_INFO 1003
+#define OPT_NO_TESTING 1004
+#define OPT_OVERWRITE 1005
+#define OPT_NO_REWRITE_SPEC_STAGE_2 1006
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
@@ -23,6 +24,7 @@ static struct option long_options[] = {
         {"overwrite", no_argument, 0, OPT_OVERWRITE},
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
+        {"no-artifactory-build-info", no_argument, 0, OPT_NO_ARTIFACTORY_BUILD_INFO},
         {"no-testing", no_argument, 0, OPT_NO_TESTING},
         {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
         {0, 0, 0, 0},
@@ -40,6 +42,7 @@ const char *long_options_help[] = {
         "Overwrite an existing release",
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
+        "Do not upload build info objects to Artifactory",
         "Do not execute test scripts",
         "Do not rewrite paths and URLs in output files",
         NULL,
@@ -260,6 +263,9 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_NO_ARTIFACTORY:
                 globals.enable_artifactory = false;
+                break;
+            case OPT_NO_ARTIFACTORY_BUILD_INFO:
+                globals.enable_artifactory_build_info = false;
                 break;
             case OPT_NO_TESTING:
                 globals.enable_testing = false;
