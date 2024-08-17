@@ -1466,6 +1466,12 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             struct Test *test = &ctx->tests[x];
             version = NULL;
 
+            char nametmp[1024] = {0};
+            if (spec_end != NULL && spec_begin != NULL) {
+                strncpy(nametmp, name, spec_begin - name);
+            } else {
+                strcpy(nametmp, name);
+            }
             // Is the [test:NAME] in the package name?
             if (strstr(name, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
