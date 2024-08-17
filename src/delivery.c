@@ -1927,9 +1927,15 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         }
     }
 
-    if (!status && ctx->deploy.jfrog[0].files && ctx->deploy.jfrog[0].dest) {
-        jfrog_cli_rt_build_collect_env(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
-        jfrog_cli_rt_build_publish(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name, ctx->deploy.jfrog[0].upload_ctx.build_number);
+    if (globals.enable_artifactory_build_info) {
+        if (!status && ctx->deploy.jfrog[0].files && ctx->deploy.jfrog[0].dest) {
+            jfrog_cli_rt_build_collect_env(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name,
+                                           ctx->deploy.jfrog[0].upload_ctx.build_number);
+            jfrog_cli_rt_build_publish(&ctx->deploy.jfrog_auth, ctx->deploy.jfrog[0].upload_ctx.build_name,
+                                       ctx->deploy.jfrog[0].upload_ctx.build_number);
+        }
+    } else {
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "Artifactory build info upload is disabled by CLI argument\n");
     }
 
     return status;

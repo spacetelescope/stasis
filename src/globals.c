@@ -35,6 +35,7 @@ struct STASIS_GLOBAL globals = {
         .tmpdir = NULL,
         .enable_docker = true,
         .enable_artifactory = true,
+        .enable_artifactory_build_info = true,
         .enable_testing = true,
         .enable_rewrite_spec_stage_2 = true,
 };
