@@ -213,15 +213,29 @@ int conda_activate(const char *root, const char *env_name) {
 
 int conda_check_required() {
     int status = 0;
-    char *tools[] = {
-        "boa",
-        "conda-build",
-        "conda-verify",
-        NULL
-    };
     struct StrList *result = NULL;
-    // TODO: Generate the command based on tools array
-    char *cmd_out = shell_output("conda list '^boa|^conda-build|^conda-verify' | cut -d ' ' -f 1", &status);
+    char cmd[PATH_MAX] = {0};
+    const char *conda_minimum_viable_tools[] = {
+            "boa",
+            "conda-build",
+            "conda-verify",
+            NULL
+    };
+
+    // Construct a "conda list" command that searches for all required packages
+    // using conda's (python's) regex matching
+    strcat(cmd, "conda list '");
+    for (size_t i = 0; conda_minimum_viable_tools[i] != NULL; i++) {
+        strcat(cmd, "^");
+        strcat(cmd, conda_minimum_viable_tools[i]);
+        if (conda_minimum_viable_tools[i + 1] != NULL) {
+            strcat(cmd, "|");
+        }
+    }
+    strcat(cmd, "' | cut -d ' ' -f 1");
+
+    // Verify all required packages are installed
+    char *cmd_out = shell_output(cmd, &status);
     if (cmd_out) {
         size_t found = 0;
         result = strlist_init();
@@ -232,13 +246,13 @@ int conda_check_required() {
                 continue;
             }
 
-            for (size_t x = 0; tools[x] != NULL; x++) {
-                if (!strcmp(item, tools[x])) {
+            for (size_t x = 0; conda_minimum_viable_tools[x] != NULL; x++) {
+                if (!strcmp(item, conda_minimum_viable_tools[x])) {
                     found++;
                 }
             }
         }
-        if (found < (sizeof(tools) / sizeof(*tools)) - 1) {
+        if (found < (sizeof(conda_minimum_viable_tools) / sizeof(*conda_minimum_viable_tools)) - 1) {
             guard_free(cmd_out);
             guard_strlist_free(&result);
             return 1;
