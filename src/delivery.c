@@ -1473,7 +1473,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 strcpy(nametmp, name);
             }
             // Is the [test:NAME] in the package name?
-            if (strstr(name, test->name)) {
+            if (!strcmp(nametmp, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
                 guard_free(test->version);
                 if (spec_begin && spec_end) {
