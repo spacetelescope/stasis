@@ -79,6 +79,72 @@ int pip_exec(const char *args) {
     return system(command);
 }
 
+int python_package_exists(const char *index_url, const char *name, const char *version) {
+    char cmd[PATH_MAX] = {0};
+    char name_local[255];
+    char version_local[255] = {0};
+    char spec[255] = {0};
+
+    if (isempty((char *) name) < 0) {
+        // no package name means nothing to do.
+        return -1;
+    }
+
+    // Fix up the package name
+    strncpy(name_local, name, sizeof(name_local) - 1);
+    tolower_s(name_local);
+    lstrip(name_local);
+    strip(name_local);
+
+    if (version) {
+        // Fix up the package version
+        strncpy(version_local, version, sizeof(version_local) - 1);
+        tolower_s(version_local);
+        lstrip(version_local);
+        strip(version_local);
+        sprintf(spec, "==%s", version);
+    }
+
+    char logfile[] = "/tmp/STASIS-package_exists.XXXXXX";
+    int logfd = mkstemp(logfile);
+    if (logfd < 0) {
+        perror(logfile);
+        return -1;
+    }
+
+
+    int status = 0;
+    struct Process proc;
+    memset(&proc, 0, sizeof(proc));
+    proc.redirect_stderr = 1;
+    strcpy(proc.f_stdout, logfile);
+
+    // Do an installation in dry-run mode to see if the package exists in the given index.
+    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-deps --index-url=%s %s%s", index_url, name_local, spec);
+    status = shell(&proc, cmd);
+
+    // Print errors only when shell() itself throws one
+    // If some day we want to see the errors thrown by pip too, use this condition instead:  (status != 0)
+    if (status < 0) {
+        FILE *fp = fdopen(logfd, "r");
+        if (!fp) {
+            remove(logfile);
+            return -1;
+        } else {
+            char line[BUFSIZ] = {0};
+            fflush(stdout);
+            fflush(stderr);
+            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+                fprintf(stderr, "%s", line);
+            }
+            fflush(stderr);
+            fclose(fp);
+            remove(logfile);
+        }
+    }
+    return proc.returncode == 0;
+}
+
 int conda_exec(const char *args) {
     char command[PATH_MAX];
     const char *mamba_commands[] = {

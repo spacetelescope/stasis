@@ -7,6 +7,7 @@
 #include "core.h"
 
 #define CONDA_INSTALL_PREFIX "conda"
+#define PYPI_INDEX_DEFAULT "https://pypi.org/simple"
 
 struct MicromambaInfo {
     char *micromamba_prefix;
@@ -181,4 +182,7 @@ int conda_env_export(char *name, char *output_dir, char *output_filename);
  * @return exit code from "conda"
  */
 int conda_index(const char *path);
+
+int python_package_exists(const char *index_url, const char *name, const char *version);
+
 #endif //STASIS_CONDA_H
