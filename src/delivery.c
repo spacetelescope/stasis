@@ -1505,7 +1505,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 }
 
                 if (DEFER_PIP == type && python_package_exists(PYPI_INDEX_DEFAULT, name, version)) {
-                    fprintf(stderr, "%s-%s is present on %s\n", name, version, PYPI_INDEX_DEFAULT);
+                    fprintf(stderr, "(%s present on index %s): ", version, PYPI_INDEX_DEFAULT);
                     ignore_pkg = 0;
                 } else {
                     ignore_pkg = 1;
