@@ -1504,7 +1504,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     }
                 }
 
-                if (DEFER_PIP == type && python_package_exists(PYPI_INDEX_DEFAULT, name, version)) {
+                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, name, version)) {
                     fprintf(stderr, "(%s present on index %s): ", version, PYPI_INDEX_DEFAULT);
                     ignore_pkg = 0;
                 } else {

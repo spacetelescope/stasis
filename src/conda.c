@@ -79,7 +79,7 @@ int pip_exec(const char *args) {
     return system(command);
 }
 
-int python_package_exists(const char *index_url, const char *name, const char *version) {
+int pip_index_provides(const char *index_url, const char *name, const char *version) {
     char cmd[PATH_MAX] = {0};
     char name_local[255];
     char version_local[255] = {0};
