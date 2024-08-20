@@ -109,6 +109,7 @@ int pip_index_provides(const char *index_url, const char *name, const char *vers
     int logfd = mkstemp(logfile);
     if (logfd < 0) {
         perror(logfile);
+        remove(logfile);    // fail harmlessly if not present
         return -1;
     }
 
@@ -139,9 +140,9 @@ int pip_index_provides(const char *index_url, const char *name, const char *vers
             }
             fflush(stderr);
             fclose(fp);
-            remove(logfile);
         }
     }
+    remove(logfile);
     return proc.returncode == 0;
 }
 
