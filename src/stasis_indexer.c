@@ -272,6 +272,7 @@ int indexer_make_website(struct Delivery *ctx) {
             strcat(cmd, "--standalone ");
             strcat(cmd, "-o ");
             strcat(cmd, fullpath_dest);
+            strcat(cmd, " ");
             strcat(cmd, fullpath_src);
             if (globals.verbose) {
                 puts(cmd);
