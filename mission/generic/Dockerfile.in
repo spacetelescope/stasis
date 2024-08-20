@@ -72,6 +72,8 @@ RUN sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--ext
 RUN mamba install \
         git \
         ${CONDA_PACKAGES} \
-    && mamba env create -n linux --file ${HOME}/SNAPSHOT.yml
+    && mamba env create -n linux --file ${HOME}/SNAPSHOT.yml \
+    && conda clean --all \
+    && rm -rf ${HOME}/.cache
 WORKDIR ${HOME}
 CMD ["/bin/bash"]
