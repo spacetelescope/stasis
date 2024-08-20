@@ -7,10 +7,11 @@
 #include "core.h"
 
 #define CONDA_INSTALL_PREFIX "conda"
+#define PYPI_INDEX_DEFAULT "https://pypi.org/simple"
 
 struct MicromambaInfo {
-    char *micromamba_prefix;
-    char *conda_prefix;
+    char *micromamba_prefix;    //!< Path to write micromamba binary
+    char *conda_prefix;         //!< Path to install conda base tree
 };
 
 /**
@@ -181,4 +182,14 @@ int conda_env_export(char *name, char *output_dir, char *output_filename);
  * @return exit code from "conda"
  */
 int conda_index(const char *path);
+
+/**
+ * Determine whether a simple index contains a package
+ * @param index_url a file system path or url pointing to a simple index
+ * @param name package name (required)
+ * @param version package version (may be NULL)
+ * @return not found = 0, found = 1, error = -1
+ */
+int pip_index_provides(const char *index_url, const char *name, const char *version);
+
 #endif //STASIS_CONDA_H

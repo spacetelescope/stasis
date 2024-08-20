@@ -1466,8 +1466,14 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             struct Test *test = &ctx->tests[x];
             version = NULL;
 
+            char nametmp[1024] = {0};
+            if (spec_end != NULL && spec_begin != NULL) {
+                strncpy(nametmp, name, spec_begin - name);
+            } else {
+                strcpy(nametmp, name);
+            }
             // Is the [test:NAME] in the package name?
-            if (strstr(name, test->name)) {
+            if (!strcmp(nametmp, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
                 guard_free(test->version);
                 if (spec_begin && spec_end) {
@@ -1498,7 +1504,12 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     }
                 }
 
-                ignore_pkg = 1;
+                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, name, version)) {
+                    fprintf(stderr, "(%s present on index %s): ", version, PYPI_INDEX_DEFAULT);
+                    ignore_pkg = 0;
+                } else {
+                    ignore_pkg = 1;
+                }
                 break;
             }
         }

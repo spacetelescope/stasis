@@ -482,7 +482,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
         if (conda_env_create(env_name_testing, ctx.meta.python, NULL)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create release environment\n");
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create testing environment\n");
             exit(1);
         }
     }
