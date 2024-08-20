@@ -269,10 +269,10 @@ int indexer_make_website(struct Delivery *ctx) {
 
             // Converts a markdown file to html
             strcpy(cmd, "pandoc ");
-            strcat(cmd, fullpath_src);
-            strcat(cmd, " ");
+            strcat(cmd, "--standalone ");
             strcat(cmd, "-o ");
             strcat(cmd, fullpath_dest);
+            strcat(cmd, fullpath_src);
             if (globals.verbose) {
                 puts(cmd);
             }

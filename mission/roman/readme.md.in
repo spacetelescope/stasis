@@ -1,49 +1,62 @@
-# {{meta.name}} {{meta.version}}
+# {{ info.release_name }}
 
-Currently, conda is required to manage installation of the environment.
-A fresh installation of Anaconda3 or Miniconda3 is not required for
-each {{meta.name}} release, however.  An existing conda installation may be
-used. The method described here allows for multiple, entirely segregated,
-pipeline installations.
+Conda is required to manage installation of the delivery environment. A fresh installation of {{ conda.installer_name }} is not required for each {{ meta.name }} delivery, however. An existing conda installation may be used. The method described here allows for multiple entirely separate pipeline installations.
 
-A `bash`-compatible shell is required for all steps below. Python
-dependencies are taken directly from PyPI or development repositories as
-needed, so conda's ability to install hybrid conda/pip environments from a
-YAML specification is used. This requires first downloading the
-specification file and then creating the environment with it.
-
-## For existing conda installations:
-
-### Install the pipeline environment
-```
-$ curl -O https://ssb.stsci.edu/releases/{{meta.name}}/{{meta.version}}/latest-linux.yml
-$ conda env create --file latest-linux.yml
-```
-### Activate the pipeline environment
-
-```
-$ conda activate {{info.release_name}}
-```
-
-Each new delivery iteration of the calibration environment will need to be
-installed using the above commands.
+A POSIX-compatible shell (e.g. `bash`) is required for all steps below. Python dependencies are taken directly from PyPI or development repositories as needed, so conda's ability to install hybrid conda/pip environments from a YAML specification is used. This requires first downloading the specification file and then creating the environment with it.
 
 ------
 
-## If conda is not yet installed
+# Installing Conda
 
-If the conda tool is not available on the target system, it will need to be
-installed before the calibration environment can be installed.
-
-### Installing conda
+If conda is not available on the target system, it will need to be installed and configured before the delivery environment can be installed.
 
 For detailed instructions of this step, please visit:
 https://conda.io/projects/conda/en/latest/user-guide/install/index.html
 
-**Miniconda:**
+**{{ conda.installer_name }}:**
 
 ```
-$ wget {{conda.installer_baseurl}}/{{conda.installer_name}}-{{conda.installer_version}}-{{conda.installer_platform}}-{{conda.installer_arch}}.sh
-$ bash {{conda.installer_name}}-{{conda.installer_version}}-{{conda.installer_platform}}-{{conda.installer_arch}}.sh
-$ $HOME/{{conda.installer_name}}/condabin/conda init
+wget {{ conda.installer_baseurl }}/{{ conda.installer_name }}-{{ conda.installer_version }}-{{ conda.installer_platform }}-{{ conda.installer_arch }}.sh
+bash {{ conda.installer_name }}-{{ conda.installer_version }}-{{ conda.installer_platform }}-{{ conda.installer_arch }}.sh
+$HOME/{{ conda.installer_name }}/condabin/conda init
 ```
+
+# Installing {{ meta.name }}
+
+## Option 1: Install this delivery
+
+```
+conda env create \
+    --file https://ssb.stsci.edu/stasis/releases/{{ meta.mission }}/{{ info.build_name }}/delivery/{{ info.release_name }}.yml
+```
+
+### Activate this delivery
+
+```
+conda activate {{ info.release_name }}
+```
+
+## Option 2: Install the latest delivery
+
+**Warning:** The `latest` URL may provide software different than what is presented by the release notes section below!
+
+```
+conda env create \
+    --name {{ meta.name }}-latest-py{{ meta.python_compat }} \
+    --file https://ssb.stsci.edu/stasis/releases/{{ meta.mission }}/{{ info.build_name }}/delivery/latest-py{{ meta.python_compact }}-{{ system.platform }}-{{ system.arch }}.yml
+```
+### Activate the latest delivery
+
+```
+conda activate {{ meta.name }}-latest-py{{ meta.python_compat }}
+```
+
+------
+
+Each new delivery iteration will need to be installed using one of the above commands.
+
+------
+
+# Software Release Notes
+
+{{ func:get_github_release_notes_auto() }}
