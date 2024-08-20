@@ -72,6 +72,7 @@ pushd "$ws"
     retcode=$?
 
     set +x
+    echo "#### Files ####"
     find output
 
     for cond in "${fail_on_indexer[@]}"; do
@@ -79,6 +80,17 @@ pushd "$ws"
             echo "ERROR DETECTED IN INDEX OPERATION!" >&2
             exit 1
         fi
+    done
+
+    echo "#### Contents ####"
+    files=$(find output -type f \( -name '*.html' \) | sort)
+    for x in $files; do
+        echo
+        echo "FILENAME: $x"
+        echo
+        cat "$x"
+        echo "[EOF]"
+        echo
     done
 popd
 
