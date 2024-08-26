@@ -436,8 +436,11 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
                 char *arch = strlist_item(archs, a);
                 int have_combo = 0;
                 for (size_t i = 0; i < nelem; i++) {
-                    if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) && strstr(latest[i]->system.arch, arch)) {
-                        have_combo = 1;
+                    if (latest[i] && latest[i]->system.platform) {
+                        if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
+                            strstr(latest[i]->system.arch, arch)) {
+                            have_combo = 1;
+                        }
                     }
                 }
                 if (!have_combo) {
@@ -513,9 +516,12 @@ int indexer_junitxml_report(struct Delivery ctx[], size_t nelem) {
                 char *arch = strlist_item(archs, a);
                 int have_combo = 0;
                 for (size_t i = 0; i < nelem; i++) {
-                    if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) && strstr(latest[i]->system.arch, arch)) {
-                        have_combo = 1;
-                        break;
+                    if (latest[i] && latest[i]->system.platform) {
+                        if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
+                            strstr(latest[i]->system.arch, arch)) {
+                            have_combo = 1;
+                            break;
+                        }
                     }
                 }
                 if (!have_combo) {
