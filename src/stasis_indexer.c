@@ -119,12 +119,7 @@ int indexer_load_metadata(struct Delivery *ctx, const char *filename) {
         } else if (!strcmp(name, "codename")) {
             ctx->meta.codename = strdup(value);
         } else if (!strcmp(name, "platform")) {
-            ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX, sizeof(*ctx->system.platform));
-            char **platform = split(value, " ", 0);
-            ctx->system.platform[DELIVERY_PLATFORM] = platform[DELIVERY_PLATFORM];
-            ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR] = platform[DELIVERY_PLATFORM_CONDA_SUBDIR];
-            ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER] = platform[DELIVERY_PLATFORM_CONDA_INSTALLER];
-            ctx->system.platform[DELIVERY_PLATFORM_RELEASE] = platform[DELIVERY_PLATFORM_RELEASE];
+            ctx->system.platform = split(value, " ", 0);
         } else if (!strcmp(name, "arch")) {
             ctx->system.arch = strdup(value);
         } else if (!strcmp(name, "time")) {
@@ -238,6 +233,15 @@ int indexer_make_website(struct Delivery *ctx) {
         return 0;
     }
 
+    char *css_filename = calloc(PATH_MAX, sizeof(*css_filename));
+    if (!css_filename) {
+        SYSERROR("unable to allocate string for CSS file path: %s", strerror(errno));
+        return -1;
+    }
+
+    sprintf(css_filename, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
+    int have_css = access(css_filename, F_OK | R_OK) == 0;
+
     struct StrList *dirs = strlist_init();
     strlist_append(&dirs, ctx->storage.delivery_dir);
     strlist_append(&dirs, ctx->storage.results_dir);
@@ -269,7 +273,16 @@ int indexer_make_website(struct Delivery *ctx) {
 
             // Converts a markdown file to html
             strcpy(cmd, "pandoc ");
+            strcat(cmd, "--embed-resources ");
             strcat(cmd, "--standalone ");
+            strcat(cmd, "-f markdown+alerts ");
+            strcat(cmd, "-f markdown+autolink_bare_uris ");
+            if (have_css) {
+                strcat(cmd, "--css ");
+                strcat(cmd, css_filename);
+            }
+            strcat(cmd, " ");
+            strcat(cmd, "--metadata title=\"STASIS\" ");
             strcat(cmd, "-o ");
             strcat(cmd, fullpath_dest);
             strcat(cmd, " ");
