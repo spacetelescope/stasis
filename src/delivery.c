@@ -1789,9 +1789,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 
                 puts(cmd);
                 char runner_cmd[PATH_MAX] = {0};
-                char *full_runtime = conda_runtime_dump(ctx->storage.conda_install_prefix);
-                sprintf(runner_cmd, "%s\nset -x\n%s", full_runtime, cmd);
-                guard_free(full_runtime);
+                sprintf(runner_cmd, "set -x\n%s", cmd);
                 status = shell(&proc, runner_cmd);
                 if (status) {
                     msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);

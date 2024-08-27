@@ -192,5 +192,4 @@ int conda_index(const char *path);
  */
 int pip_index_provides(const char *index_url, const char *name, const char *version);
 
-char *conda_runtime_dump(const char *root);
 #endif //STASIS_CONDA_H

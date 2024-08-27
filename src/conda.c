@@ -178,33 +178,20 @@ int conda_exec(const char *args) {
     return system(command);
 }
 
-char *conda_runtime_dump(const char *root) {
-    const char *init_script_conda = "/etc/profile.d/conda.sh";
-    const char *init_script_mamba = "/etc/profile.d/mamba.sh";
-    int state = 0;
-    char cmd[BUFSIZ] = {0};
-    sprintf(cmd, "source %s%s; source %s%s; env; declare -f", root, init_script_conda, root, init_script_mamba);
-
-    char *output = shell_output(cmd, &state);
-    if (state) {
-        guard_free(output);
-        return NULL;
-    }
-    return output;
-}
-
 int conda_activate(const char *root, const char *env_name) {
     int fd = -1;
     FILE *fp = NULL;
+    const char *init_script_conda = "/etc/profile.d/conda.sh";
+    const char *init_script_mamba = "/etc/profile.d/mamba.sh";
+    char path_conda[PATH_MAX] = {0};
+    char path_mamba[PATH_MAX] = {0};
     char logfile[PATH_MAX] = {0};
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
-    char *full_runtime = conda_runtime_dump(root);
-    if (!full_runtime) {
-        SYSERROR("%s", "Failed to read variables and functions from the runtime environment");
-        return -1;
-    }
+    // Where to find conda's init scripts
+    sprintf(path_conda, "%s%s", root, init_script_conda);
+    sprintf(path_mamba, "%s%s", root, init_script_mamba);
 
     // Set the path to our stdout log
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
@@ -220,10 +207,22 @@ int conda_activate(const char *root, const char *env_name) {
     // Configure our process for output to a log file
     strcpy(proc.f_stdout, logfile);
 
+    // Verify conda's init scripts are available
+    if (access(path_conda, F_OK) < 0) {
+        perror(path_conda);
+        remove(logfile);
+        return -1;
+    }
+
+    if (access(path_mamba, F_OK) < 0) {
+        perror(path_mamba);
+        remove(logfile);
+        return -1;
+    }
+
     // Fully activate conda and record its effect on the runtime environment
     char command[PATH_MAX * 3];
-    snprintf(command, sizeof(command) - 1, "%s\nconda activate %s &>/dev/null\nenv -0\n", full_runtime, env_name);
-    guard_free(full_runtime);
+    snprintf(command, sizeof(command) - 1, "source %s; source %s; conda activate %s &>/dev/null; env -0", path_conda, path_mamba, env_name);
     int retval = shell(&proc, command);
     if (retval) {
         // it didn't work; drop out for cleanup
