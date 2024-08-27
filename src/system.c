@@ -30,7 +30,11 @@ int shell(struct Process *proc, char *args) {
     fprintf(tp, "#!/bin/bash\n%s\n", args);
     fflush(tp);
     fclose(tp);
-    chmod(t_name, 0755);
+
+    // Set the script's permissions so that only the calling user can use it
+    // This should help prevent eavesdropping if keys are applied in plain-text
+    // somewhere.
+    chmod(t_name, 0700);
 
     pid = fork();
     if (pid == -1) {
