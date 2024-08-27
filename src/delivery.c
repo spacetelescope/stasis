@@ -1710,7 +1710,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     } else {
         memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
     }
-    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x\nmamba activate ${CONDA_DEFAULT_ENV} 1>/dev/null 2>/dev/null\nset -x\n");
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x\neval `conda shell.posix reactivate`\nset -x\n");
 
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
@@ -1787,12 +1787,24 @@ void delivery_tests_run(struct Delivery *ctx) {
                     exit(1);
                 }
 
+                FILE *runner_fp;
+                char *runner_filename = xmkstemp(&runner_fp, "w");
+
+                fprintf(runner_fp, "#!/bin/bash\n"
+                                   "eval `conda shell.posix reactivate`\n"
+                                   "set -x\n"
+                                   "%s\n",
+                        cmd);
+                fclose(runner_fp);
+                chmod(runner_filename, 0755);
+
                 puts(cmd);
                 char runner_cmd[PATH_MAX] = {0};
-                sprintf(runner_cmd, "set -x\n%s", cmd);
+                sprintf(runner_cmd, "%s", runner_filename);
                 status = shell(&proc, runner_cmd);
                 if (status) {
                     msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
+                    remove(runner_filename);
                     popd();
                     guard_free(cmd);
                     if (!globals.continue_on_error) {
@@ -1803,6 +1815,8 @@ void delivery_tests_run(struct Delivery *ctx) {
                     COE_CHECK_ABORT(1, "Test failure");
                 }
                 guard_free(cmd);
+                remove(runner_filename);
+                guard_free(runner_filename);
 
                 if (toxconf) {
                     remove(toxconf);
