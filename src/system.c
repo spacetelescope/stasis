@@ -3,8 +3,6 @@
 
 int shell(struct Process *proc, char *args) {
     struct Process selfproc;
-    FILE *fp_out = NULL;
-    FILE *fp_err = NULL;
     pid_t pid;
     pid_t status;
     status = 0;
@@ -32,20 +30,28 @@ int shell(struct Process *proc, char *args) {
     fprintf(tp, "#!/bin/bash\n%s\n", args);
     fflush(tp);
     fclose(tp);
-    chmod(t_name, 0755);
+
+    // Set the script's permissions so that only the calling user can use it
+    // This should help prevent eavesdropping if keys are applied in plain-text
+    // somewhere.
+    chmod(t_name, 0700);
 
     pid = fork();
     if (pid == -1) {
         fprintf(stderr, "fork failed\n");
         exit(1);
     } else if (pid == 0) {
-        int retval;
+        FILE *fp_out = NULL;
+        FILE *fp_err = NULL;
+
         if (strlen(proc->f_stdout)) {
             fp_out = freopen(proc->f_stdout, "w+", stdout);
         }
 
         if (strlen(proc->f_stderr)) {
-            fp_err = freopen(proc->f_stderr, "w+", stderr);
+            if (!proc->redirect_stderr) {
+                fp_err = freopen(proc->f_stderr, "w+", stderr);
+            }
         }
 
         if (proc->redirect_stderr) {
@@ -56,28 +62,7 @@ int shell(struct Process *proc, char *args) {
             dup2(fileno(stdout), fileno(stderr));
         }
 
-        retval = execl("/bin/bash", "bash", "-c", t_name, (char *) NULL);
-        if (!access(t_name, F_OK)) {
-            remove(t_name);
-        }
-
-        if (strlen(proc->f_stdout)) {
-            if (fp_out != NULL) {
-                fflush(fp_out);
-                fclose(fp_out);
-            }
-            fflush(stdout);
-            fclose(stdout);
-        }
-        if (strlen(proc->f_stderr)) {
-            if (fp_err) {
-                fflush(fp_err);
-                fclose(fp_err);
-            }
-            fflush(stderr);
-            fclose(stderr);
-        }
-        return retval;
+        return execl("/bin/bash", "bash", "--norc", t_name, (char *) NULL);
     } else {
         if (waitpid(pid, &status, WUNTRACED) > 0) {
             if (WIFEXITED(status) && WEXITSTATUS(status)) {
