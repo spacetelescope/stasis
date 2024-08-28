@@ -1710,7 +1710,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     } else {
         memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
     }
-    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x\neval `conda shell.posix reactivate`\nset -x\n");
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nmamba activate ${CONDA_ENV_DEFAULT}\n");
 
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
@@ -1773,7 +1773,6 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
 
                 // enable trace mode before executing each test script
-
                 strcpy(cmd, ctx->tests[i].script);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
@@ -1789,7 +1788,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 
                 puts(cmd);
                 char runner_cmd[0xFFFF] = {0};
-                sprintf(runner_cmd, "source %s/etc/profile.d/conda.sh\nsource %s/etc/profile.d/mamba.sh\nmamba activate ${CONDA_ENV_DEFAULT}\nset -x\n%s",
+                sprintf(runner_cmd, "set +x\nsource %s/etc/profile.d/conda.sh\nsource %s/etc/profile.d/mamba.sh\nmamba activate ${CONDA_ENV_DEFAULT}\n\n%s\n",
                     ctx->storage.conda_install_prefix,
 		    ctx->storage.conda_install_prefix,
 		    cmd);
