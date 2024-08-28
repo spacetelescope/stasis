@@ -763,6 +763,7 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
         }
+    }
 
     char stasis_sysconfdir_tmp[PATH_MAX];
     if (getenv("STASIS_SYSCONFDIR")) {
