@@ -224,6 +224,56 @@ struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     return result;
 }
 
+int get_pandoc_version(size_t *result) {
+    *result = 0;
+    int state = 0;
+    char *version_str = shell_output("pandoc --version", &state);
+    if (state || !version_str) {
+        // an error occurred
+        return -1;
+    }
+
+    // Verify that we're looking at pandoc
+    if (strlen(version_str) > 7 && !strncmp(version_str, "pandoc ", 7)) {
+        // we have pandoc
+        char *v_begin = &version_str[7];
+        if (!v_begin) {
+            SYSERROR("unexpected pandoc output: %s", version_str);
+            return -1;
+        }
+        char *v_end = strchr(version_str, '\n');
+        if (v_end) {
+            *v_end = 0;
+        }
+
+        char **parts = split(v_begin, ".", 0);
+        if (!parts) {
+            SYSERROR("unable to split pandoc version string, '%s': %s", version_str, strerror(errno));
+            return -1;
+        }
+
+        size_t parts_total;
+        for (parts_total = 0; parts[parts_total] != NULL; parts_total++);
+
+        // generate the version as an integer
+        // note: pandoc version scheme never exceeds four elements (or bytes in this case)
+        for (size_t i = 0; i < 4; i++) {
+            unsigned char tmp = 0;
+            if (i < parts_total) {
+                // only process version elements we have. the rest will be zeros.
+                tmp = strtoul(parts[i], NULL, 10);
+            }
+            // pack version element into result
+            *result = (*result << 8) | tmp;
+        }
+    } else {
+        // invalid version string
+        return 1;
+    }
+
+    return 0;
+}
+
 int indexer_make_website(struct Delivery *ctx) {
     char cmd[PATH_MAX];
     const char *pattern = "*.md";
@@ -241,6 +291,34 @@ int indexer_make_website(struct Delivery *ctx) {
 
     sprintf(css_filename, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
     int have_css = access(css_filename, F_OK | R_OK) == 0;
+
+    char pandoc_versioned_args[255] = {0};
+    size_t pandoc_version = 0;
+
+    if (!get_pandoc_version(&pandoc_version)) {
+        // < 2.19
+        if (pandoc_version < 0x02130000) {
+            strcat(pandoc_versioned_args, "--self-contained ");
+        } else {
+            // >= 2.19
+            strcat(pandoc_versioned_args, "--embed-resources ");
+        }
+
+        // >= 1.15.0.4
+        if (pandoc_version >= 0x010f0004) {
+            strcat(pandoc_versioned_args, "--standalone ");
+        }
+
+        // >= 1.10.0.1
+        if (pandoc_version >= 0x010a0001) {
+            strcat(cmd, "-f markdown+autolink_bare_uris ");
+        }
+
+        // >= 3.1.10
+        if (pandoc_version >= 0x03010a00) {
+            strcat(cmd, "-f markdown+alerts ");
+        }
+    }
 
     struct StrList *dirs = strlist_init();
     strlist_append(&dirs, ctx->storage.delivery_dir);
@@ -273,7 +351,7 @@ int indexer_make_website(struct Delivery *ctx) {
 
             // Converts a markdown file to html
             strcpy(cmd, "pandoc ");
-            strcat(cmd, "--embed-resources ");
+            strcat(cmd, pandoc_versioned_args);
             strcat(cmd, "--standalone ");
             strcat(cmd, "-f markdown+alerts ");
             strcat(cmd, "-f markdown+autolink_bare_uris ");
