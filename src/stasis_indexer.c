@@ -352,9 +352,6 @@ int indexer_make_website(struct Delivery *ctx) {
             // Converts a markdown file to html
             strcpy(cmd, "pandoc ");
             strcat(cmd, pandoc_versioned_args);
-            strcat(cmd, "--standalone ");
-            strcat(cmd, "-f markdown+alerts ");
-            strcat(cmd, "-f markdown+autolink_bare_uris ");
             if (have_css) {
                 strcat(cmd, "--css ");
                 strcat(cmd, css_filename);
@@ -760,6 +757,9 @@ int main(int argc, char *argv[]) {
         for (size_t i = 0; i < rootdirs_total; i++) {
             if (isempty(rootdirs[i]) || !strcmp(rootdirs[i], "/") || !strcmp(rootdirs[i], "\\")) {
                 SYSERROR("Unsafe directory: %s", rootdirs[i]);
+                exit(1);
+            } else if (access(rootdirs[i], F_OK)) {
+                SYSERROR("%s: %s", rootdirs[i], strerror(errno));
                 exit(1);
             }
         }
