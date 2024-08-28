@@ -119,12 +119,7 @@ int indexer_load_metadata(struct Delivery *ctx, const char *filename) {
         } else if (!strcmp(name, "codename")) {
             ctx->meta.codename = strdup(value);
         } else if (!strcmp(name, "platform")) {
-            ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX, sizeof(*ctx->system.platform));
-            char **platform = split(value, " ", 0);
-            ctx->system.platform[DELIVERY_PLATFORM] = platform[DELIVERY_PLATFORM];
-            ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR] = platform[DELIVERY_PLATFORM_CONDA_SUBDIR];
-            ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER] = platform[DELIVERY_PLATFORM_CONDA_INSTALLER];
-            ctx->system.platform[DELIVERY_PLATFORM_RELEASE] = platform[DELIVERY_PLATFORM_RELEASE];
+            ctx->system.platform = split(value, " ", 0);
         } else if (!strcmp(name, "arch")) {
             ctx->system.arch = strdup(value);
         } else if (!strcmp(name, "time")) {
@@ -229,6 +224,56 @@ struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     return result;
 }
 
+int get_pandoc_version(size_t *result) {
+    *result = 0;
+    int state = 0;
+    char *version_str = shell_output("pandoc --version", &state);
+    if (state || !version_str) {
+        // an error occurred
+        return -1;
+    }
+
+    // Verify that we're looking at pandoc
+    if (strlen(version_str) > 7 && !strncmp(version_str, "pandoc ", 7)) {
+        // we have pandoc
+        char *v_begin = &version_str[7];
+        if (!v_begin) {
+            SYSERROR("unexpected pandoc output: %s", version_str);
+            return -1;
+        }
+        char *v_end = strchr(version_str, '\n');
+        if (v_end) {
+            *v_end = 0;
+        }
+
+        char **parts = split(v_begin, ".", 0);
+        if (!parts) {
+            SYSERROR("unable to split pandoc version string, '%s': %s", version_str, strerror(errno));
+            return -1;
+        }
+
+        size_t parts_total;
+        for (parts_total = 0; parts[parts_total] != NULL; parts_total++);
+
+        // generate the version as an integer
+        // note: pandoc version scheme never exceeds four elements (or bytes in this case)
+        for (size_t i = 0; i < 4; i++) {
+            unsigned char tmp = 0;
+            if (i < parts_total) {
+                // only process version elements we have. the rest will be zeros.
+                tmp = strtoul(parts[i], NULL, 10);
+            }
+            // pack version element into result
+            *result = (*result << 8) | tmp;
+        }
+    } else {
+        // invalid version string
+        return 1;
+    }
+
+    return 0;
+}
+
 int indexer_make_website(struct Delivery *ctx) {
     char cmd[PATH_MAX];
     const char *pattern = "*.md";
@@ -236,6 +281,43 @@ int indexer_make_website(struct Delivery *ctx) {
     if (!find_program("pandoc")) {
         fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
         return 0;
+    }
+
+    char *css_filename = calloc(PATH_MAX, sizeof(*css_filename));
+    if (!css_filename) {
+        SYSERROR("unable to allocate string for CSS file path: %s", strerror(errno));
+        return -1;
+    }
+
+    sprintf(css_filename, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
+    int have_css = access(css_filename, F_OK | R_OK) == 0;
+
+    char pandoc_versioned_args[255] = {0};
+    size_t pandoc_version = 0;
+
+    if (!get_pandoc_version(&pandoc_version)) {
+        // < 2.19
+        if (pandoc_version < 0x02130000) {
+            strcat(pandoc_versioned_args, "--self-contained ");
+        } else {
+            // >= 2.19
+            strcat(pandoc_versioned_args, "--embed-resources ");
+        }
+
+        // >= 1.15.0.4
+        if (pandoc_version >= 0x010f0004) {
+            strcat(pandoc_versioned_args, "--standalone ");
+        }
+
+        // >= 1.10.0.1
+        if (pandoc_version >= 0x010a0001) {
+            strcat(cmd, "-f markdown+autolink_bare_uris ");
+        }
+
+        // >= 3.1.10
+        if (pandoc_version >= 0x03010a00) {
+            strcat(cmd, "-f markdown+alerts ");
+        }
     }
 
     struct StrList *dirs = strlist_init();
@@ -269,7 +351,13 @@ int indexer_make_website(struct Delivery *ctx) {
 
             // Converts a markdown file to html
             strcpy(cmd, "pandoc ");
-            strcat(cmd, "--standalone ");
+            strcat(cmd, pandoc_versioned_args);
+            if (have_css) {
+                strcat(cmd, "--css ");
+                strcat(cmd, css_filename);
+            }
+            strcat(cmd, " ");
+            strcat(cmd, "--metadata title=\"STASIS\" ");
             strcat(cmd, "-o ");
             strcat(cmd, fullpath_dest);
             strcat(cmd, " ");
@@ -423,8 +511,11 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
                 char *arch = strlist_item(archs, a);
                 int have_combo = 0;
                 for (size_t i = 0; i < nelem; i++) {
-                    if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) && strstr(latest[i]->system.arch, arch)) {
-                        have_combo = 1;
+                    if (latest[i] && latest[i]->system.platform) {
+                        if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
+                            strstr(latest[i]->system.arch, arch)) {
+                            have_combo = 1;
+                        }
                     }
                 }
                 if (!have_combo) {
@@ -500,9 +591,12 @@ int indexer_junitxml_report(struct Delivery ctx[], size_t nelem) {
                 char *arch = strlist_item(archs, a);
                 int have_combo = 0;
                 for (size_t i = 0; i < nelem; i++) {
-                    if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) && strstr(latest[i]->system.arch, arch)) {
-                        have_combo = 1;
-                        break;
+                    if (latest[i] && latest[i]->system.platform) {
+                        if (strstr(latest[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
+                            strstr(latest[i]->system.arch, arch)) {
+                            have_combo = 1;
+                            break;
+                        }
                     }
                 }
                 if (!have_combo) {
@@ -664,8 +758,24 @@ int main(int argc, char *argv[]) {
             if (isempty(rootdirs[i]) || !strcmp(rootdirs[i], "/") || !strcmp(rootdirs[i], "\\")) {
                 SYSERROR("Unsafe directory: %s", rootdirs[i]);
                 exit(1);
+            } else if (access(rootdirs[i], F_OK)) {
+                SYSERROR("%s: %s", rootdirs[i], strerror(errno));
+                exit(1);
             }
         }
+    }
+
+    char stasis_sysconfdir_tmp[PATH_MAX];
+    if (getenv("STASIS_SYSCONFDIR")) {
+        strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp) - 1);
+    } else {
+        strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
+    }
+
+    globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
+    if (!globals.sysconfdir) {
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to resolve path to configuration directory: %s\n", stasis_sysconfdir_tmp);
+        exit(1);
     }
 
     char *workdir;
