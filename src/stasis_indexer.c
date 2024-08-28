@@ -763,6 +763,18 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
         }
+
+    char stasis_sysconfdir_tmp[PATH_MAX];
+    if (getenv("STASIS_SYSCONFDIR")) {
+        strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp) - 1);
+    } else {
+        strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
+    }
+
+    globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
+    if (!globals.sysconfdir) {
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to resolve path to configuration directory: %s\n", stasis_sysconfdir_tmp);
+        exit(1);
     }
 
     char *workdir;
