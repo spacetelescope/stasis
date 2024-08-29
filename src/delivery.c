@@ -1788,7 +1788,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 
                 puts(cmd);
                 char runner_cmd[0xFFFF] = {0};
-                sprintf(runner_cmd, "set +x\nsource %s/etc/profile.d/conda.sh\nsource %s/etc/profile.d/mamba.sh\nmamba activate ${CONDA_ENV_DEFAULT}\n\n%s\n",
+                sprintf(runner_cmd, "set +x\nsource %s/etc/profile.d/conda.sh\nsource %s/etc/profile.d/mamba.sh\n\nmamba activate ${CONDA_DEFAULT_ENV}\n\n%s\n",
                     ctx->storage.conda_install_prefix,
 		    ctx->storage.conda_install_prefix,
 		    cmd);
