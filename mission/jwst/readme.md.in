@@ -42,13 +42,13 @@ conda activate {{ info.release_name }}
 
 ```
 conda env create \
-    --name {{ meta.name }}-latest-py{{ meta.python_compat }} \
+    --name {{ meta.name }}-latest-py{{ meta.python_compact }} \
     --file https://ssb.stsci.edu/stasis/releases/{{ meta.mission }}/{{ info.build_name }}/delivery/latest-py{{ meta.python_compact }}-{{ system.platform }}-{{ system.arch }}.yml
 ```
 ### Activate the latest delivery
 
 ```
-conda activate {{ meta.name }}-latest-py{{ meta.python_compat }}
+conda activate {{ meta.name }}-latest-py{{ meta.python_compact }}
 ```
 
 ------
