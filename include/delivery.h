@@ -149,7 +149,10 @@ struct Delivery {
         char *name;                     ///< Name of package
         char *version;                  ///< Version of package
         char *repository;               ///< Git repository of package
+        char *script_setup;             ///< Commands to execute before the main script
         char *script;                   ///< Commands to execute
+        bool disable;                   ///< Toggle a test block
+        bool parallel;                  ///< Toggle parallel or serial execution
         char *build_recipe;             ///< Conda recipe to build (optional)
         char *repository_info_ref;      ///< Git commit hash
         char *repository_info_tag;      ///< Git tag (first parent)

@@ -2,6 +2,7 @@
 
 #include <fnmatch.h>
 #include "core.h"
+#include "multiprocessing.h"
 
 extern struct STASIS_GLOBAL globals;
 
@@ -560,7 +561,13 @@ static int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
 
             test->version = ini_getval_str(ini, section_name, "version", render_mode, &err);
             test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err);
+            test->script_setup = ini_getval_str(ini, section_name, "script_setup", INI_READ_RAW, &err);
             test->script = ini_getval_str(ini, section_name, "script", INI_READ_RAW, &err);
+            test->disable = ini_getval_bool(ini, section_name, "disable", render_mode, &err);
+            test->parallel = ini_getval_bool(ini, section_name, "parallel", render_mode, &err);
+            if (err) {
+                test->parallel = true;
+            }
             test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
             test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
             test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
@@ -1702,6 +1709,9 @@ int delivery_index_conda_artifacts(struct Delivery *ctx) {
 }
 
 void delivery_tests_run(struct Delivery *ctx) {
+    struct MultiProcessingPool *pool_parallel;
+    struct MultiProcessingPool *pool_serial;
+    struct MultiProcessingPool *pool_setup;
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
@@ -1715,20 +1725,40 @@ void delivery_tests_run(struct Delivery *ctx) {
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
+        pool_parallel = mp_pool_init("parallel", ctx->storage.tmpdir);
+        if (!pool_parallel) {
+            perror("mp_pool_init/parallel");
+            exit(1);
+        }
+        
+        pool_serial = mp_pool_init("serial", ctx->storage.tmpdir);
+        if (!pool_serial) {
+            perror("mp_pool_init/serial");
+            exit(1);
+        }
+
+        pool_setup = mp_pool_init("setup", ctx->storage.tmpdir);
+        if (!pool_setup) {
+            perror("mp_pool_init/setup");
+            exit(1);
+        }
+
+        const char *runner_cmd_fmt = "set -e -x\n%s\n";
         for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-            if (!ctx->tests[i].name && !ctx->tests[i].repository && !ctx->tests[i].script) {
+            struct Test *test = &ctx->tests[i];
+            if (!test->name && !test->repository && !test->script) {
                 // skip unused test records
                 continue;
             }
-            msg(STASIS_MSG_L2, "Executing tests for %s %s\n", ctx->tests[i].name, ctx->tests[i].version);
-            if (!ctx->tests[i].script || !strlen(ctx->tests[i].script)) {
+            msg(STASIS_MSG_L2, "Executing tests for %s %s\n", test->name, test->version);
+            if (!test->script || !strlen(test->script)) {
                 msg(STASIS_MSG_WARN | STASIS_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
-                    ctx->tests[i].name);
+                    test->name);
                 continue;
             }
 
             char destdir[PATH_MAX];
-            sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(ctx->tests[i].repository));
+            sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
 
             if (!access(destdir, F_OK)) {
                 msg(STASIS_MSG_L3, "Purging repository %s\n", destdir);
@@ -1736,44 +1766,31 @@ void delivery_tests_run(struct Delivery *ctx) {
                     COE_CHECK_ABORT(1, "Unable to remove repository\n");
                 }
             }
-            msg(STASIS_MSG_L3, "Cloning repository %s\n", ctx->tests[i].repository);
-            if (!git_clone(&proc, ctx->tests[i].repository, destdir, ctx->tests[i].version)) {
-                ctx->tests[i].repository_info_tag = strdup(git_describe(destdir));
-                ctx->tests[i].repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
+            msg(STASIS_MSG_L3, "Cloning repository %s\n", test->repository);
+            if (!git_clone(&proc, test->repository, destdir, test->version)) {
+                test->repository_info_tag = strdup(git_describe(destdir));
+                test->repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
             } else {
                 COE_CHECK_ABORT(1, "Unable to clone repository\n");
             }
 
-            if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
-                filter_repo_tags(destdir, ctx->tests[i].repository_remove_tags);
+            if (test->repository_remove_tags && strlist_count(test->repository_remove_tags)) {
+                filter_repo_tags(destdir, test->repository_remove_tags);
             }
 
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
             } else {
-#if 1
-                int status;
-                char *cmd = calloc(strlen(ctx->tests[i].script) + STASIS_BUFSIZ, sizeof(*cmd));
-
-                msg(STASIS_MSG_L3, "Testing %s\n", ctx->tests[i].name);
-                memset(&proc, 0, sizeof(proc));
-
-                // Apply workaround for tox positional arguments
-                char *toxconf = NULL;
-                if (!access("tox.ini", F_OK)) {
-                    if (!fix_tox_conf("tox.ini", &toxconf)) {
-                        msg(STASIS_MSG_L3, "Fixing tox positional arguments\n");
-                        if (!globals.workaround.tox_posargs) {
-                            globals.workaround.tox_posargs = calloc(PATH_MAX, sizeof(*globals.workaround.tox_posargs));
-                        } else {
-                            memset(globals.workaround.tox_posargs, 0, PATH_MAX);
-                        }
-                        snprintf(globals.workaround.tox_posargs, PATH_MAX - 1, "-c %s --root .", toxconf);
-                    }
+                char *cmd = calloc(strlen(test->script) + STASIS_BUFSIZ, sizeof(*cmd));
+                if (!cmd) {
+                    SYSERROR("Unable to allocate test script buffer: %s", strerror(errno));
+                    exit(1);
                 }
 
-                // enable trace mode before executing each test script
-                strcpy(cmd, ctx->tests[i].script);
+                msg(STASIS_MSG_L3, "Testing %s\n", test->name);
+                memset(&proc, 0, sizeof(proc));
+
+                strcpy(cmd, test->script);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
@@ -1786,35 +1803,109 @@ void delivery_tests_run(struct Delivery *ctx) {
                     exit(1);
                 }
 
-                puts(cmd);
-                char runner_cmd[0xFFFF] = {0};
-                sprintf(runner_cmd, "set +x\nsource %s/etc/profile.d/conda.sh\nsource %s/etc/profile.d/mamba.sh\n\nmamba activate ${CONDA_DEFAULT_ENV}\n\n%s\n",
-                    ctx->storage.conda_install_prefix,
-		    ctx->storage.conda_install_prefix,
-		    cmd);
-                status = shell(&proc, runner_cmd);
-                if (status) {
-                    msg(STASIS_MSG_ERROR, "Script failure: %s\n%s\n\nExit code: %d\n", ctx->tests[i].name, ctx->tests[i].script, status);
-                    popd();
+                if (test->disable) {
+                    msg(STASIS_MSG_L2, "Script execution disabled by configuration\n", test->name);
                     guard_free(cmd);
+                    continue;
+                }
+
+                char runner_cmd[0xFFFF] = {0};
+                char pool_name[100] = "parallel";
+                struct MultiProcessingTask *task = NULL;
+                struct MultiProcessingPool *pool = pool_parallel;
+                if (!test->parallel) {
+                    pool = pool_serial;
+                    memset(pool_name, 0, sizeof(pool_name));
+                    strcpy(pool_name, "serial");
+                }
+
+                sprintf(runner_cmd, runner_cmd_fmt, cmd);
+                task = mp_task(pool, test->name, runner_cmd);
+                if (!task) {
+                    SYSERROR("Failed to add task to %s pool: %s", pool_name, runner_cmd);
+                    popd();
                     if (!globals.continue_on_error) {
                         tpl_free();
                         delivery_free(ctx);
                         globals_free();
                     }
-                    COE_CHECK_ABORT(1, "Test failure");
+                    exit(1);
                 }
                 guard_free(cmd);
-
-                if (toxconf) {
-                    remove(toxconf);
-                    guard_free(toxconf);
-                }
                 popd();
-#else
-                msg(STASIS_MSG_WARNING | STASIS_MSG_L3, "TESTING DISABLED BY CODE!\n");
-#endif
+
             }
+        }
+
+        // Configure "script_setup" tasks
+        // Directories should exist now, so no need to go through initializing everything all over again.
+        for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+            struct Test *test = &ctx->tests[i];
+            if (test->script_setup) {
+                char destdir[PATH_MAX];
+                sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
+                if (access(destdir, F_OK)) {
+                    SYSERROR("%s: %s", destdir, strerror(errno));
+                    exit(1);
+                }
+                if (!pushd(destdir)) {
+                    char *cmd = calloc(strlen(test->script_setup) + STASIS_BUFSIZ, sizeof(*cmd));
+                    if (!cmd) {
+                        SYSERROR("Unable to allocate test script_setup buffer: %s", strerror(errno));
+                        exit(1);
+                    }
+
+                    strcpy(cmd, test->script_setup);
+                    char *cmd_rendered = tpl_render(cmd);
+                    if (cmd_rendered) {
+                        if (strcmp(cmd_rendered, cmd) != 0) {
+                            strcpy(cmd, cmd_rendered);
+                            cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
+                        }
+                        guard_free(cmd_rendered);
+                    } else {
+                        SYSERROR("An error occurred while rendering the following:\n%s", cmd);
+                        exit(1);
+                    }
+
+                    struct MultiProcessingPool *pool = pool_setup;
+                    struct MultiProcessingTask *task = NULL;
+                    char runner_cmd[0xFFFF] = {0};
+                    sprintf(runner_cmd, runner_cmd_fmt, cmd);
+
+                    task = mp_task(pool, test->name, runner_cmd);
+                    if (!task) {
+                        SYSERROR("Failed to add task %s to setup pool: %s", test->name, runner_cmd);
+                        popd();
+                        if (!globals.continue_on_error) {
+                            tpl_free();
+                            delivery_free(ctx);
+                            globals_free();
+                        }
+                        exit(1);
+                    }
+                    guard_free(cmd);
+                    popd();
+                }
+            }
+        }
+
+        size_t opt_flags = 0;
+        opt_flags |= globals.parallel_fail_fast;
+
+        if (pool_setup->num_used) {
+            COE_CHECK_ABORT(mp_pool_join(pool_setup, 1, opt_flags) != 0, "Failure in setup task pool");
+            mp_pool_free(&pool_setup);
+        }
+
+        if (pool_parallel->num_used) {
+            COE_CHECK_ABORT(mp_pool_join(pool_parallel, globals.cpu_limit, opt_flags) != 0, "Failure in parallel task pool");
+            mp_pool_free(&pool_parallel);
+        }
+
+        if (pool_serial->num_used) {
+            COE_CHECK_ABORT(mp_pool_join(pool_serial, 1, opt_flags) != 0, "Failure in serial task pool");
+            mp_pool_free(&pool_serial);
         }
     }
 }

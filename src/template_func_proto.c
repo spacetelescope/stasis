@@ -110,3 +110,40 @@ int get_basetemp_dir_entrypoint(void *frame, void *data_out) {
 
     return result;
 }
+
+int tox_run_entrypoint(void *frame, void *data_out) {
+    char **output = (char **) data_out;
+    struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
+    const struct Delivery *ctx = (const struct Delivery *) f->data_in;
+
+    // Apply workaround for tox positional arguments
+    char *toxconf = NULL;
+    if (!access("tox.ini", F_OK)) {
+        if (!fix_tox_conf("tox.ini", &toxconf)) {
+            msg(STASIS_MSG_L3, "Fixing tox positional arguments\n");
+            *output = calloc(STASIS_BUFSIZ, sizeof(**output));
+            if (!*output) {
+                return -1;
+            }
+            char *basetemp_path = NULL;
+            if (get_basetemp_dir_entrypoint(f, &basetemp_path)) {
+                return -2;
+            }
+            char *jxml_path = NULL;
+            if (get_junitxml_file_entrypoint(f, &jxml_path)) {
+                return -3;
+            }
+            const char *tox_target = f->argv[0].t_char_ptr;
+            const char *pytest_args = f->argv[1].t_char_ptr;
+            if (isempty(toxconf) || !strcmp(toxconf, "/")) {
+                SYSERROR("Unsafe toxconf path: '%s'", toxconf);
+                return -4;
+            }
+            snprintf(*output, STASIS_BUFSIZ - 1, "\npip install tox && (tox -e py%s%s -c %s --root . -- --basetemp=\"%s\" --junitxml=\"%s\" %s ; rm -f '%s')\n", ctx->meta.python_compact, tox_target, toxconf, basetemp_path, jxml_path, pytest_args ? pytest_args : "", toxconf);
+
+            guard_free(jxml_path);
+            guard_free(basetemp_path);
+        }
+    }
+    return 0;
+}

@@ -12,15 +12,18 @@
 #define OPT_NO_TESTING 1004
 #define OPT_OVERWRITE 1005
 #define OPT_NO_REWRITE_SPEC_STAGE_2 1006
+#define OPT_PARALLEL_FAIL_FAST 1007
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
         {"continue-on-error", no_argument, 0, 'C'},
         {"config", required_argument, 0, 'c'},
+        {"cpu-limit", required_argument, 0, 'l'},
         {"python", required_argument, 0, 'p'},
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
         {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
+        {"parallel-fail-fast", no_argument, 0, OPT_PARALLEL_FAIL_FAST},
         {"overwrite", no_argument, 0, OPT_OVERWRITE},
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
@@ -35,10 +38,12 @@ const char *long_options_help[] = {
         "Display program version",
         "Allow tests to fail",
         "Read configuration file",
+        "Number of processes to spawn concurrently (default: cpus - 1)",
         "Override version of Python in configuration",
         "Increase output verbosity",
         "Disable line buffering",
         "Update conda installation prior to STASIS environment creation",
+        "On test error, terminate all concurrent tasks",
         "Overwrite an existing release",
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
@@ -201,6 +206,13 @@ static void check_requirements(struct Delivery *ctx) {
 }
 
 int main(int argc, char *argv[]) {
+    /*
+    extern int exmain(int argc, char *argv[]);
+    exmain(argc, argv);
+    printf("ending program\n");
+    exit(0);
+     */
+
     struct Delivery ctx;
     struct Process proc = {
             .f_stdout = "",
@@ -214,6 +226,10 @@ int main(int argc, char *argv[]) {
     char installer_url[PATH_MAX];
     char python_override_version[STASIS_NAME_MAX];
     int user_disabled_docker = false;
+    globals.cpu_limit = get_cpu_count();
+    if (globals.cpu_limit > 1) {
+        globals.cpu_limit--;
+    }
 
     memset(env_name, 0, sizeof(env_name));
     memset(env_name_testing, 0, sizeof(env_name_testing));
@@ -241,8 +257,17 @@ int main(int argc, char *argv[]) {
             case 'p':
                 strcpy(python_override_version, optarg);
                 break;
+            case 'l':
+                globals.cpu_limit = strtol(optarg, NULL, 10);
+                if (globals.cpu_limit < 1) {
+                    globals.cpu_limit = 1;
+                }
+                break;
             case OPT_ALWAYS_UPDATE_BASE:
                 globals.always_update_base_environment = true;
+                break;
+            case OPT_PARALLEL_FAIL_FAST:
+                globals.parallel_fail_fast = true;
                 break;
             case 'U':
                 setenv("PYTHONUNBUFFERED", "1", 1);
@@ -327,7 +352,6 @@ int main(int argc, char *argv[]) {
     tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
     tpl_register("deploy.jfrog.url", &globals.jfrog.url);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
-    tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
     tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
 
     // Expose function(s) to the template engine
@@ -336,6 +360,7 @@ int main(int argc, char *argv[]) {
     tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, &ctx);
     tpl_register_func("junitxml_file", &get_junitxml_file_entrypoint, 1, &ctx);
     tpl_register_func("basetemp_dir", &get_basetemp_dir_entrypoint, 1, &ctx);
+    tpl_register_func("tox_run", &tox_run_entrypoint, 2, &ctx);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR

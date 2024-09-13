@@ -117,6 +117,8 @@ Create some test cases for packages.
 [test:our_cool_program]
 version = 1.2.3
 repository = https://github.com/org/our_cool_program
+script_setup =
+    pip install -e '.[test]'
 script =
     pytest -fEsx \
         --basetemp="{{ func:basetemp_dir() }}" \
@@ -126,6 +128,8 @@ script =
 [test:our_other_cool_program]
 version = 4.5.6
 repository = https://github.com/org/our_other_cool_program
+script_setup =
+    pip install -e '.[test]'
 script =
     pytest -fEsx \
         --basetemp="{{ func:basetemp_dir() }}" \
@@ -143,22 +147,24 @@ stasis mydelivery.ini
 
 ## Command Line Options
 
-| Long Option         | Short Option | Purpose                                                        |
-|:--------------------|:------------:|:---------------------------------------------------------------|
-| --help              |      -h      | Display usage statement                                        |
-| --version           |      -V      | Display program version                                        |
-| --continue-on-error |      -C      | Allow tests to fail                                            |
-| --config ARG        |    -c ARG    | Read STASIS configuration file                                 |
-| --python ARG        |    -p ARG    | Override version of Python in configuration                    |
-| --verbose           |      -v      | Increase output verbosity                                      |
-| --unbuffered        |      -U      | Disable line buffering                                         |
-| --update-base       |     n/a      | Update conda installation prior to STATIS environment creation |
-| --overwrite         |     n/a      | Overwrite an existing release                                  |
-| --no-docker         |     n/a      | Do not build docker images                                     |
-| --no-artifactory    |     n/a      | Do not upload artifacts to Artifactory                         |
-| --no-testing        |     n/a      | Do not execute test scripts                                    |
-| --no-rewrite        |     n/a      | Do not rewrite paths and URLs in output files                  |
-| DELIVERY_FILE       |     n/a      | STASIS delivery file                                           |
+| Long Option          | Short Option | Purpose                                                        |
+|:---------------------|:------------:|:---------------------------------------------------------------|
+| --help               |      -h      | Display usage statement                                        |
+| --version            |      -V      | Display program version                                        |
+| --continue-on-error  |      -C      | Allow tests to fail                                            |
+| --config ARG         |    -c ARG    | Read STASIS configuration file                                 |
+| --cpu-limit ARG      |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |
+| --python ARG         |    -p ARG    | Override version of Python in configuration                    |
+| --verbose            |      -v      | Increase output verbosity                                      |
+| --unbuffered         |      -U      | Disable line buffering                                         |
+| --update-base        |     n/a      | Update conda installation prior to STATIS environment creation |
+| --parallel-fail-fast |     n/a      | On test error, terminate all concurrent tasks                  |
+| --overwrite          |     n/a      | Overwrite an existing release                                  |
+| --no-docker          |     n/a      | Do not build docker images                                     |
+| --no-artifactory     |     n/a      | Do not upload artifacts to Artifactory                         |
+| --no-testing         |     n/a      | Do not execute test scripts                                    |
+| --no-rewrite         |     n/a      | Do not rewrite paths and URLs in output files                  |
+| DELIVERY_FILE        |     n/a      | STASIS delivery file                                           |
 
 ## Environment variables
 
@@ -259,13 +265,16 @@ Environment variables exported are _global_ to all programs executed by stasis. 
 
 Sections starting with `test:` will be used during the testing phase of the stasis pipeline. Where the value of `name` following the colon is an arbitrary value, and only used for reporting which test-run is executing. Section names must be unique.
 
-| Key          | Type   | Purpose                                               | Required |
-|--------------|--------|-------------------------------------------------------|----------|
-| build_recipe | String | Git repository path to package's conda recipe         | N        |
-| repository   | String | Git repository path or URL to clone                   | Y        |
-| version      | String | Git commit or tag to check out                        | Y        |
-| runtime      | List   | Export environment variables specific to test context | Y        |
-| script       | List   | Body of a shell script that will execute the tests    | Y        |
+| Key          | Type    | Purpose                                                     | Required |
+|--------------|---------|-------------------------------------------------------------|----------|
+| disable      | Boolean | Disable `script` execution (`script_setup` always executes) | N        |
+| parallel     | Boolean | Execute test block in parallel (default) or sequentially    | N        |
+| build_recipe | String  | Git repository path to package's conda recipe               | N        |
+| repository   | String  | Git repository path or URL to clone                         | Y        |
+| version      | String  | Git commit or tag to check out                              | Y        |
+| runtime      | List    | Export environment variables specific to test context       | Y        |
+| script_setup | List    | Body of a shell script that will install dependencies       | N        |
+| script       | List    | Body of a shell script that will execute the tests          | Y        |
 
 ### deploy:artifactory:_name_
 
