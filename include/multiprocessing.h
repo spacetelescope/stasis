@@ -2,27 +2,20 @@
 #ifndef STASIS_MULTIPROCESSING_H
 #define STASIS_MULTIPROCESSING_H
 
-#include <stdio.h>
-#include <unistd.h>
+#include "core.h"
 #include <sys/wait.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
 #include <semaphore.h>
 #include <sys/mman.h>
-#include <time.h>
 #include <fcntl.h>
-#include <linux/limits.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 struct MultiProcessingTask {
     sem_t *gate; ///< Child process startup lock
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status
-    char ident[NAME_MAX]; ///< Identity of the pool task
-    char log_file[NAME_MAX]; ///< Path to stdout/stderr log file
+    char ident[255]; ///< Identity of the pool task
+    char log_file[255]; ///< Path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task
 };
 
