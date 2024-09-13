@@ -276,7 +276,7 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
     }
 
     //pool = malloc(1 * sizeof(*pool));
-    pool = mmap(NULL, sizeof(*pool), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+    pool = mmap(NULL, sizeof(*pool), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     pool->ident = ident;
     pool->log_root = log_root;
     pool->num_used = 0;
@@ -291,7 +291,7 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
     }
 
     //pool->task = calloc(pool->num_alloc + 1, sizeof(*pool->task));
-    pool->task = mmap(NULL, (pool->num_alloc + 1) * sizeof(*pool->task), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+    pool->task = mmap(NULL, (pool->num_alloc + 1) * sizeof(*pool->task), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     if (pool->task == MAP_FAILED) {
         perror("mmap");
         mp_pool_free(&pool);
@@ -300,7 +300,7 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
     for (size_t i = 0; i < pool->num_alloc; i++) {
         struct MultiProcessingTask *slot = &pool->task[i];
-        slot->gate = mmap(NULL, sizeof(*slot->gate), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+        slot->gate = mmap(NULL, sizeof(*slot->gate), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
         if (slot->gate == MAP_FAILED) {
             perror("mmap failed");
             exit(1);
