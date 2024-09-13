@@ -3,6 +3,7 @@
 #define STASIS_MULTIPROCESSING_H
 
 #include "core.h"
+#include <signal.h>
 #include <sys/wait.h>
 #include <semaphore.h>
 #include <sys/mman.h>

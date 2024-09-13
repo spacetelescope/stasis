@@ -306,7 +306,11 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
             exit(1);
         }
 
-        if (sem_init(slot->gate, 1, 0) < 0) {
+        char sema_name[PATH_MAX] = {0};
+        sprintf(sema_name, "/sem-%zu-%s-%s", mp_global_task_count, pool->ident, slot->ident);
+        sem_unlink(sema_name);
+        slot->gate = sem_open(sema_name, O_CREAT, 0600, sizeof(*slot->gate));
+        if (slot->gate == SEM_FAILED) {
             perror("sem_init failed");
             exit(1);
         }
@@ -317,11 +321,10 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 }
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
-    //for (size_t i = 0; i < (*pool)->num_used; i++) {
     for (size_t i = 0; i < (*pool)->num_alloc; i++) {
         if ((*pool)->task[i].gate) {
-            if (sem_destroy((*pool)->task[i].gate) < 0) {
-                perror("sem_destroy failed");
+            if (sem_close((*pool)->task[i].gate) < 0) {
+                perror("sem_close failed");
                 exit(1);
             }
             if (munmap((*pool)->task[i].gate, sizeof(*(*pool)->task[i].gate)) < 0) {
