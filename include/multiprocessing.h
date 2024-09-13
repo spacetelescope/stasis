@@ -63,7 +63,7 @@ struct MultiProcessingPool {
  *                 // handle task creation error
  *             }
  *         }
- *         if (mp_pool_join(mp, get_cpu_count())) {
+ *         if (mp_pool_join(mp, get_cpu_count(), MP_POOL_FAIL_FAST)) {
  *             // handle pool execution error
  *         }
  *         mp_pool_free(&mp);
