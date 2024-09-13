@@ -24,8 +24,8 @@ struct MultiProcessingPool {
     struct MultiProcessingTask *task; ///< Array of tasks to execute
     size_t num_used; ///< Number of tasks populated in the task array
     size_t num_alloc; ///< Number of tasks allocated by the task array
-    const char *ident; ///< Identity of task pool
-    const char *log_root; ///< Base directory to store stderr/stdout log files
+    char ident[255]; ///< Identity of task pool
+    char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
 };
 
 ///!< Maximum number of multiprocessing tasks STASIS can execute

@@ -35,6 +35,15 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
     fflush(tp);
     fclose(tp);
 
+    char sema_name[PATH_MAX] = {0};
+    sprintf(sema_name, "/sem-%zu-%s-%s", mp_global_task_count, pool->ident, slot->ident);
+    sem_unlink(sema_name);
+    slot->gate = sem_open(sema_name, O_CREAT, 0644, 0);
+    if (slot->gate == SEM_FAILED) {
+        perror("sem_open failed");
+        exit(1);
+    }
+
     pid_t pid = fork();
     int child_status = 0;
     if (pid == -1) {
@@ -275,10 +284,12 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
         return NULL;
     }
 
-    //pool = malloc(1 * sizeof(*pool));
     pool = mmap(NULL, sizeof(*pool), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    pool->ident = ident;
-    pool->log_root = log_root;
+    memset(pool->ident, 0, sizeof(pool->ident));
+    strncpy(pool->ident, ident, sizeof(pool->ident) - 1);
+
+    memset(pool->log_root, 0, sizeof(pool->log_root));
+    strncpy(pool->log_root, log_root, sizeof(pool->log_root) - 1);
     pool->num_used = 0;
     pool->num_alloc = MP_POOL_TASK_MAX;
 
@@ -290,32 +301,12 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
         }
     }
 
-    //pool->task = calloc(pool->num_alloc + 1, sizeof(*pool->task));
     pool->task = mmap(NULL, (pool->num_alloc + 1) * sizeof(*pool->task), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     if (pool->task == MAP_FAILED) {
         perror("mmap");
         mp_pool_free(&pool);
         return NULL;
     }
-
-    for (size_t i = 0; i < pool->num_alloc; i++) {
-        struct MultiProcessingTask *slot = &pool->task[i];
-        slot->gate = mmap(NULL, sizeof(*slot->gate), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-        if (slot->gate == MAP_FAILED) {
-            perror("mmap failed");
-            exit(1);
-        }
-
-        char sema_name[PATH_MAX] = {0};
-        sprintf(sema_name, "/sem-%zu-%s-%s", mp_global_task_count, pool->ident, slot->ident);
-        sem_unlink(sema_name);
-        slot->gate = sem_open(sema_name, O_CREAT, 0600, sizeof(*slot->gate));
-        if (slot->gate == SEM_FAILED) {
-            perror("sem_init failed");
-            exit(1);
-        }
-    }
-
 
     return pool;
 }
@@ -325,10 +316,6 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
         if ((*pool)->task[i].gate) {
             if (sem_close((*pool)->task[i].gate) < 0) {
                 perror("sem_close failed");
-                exit(1);
-            }
-            if (munmap((*pool)->task[i].gate, sizeof(*(*pool)->task[i].gate)) < 0) {
-                perror("munmap");
                 exit(1);
             }
         }
