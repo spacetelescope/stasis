@@ -28,13 +28,13 @@ struct MultiProcessingPool {
     char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
 };
 
-///!< Maximum number of multiprocessing tasks STASIS can execute
+/// Maximum number of multiprocessing tasks STASIS can execute
 #define MP_POOL_TASK_MAX 1000
 
-///!< Value signifies a process is unused or finished executing
+/// Value signifies a process is unused or finished executing
 #define MP_POOL_PID_UNUSED 0
 
-// Option flags for mp_pool_join()
+/// Option flags for mp_pool_join()
 #define MP_POOL_FAIL_FAST 1 << 1
 
 /**
