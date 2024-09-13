@@ -1891,7 +1891,9 @@ void delivery_tests_run(struct Delivery *ctx) {
         }
 
         size_t opt_flags = 0;
-        opt_flags |= globals.parallel_fail_fast;
+        if (globals.parallel_fail_fast) {
+            opt_flags |= MP_POOL_FAIL_FAST;
+        }
 
         if (pool_setup->num_used) {
             COE_CHECK_ABORT(mp_pool_join(pool_setup, 1, opt_flags) != 0, "Failure in setup task pool");
