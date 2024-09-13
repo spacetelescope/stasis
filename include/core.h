@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include "core_mem.h"
+#include "multiprocessing.h"
 #include "envctl.h"
 #include "template.h"
 #include "utils.h"

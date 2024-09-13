@@ -2,7 +2,6 @@
 
 #include <fnmatch.h>
 #include "core.h"
-#include "multiprocessing.h"
 
 extern struct STASIS_GLOBAL globals;
 
