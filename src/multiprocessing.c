@@ -7,8 +7,12 @@ static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessing
 
 struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char *ident, char *cmd) {
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
-    //struct MultiProcessingTask *slot = mp_pool_any_available(pool);
-    pool->num_used++;
+    if (pool->num_used != pool->num_alloc) {
+        pool->num_used++;
+    } else {
+        fprintf(stderr, "Maximum number of tasks reached\n");
+        return NULL;
+    }
 
     memset(slot->ident, 0, sizeof(slot->ident));
     strncpy(slot->ident, ident, sizeof(slot->ident) - 1);
