@@ -21,6 +21,7 @@
 #define HTTP_ERROR(X) X >= 400
 
 #include "config.h"
+#include "core_mem.h"
 #include "envctl.h"
 #include "template.h"
 #include "utils.h"
@@ -42,16 +43,6 @@
 #include "github.h"
 #include "template_func_proto.h"
 
-#define guard_runtime_free(X) do { if (X) { runtime_free(X); X = NULL; } } while (0)
-#define guard_strlist_free(X) do { if ((*X)) { strlist_free(X); (*X) = NULL; } } while (0)
-#define guard_free(X) do { if (X) { free(X); X = NULL; } } while (0)
-#define GENERIC_ARRAY_FREE(ARR) do { \
-    for (size_t ARR_I = 0; ARR && ARR[ARR_I] != NULL; ARR_I++) { \
-        guard_free(ARR[ARR_I]); \
-    } \
-    guard_free(ARR); \
-} while (0)
-
 #define COE_CHECK_ABORT(COND, MSG) \
     do {\
         if (!globals.continue_on_error && COND) { \
@@ -71,6 +62,8 @@ struct STASIS_GLOBAL {
     bool enable_testing; //!< Enable package testing
     bool enable_overwrite; //!< Enable release file clobbering
     bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
+    long cpu_limit;
+    long parallel_fail_fast;
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory

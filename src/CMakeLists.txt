@@ -25,6 +25,7 @@ add_library(stasis_core STATIC
         github.c
         template_func_proto.c
         envctl.c
+        multiprocessing.c
 )
 
 add_executable(stasis
