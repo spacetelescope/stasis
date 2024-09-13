@@ -6,10 +6,16 @@ if [ -n "$GITHUB_TOKEN" ] && [ -z "$STASIS_GH_TOKEN"]; then
 else
     export STASIS_GH_TOKEN="anonymous"
 fi
+python_versions=(
+    3.10
+    3.11
+    3.12
+)
 
 topdir=$(pwd)
 
 ws="rt_workspace"
+rm -rf "$ws"
 mkdir -p "$ws"
 ws="$(realpath $ws)"
 
@@ -28,9 +34,12 @@ popd
 pushd "$ws"
     type -P stasis
     type -P stasis_indexer
+    retcode=0
 
-    stasis --no-docker --no-artifactory --unbuffered -v "$topdir"/generic.ini
-    retcode=$?
+    for py_version in "${python_versions[@]}"; do
+        stasis --python "$py_version" --no-docker --no-artifactory --unbuffered -v "$topdir"/generic.ini
+        retcode+=$?
+    done
 
     set +x
 
@@ -54,7 +63,7 @@ pushd "$ws"
         for cond in "${fail_on_main[@]}"; do
             if grep --color -H -n "$cond" "$x" >&2; then
                 echo "ERROR DETECTED IN $x!" >&2
-                retcode=2
+                retcode+=1
             fi
         done
     done
@@ -94,6 +103,8 @@ pushd "$ws"
     done
 popd
 
-rm -rf "$ws"
+if [ -z "$RT_KEEP_WORKSPACE"]; then
+    rm -rf "$ws"
+fi
 
 exit $retcode
