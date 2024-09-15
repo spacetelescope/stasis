@@ -5,6 +5,83 @@ static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessing
     return &pool->task[pool->num_used];
 }
 
+static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, const char *cmd) {
+    pid_t pid = fork();
+    int child_status = 0;
+    if (pid == -1) {
+        return -1;
+    } else if (pid == 0) { // child process
+        char *cwd = NULL;
+        FILE *fp_log = NULL;
+
+        // Synchronize sub-process startup
+        // Stop here until summoned by mp_pool_join()
+        if (sem_wait(task->gate) < 0) {
+            perror("sem_wait failed");
+            exit(1);
+        }
+
+        // Redirect stdout and stderr to the log file
+        fflush(stdout);
+        fflush(stderr);
+        printf("[%s:%s] Task started (pid: %d)\n", pool->ident, task->ident, task->parent_pid);
+        fp_log = freopen(task->log_file, "w+", stdout);
+        if (!fp_log) {
+            fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
+            return -1;
+        }
+        dup2(fileno(stdout), fileno(stderr));
+
+        // Generate timestamp for log header
+        time_t t = time(NULL);
+        char *timebuf = ctime(&t);
+        if (timebuf) {
+            // strip line feed from timestamp
+            timebuf[strlen(timebuf) ? strlen(timebuf) - 1 : 0] = 0;
+        }
+
+        cwd = getcwd(NULL, PATH_MAX);
+        if (!cwd) {
+            perror(cwd);
+            exit(1);
+        }
+
+        // Generate log header
+        fprintf(fp_log, "# STARTED: %s\n", timebuf ? timebuf : "unknown");
+        fprintf(fp_log, "# PID: %d\n", task->parent_pid);
+        fprintf(fp_log, "# WORKDIR: %s\n", cwd);
+        fprintf(fp_log, "# COMMAND:\n%s\n", cmd);
+        fprintf(fp_log, "# OUTPUT:\n");
+        // Commit header to log file / clean up
+        fflush(fp_log);
+        guard_free(cwd);
+
+        // Execute task
+        fflush(stdout);
+        fflush(stderr);
+        char *args[] = {"bash", "--norc", task->parent_script, (char *) NULL};
+        task->status = execvp("/bin/bash", args);
+    } else { // parent process
+        printf("[%s:%s] Task queued (pid: %d)\n", pool->ident, task->ident, pid);
+
+        // Give the child process access to our PID value
+        task->pid = pid;
+        task->parent_pid = pid;
+
+        // Set log file name
+        sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+        mp_global_task_count++;
+
+        // Check child's status
+        pid_t code = waitpid(pid, &child_status, WUNTRACED | WCONTINUED | WNOHANG);
+        if (code < 0) {
+            perror("waitpid failed");
+            return -1;
+        }
+    }
+    return 0;
+}
+
 struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char *ident, char *cmd) {
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
     if (pool->num_used != pool->num_alloc) {
@@ -34,6 +111,7 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
 
     memset(slot->parent_script, 0, sizeof(slot->parent_script));
     strncpy(slot->parent_script, t_name, PATH_MAX - 1);
+    guard_free(t_name);
 
     fprintf(tp, "#!/bin/bash\n%s\n", cmd);
     fflush(tp);
@@ -48,82 +126,10 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
         exit(1);
     }
 
-    pid_t pid = fork();
-    int child_status = 0;
-    if (pid == -1) {
+    if (mp_task_fork(pool, slot, cmd)) {
         return NULL;
-    } else if (pid == 0) { // child process
-        char *cwd = NULL;
-        FILE *fp_log = NULL;
-
-        // Synchronize sub-process startup
-        // Stop here until summoned by mp_pool_join()
-        if (sem_wait(slot->gate) < 0) {
-            perror("sem_wait failed");
-            exit(1);
-        }
-
-
-        // Redirect stdout and stderr to the log file
-        fflush(stdout);
-        fflush(stderr);
-        printf("[%s:%s] Task started (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
-        fp_log = freopen(slot->log_file, "w+", stdout);
-        if (!fp_log) {
-            fprintf(stderr, "unable to open '%s' for writing: %s\n", slot->log_file, strerror(errno));
-            return NULL;
-        }
-        dup2(fileno(stdout), fileno(stderr));
-
-        // Generate timestamp for log header
-        time_t t = time(NULL);
-        char *timebuf = ctime(&t);
-        if (timebuf) {
-            // strip line feed from timestamp
-            timebuf[strlen(timebuf) ? strlen(timebuf) - 1 : 0] = 0;
-        }
-
-        cwd = getcwd(NULL, PATH_MAX);
-        if (!cwd) {
-            perror(cwd);
-            exit(1);
-        }
-
-        // Generate log header
-        fprintf(fp_log, "# STARTED: %s\n", timebuf ? timebuf : "unknown");
-        fprintf(fp_log, "# PID: %d\n", slot->parent_pid);
-        fprintf(fp_log, "# WORKDIR: %s\n", cwd);
-        fprintf(fp_log, "# COMMAND:\n%s\n", cmd);
-        fprintf(fp_log, "# OUTPUT:\n");
-        // Commit header to log file / clean up
-        fflush(fp_log);
-        guard_free(cwd);
-
-        // Execute task
-        fflush(stdout);
-        fflush(stderr);
-        char *args[] = {"bash", "--norc", t_name, (char *) NULL};
-        slot->status = execvp("/bin/bash", args);
-    } else { // parent process
-        printf("[%s:%s] Task queued (pid: %d)\n", pool->ident, slot->ident, pid);
-
-        // Give the child process access to our PID value
-        slot->pid = pid;
-        slot->parent_pid = pid;
-
-        // Set log file name
-        sprintf(slot->log_file + strlen(slot->log_file), "task-%zu-%d.log", mp_global_task_count, slot->parent_pid);
-        mp_global_task_count++;
-
-        // Check child's status
-        pid_t code = waitpid(pid, &child_status, WUNTRACED | WCONTINUED | WNOHANG);
-        if (code < 0) {
-            perror("waitpid failed");
-            return NULL;
-        }
-        return slot;
     }
-    return NULL;
+    return slot;
 }
 
 static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
@@ -173,12 +179,10 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
     size_t tasks_complete = 0;
     size_t lower_i = 0;
     size_t upper_i = jobs;
-
     do {
-        //if (upper_i >= pool->num_alloc) {
+        size_t hang_check = 0;
         if (upper_i >= pool->num_used) {
             size_t x = upper_i - pool->num_used;
-            //size_t x = upper_i - pool->num_alloc;
             upper_i -= (size_t) x;
         }
         for (size_t i = lower_i; i < upper_i; i++) {
@@ -191,6 +195,12 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
             if (slot->pid == MP_POOL_PID_UNUSED) {
                 // PID is already used up, skip it
+                hang_check++;
+                if (hang_check >= pool->num_used) {
+                    fprintf(stderr, "%s is deadlocked\n", pool->ident);
+                    failures++;
+                    goto pool_deadlocked;
+                }
                 continue;
             }
 
@@ -275,6 +285,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         sleep(1);
     } while (1);
 
+    pool_deadlocked:
     puts("");
     return failures;
 }
