@@ -438,30 +438,3 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
         (*pool) = NULL;
     }
 }
-
-int exmain(int argc, char *argv[]) {
-    size_t i;
-    struct MultiProcessingPool *pool = mp_pool_init("generic", "logs");
-    if (!pool) {
-        perror("pool init");
-        exit(1);
-    }
-
-    char *commands[] = {
-        "sleep 2; dd if=/dev/zero of=file.dat bs=1M count=1",
-        "/bin/echo hello world; sleep 5",
-        "python -c 'print(1+1)'",
-        "(for x in {1..10}; do echo $x; sleep 0.5; done)",
-        "echo stdout >&1; echo stderr >&2; exit 1"
-    };
-
-    for (i = 0; i < sizeof(commands) / sizeof(*commands); i++) {
-        if (mp_task(pool, "commands array", commands[i]) == NULL) {
-            printf("Too many tasks queued (max: %d)\n", MP_POOL_TASK_MAX);
-            break;
-        }
-    }
-    mp_pool_join(pool, get_cpu_count() - 1, MP_POOL_FAIL_FAST);
-    mp_pool_free(&pool);
-    return 0;
-}

@@ -206,13 +206,6 @@ static void check_requirements(struct Delivery *ctx) {
 }
 
 int main(int argc, char *argv[]) {
-    /*
-    extern int exmain(int argc, char *argv[]);
-    exmain(argc, argv);
-    printf("ending program\n");
-    exit(0);
-     */
-
     struct Delivery ctx;
     struct Process proc = {
             .f_stdout = "",
