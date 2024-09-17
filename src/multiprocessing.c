@@ -189,6 +189,10 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
             status = kill(slot->pid, signum);
             if (status && errno != ESRCH) {
                 fprintf(stderr, "Task '%s' (pid: %d) did not respond: %s\n", slot->ident, slot->pid, strerror(errno));
+                // Wait for process to handle the signal, then set the status accordingly
+                if (waitpid(slot->pid, &status, 0) >= 0) {
+                    slot->signaled_by = WTERMSIG(status);
+                }
             }
         }
         if (!access(slot->log_file, F_OK)) {
@@ -271,7 +275,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
                     fprintf(stderr, "%s Task failed\n", progress);
-                    if (flags & MP_POOL_FAIL_FAST) {
+                    if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
                         mp_pool_kill(pool, SIGTERM);
                         return -2;
                     }
