@@ -161,6 +161,41 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
     return slot;
 }
 
+static void get_task_duration(struct MultiProcessingTask *task, struct timespec *result) {
+    struct timespec *start = &task->time_data.t_start;
+    struct timespec *stop = &task->time_data.t_stop;
+    result->tv_sec = (stop->tv_sec - start->tv_sec);
+    result->tv_nsec = (stop->tv_nsec - start->tv_nsec);
+    if (result->tv_nsec < 0) {
+        --result->tv_sec;
+        result->tv_nsec += 1000000000L;
+    }
+}
+
+void mp_pool_show_summary(struct MultiProcessingPool *pool) {
+    print_banner("=", 79);
+    printf("Pool execution summary for \"%s\"\n", pool->ident);
+    print_banner("=", 79);
+    printf("STATUS     PID     DURATION     IDENT\n");
+    for (size_t i = 0; i < pool->num_used; i++) {
+        struct MultiProcessingTask *task = &pool->task[i];
+        char status_str[10] = {0};
+        if (!task->status && !task->signaled_by) {
+            strcpy(status_str, "DONE");
+        } else if (task->signaled_by) {
+            strcpy(status_str, "TERM");
+        } else {
+            strcpy(status_str, "FAIL");
+        }
+
+        struct timespec duration;
+        get_task_duration(task, &duration);
+        long diff = duration.tv_sec + duration.tv_nsec / 1000000000L;
+        printf("%-4s    %-10d %7lds     %-10s\n", status_str, task->parent_pid, diff, task->ident) ;
+    }
+    puts("");
+}
+
 static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
     FILE *fp = fopen(task->log_file, "r");
     if (!fp) {
@@ -189,9 +224,15 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
             status = kill(slot->pid, signum);
             if (status && errno != ESRCH) {
                 fprintf(stderr, "Task '%s' (pid: %d) did not respond: %s\n", slot->ident, slot->pid, strerror(errno));
+            } else {
                 // Wait for process to handle the signal, then set the status accordingly
                 if (waitpid(slot->pid, &status, 0) >= 0) {
                     slot->signaled_by = WTERMSIG(status);
+                    // Record the task stop time
+                    if (clock_gettime(CLOCK_REALTIME, &slot->time_data.t_stop) < 0) {
+                        perror("clock_gettime");
+                        exit(1);
+                    }
                 }
             }
         }
@@ -273,6 +314,13 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 if (show_log_contents(stdout, slot)) {
                     perror(slot->log_file);
                 }
+
+                // Record the task stop time
+                if (clock_gettime(CLOCK_REALTIME, &slot->time_data.t_stop) < 0) {
+                    perror("clock_gettime");
+                    exit(1);
+                }
+
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
                     fprintf(stderr, "%s Task failed\n", progress);
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {

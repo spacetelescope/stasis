@@ -15,9 +15,14 @@ struct MultiProcessingTask {
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status
+    int signaled_by; ///< Last signal received, if any
     char ident[255]; ///< Identity of the pool task
     char log_file[255]; ///< Path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task
+    struct {
+        struct timespec t_start;
+        struct timespec t_stop;
+    } time_data; ///< Wall-time counters
 };
 
 struct MultiProcessingPool {
@@ -102,6 +107,13 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
  * @return <0 on error
  */
 int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags);
+
+/**
+ * Show summary of pool tasks
+ *
+ * @pararm pool a pointer to MultiProcessingPool
+ */
+void mp_pool_show_summary(struct MultiProcessingPool *pool);
 
 /**
  * Release resources allocated by mp_pool_init()
