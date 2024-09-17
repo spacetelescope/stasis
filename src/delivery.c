@@ -1894,18 +1894,25 @@ void delivery_tests_run(struct Delivery *ctx) {
             opt_flags |= MP_POOL_FAIL_FAST;
         }
 
+        int pool_status = -1;
         if (pool_setup->num_used) {
-            COE_CHECK_ABORT(mp_pool_join(pool_setup, 1, opt_flags) != 0, "Failure in setup task pool");
+            pool_status = mp_pool_join(pool_setup, 1, opt_flags);
+            mp_pool_show_summary(pool_setup);
+            COE_CHECK_ABORT(pool_status != 0, "Failure in setup task pool");
             mp_pool_free(&pool_setup);
         }
 
         if (pool_parallel->num_used) {
-            COE_CHECK_ABORT(mp_pool_join(pool_parallel, globals.cpu_limit, opt_flags) != 0, "Failure in parallel task pool");
+            pool_status = mp_pool_join(pool_parallel, globals.cpu_limit, opt_flags);
+            mp_pool_show_summary(pool_parallel);
+            COE_CHECK_ABORT(pool_status != 0, "Failure in parallel task pool");
             mp_pool_free(&pool_parallel);
         }
 
         if (pool_serial->num_used) {
-            COE_CHECK_ABORT(mp_pool_join(pool_serial, 1, opt_flags) != 0, "Failure in serial task pool");
+            pool_status = mp_pool_join(pool_serial, 1, opt_flags);
+            mp_pool_show_summary(pool_serial);
+            COE_CHECK_ABORT(pool_serial != 0, "Failure in serial task pool");
             mp_pool_free(&pool_serial);
         }
     }
