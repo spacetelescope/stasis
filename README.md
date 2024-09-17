@@ -329,7 +329,6 @@ Template strings can be accessed using the `{{ subject.key }}` notation in any S
 | system.platform             | System Platform (OS)                                                                                                    |
 | deploy.docker.registry      | Docker registry                                                                                                         |
 | deploy.jfrog.repo           | Artifactory destination repository                                                                                      |
-| workaround.tox_posargs      | Return populated `-c` and `--root` tox arguments.<br/>Force-enables positional arguments in tox's command line parser.  |
 | workaround.conda_reactivate | Reinitialize the conda runtime environment.<br/>Use this after calling `conda install` from within a `[test:*].script`. |
 
 The template engine also provides an interface to environment variables using the `{{ env:VARIABLE_NAME }}` notation.
