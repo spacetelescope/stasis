@@ -109,6 +109,9 @@ struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char
         return NULL;
     }
 
+    // Set default status to "error"
+    slot->status = -1;
+
     // Set task identifier string
     memset(slot->ident, 0, sizeof(slot->ident));
     strncpy(slot->ident, ident, sizeof(slot->ident) - 1);
