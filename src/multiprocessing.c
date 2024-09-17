@@ -191,7 +191,7 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
         struct timespec duration;
         get_task_duration(task, &duration);
         long diff = duration.tv_sec + duration.tv_nsec / 1000000000L;
-        printf("%-4s    %-10d %7lds     %-10s\n", status_str, task->parent_pid, diff, task->ident) ;
+        printf("%-4s   %10d  %7lds     %-10s\n", status_str, task->parent_pid, diff, task->ident) ;
     }
     puts("");
 }
