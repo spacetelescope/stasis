@@ -65,8 +65,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, co
     fflush(stdout);
     fflush(stderr);
     char *args[] = {"bash", "--norc", task->parent_script, (char *) NULL};
-    task->status = execvp("/bin/bash", args);
-    return 0; // NOP return to satisfy the compiler
+    return execvp("/bin/bash", args);
 }
 
 int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {

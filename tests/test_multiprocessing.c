@@ -38,7 +38,7 @@ void test_mp_task() {
             STASIS_ASSERT_FATAL((task = mp_task(pool, task_name, commands[i])) != NULL, "Task should not be NULL");
             STASIS_ASSERT(task->pid != 0, "PID should be non-zero at this point");
             STASIS_ASSERT(task->parent_pid != MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
-            STASIS_ASSERT(task->status == 0, "Status should be zero");
+            STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
             STASIS_ASSERT(strcmp(task->ident, task_name) == 0, "Wrong task identity");
             STASIS_ASSERT(strstr(task->log_file, pool->log_root) != NULL, "Log file path must be in log_root");
             STASIS_ASSERT(task->gate != NULL, "Semaphore should be initialized");
@@ -51,7 +51,7 @@ void test_mp_pool_join() {
     for (size_t i = 0; i < pool->num_used; i++) {
         struct MultiProcessingTask *task = &pool->task[i];
         STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "Task should be marked as unused");
-        STASIS_ASSERT(task->status == 0, "Task should have succeeded");
+        STASIS_ASSERT(task->status == 0, "Task status should be zero (success)");
     }
 }
 
