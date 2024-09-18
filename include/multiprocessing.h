@@ -17,7 +17,7 @@ struct MultiProcessingTask {
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
     char ident[255]; ///< Identity of the pool task
-    char log_file[255]; ///< Path to stdout/stderr log file
+    char log_file[PATH_MAX]; ///< Full path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task
     struct {
         struct timespec t_start;
