@@ -103,7 +103,7 @@ pushd "$ws"
     done
 popd
 
-if [ -z "$RT_KEEP_WORKSPACE"]; then
+if [ -z "$RT_KEEP_WORKSPACE" ]; then
     rm -rf "$ws"
 fi
 
