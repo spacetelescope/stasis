@@ -60,6 +60,35 @@ void test_mp_pool_free() {
     STASIS_ASSERT(pool == NULL, "Should be NULL");
 }
 
+void test_mp_pool_workflow() {
+    struct testcase {
+        const char *input_cmd;
+        int input_join_flags;
+        int expected_result;
+        int expected_status;
+        int expected_signal;
+    };
+    struct testcase tc[] = {
+        {.input_cmd = "true && kill $$", .input_join_flags = 0, .expected_result = 1, .expected_status = 0, .expected_signal = SIGTERM},
+        {.input_cmd = "false || kill -1 $$", .input_join_flags = 0, .expected_result = 1, .expected_status = 1, .expected_signal = SIGTERM},
+        {.input_cmd = "true", .input_join_flags = 0,.expected_result = 0, .expected_status = 0, .expected_signal = 0},
+        {.input_cmd = "false", .input_join_flags = 0, .expected_result = 1, .expected_status = 1, .expected_signal = 0},
+    };
+    for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
+        struct testcase *test = &tc[i];
+        struct MultiProcessingPool *p;
+        struct MultiProcessingTask *task;
+        STASIS_ASSERT((p = mp_pool_init("workflow", "mplogs")) != NULL, "Failed to initialize pool");
+        STASIS_ASSERT((task = mp_pool_task(p, "task", (char *) test->input_cmd)) != NULL, "Failed to queue task");
+        STASIS_ASSERT(mp_pool_join(p, get_cpu_count(), test->input_join_flags) == test->expected_result, "Unexpected result");
+        STASIS_ASSERT(task->status == test->expected_status, "Unexpected status");
+        STASIS_ASSERT(task->signaled_by == test->expected_signal, "Unexpected signal");
+        STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "Unexpected PID. Should be marked UNUSED.");
+        mp_pool_show_summary(p);
+        mp_pool_free(&p);
+    }
+}
+
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
@@ -67,6 +96,7 @@ int main(int argc, char *argv[]) {
         test_mp_task,
         test_mp_pool_join,
         test_mp_pool_free,
+        test_mp_pool_workflow,
     };
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();
