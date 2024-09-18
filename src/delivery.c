@@ -1710,7 +1710,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     } else {
         memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
     }
-    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nmamba activate ${CONDA_ENV_DEFAULT}\n");
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nmamba activate ${CONDA_DEFAULT_ENV}\n");
 
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
