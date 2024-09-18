@@ -161,6 +161,8 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 }
 
 static void get_task_duration(struct MultiProcessingTask *task, struct timespec *result) {
+    // based on the timersub() macro in time.h
+    // This implementation uses timespec and increases the resolution from microseconds to nanoseconds.
     struct timespec *start = &task->time_data.t_start;
     struct timespec *stop = &task->time_data.t_stop;
     result->tv_sec = (stop->tv_sec - start->tv_sec);
