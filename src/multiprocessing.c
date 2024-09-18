@@ -285,9 +285,17 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
             // Is the process finished?
             pid_t pid = waitpid(slot->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+            int task_ended = WIFEXITED(status);
+            int task_ended_by_signal = WIFSIGNALED(status);
+            int task_stopped = WIFSTOPPED(status);
+            int task_continued = WIFCONTINUED(status);
+            int status_exit = WEXITSTATUS(status);
+            int status_signal = WTERMSIG(status);
+            int status_stopped = WSTOPSIG(status);
 
             // Update status
-            slot->status = status;
+            slot->status = status_exit;
+            slot->signaled_by = status_signal;
 
             char progress[1024] = {0};
             if (pid > 0) {
@@ -296,18 +304,18 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
                 // The process ended in one the following ways
                 // Note: SIGSTOP nor SIGCONT will not increment the tasks_complete counter
-                if (WIFEXITED(status)) {
-                    printf("%s Task finished (status: %d)\n", progress, WEXITSTATUS(status));
-                    tasks_complete++;
-                } else if (WIFSIGNALED(status)) {
-                    printf("%s Task ended by signal %d (%s)\n", progress, WTERMSIG(status), strsignal(WTERMSIG(status)));
-                    tasks_complete++;
-                } else if (WIFSTOPPED(status)) {
-                    printf("%s Task was suspended (%d)\n", progress, WSTOPSIG(status));
+                if (task_stopped) {
+                    printf("%s Task was suspended (%d)\n", progress, status_stopped);
                     continue;
-                } else if (WIFCONTINUED(status)) {
+                } else if (task_continued) {
                     printf("%s Task was resumed\n", progress);
                     continue;
+                } else if (task_ended_by_signal) {
+                    printf("%s Task ended by signal %d (%s)\n", progress, status_signal, strsignal(status_signal));
+                    tasks_complete++;
+                } else if (task_ended) {
+                    printf("%s Task ended (status: %d)\n", progress, status_exit);
+                    tasks_complete++;
                 } else {
                     fprintf(stderr, "%s Task state is unknown (0x%04X)\n", progress, status);
                 }
