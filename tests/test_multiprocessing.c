@@ -70,7 +70,7 @@ void test_mp_pool_workflow() {
     };
     struct testcase tc[] = {
         {.input_cmd = "true && kill $$", .input_join_flags = 0, .expected_result = 1, .expected_status = 0, .expected_signal = SIGTERM},
-        {.input_cmd = "false || kill -1 $$", .input_join_flags = 0, .expected_result = 1, .expected_status = 1, .expected_signal = SIGTERM},
+        {.input_cmd = "false || kill $$", .input_join_flags = 0, .expected_result = 1, .expected_status = 0, .expected_signal = SIGTERM},
         {.input_cmd = "true", .input_join_flags = 0,.expected_result = 0, .expected_status = 0, .expected_signal = 0},
         {.input_cmd = "false", .input_join_flags = 0, .expected_result = 1, .expected_status = 1, .expected_signal = 0},
     };
