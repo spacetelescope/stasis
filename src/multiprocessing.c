@@ -206,6 +206,7 @@ static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
         memset(buf, 0, sizeof(buf));
     }
     fprintf(stream, "\n");
+    fclose(fp);
     return 0;
 }
 
