@@ -335,6 +335,8 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
                     fprintf(stderr, "%s Task failed\n", progress);
+                    failures++;
+
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
                         mp_pool_kill(pool, SIGTERM);
                         return -2;
@@ -353,7 +355,6 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
                 // Update progress and tell the poller to ignore the PID. The process is gone.
                 slot->pid = MP_POOL_PID_UNUSED;
-                failures += status;
             } else if (pid < 0) {
                 fprintf(stderr, "waitpid failed: %s\n", strerror(errno));
                 return -1;
