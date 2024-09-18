@@ -94,7 +94,7 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
  * @return pointer to MultiProcessingTask structure
  * @return NULL on error
  */
-struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char *ident, char *cmd);
+struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *cmd);
 
 /**
  * Execute all tasks in a pool

@@ -99,7 +99,7 @@ static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessing
     return parent(pool, task, pid, &child_status);
 }
 
-struct MultiProcessingTask *mp_task(struct MultiProcessingPool *pool, const char *ident, char *cmd) {
+struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *cmd) {
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
     if (pool->num_used != pool->num_alloc) {
         pool->num_used++;

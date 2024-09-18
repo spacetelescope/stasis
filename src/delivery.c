@@ -1819,7 +1819,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 }
 
                 sprintf(runner_cmd, runner_cmd_fmt, cmd);
-                task = mp_task(pool, test->name, runner_cmd);
+                task = mp_pool_task(pool, test->name, runner_cmd);
                 if (!task) {
                     SYSERROR("Failed to add task to %s pool: %s", pool_name, runner_cmd);
                     popd();
@@ -1872,7 +1872,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     char runner_cmd[0xFFFF] = {0};
                     sprintf(runner_cmd, runner_cmd_fmt, cmd);
 
-                    task = mp_task(pool, test->name, runner_cmd);
+                    task = mp_pool_task(pool, test->name, runner_cmd);
                     if (!task) {
                         SYSERROR("Failed to add task %s to setup pool: %s", test->name, runner_cmd);
                         popd();

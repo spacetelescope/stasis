@@ -35,7 +35,7 @@ void test_mp_task() {
             struct MultiProcessingTask *task;
             char task_name[100] = {0};
             sprintf(task_name, "mytask%zu", i);
-            STASIS_ASSERT_FATAL((task = mp_task(pool, task_name, commands[i])) != NULL, "Task should not be NULL");
+            STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, commands[i])) != NULL, "Task should not be NULL");
             STASIS_ASSERT(task->pid != 0, "PID should be non-zero at this point");
             STASIS_ASSERT(task->parent_pid != MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
             STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
