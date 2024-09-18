@@ -233,6 +233,8 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
                         perror("clock_gettime");
                         exit(1);
                     }
+                    // We are short-circuiting the normal flow, and the process is now dead, so mark it as such
+                    slot->pid = MP_POOL_PID_UNUSED;
                 }
             }
         }
