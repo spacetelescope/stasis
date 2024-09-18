@@ -118,18 +118,18 @@ Create some test cases for packages.
 version = 1.2.3
 repository = https://github.com/org/our_cool_program
 script =
-    pytest -v \
-        --basetemp="{{ storage.results_dir }}/truth-$(basename $(pwd))-{{ info.release_name }}" \
-        --junit-xml="{{ storage.results_dir }}/results-$(basename $(pwd))-{{ info.release_name }}.xml" \
+    pytest -fEsx \
+        --basetemp="{{ func:basetemp_dir() }}" \
+        --junitxml="{{ func:junitxml_file() }}" \
         tests/
 
 [test:our_other_cool_program]
 version = 4.5.6
 repository = https://github.com/org/our_other_cool_program
 script =
-    pytest -v \
-        --basetemp="{{ storage.results_dir }}/truth-$(basename $(pwd))-{{ info.release_name }}" \
-        --junit-xml="{{ storage.results_dir }}/results-$(basename $(pwd))-{{ info.release_name }}.xml" \
+    pytest -fEsx \
+        --basetemp="{{ func:basetemp_dir() }}" \
+        --junitxml="{{ func:junitxml_file() }}" \
         tests/
 ```
 
@@ -159,8 +159,6 @@ stasis mydelivery.ini
 | --no-testing        |     n/a      | Do not execute test scripts                                    |
 | --no-rewrite        |     n/a      | Do not rewrite paths and URLs in output files                  |
 | DELIVERY_FILE       |     n/a      | STASIS delivery file                                           |
-
-
 
 ## Environment variables
 
@@ -338,9 +336,11 @@ python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
 
 Template functions can be accessed using the `{{ func:NAME(ARG,...) }}` notation.
 
-| Name                          | Purpose                                      |
-|-------------------------------|----------------------------------------------|
-| get_github_release_notes_auto | Generate release notes for all test contexts |
+| Name                          | Purpose                                                          |
+|-------------------------------|------------------------------------------------------------------|
+| get_github_release_notes_auto | Generate release notes for all test contexts                     |
+| basetemp_dir                  | Generate directory path to test block's temporary data directory |
+| junitxml_file                 | Generate directory path and file name for test result file       |
 
 
 # Mission files
