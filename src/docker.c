@@ -44,8 +44,9 @@ int docker_script(const char *image, char *data, unsigned flags) {
 
     do {
         memset(buffer, 0, sizeof(buffer));
-        fgets(buffer, sizeof(buffer) - 1, infile);
-        fputs(buffer, outfile);
+        if (fgets(buffer, sizeof(buffer) - 1, infile) != NULL) {
+            fputs(buffer, outfile);
+        }
     } while (!feof(infile));
 
     fclose(infile);

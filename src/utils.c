@@ -34,7 +34,7 @@ int popd() {
 int rmtree(char *_path) {
     int status = 0;
     char path[PATH_MAX] = {0};
-    strncpy(path, _path, sizeof(path));
+    strncpy(path, _path, sizeof(path) - 1);
     DIR *dir;
     struct dirent *d_entity;
 
@@ -122,10 +122,10 @@ char *expandpath(const char *_path) {
     }
 
     // Construct the new path
-    strncat(result, home, PATH_MAX - 1);
+    strncat(result, home, sizeof(result) - strlen(home) + 1);
     if (sep) {
-        strncat(result, DIR_SEP, PATH_MAX - 1);
-        strncat(result, ptmp, PATH_MAX - 1);
+        strncat(result, DIR_SEP, sizeof(result) - strlen(home) + 1);
+        strncat(result, ptmp, sizeof(result) - strlen(home) + 1);
     }
 
     return strdup(result);
@@ -444,7 +444,10 @@ void msg(unsigned type, char *fmt, ...) {
 
 void debug_shell() {
     msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "ENTERING STASIS DEBUG SHELL\n" STASIS_COLOR_RESET);
-    system("/bin/bash -c 'PS1=\"(STASIS DEBUG) \\W $ \" bash --norc --noprofile'");
+    if (system("/bin/bash -c 'PS1=\"(STASIS DEBUG) \\W $ \" bash --norc --noprofile'") < 0) {
+        SYSERROR("unable to spawn debug shell: %s", strerror(errno));
+        exit(errno);
+    }
     msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "EXITING STASIS DEBUG SHELL\n" STASIS_COLOR_RESET);
     exit(255);
 }

@@ -381,7 +381,9 @@ int indexer_make_website(struct Delivery *ctx) {
                 char link_dest[PATH_MAX] = {0};
                 strcpy(link_from, "README.html");
                 sprintf(link_dest, "%s/%s", root, "index.html");
-                symlink(link_from, link_dest);
+                if (symlink(link_from, link_dest)) {
+                    SYSERROR("Warning: symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
+                }
             }
         }
         guard_strlist_free(&inputs);
