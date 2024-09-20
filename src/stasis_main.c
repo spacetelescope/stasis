@@ -441,9 +441,9 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L1, "Conda setup\n");
-    delivery_get_installer_url(&ctx, installer_url);
+    delivery_get_conda_installer_url(&ctx, installer_url);
     msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
-    if (delivery_get_installer(&ctx, installer_url)) {
+    if (delivery_get_conda_installer(&ctx, installer_url)) {
         msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
         exit(1);
     }

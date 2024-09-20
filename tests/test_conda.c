@@ -38,8 +38,8 @@ struct Delivery ctx;
 
 void test_conda_installation() {
     char *install_url = calloc(255, sizeof(install_url));
-    delivery_get_installer_url(&ctx, install_url);
-    delivery_get_installer(&ctx, install_url);
+    delivery_get_conda_installer_url(&ctx, install_url);
+    delivery_get_conda_installer(&ctx, install_url);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
     STASIS_ASSERT_FATAL(access(ctx.storage.conda_install_prefix, F_OK) == 0, "conda was not installed correctly");
     STASIS_ASSERT_FATAL(conda_activate(ctx.storage.conda_install_prefix, "base") == 0, "unable to activate base environment");
