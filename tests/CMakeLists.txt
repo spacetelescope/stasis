@@ -5,8 +5,8 @@ include_directories(
 find_program(BASH_PROGRAM bash)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/tests)
 set(CTEST_BINARY_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
-set(nix_gnu_cflags -Wno-error -Wno-unused-parameter -Wno-discarded-qualifiers)
-set(nix_clang_cflags -Wno-unused-parameter -Wno-incompatible-pointer-types-discards-qualifiers)
+set(nix_gnu_cflags -Wno-format-truncation -Wno-error -Wno-unused-parameter -Wno-unused-result -Wno-discarded-qualifiers)
+set(nix_clang_cflags -Wno-format-truncation -Wno-unused-parameter -Wno-unused-result -Wno-incompatible-pointer-types-discards-qualifiers)
 set(win_msvc_cflags /Wall)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/generic.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
