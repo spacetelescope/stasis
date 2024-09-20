@@ -331,7 +331,7 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value) {
         }
 
         memset((*pStrList)->data[index], '\0', strlen(value) + 1);
-        strncpy((*pStrList)->data[index], value, strlen(value));
+        strcpy((*pStrList)->data[index], value);
     }
 }
 
