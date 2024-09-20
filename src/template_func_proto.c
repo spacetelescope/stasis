@@ -74,7 +74,10 @@ int get_junitxml_file_entrypoint(void *frame, void *data_out) {
     const struct Delivery *ctx = (const struct Delivery *) f->data_in;
 
     char cwd[PATH_MAX] = {0};
-    getcwd(cwd, PATH_MAX - 1);
+    if (!getcwd(cwd, PATH_MAX - 1)) {
+        SYSERROR("unable to determine current working directory: %s", strerror(errno));
+        return -1;
+    }
     char nametmp[PATH_MAX] = {0};
     strcpy(nametmp, cwd);
     char *name = path_basename(nametmp);
@@ -96,7 +99,10 @@ int get_basetemp_dir_entrypoint(void *frame, void *data_out) {
     const struct Delivery *ctx = (const struct Delivery *) f->data_in;
 
     char cwd[PATH_MAX] = {0};
-    getcwd(cwd, PATH_MAX - 1);
+    if (!getcwd(cwd, PATH_MAX - 1)) {
+        SYSERROR("unable to determine current working directory: %s", strerror(errno));
+        return -1;
+    }
     char nametmp[PATH_MAX] = {0};
     strcpy(nametmp, cwd);
     char *name = path_basename(nametmp);
