@@ -14,16 +14,39 @@ void test_mp_pool_init() {
     STASIS_ASSERT(pool->num_used == 0, "Wrong number of used records");
     STASIS_ASSERT(strcmp(pool->log_root, "mplogs") == 0, "Wrong log root directory");
     STASIS_ASSERT(strcmp(pool->ident, "mypool") == 0, "Wrong identity");
-    int data_bad = 0;
-    char *data = calloc(pool->num_alloc, sizeof(*pool->task));
-    for (size_t i = 0; i < pool->num_alloc * sizeof(*pool->task); i++) {
-        if (data[i] != 0) {
-            data_bad = 1;
-            break;
+
+    int data_bad_total = 0;
+    for (size_t i = 0; i < pool->num_alloc; i++) {
+        int data_bad = 0;
+        struct MultiProcessingTask *task = &pool->task[i];
+
+        data_bad += task->status == 0 ? 0 : 1;
+        data_bad += task->pid == 0 ? 0 : 1;
+        data_bad += task->parent_pid == 0 ? 0 : 1;
+        data_bad += task->signaled_by == 0 ? 0 : 1;
+        data_bad += task->time_data.t_start.tv_nsec == 0 ? 0 : 1;
+        data_bad += task->time_data.t_start.tv_sec == 0 ? 0 : 1;
+        data_bad += task->time_data.t_stop.tv_nsec == 0 ? 0 : 1;
+        data_bad += task->time_data.t_stop.tv_sec == 0 ? 0 : 1;
+        data_bad += (int) strlen(task->ident) == 0 ? 0 : 1;
+        data_bad += (int) strlen(task->parent_script) == 0 ? 0 : 1;
+        data_bad += task->gate == NULL ? 0 : 1;
+        if (data_bad) {
+            SYSERROR("%s.task[%zu] has garbage values!", pool->ident, i);
+            SYSERROR("  ident: %s", task->ident);
+            SYSERROR("  status: %d", task->status);
+            SYSERROR("  pid: %d", task->pid);
+            SYSERROR("  parent_pid: %d", task->parent_pid);
+            SYSERROR("  signaled_by: %d", task->signaled_by);
+            SYSERROR("  t_start.tv_nsec: %ld", task->time_data.t_start.tv_nsec);
+            SYSERROR("  t_start.tv_sec: %ld", task->time_data.t_start.tv_sec);
+            SYSERROR("  t_stop.tv_nsec: %ld", task->time_data.t_stop.tv_nsec);
+            SYSERROR("  t_stop.tv_sec: %ld", task->time_data.t_stop.tv_sec);
+            SYSERROR("  gate: %s", task->gate == NULL ? "UNINITIALIZED (OK)" : "INITIALIZED (BAD)");
+            data_bad_total++;
         }
     }
-    free(data);
-    STASIS_ASSERT(data_bad == 0, "Task array should be zeroed");
+    STASIS_ASSERT(data_bad_total == 0, "Task array is not pristine");
     mp_pool_free(&pool);
 }
 
