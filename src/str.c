@@ -223,21 +223,35 @@ char *join_ex(char *separator, ...) {
 }
 
 char *substring_between(char *sptr, const char *delims) {
+    char delim_open[255] = {0};
+    char delim_close[255] = {0};
     if (sptr == NULL || delims == NULL) {
         return NULL;
     }
 
     // Ensure we have enough delimiters to continue
     size_t delim_count = strlen(delims);
-    if (delim_count < 2 || delim_count % 2) {
+    if (delim_count < 2 || delim_count % 2 || (delim_count > (sizeof(delim_open) - 1)) != 0) {
         return NULL;
     }
+    size_t delim_take = delim_count / 2;
 
-    char delim_open[255] = {0};
-    strncpy(delim_open, delims, delim_count / 2);
+    // How else am I supposed to consume the first and last n chars of the string? Give me a break.
+    // warning: ‘__builtin___strncpy_chk’ specified bound depends on the length of the source argument
+    // ---
+    //strncpy(delim_open, delims, delim_take);
+    size_t i = 0;
+    while (i < delim_take && i < sizeof(delim_open)) {
+        delim_open[i] = delims[i];
+        i++;
+    }
 
-    char delim_close[255] = {0};
-    strcpy(delim_close, &delims[delim_count / 2]);
+    //strncpy(delim_close, &delims[delim_take], delim_take);
+    i = 0;
+    while (i < delim_take && i < sizeof(delim_close)) {
+        delim_close[i] = delims[i + delim_take];
+        i++;
+    }
 
     // Create pointers to the delimiters
     char *start = strstr(sptr, delim_open);
