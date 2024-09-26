@@ -140,10 +140,6 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     fclose(tp);
 
 
-    // Execute task
-    if (mp_task_fork(pool, slot, cmd)) {
-        return NULL;
-    }
     return slot;
 }
 
