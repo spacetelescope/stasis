@@ -7,8 +7,7 @@ static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessing
     return &pool->task[pool->num_used];
 }
 
-int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, const char *cmd) {
-    char *cwd = NULL;
+int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     FILE *fp_log = NULL;
 
     // The task starts inside the requested working directory
@@ -42,23 +41,14 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, co
         timebuf[strlen(timebuf) ? strlen(timebuf) - 1 : 0] = 0;
     }
 
-    // Get the path to the current working directory
-    // Used by the log header. Informative only.
-    cwd = getcwd(NULL, PATH_MAX);
-    if (!cwd) {
-        perror(cwd);
-        exit(1);
-    }
-
     // Generate log header
     fprintf(fp_log, "# STARTED: %s\n", timebuf ? timebuf : "unknown");
     fprintf(fp_log, "# PID: %d\n", task->parent_pid);
-    fprintf(fp_log, "# WORKDIR: %s\n", cwd);
-    fprintf(fp_log, "# COMMAND:\n%s\n", cmd);
+    fprintf(fp_log, "# WORKDIR: %s\n", task->working_dir);
+    fprintf(fp_log, "# COMMAND:\n%s\n", task->cmd);
     fprintf(fp_log, "# OUTPUT:\n");
     // Commit header to log file / clean up
     fflush(fp_log);
-    guard_free(cwd);
 
     // Execute task
     fflush(stdout);
@@ -87,18 +77,18 @@ int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, p
     return 0;
 }
 
-static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, const char *cmd) {
+static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     pid_t pid = fork();
     int child_status = 0;
     if (pid == -1) {
         return -1;
     } else if (pid == 0) {
-        child(pool, task, cmd);
+        child(pool, task);
     }
     return parent(pool, task, pid, &child_status);
 }
 
-struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *cmd) {
+struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *working_dir, char *cmd) {
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
     if (pool->num_used != pool->num_alloc) {
         pool->num_used++;
@@ -117,6 +107,13 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Set log file path
     strcat(slot->log_file, pool->log_root);
     strcat(slot->log_file, "/");
+
+    // Set working directory
+    if (isempty(working_dir)) {
+        strcpy(slot->working_dir, ".");
+    } else {
+        strcpy(slot->working_dir, working_dir);
+    }
 
     // Create a temporary file to act as our intermediate command script
     FILE *tp = NULL;

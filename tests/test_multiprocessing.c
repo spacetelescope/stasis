@@ -58,7 +58,7 @@ void test_mp_task() {
             struct MultiProcessingTask *task;
             char task_name[100] = {0};
             sprintf(task_name, "mytask%zu", i);
-            STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, commands[i])) != NULL, "Task should not be NULL");
+            STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, NULL, commands[i])) != NULL, "Task should not be NULL");
             STASIS_ASSERT(task->pid != 0, "PID should be non-zero at this point");
             STASIS_ASSERT(task->parent_pid != MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
             STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
@@ -102,7 +102,7 @@ void test_mp_pool_workflow() {
         struct MultiProcessingPool *p;
         struct MultiProcessingTask *task;
         STASIS_ASSERT((p = mp_pool_init("workflow", "mplogs")) != NULL, "Failed to initialize pool");
-        STASIS_ASSERT((task = mp_pool_task(p, "task", (char *) test->input_cmd)) != NULL, "Failed to queue task");
+        STASIS_ASSERT((task = mp_pool_task(p, "task", NULL, (char *) test->input_cmd)) != NULL, "Failed to queue task");
         STASIS_ASSERT(mp_pool_join(p, get_cpu_count(), test->input_join_flags) == test->expected_result, "Unexpected result");
         STASIS_ASSERT(task->status == test->expected_status, "Unexpected status");
         STASIS_ASSERT(task->signaled_by == test->expected_signal, "Unexpected signal");
