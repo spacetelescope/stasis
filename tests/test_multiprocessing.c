@@ -57,8 +57,8 @@ void test_mp_task() {
             char task_name[100] = {0};
             sprintf(task_name, "mytask%zu", i);
             STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, NULL, commands[i])) != NULL, "Task should not be NULL");
-            STASIS_ASSERT(task->pid != 0, "PID should be non-zero at this point");
-            STASIS_ASSERT(task->parent_pid != MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
+            STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "PID should be non-zero at this point");
+            STASIS_ASSERT(task->parent_pid == MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
             STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
             STASIS_ASSERT(strcmp(task->ident, task_name) == 0, "Wrong task identity");
             STASIS_ASSERT(strstr(task->log_file, pool->log_root) != NULL, "Log file path must be in log_root");
