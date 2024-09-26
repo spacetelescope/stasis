@@ -1,9 +1,10 @@
 #include "delivery.h"
 
 void delivery_tests_run(struct Delivery *ctx) {
-    struct MultiProcessingPool *pool_parallel;
-    struct MultiProcessingPool *pool_serial;
-    struct MultiProcessingPool *pool_setup;
+    static const int SETUP = 0;
+    static const int PARALLEL = 1;
+    static const int SERIAL = 2;
+    struct MultiProcessingPool *pool[3];
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
@@ -17,20 +18,20 @@ void delivery_tests_run(struct Delivery *ctx) {
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
-        pool_parallel = mp_pool_init("parallel", ctx->storage.tmpdir);
-        if (!pool_parallel) {
+        pool[PARALLEL] = mp_pool_init("parallel", ctx->storage.tmpdir);
+        if (!pool[PARALLEL]) {
             perror("mp_pool_init/parallel");
             exit(1);
         }
 
-        pool_serial = mp_pool_init("serial", ctx->storage.tmpdir);
-        if (!pool_serial) {
+        pool[SERIAL] = mp_pool_init("serial", ctx->storage.tmpdir);
+        if (!pool[SERIAL]) {
             perror("mp_pool_init/serial");
             exit(1);
         }
 
-        pool_setup = mp_pool_init("setup", ctx->storage.tmpdir);
-        if (!pool_setup) {
+        pool[SETUP] = mp_pool_init("setup", ctx->storage.tmpdir);
+        if (!pool[SETUP]) {
             perror("mp_pool_init/setup");
             exit(1);
         }
@@ -104,15 +105,15 @@ void delivery_tests_run(struct Delivery *ctx) {
                 char runner_cmd[0xFFFF] = {0};
                 char pool_name[100] = "parallel";
                 struct MultiProcessingTask *task = NULL;
-                struct MultiProcessingPool *pool = pool_parallel;
+                int selected = PARALLEL;
                 if (!test->parallel) {
-                    pool = pool_serial;
+                    selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
                     strcpy(pool_name, "serial");
                 }
 
                 sprintf(runner_cmd, runner_cmd_fmt, cmd);
-                task = mp_pool_task(pool, test->name, runner_cmd);
+                task = mp_pool_task(pool[selected], test->name, destdir, runner_cmd);
                 if (!task) {
                     SYSERROR("Failed to add task to %s pool: %s", pool_name, runner_cmd);
                     popd();
@@ -160,12 +161,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                         exit(1);
                     }
 
-                    struct MultiProcessingPool *pool = pool_setup;
                     struct MultiProcessingTask *task = NULL;
                     char runner_cmd[0xFFFF] = {0};
                     sprintf(runner_cmd, runner_cmd_fmt, cmd);
 
-                    task = mp_pool_task(pool, test->name, runner_cmd);
+                    task = mp_pool_task(pool[SETUP], test->name, destdir, runner_cmd);
                     if (!task) {
                         SYSERROR("Failed to add task %s to setup pool: %s", test->name, runner_cmd);
                         popd();
@@ -178,6 +178,9 @@ void delivery_tests_run(struct Delivery *ctx) {
                     }
                     guard_free(cmd);
                     popd();
+                } else {
+                    SYSERROR("Failed to change directory: %s\n", destdir);
+                    exit(1);
                 }
             }
         }
@@ -187,26 +190,37 @@ void delivery_tests_run(struct Delivery *ctx) {
             opt_flags |= MP_POOL_FAIL_FAST;
         }
 
-        int pool_status = -1;
-        if (pool_setup->num_used) {
-            pool_status = mp_pool_join(pool_setup, 1, opt_flags);
-            mp_pool_show_summary(pool_setup);
-            COE_CHECK_ABORT(pool_status != 0, "Failure in setup task pool");
-            mp_pool_free(&pool_setup);
+        for (size_t p = 0; p < sizeof(pool) / sizeof(*pool); p++) {
+            int pool_status;
+            long jobs = globals.cpu_limit;
+
+            if (!pool[p]->num_used) {
+                // Skip empty pool
+                continue;
+            }
+
+            // Setup tasks run sequentially
+            if (p == (size_t) SETUP) {
+                jobs = 1;
+            }
+
+            // Run tasks in the pool
+            // 1. Setup (builds)
+            // 2. Parallel (fast jobs)
+            // 3. Serial (long jobs)
+            pool_status = mp_pool_join(pool[p], jobs, opt_flags);
+
+            // On error show a summary of the current pool, and die
+            if (pool_status != 0) {
+                mp_pool_show_summary(pool[p]);
+                COE_CHECK_ABORT(true, "Task failure");
+            }
         }
 
-        if (pool_parallel->num_used) {
-            pool_status = mp_pool_join(pool_parallel, globals.cpu_limit, opt_flags);
-            mp_pool_show_summary(pool_parallel);
-            COE_CHECK_ABORT(pool_status != 0, "Failure in parallel task pool");
-            mp_pool_free(&pool_parallel);
-        }
-
-        if (pool_serial->num_used) {
-            pool_status = mp_pool_join(pool_serial, 1, opt_flags);
-            mp_pool_show_summary(pool_serial);
-            COE_CHECK_ABORT(pool_serial != 0, "Failure in serial task pool");
-            mp_pool_free(&pool_serial);
+        // All tasks were successful
+        for (size_t p = 0; p < sizeof(pool) / sizeof(*pool); p++) {
+            mp_pool_show_summary(pool[p]);
+            mp_pool_free(&pool[p]);
         }
     }
 }
