@@ -246,6 +246,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             size_t x = upper_i - pool->num_used;
             upper_i -= (size_t) x;
         }
+
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
             if (slot->status == -1) {
