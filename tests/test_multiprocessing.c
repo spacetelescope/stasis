@@ -30,7 +30,6 @@ void test_mp_pool_init() {
         data_bad += task->time_data.t_stop.tv_sec == 0 ? 0 : 1;
         data_bad += (int) strlen(task->ident) == 0 ? 0 : 1;
         data_bad += (int) strlen(task->parent_script) == 0 ? 0 : 1;
-        data_bad += task->gate == NULL ? 0 : 1;
         if (data_bad) {
             SYSERROR("%s.task[%zu] has garbage values!", pool->ident, i);
             SYSERROR("  ident: %s", task->ident);
@@ -42,7 +41,6 @@ void test_mp_pool_init() {
             SYSERROR("  t_start.tv_sec: %ld", task->time_data.t_start.tv_sec);
             SYSERROR("  t_stop.tv_nsec: %ld", task->time_data.t_stop.tv_nsec);
             SYSERROR("  t_stop.tv_sec: %ld", task->time_data.t_stop.tv_sec);
-            SYSERROR("  gate: %s", task->gate == NULL ? "UNINITIALIZED (OK)" : "INITIALIZED (BAD)");
             data_bad_total++;
         }
     }
@@ -64,7 +62,6 @@ void test_mp_task() {
             STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
             STASIS_ASSERT(strcmp(task->ident, task_name) == 0, "Wrong task identity");
             STASIS_ASSERT(strstr(task->log_file, pool->log_root) != NULL, "Log file path must be in log_root");
-            STASIS_ASSERT(task->gate != NULL, "Semaphore should be initialized");
         }
     }
 }
