@@ -105,6 +105,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     strncpy(slot->ident, ident, sizeof(slot->ident) - 1);
 
     // Set log file path
+    memset(slot->log_file, 0, sizeof(*slot->log_file));
     strcat(slot->log_file, pool->log_root);
     strcat(slot->log_file, "/");
 
