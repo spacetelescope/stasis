@@ -11,7 +11,6 @@
 #include <sys/stat.h>
 
 struct MultiProcessingTask {
-    sem_t *gate; ///< Child process startup lock
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status

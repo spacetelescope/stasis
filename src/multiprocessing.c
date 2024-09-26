@@ -11,10 +11,9 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, co
     char *cwd = NULL;
     FILE *fp_log = NULL;
 
-    // Synchronize sub-process startup
-    // Stop here until summoned by mp_pool_join()
-    if (sem_wait(task->gate) < 0) {
-        perror("sem_wait failed");
+    // The task starts inside the requested working directory
+    if (chdir(task->working_dir)) {
+        perror(task->working_dir);
         exit(1);
     }
 
@@ -142,16 +141,6 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     fflush(tp);
     fclose(tp);
 
-    // Create a uniquely named semaphore.
-    // This is used by the child process to prevent task execution until mp_pool_join is called
-    char sema_name[PATH_MAX] = {0};
-    sprintf(sema_name, "/sem-%zu-%s-%s", mp_global_task_count, pool->ident, slot->ident);
-    sem_unlink(sema_name);
-    slot->gate = sem_open(sema_name, O_CREAT, 0644, 0);
-    if (slot->gate == SEM_FAILED) {
-        perror("sem_open failed");
-        exit(1);
-    }
 
     // Execute task
     if (mp_task_fork(pool, slot, cmd)) {
@@ -265,11 +254,12 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         }
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
-            // Unlock the semaphore to allow the queued processes to start up
-            if (sem_post(slot->gate) < 0) {
-                perror("sem_post failed");
-                exit(1);
-            }
+            if (slot->status == -1) {
+                if (mp_task_fork(pool, slot)) {
+                    fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
+                    exit(1);
+                }
+            } 
 
             // Has the child been processed already?
             if (slot->pid == MP_POOL_PID_UNUSED) {
@@ -430,13 +420,6 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
     for (size_t i = 0; i < (*pool)->num_alloc; i++) {
-        // Close all semaphores
-        if ((*pool)->task[i].gate) {
-            if (sem_close((*pool)->task[i].gate) < 0) {
-                perror("sem_close failed");
-                exit(1);
-            }
-        }
     }
     // Unmap all pool tasks
     if ((*pool)->task) {
