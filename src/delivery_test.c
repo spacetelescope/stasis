@@ -36,14 +36,33 @@ void delivery_tests_run(struct Delivery *ctx) {
             exit(1);
         }
 
+        // Test block scripts shall exit non-zero on error.
+        // This will fail a test block immediately if "string" is not found in file.txt:
+        //      grep string file.txt
+        //
+        // And this is how to avoid that scenario:
+        // #1:
+        //      if ! grep string file.txt; then
+        //          # handle error
+        //      fi
+        //
+        //  #2:
+        //      grep string file.txt || handle error
+        //
+        //  #3:
+        //      # Use ':' as a NO-OP if/when the result doesn't matter
+        //      grep string file.txt || :
         const char *runner_cmd_fmt = "set -e -x\n%s\n";
+
+        // Iterate over our test records, retrieving the source code for each package, and assigning its scripted tasks
+        // to the appropriate processing pool
         for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
             struct Test *test = &ctx->tests[i];
             if (!test->name && !test->repository && !test->script) {
                 // skip unused test records
                 continue;
             }
-            msg(STASIS_MSG_L2, "Executing tests for %s %s\n", test->name, test->version);
+            msg(STASIS_MSG_L2, "Loading tests for %s %s\n", test->name, test->version);
             if (!test->script || !strlen(test->script)) {
                 msg(STASIS_MSG_WARN | STASIS_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
                     test->name);
@@ -80,7 +99,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     exit(1);
                 }
 
-                msg(STASIS_MSG_L3, "Testing %s\n", test->name);
+                msg(STASIS_MSG_L3, "Queuing task for %s\n", test->name);
                 memset(&proc, 0, sizeof(proc));
 
                 strcpy(cmd, test->script);
@@ -190,6 +209,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             opt_flags |= MP_POOL_FAIL_FAST;
         }
 
+        // Execute all queued tasks
         for (size_t p = 0; p < sizeof(pool) / sizeof(*pool); p++) {
             int pool_status;
             long jobs = globals.cpu_limit;
