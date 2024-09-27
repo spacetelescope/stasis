@@ -117,7 +117,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Create a temporary file to act as our intermediate command script
     FILE *tp = NULL;
-    char *t_name;
+    char *t_name = NULL;
     t_name = xmkstemp(&tp, "w");
     if (!t_name || !tp) {
         return NULL;

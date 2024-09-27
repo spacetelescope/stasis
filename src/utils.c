@@ -468,12 +468,23 @@ char *xmkstemp(FILE **fp, const char *mode) {
     fd = mkstemp(t_name);
     *fp = fdopen(fd, mode);
     if (!*fp) {
+        // unable to open, die
         if (fd > 0)
             close(fd);
         *fp = NULL;
         return NULL;
     }
+
     char *path = strdup(t_name);
+    if (!path) {
+        // strdup failed, die
+        if (*fp) {
+            // close the file handle
+            fclose(*fp);
+            *fp = NULL;
+        }
+        // fall through. path is NULL.
+    }
     return path;
 }
 
