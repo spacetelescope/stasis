@@ -25,7 +25,8 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     // Redirect stdout and stderr to the log file
     fflush(stdout);
     fflush(stderr);
-    printf("[%s:%s] Task started (pid: %d)\n", pool->ident, task->ident, task->parent_pid);
+    // Set log file name
+    sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
