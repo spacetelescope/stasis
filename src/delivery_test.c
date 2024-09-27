@@ -239,7 +239,10 @@ void delivery_tests_run(struct Delivery *ctx) {
 
         // All tasks were successful
         for (size_t p = 0; p < sizeof(pool) / sizeof(*pool); p++) {
-            mp_pool_show_summary(pool[p]);
+            if (pool[p]->num_used) {
+                // Only show pools that actually had jobs to run
+                mp_pool_show_summary(pool[p]);
+            }
             mp_pool_free(&pool[p]);
         }
     }
