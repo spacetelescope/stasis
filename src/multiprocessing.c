@@ -234,8 +234,8 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
 
 int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
     int status = 0;
-    int watcher = 0;
     int failures = 0;
+    time_t watcher = time(NULL);
     size_t tasks_complete = 0;
     size_t lower_i = 0;
     size_t upper_i = jobs;
@@ -253,7 +253,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
                     kill(0, SIGTERM);
                 }
-            } 
+            }
 
             // Has the child been processed already?
             if (slot->pid == MP_POOL_PID_UNUSED) {
@@ -343,11 +343,12 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 fprintf(stderr, "waitpid failed: %s\n", strerror(errno));
                 return -1;
             } else {
-                if (watcher > 9) {
+                time_t watcher_diff = time(NULL) - watcher;
+                if (watcher_diff == 0) {
                     printf("[%s:%s] Task is running (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
-                    watcher = 0;
-                } else {
-                    watcher++;
+                }
+                if (watcher > 9) {
+                    watcher = time(NULL);
                 }
             }
         }
