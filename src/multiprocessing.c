@@ -251,7 +251,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             if (slot->status == -1) {
                 if (mp_task_fork(pool, slot)) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
-                    exit(1);
+                    kill(0, SIGTERM);
                 }
             } 
 
