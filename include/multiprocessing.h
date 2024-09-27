@@ -17,6 +17,7 @@ struct MultiProcessingTask {
     int signaled_by; ///< Last signal received, if any
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
+    size_t cmd_len; ///< Length of command string (for mmap/munmap)
     char working_dir[PATH_MAX]; ///< Path to directory `cmd` should be executed in
     char log_file[PATH_MAX]; ///< Full path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task

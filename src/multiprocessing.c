@@ -375,7 +375,8 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root) {
     struct MultiProcessingPool *pool;
 
-    if (!log_root) {
+    if (!ident || !log_root) {
+        // Pool must have an ident string
         // log_root must be set
         return NULL;
     }
