@@ -138,6 +138,11 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     fflush(tp);
     fclose(tp);
 
+    // Record the command(s)
+    slot->cmd_len = (strlen(cmd) * sizeof(*cmd)) + 1;
+    slot->cmd = mmap(NULL, slot->cmd_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    memset(slot->cmd, 0, slot->cmd_len);
+    strncpy(slot->cmd, cmd, slot->cmd_len);
 
     return slot;
 }
@@ -419,6 +424,11 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
     }
     // Unmap all pool tasks
     if ((*pool)->task) {
+        if ((*pool)->task->cmd) {
+            if (munmap((*pool)->task->cmd, (*pool)->task->cmd_len) < 0) {
+                perror("munmap");
+            }
+        }
         if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc) < 0) {
             perror("munmap");
         }
