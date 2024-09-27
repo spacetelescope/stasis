@@ -65,8 +65,6 @@ int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, p
     task->pid = pid;
     task->parent_pid = pid;
 
-    // Set log file name
-    sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
     mp_global_task_count++;
 
     // Check child's status
