@@ -315,7 +315,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     }
 
     static char command[PATH_MAX];
-    sprintf(command, "%s clone --recursive %s", program, url);
+    sprintf(command, "%s clone -c advice.detachedHead=false --recursive %s", program, url);
     if (destdir && access(destdir, F_OK) < 0) {
         sprintf(command + strlen(command), " %s", destdir);
         result = shell(proc, command);
