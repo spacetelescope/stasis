@@ -292,7 +292,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             char progress[1024] = {0};
             if (pid > 0) {
                 double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
-                sprintf(progress, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
+                snprintf(progress, sizeof(progress) - 1, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
 
                 // The process ended in one the following ways
                 // Note: SIGSTOP nor SIGCONT will not increment the tasks_complete counter
