@@ -173,11 +173,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                         exit(1);
                     }
 
-                    strcpy(cmd, test->script_setup);
+                    strlcpy(cmd, test->script_setup, cmd_len);
                     char *cmd_rendered = tpl_render(cmd);
                     if (cmd_rendered) {
                         if (strcmp(cmd_rendered, cmd) != 0) {
-                            strcpy(cmd, cmd_rendered);
+                            strlcpy(cmd, cmd_rendered, cmd_len);
                             cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                         }
                         guard_free(cmd_rendered);
