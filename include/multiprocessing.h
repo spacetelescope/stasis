@@ -113,7 +113,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags);
 /**
  * Show summary of pool tasks
  *
- * @pararm pool a pointer to MultiProcessingPool
+ * @param pool a pointer to MultiProcessingPool
  */
 void mp_pool_show_summary(struct MultiProcessingPool *pool);
 
