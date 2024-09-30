@@ -265,8 +265,9 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 // Child is already used up, skip it
                 hang_check++;
                 if (hang_check >= pool->num_used) {
-                    // Unlikely to happen when called correctly, but if you join a pool that's already finished
-                    // it will spin forever. This protects the program from entering an infinite loop.
+                    // If you join a pool that's already finished it will spin
+                    // forever. This protects the program from entering an
+                    // infinite loop.
                     fprintf(stderr, "%s is deadlocked\n", pool->ident);
                     failures++;
                     goto pool_deadlocked;
