@@ -86,11 +86,13 @@ void test_ini_setval_getval() {
     STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "a") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") == 0, "unexpected value loaded from modified variable");
+    guard_free(val.as_char_p);
 
     STASIS_ASSERT(ini_setval(&ini, INI_SETVAL_APPEND, "default", "a", " twice") == 0, "failed to set value");
     STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed twice") == 0, "unexpected value loaded from modified variable");
+    guard_free(val.as_char_p);
     ini_free(&ini);
     remove(filename);
 }
