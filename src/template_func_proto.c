@@ -137,12 +137,15 @@ int tox_run_entrypoint(void *frame, void *data_out) {
             }
             char *jxml_path = NULL;
             if (get_junitxml_file_entrypoint(f, &jxml_path)) {
+                guard_free(basetemp_path);
                 return -3;
             }
             const char *tox_target = f->argv[0].t_char_ptr;
             const char *pytest_args = f->argv[1].t_char_ptr;
             if (isempty(toxconf) || !strcmp(toxconf, "/")) {
                 SYSERROR("Unsafe toxconf path: '%s'", toxconf);
+                guard_free(basetemp_path);
+                guard_free(jxml_path);
                 return -4;
             }
             snprintf(*output, STASIS_BUFSIZ - 1, "\npip install tox && (tox -e py%s%s -c %s --root . -- --basetemp=\"%s\" --junitxml=\"%s\" %s ; rm -f '%s')\n", ctx->meta.python_compact, tox_target, toxconf, basetemp_path, jxml_path, pytest_args ? pytest_args : "", toxconf);
