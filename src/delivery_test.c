@@ -121,7 +121,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     continue;
                 }
 
-                char runner_cmd[0xFFFF] = {0};
+                char *runner_cmd = NULL;
                 char pool_name[100] = "parallel";
                 struct MultiProcessingTask *task = NULL;
                 int selected = PARALLEL;
@@ -131,18 +131,23 @@ void delivery_tests_run(struct Delivery *ctx) {
                     strcpy(pool_name, "serial");
                 }
 
-                sprintf(runner_cmd, runner_cmd_fmt, cmd);
+                if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
+                    SYSERROR("Unable to allocate memory for runner command: %s", strerror(errno));
+                    exit(1);
+                }
                 task = mp_pool_task(pool[selected], test->name, destdir, runner_cmd);
                 if (!task) {
                     SYSERROR("Failed to add task to %s pool: %s", pool_name, runner_cmd);
                     popd();
                     if (!globals.continue_on_error) {
+                        guard_free(runner_cmd);
                         tpl_free();
                         delivery_free(ctx);
                         globals_free();
                     }
                     exit(1);
                 }
+                guard_free(runner_cmd);
                 guard_free(cmd);
                 popd();
 
@@ -161,7 +166,8 @@ void delivery_tests_run(struct Delivery *ctx) {
                     exit(1);
                 }
                 if (!pushd(destdir)) {
-                    char *cmd = calloc(strlen(test->script_setup) + STASIS_BUFSIZ, sizeof(*cmd));
+                    const size_t cmd_len = strlen(test->script_setup) + STASIS_BUFSIZ;
+                    char *cmd = calloc(cmd_len, sizeof(*cmd));
                     if (!cmd) {
                         SYSERROR("Unable to allocate test script_setup buffer: %s", strerror(errno));
                         exit(1);
@@ -181,20 +187,25 @@ void delivery_tests_run(struct Delivery *ctx) {
                     }
 
                     struct MultiProcessingTask *task = NULL;
-                    char runner_cmd[0xFFFF] = {0};
-                    sprintf(runner_cmd, runner_cmd_fmt, cmd);
+                    char *runner_cmd = NULL;
+                    if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
+                        SYSERROR("Unable to allocate memory for runner command: %s", strerror(errno));
+                        exit(1);
+                    }
 
                     task = mp_pool_task(pool[SETUP], test->name, destdir, runner_cmd);
                     if (!task) {
                         SYSERROR("Failed to add task %s to setup pool: %s", test->name, runner_cmd);
                         popd();
                         if (!globals.continue_on_error) {
+                            guard_free(runner_cmd);
                             tpl_free();
                             delivery_free(ctx);
                             globals_free();
                         }
                         exit(1);
                     }
+                    guard_free(runner_cmd);
                     guard_free(cmd);
                     popd();
                 } else {
