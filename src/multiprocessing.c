@@ -112,7 +112,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     if (isempty(working_dir)) {
         strcpy(slot->working_dir, ".");
     } else {
-        strcpy(slot->working_dir, working_dir);
+        strncpy(slot->working_dir, working_dir, PATH_MAX - 1);
     }
 
     // Create a temporary file to act as our intermediate command script
