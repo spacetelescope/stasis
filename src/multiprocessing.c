@@ -352,8 +352,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 time_t watcher_diff = time(NULL) - watcher;
                 if (watcher_diff == 0) {
                     printf("[%s:%s] Task is running (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
-                }
-                if (watcher > 9) {
+                } else if (watcher_diff > 9) {
                     watcher = time(NULL);
                 }
             }
