@@ -46,11 +46,19 @@ int shell(struct Process *proc, char *args) {
 
         if (strlen(proc->f_stdout)) {
             fp_out = freopen(proc->f_stdout, "w+", stdout);
+            if (!fp_out) {
+                fprintf(stderr, "Unable to redirect stdout to %s: %s\n", proc->f_stdout, strerror(errno));
+                exit(1);
+            }
         }
 
         if (strlen(proc->f_stderr)) {
             if (!proc->redirect_stderr) {
                 fp_err = freopen(proc->f_stderr, "w+", stderr);
+                if (!fp_err) {
+                    fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stdout, strerror(errno));
+                    exit(1);
+                }
             }
         }
 
@@ -59,7 +67,10 @@ int shell(struct Process *proc, char *args) {
                 fclose(fp_err);
                 fclose(stderr);
             }
-            dup2(fileno(stdout), fileno(stderr));
+            if (dup2(fileno(stdout), fileno(stderr)) < 0) {
+                fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
+                exit(1);
+            }
         }
 
         return execl("/bin/bash", "bash", "--norc", t_name, (char *) NULL);
