@@ -13,7 +13,9 @@ void delivery_tests_run(struct Delivery *ctx) {
     } else {
         memset(globals.workaround.conda_reactivate, 0, PATH_MAX);
     }
-    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nmamba activate ${CONDA_DEFAULT_ENV}\n");
+    // Test blocks always run with xtrace enabled. Disable, and reenable it. Conda's wrappers produce an incredible
+    // amount of debug information.
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x; mamba activate ${CONDA_DEFAULT_ENV}; set -x\n");
 
     if (!ctx->tests[0].name) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
