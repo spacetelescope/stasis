@@ -208,6 +208,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     sprintf(top_index, "%s/index.html", ctx->storage.wheel_artifact_dir);
     top_fp = fopen(top_index, "w+");
     if (!top_fp) {
+        closedir(dp);
         return -2;
     }
 
@@ -223,6 +224,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
         bottom_fp = fopen(bottom_index, "w+");
         if (!bottom_fp) {
+            closedir(dp);
             return -3;
         }
 
@@ -237,6 +239,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
         struct StrList *packages = listdir(dpath);
         if (!packages) {
+            closedir(dp);
             fclose(top_fp);
             fclose(bottom_fp);
             return -4;
