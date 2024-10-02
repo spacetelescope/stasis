@@ -1,6 +1,6 @@
 #include "core.h"
 
-/// The sum of all tasks queued by mp_task()
+/// The sum of all tasks started by mp_task()
 size_t mp_global_task_count = 0;
 
 static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessingPool *pool) {
@@ -59,7 +59,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
 }
 
 int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {
-    printf("[%s:%s] Task queued (pid: %d)\n", pool->ident, task->ident, pid);
+    printf("[%s:%s] Task started (pid: %d)\n", pool->ident, task->ident, pid);
 
     // Give the child process access to our PID value
     task->pid = pid;
