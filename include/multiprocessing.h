@@ -15,6 +15,8 @@ struct MultiProcessingTask {
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
+    time_t _now; ///< Current time
+    time_t _seconds; ///< Time elapsed (used by MultiprocessingPool.status_interval)
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
     size_t cmd_len; ///< Length of command string (for mmap/munmap)
@@ -33,6 +35,7 @@ struct MultiProcessingPool {
     size_t num_alloc; ///< Number of tasks allocated by the task array
     char ident[255]; ///< Identity of task pool
     char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
+    int status_interval; ///< Report a pooled task is "running" every n seconds
 };
 
 /// Maximum number of multiprocessing tasks STASIS can execute
