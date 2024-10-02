@@ -240,10 +240,10 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
 int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
     int status = 0;
     int failures = 0;
-    time_t watcher = time(NULL);
     size_t tasks_complete = 0;
     size_t lower_i = 0;
     size_t upper_i = jobs;
+
     do {
         size_t hang_check = 0;
         if (upper_i >= pool->num_used) {
@@ -349,11 +349,16 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 fprintf(stderr, "waitpid failed: %s\n", strerror(errno));
                 return -1;
             } else {
-                time_t watcher_diff = time(NULL) - watcher;
-                if (watcher_diff == 0) {
+                // Track the number of seconds elapsed for each task.
+                // When a task has executed for longer than status_intervals, print a status update
+                // _seconds represents the time between intervals, not the total runtime of the task
+                slot->_seconds = time(NULL) - slot->_now;
+                if (slot->_seconds >  pool->status_interval) {
+                    slot->_now = time(NULL);
+                    slot->_seconds = 0;
+                }
+                if (slot->_seconds == 0) {
                     printf("[%s:%s] Task is running (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
-                } else if (watcher_diff > 9) {
-                    watcher = time(NULL);
                 }
             }
         }
