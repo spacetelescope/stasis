@@ -65,6 +65,7 @@ struct STASIS_GLOBAL {
     bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
     long cpu_limit;
     long parallel_fail_fast;
+    int pool_status_interval; //!< Report "Task is running" every n seconds
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation
     char *tmpdir; //!< Path to temporary storage directory

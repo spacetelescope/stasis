@@ -13,12 +13,14 @@
 #define OPT_OVERWRITE 1005
 #define OPT_NO_REWRITE_SPEC_STAGE_2 1006
 #define OPT_PARALLEL_FAIL_FAST 1007
+#define OPT_POOL_STATUS_INTERVAL 1009
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
         {"continue-on-error", no_argument, 0, 'C'},
         {"config", required_argument, 0, 'c'},
         {"cpu-limit", required_argument, 0, 'l'},
+        {"pool-status-interval", required_argument, 0, OPT_POOL_STATUS_INTERVAL},
         {"python", required_argument, 0, 'p'},
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
@@ -39,6 +41,7 @@ const char *long_options_help[] = {
         "Allow tests to fail",
         "Read configuration file",
         "Number of processes to spawn concurrently (default: cpus - 1)",
+        "Report task status every n seconds (default: 30)",
         "Override version of Python in configuration",
         "Increase output verbosity",
         "Disable line buffering",
@@ -261,6 +264,16 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_PARALLEL_FAIL_FAST:
                 globals.parallel_fail_fast = true;
+                break;
+            case OPT_POOL_STATUS_INTERVAL:
+                globals.pool_status_interval = (int) strtol(optarg, NULL, 10);
+                if (globals.pool_status_interval < 1) {
+                    globals.pool_status_interval = 1;
+                } else if (globals.pool_status_interval > 60 * 10) {
+                    // Possible poor choice alert
+                    fprintf(stderr, "Caution: Excessive pausing between status updates may cause third-party CI/CD"
+                                    " jobs to fail if the stdout/stderr streams are idle for too long!\n");
+                }
                 break;
             case 'U':
                 setenv("PYTHONUNBUFFERED", "1", 1);

@@ -25,18 +25,21 @@ void delivery_tests_run(struct Delivery *ctx) {
             perror("mp_pool_init/parallel");
             exit(1);
         }
+        pool[PARALLEL]->status_interval = globals.pool_status_interval;
 
         pool[SERIAL] = mp_pool_init("serial", ctx->storage.tmpdir);
         if (!pool[SERIAL]) {
             perror("mp_pool_init/serial");
             exit(1);
         }
+        pool[SERIAL]->status_interval = globals.pool_status_interval;
 
         pool[SETUP] = mp_pool_init("setup", ctx->storage.tmpdir);
         if (!pool[SETUP]) {
             perror("mp_pool_init/setup");
             exit(1);
         }
+        pool[SETUP]->status_interval = globals.pool_status_interval;
 
         // Test block scripts shall exit non-zero on error.
         // This will fail a test block immediately if "string" is not found in file.txt:
