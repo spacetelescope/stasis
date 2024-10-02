@@ -63,8 +63,9 @@ struct STASIS_GLOBAL {
     bool enable_testing; //!< Enable package testing
     bool enable_overwrite; //!< Enable release file clobbering
     bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
-    long cpu_limit;
-    long parallel_fail_fast;
+    bool enable_parallel; //!< Enable testing in parallel
+    long cpu_limit; //!< Limit parallel processing to n cores (default: max - 1)
+    long parallel_fail_fast; //!< Fail immediately on error
     int pool_status_interval; //!< Report "Task is running" every n seconds
     struct StrList *conda_packages; //!< Conda packages to install after initial activation
     struct StrList *pip_packages; //!< Pip packages to install after initial activation

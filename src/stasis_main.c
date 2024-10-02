@@ -13,7 +13,9 @@
 #define OPT_OVERWRITE 1005
 #define OPT_NO_REWRITE_SPEC_STAGE_2 1006
 #define OPT_PARALLEL_FAIL_FAST 1007
+#define OPT_NO_PARALLEL 1008
 #define OPT_POOL_STATUS_INTERVAL 1009
+
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
@@ -31,6 +33,7 @@ static struct option long_options[] = {
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
         {"no-artifactory-build-info", no_argument, 0, OPT_NO_ARTIFACTORY_BUILD_INFO},
         {"no-testing", no_argument, 0, OPT_NO_TESTING},
+        {"no-parallel", no_argument, 0, OPT_NO_PARALLEL},
         {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
         {0, 0, 0, 0},
 };
@@ -52,6 +55,7 @@ const char *long_options_help[] = {
         "Do not upload artifacts to Artifactory",
         "Do not upload build info objects to Artifactory",
         "Do not execute test scripts",
+        "Do not execute tests in parallel",
         "Do not rewrite paths and URLs in output files",
         NULL,
 };
@@ -224,7 +228,7 @@ int main(int argc, char *argv[]) {
     int user_disabled_docker = false;
     globals.cpu_limit = get_cpu_count();
     if (globals.cpu_limit > 1) {
-        globals.cpu_limit--;
+        globals.cpu_limit--; // max - 1
     }
 
     memset(env_name, 0, sizeof(env_name));
@@ -255,8 +259,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'l':
                 globals.cpu_limit = strtol(optarg, NULL, 10);
-                if (globals.cpu_limit < 1) {
+                if (globals.cpu_limit <= 1) {
                     globals.cpu_limit = 1;
+                    globals.enable_parallel = false; // No point
                 }
                 break;
             case OPT_ALWAYS_UPDATE_BASE:
@@ -303,6 +308,9 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_NO_REWRITE_SPEC_STAGE_2:
                 globals.enable_rewrite_spec_stage_2 = false;
+                break;
+            case OPT_NO_PARALLEL:
+                globals.enable_parallel = false;
                 break;
             case '?':
             default:

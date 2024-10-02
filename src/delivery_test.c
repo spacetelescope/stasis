@@ -130,7 +130,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 char pool_name[100] = "parallel";
                 struct MultiProcessingTask *task = NULL;
                 int selected = PARALLEL;
-                if (!test->parallel) {
+                if (!globals.enable_parallel || !test->parallel) {
                     selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
                     strcpy(pool_name, "serial");
