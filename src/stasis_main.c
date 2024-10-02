@@ -27,7 +27,7 @@ static struct option long_options[] = {
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
         {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
-        {"parallel-fail-fast", no_argument, 0, OPT_PARALLEL_FAIL_FAST},
+        {"fail-fast", no_argument, 0, OPT_FAIL_FAST},
         {"overwrite", no_argument, 0, OPT_OVERWRITE},
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
@@ -49,7 +49,7 @@ const char *long_options_help[] = {
         "Increase output verbosity",
         "Disable line buffering",
         "Update conda installation prior to STASIS environment creation",
-        "On test error, terminate all concurrent tasks",
+        "On error, immediately terminate all tasks",
         "Overwrite an existing release",
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
             case OPT_ALWAYS_UPDATE_BASE:
                 globals.always_update_base_environment = true;
                 break;
-            case OPT_PARALLEL_FAIL_FAST:
+            case OPT_FAIL_FAST:
                 globals.parallel_fail_fast = true;
                 break;
             case OPT_POOL_STATUS_INTERVAL:
