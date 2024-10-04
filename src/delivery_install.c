@@ -1,9 +1,7 @@
 #include "delivery.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
-    struct Test *result;
-
-    result = NULL;
+    struct Test *result = NULL;
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         if (ctx->tests[i].name && !strcmp(name, ctx->tests[i].name)) {
             result = &ctx->tests[i];
