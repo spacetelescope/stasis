@@ -11,9 +11,12 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 fprintf(stderr, "Encountered an issue while cloning recipe for: %s\n", ctx->tests[i].name);
                 return -1;
             }
+            if (!recipe_dir) {
+                fprintf(stderr, "BUG: recipe_clone() succeeded but recipe_dir is NULL: %s\n", strerror(errno));
+                return -1;
+            }
             recipe_type = recipe_get_type(recipe_dir);
-            pushd(recipe_dir);
-            {
+            if(!pushd(recipe_dir)) {
                 if (RECIPE_TYPE_ASTROCONDA == recipe_type) {
                     pushd(path_basename(ctx->tests[i].repository));
                 } else if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
@@ -36,7 +39,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
 
                 unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
                 //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
-                if (ctx->meta.final) {
+                if (ctx->meta.final) { // remove this. i.e. statis cannot deploy a release to conda-forge
                     sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].version);
                     // TODO: replace sha256 of tagged archive
                     // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
@@ -77,6 +80,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
                 status = conda_exec(command);
                 if (status) {
+                    guard_free(recipe_dir);
                     return -1;
                 }
 
@@ -84,11 +88,13 @@ int delivery_build_recipes(struct Delivery *ctx) {
                     popd();
                 }
                 popd();
+            } else {
+                fprintf(stderr, "Unable to enter recipe directory %s: %s\n", recipe_dir, strerror(errno));
+                guard_free(recipe_dir);
+                return -1;
             }
         }
-        if (recipe_dir) {
-            guard_free(recipe_dir);
-        }
+        guard_free(recipe_dir);
     }
     return 0;
 }
@@ -149,8 +155,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
             }
 
-            pushd(srcdir);
-            {
+            if (!pushd(srcdir)) {
                 char dname[NAME_MAX];
                 char outdir[PATH_MAX];
                 char cmd[PATH_MAX * 2];
@@ -163,15 +168,21 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                 if (mkdirs(outdir, 0755)) {
                     fprintf(stderr, "failed to create output directory: %s\n", outdir);
+                    guard_strlist_free(&result);
+                    return NULL;
                 }
 
                 sprintf(cmd, "-m build -w -o %s", outdir);
                 if (python_exec(cmd)) {
                     fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
-                    strlist_free(&result);
+                    guard_strlist_free(&result);
                     return NULL;
                 }
                 popd();
+            } else {
+                fprintf(stderr, "Unable to enter source directory %s: %s\n", srcdir, strerror(errno));
+                guard_strlist_free(&result);
+                return NULL;
             }
         }
     }
