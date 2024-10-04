@@ -437,6 +437,39 @@ int conda_env_export(char *name, char *output_dir, char *output_filename) {
     return conda_exec(env_command);
 }
 
+char *conda_get_active_environment() {
+    const char *name = getenv("CONDA_DEFAULT_ENV");
+    if (!name) {
+        return NULL;
+    }
+
+    char *result = NULL;
+    result = strdup(name);
+    if (!result) {
+        return NULL;
+    }
+
+    return result;
+}
+
+int conda_provides(const char *spec) {
+    struct Process proc;
+    memset(&proc, 0, sizeof(proc));
+    strcpy(proc.f_stdout, "/dev/null");
+    strcpy(proc.f_stderr, "/dev/null");
+
+    // It's worth noting the departure from using conda_exec() here:
+    // conda_exec() expects the program output to be visible to the user.
+    // For this operation we only need the exit value.
+    char cmd[PATH_MAX] = {0};
+    snprintf(cmd, sizeof(cmd) - 1, "mamba search --use-index-cache %s", spec);
+    if (shell(&proc, cmd) < 0) {
+        fprintf(stderr, "shell: %s", strerror(errno));
+        return -1;
+    }
+    return proc.returncode == 0;
+}
+
 int conda_index(const char *path) {
     char command[PATH_MAX];
     sprintf(command, "index %s", path);
