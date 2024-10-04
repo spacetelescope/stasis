@@ -27,6 +27,8 @@ struct Wheel {
  * @param to_match a NULL terminated array of patterns (i.e. platform, arch, version, etc)
  * @param match_mode WHEEL_MATCH_EXACT
  * @param match_mode WHEEL_MATCH ANY
+ * @return pointer to populated Wheel on success
+ * @return NULL on error
  */
 struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
 void wheel_free(struct Wheel **wheel);
