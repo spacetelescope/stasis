@@ -1,6 +1,6 @@
 #include "delivery.h"
 
-static const struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
+static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
     struct Test *result;
 
     result = NULL;
@@ -61,7 +61,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
-                struct Test *info = (struct Test *) requirement_from_test(ctx, name);
+                struct Test *info = requirement_from_test(ctx, name);
                 if (info) {
                     if (!strcmp(info->version, "HEAD")) {
                         struct StrList *tag_data = strlist_init();
