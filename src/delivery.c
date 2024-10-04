@@ -235,8 +235,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 version = test->version;
 
                 // Is the list item a git+schema:// URL?
-                if (strstr(name, "git+") && strstr(name, "://")) {
-                    char *xrepo = strstr(name, "+");
+                if (strstr(nametmp, "git+") && strstr(nametmp, "://")) {
+                    char *xrepo = strstr(nametmp, "+");
                     if (xrepo) {
                         xrepo++;
                         guard_free(test->repository);
@@ -244,7 +244,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                         xrepo = NULL;
                     }
                     // Extract the name of the package
-                    char *xbasename = path_basename(name);
+                    char *xbasename = path_basename(nametmp);
                     if (xbasename) {
                         // Replace the git+schema:// URL with the package name
                         strlist_set(&dataptr, i, xbasename);
@@ -252,9 +252,11 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     }
                 }
 
-                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, name, version)) {
-                    fprintf(stderr, "(%s present on index %s): ", version, PYPI_INDEX_DEFAULT);
-                    ignore_pkg = 0;
+                ignore_pkg = 0;
+                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, nametmp, version)) {
+                    fprintf(stderr, "(%s provided by index %s): ", version, PYPI_INDEX_DEFAULT);
+                } else if (DEFER_CONDA == type && conda_provides(nametmp)) {
+                    fprintf(stderr, "(%s provided by conda channel): ", version);
                 } else {
                     ignore_pkg = 1;
                 }
@@ -263,12 +265,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         }
 
         if (ignore_pkg) {
-            char build_at[PATH_MAX];
-            if (DEFER_CONDA == type) {
-                sprintf(build_at, "%s=%s", name, version);
-                name = build_at;
-            }
-
             printf("BUILD FOR HOST\n");
             strlist_append(&deferred, name);
         } else {
