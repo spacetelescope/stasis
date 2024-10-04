@@ -365,4 +365,28 @@ long get_cpu_count();
  */
 int mkdirs(const char *_path, mode_t mode);
 
+/**
+ * Return pointer to a (possible) version specifier
+ *
+ * ```c
+ * char s[] = "abc==1.2.3";
+ * char *spec_begin = find_version_spec(s);
+ * // spec_begin is "==1.2.3"
+ *
+ * char package_name[255];
+ * char s[] = "abc";
+ * char *spec_pos = find_version_spec(s);
+ * if (spec_pos) {
+ *     strncpy(package_name, spec_pos - s);
+ *     // use spec
+ * } else {
+ *     // spec not found
+ * }
+ *
+ * @param str a pointer to a buffer containing a package spec (i.e. abc==1.2.3, abc>=1.2.3, abc)
+ * @return a pointer to the first occurrence of a version spec character
+ * @return NULL if not found
+ */
+char *find_version_spec(char *package_name);
+
 #endif //STASIS_UTILS_H
