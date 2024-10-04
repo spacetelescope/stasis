@@ -12,20 +12,28 @@
 #define OPT_NO_TESTING 1004
 #define OPT_OVERWRITE 1005
 #define OPT_NO_REWRITE_SPEC_STAGE_2 1006
+#define OPT_FAIL_FAST 1007
+#define OPT_NO_PARALLEL 1008
+#define OPT_POOL_STATUS_INTERVAL 1009
+
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},
         {"version", no_argument, 0, 'V'},
         {"continue-on-error", no_argument, 0, 'C'},
         {"config", required_argument, 0, 'c'},
+        {"cpu-limit", required_argument, 0, 'l'},
+        {"pool-status-interval", required_argument, 0, OPT_POOL_STATUS_INTERVAL},
         {"python", required_argument, 0, 'p'},
         {"verbose", no_argument, 0, 'v'},
         {"unbuffered", no_argument, 0, 'U'},
         {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
+        {"fail-fast", no_argument, 0, OPT_FAIL_FAST},
         {"overwrite", no_argument, 0, OPT_OVERWRITE},
         {"no-docker", no_argument, 0, OPT_NO_DOCKER},
         {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
         {"no-artifactory-build-info", no_argument, 0, OPT_NO_ARTIFACTORY_BUILD_INFO},
         {"no-testing", no_argument, 0, OPT_NO_TESTING},
+        {"no-parallel", no_argument, 0, OPT_NO_PARALLEL},
         {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
         {0, 0, 0, 0},
 };
@@ -35,15 +43,19 @@ const char *long_options_help[] = {
         "Display program version",
         "Allow tests to fail",
         "Read configuration file",
+        "Number of processes to spawn concurrently (default: cpus - 1)",
+        "Report task status every n seconds (default: 30)",
         "Override version of Python in configuration",
         "Increase output verbosity",
         "Disable line buffering",
         "Update conda installation prior to STASIS environment creation",
+        "On error, immediately terminate all tasks",
         "Overwrite an existing release",
         "Do not build docker images",
         "Do not upload artifacts to Artifactory",
         "Do not upload build info objects to Artifactory",
         "Do not execute test scripts",
+        "Do not execute tests in parallel",
         "Do not rewrite paths and URLs in output files",
         NULL,
 };
@@ -214,6 +226,10 @@ int main(int argc, char *argv[]) {
     char installer_url[PATH_MAX];
     char python_override_version[STASIS_NAME_MAX];
     int user_disabled_docker = false;
+    globals.cpu_limit = get_cpu_count();
+    if (globals.cpu_limit > 1) {
+        globals.cpu_limit--; // max - 1
+    }
 
     memset(env_name, 0, sizeof(env_name));
     memset(env_name_testing, 0, sizeof(env_name_testing));
@@ -241,8 +257,28 @@ int main(int argc, char *argv[]) {
             case 'p':
                 strcpy(python_override_version, optarg);
                 break;
+            case 'l':
+                globals.cpu_limit = strtol(optarg, NULL, 10);
+                if (globals.cpu_limit <= 1) {
+                    globals.cpu_limit = 1;
+                    globals.enable_parallel = false; // No point
+                }
+                break;
             case OPT_ALWAYS_UPDATE_BASE:
                 globals.always_update_base_environment = true;
+                break;
+            case OPT_FAIL_FAST:
+                globals.parallel_fail_fast = true;
+                break;
+            case OPT_POOL_STATUS_INTERVAL:
+                globals.pool_status_interval = (int) strtol(optarg, NULL, 10);
+                if (globals.pool_status_interval < 1) {
+                    globals.pool_status_interval = 1;
+                } else if (globals.pool_status_interval > 60 * 10) {
+                    // Possible poor choice alert
+                    fprintf(stderr, "Caution: Excessive pausing between status updates may cause third-party CI/CD"
+                                    " jobs to fail if the stdout/stderr streams are idle for too long!\n");
+                }
                 break;
             case 'U':
                 setenv("PYTHONUNBUFFERED", "1", 1);
@@ -272,6 +308,9 @@ int main(int argc, char *argv[]) {
                 break;
             case OPT_NO_REWRITE_SPEC_STAGE_2:
                 globals.enable_rewrite_spec_stage_2 = false;
+                break;
+            case OPT_NO_PARALLEL:
+                globals.enable_parallel = false;
                 break;
             case '?':
             default:
@@ -327,7 +366,6 @@ int main(int argc, char *argv[]) {
     tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
     tpl_register("deploy.jfrog.url", &globals.jfrog.url);
     tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
-    tpl_register("workaround.tox_posargs", &globals.workaround.tox_posargs);
     tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
 
     // Expose function(s) to the template engine
@@ -336,6 +374,7 @@ int main(int argc, char *argv[]) {
     tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, &ctx);
     tpl_register_func("junitxml_file", &get_junitxml_file_entrypoint, 1, &ctx);
     tpl_register_func("basetemp_dir", &get_basetemp_dir_entrypoint, 1, &ctx);
+    tpl_register_func("tox_run", &tox_run_entrypoint, 2, &ctx);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR
@@ -423,9 +462,9 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L1, "Conda setup\n");
-    delivery_get_installer_url(&ctx, installer_url);
+    delivery_get_conda_installer_url(&ctx, installer_url);
     msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
-    if (delivery_get_installer(&ctx, installer_url)) {
+    if (delivery_get_conda_installer(&ctx, installer_url)) {
         msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
         exit(1);
     }

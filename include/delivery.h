@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <fnmatch.h>
+#include <sys/statvfs.h>
 #include "core.h"
 
 #define DELIVERY_PLATFORM_MAX 4
@@ -149,7 +151,10 @@ struct Delivery {
         char *name;                     ///< Name of package
         char *version;                  ///< Version of package
         char *repository;               ///< Git repository of package
+        char *script_setup;             ///< Commands to execute before the main script
         char *script;                   ///< Commands to execute
+        bool disable;                   ///< Toggle a test block
+        bool parallel;                  ///< Toggle parallel or serial execution
         char *build_recipe;             ///< Conda recipe to build (optional)
         char *repository_info_ref;      ///< Git commit hash
         char *repository_info_tag;      ///< Git tag (first parent)
@@ -286,7 +291,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx);
  * Retrieve Conda installer
  * @param installer_url URL to installation script
  */
-int delivery_get_installer(struct Delivery *ctx, char *installer_url);
+int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url);
 
 /**
  * Generate URL based on Delivery context
@@ -294,7 +299,7 @@ int delivery_get_installer(struct Delivery *ctx, char *installer_url);
  * @param result pointer to char
  * @return in result
  */
-void delivery_get_installer_url(struct Delivery *ctx, char *result);
+void delivery_get_conda_installer_url(struct Delivery *ctx, char *result);
 
 /**
  * Install packages based on Delivery context
@@ -376,6 +381,12 @@ void delivery_gather_tool_versions(struct Delivery *ctx);
 // helper function
 int delivery_init_tmpdir(struct Delivery *ctx);
 
+void delivery_init_dirs_stage1(struct Delivery *ctx);
+
+void delivery_init_dirs_stage2(struct Delivery *ctx);
+
+int delivery_init_platform(struct Delivery *ctx);
+
 int delivery_init_artifactory(struct Delivery *ctx);
 
 int delivery_artifact_upload(struct Delivery *ctx);
@@ -386,10 +397,21 @@ int delivery_docker(struct Delivery *ctx);
 
 int delivery_fixup_test_results(struct Delivery *ctx);
 
-int *bootstrap_build_info(struct Delivery *ctx);
+int bootstrap_build_info(struct Delivery *ctx);
 
 int delivery_dump_metadata(struct Delivery *ctx);
 
+int populate_info(struct Delivery *ctx);
+
+int populate_delivery_cfg(struct Delivery *ctx, int render_mode);
+
+int populate_delivery_ini(struct Delivery *ctx, int render_mode);
+
+int populate_mission_ini(struct Delivery **ctx, int render_mode);
+
+void validate_delivery_ini(struct INIFILE *ini);
+
+int filter_repo_tags(char *repo, struct StrList *patterns);
 /**
  * Determine whether a release on-disk matches the release name in use
  * @param ctx Delivery context

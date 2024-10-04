@@ -79,6 +79,7 @@ void test_strdup_array_and_strcmp_array() {
     for (size_t outer = 0; outer < sizeof(tc) / sizeof(*tc); outer++) {
         char **result = strdup_array((char **) tc[outer].data);
         STASIS_ASSERT(strcmp_array((const char **) result, tc[outer].expected) == 0, "array members were different");
+        GENERIC_ARRAY_FREE(result);
     }
 
     const struct testcase tc_bad[] = {
@@ -94,6 +95,7 @@ void test_strdup_array_and_strcmp_array() {
     for (size_t outer = 0; outer < sizeof(tc_bad) / sizeof(*tc_bad); outer++) {
         char **result = strdup_array((char **) tc_bad[outer].data);
         STASIS_ASSERT(strcmp_array((const char **) result, tc_bad[outer].expected) != 0, "array members were identical");
+        GENERIC_ARRAY_FREE(result);
     }
 }
 

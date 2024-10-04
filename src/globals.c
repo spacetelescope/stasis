@@ -25,19 +25,22 @@ const char *BANNER =
         "Association of Universities for Research in Astronomy (AURA)\n";
 
 struct STASIS_GLOBAL globals = {
-        .verbose = false,
-        .continue_on_error = false,
-        .always_update_base_environment = false,
-        .conda_fresh_start = true,
-        .conda_install_prefix = NULL,
-        .conda_packages = NULL,
-        .pip_packages = NULL,
-        .tmpdir = NULL,
-        .enable_docker = true,
-        .enable_artifactory = true,
-        .enable_artifactory_build_info = true,
-        .enable_testing = true,
-        .enable_rewrite_spec_stage_2 = true,
+        .verbose = false, ///< Toggle verbose mode
+        .continue_on_error = false, ///< Do not stop program on error
+        .always_update_base_environment = false, ///< Run "conda update --all" after installing Conda
+        .conda_fresh_start = true, ///< Remove/reinstall Conda at startup
+        .conda_install_prefix = NULL, ///< Path to install Conda
+        .conda_packages = NULL, ///< Conda packages to install
+        .pip_packages = NULL, ///< Python packages to install
+        .tmpdir = NULL, ///< Path to store temporary data
+        .enable_docker = true, ///< Toggle docker usage
+        .enable_artifactory = true, ///< Toggle artifactory server usage
+        .enable_artifactory_build_info = true, ///< Toggle build-info uploads
+        .enable_testing = true, ///< Toggle [test] block "script" execution. "script_setup" always executes.
+        .enable_rewrite_spec_stage_2 = true, ///< Leave template stings in output files
+        .enable_parallel = true, ///< Toggle testing in parallel
+        .parallel_fail_fast = false, ///< Kill ALL multiprocessing tasks immediately on error
+        .pool_status_interval = 30, ///< Report "Task is running"
 };
 
 void globals_free() {
@@ -55,7 +58,6 @@ void globals_free() {
     guard_free(globals.jfrog.jfrog_artifactory_base_url);
     guard_free(globals.jfrog.jfrog_artifactory_product);
     guard_free(globals.jfrog.remote_filename);
-    guard_free(globals.workaround.tox_posargs);
     guard_free(globals.workaround.conda_reactivate);
     if (globals.envctl) {
         envctl_free(&globals.envctl);

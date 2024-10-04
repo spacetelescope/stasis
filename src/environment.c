@@ -305,7 +305,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
         // Handle literal statement "$$var"
         // Value becomes "$var" (unexpanded)
         if (strncmp(&input[i], delim_literal, strlen(delim_literal)) == 0) {
-            strncat(expanded, &delim, 1);
+            strncat(expanded, &delim, 2);
             i += strlen(delim_literal);
             // Ignore opening brace
             if (input[i] == '{') {
@@ -349,7 +349,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
                 continue;
             }
             // Append expanded environment variable to output
-            strncat(expanded, tmp, strlen(tmp));
+            strncat(expanded, tmp, STASIS_BUFSIZ - 1);
             if (env) {
                 guard_free(tmp);
             }

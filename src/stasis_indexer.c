@@ -72,9 +72,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         if (!access(srcdir_with_output, F_OK)) {
             srcdir = srcdir_with_output;
         }
-        sprintf(cmd + strlen(cmd), "'%s'/ ", srcdir);
+        snprintf(cmd + strlen(cmd), sizeof(srcdir) - strlen(srcdir) + 4, "'%s'/ ", srcdir);
     }
-    sprintf(cmd + strlen(cmd), "%s/", destdir);
+    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(destdir) + 1, " %s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
@@ -368,6 +368,8 @@ int indexer_make_website(struct Delivery *ctx) {
             // This might be negative when killed by a signal.
             // Otherwise, the return code is not critical to us.
             if (system(cmd) < 0) {
+                guard_free(css_filename);
+                guard_strlist_free(&dirs);
                 return 1;
             }
             if (file_replace_text(fullpath_dest, ".md", ".html", 0)) {
@@ -381,11 +383,14 @@ int indexer_make_website(struct Delivery *ctx) {
                 char link_dest[PATH_MAX] = {0};
                 strcpy(link_from, "README.html");
                 sprintf(link_dest, "%s/%s", root, "index.html");
-                symlink(link_from, link_dest);
+                if (symlink(link_from, link_dest)) {
+                    SYSERROR("Warning: symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
+                }
             }
         }
         guard_strlist_free(&inputs);
     }
+    guard_free(css_filename);
     guard_strlist_free(&dirs);
 
     return 0;
