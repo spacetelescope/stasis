@@ -496,7 +496,7 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L1, "Creating release environment(s)\n");
-    if (ctx.meta.based_on && strlen(ctx.meta.based_on)) {
+    if (!isempty(ctx.meta.based_on)) {
         if (conda_env_remove(env_name)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
             exit(1);
@@ -549,7 +549,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (ctx.meta.based_on) {
+    if (!isempty(ctx.meta.based_on)) {
         msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
         if (delivery_overlay_packages_from_env(&ctx, env_name)) {
             msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
