@@ -548,6 +548,13 @@ int main(int argc, char *argv[]) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
         exit(1);
     }
+
+    if (ctx.meta.based_on) {
+        msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
+        if (delivery_overlay_packages_from_env(&ctx, env_name)) {
+            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
+            exit(1);
+        }
     }
 
     msg(STASIS_MSG_L1, "Filter deliverable packages\n");
