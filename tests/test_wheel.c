@@ -50,12 +50,12 @@ void test_get_wheel_file() {
         },
     };
 
-    struct Wheel *doesnotexist = get_wheel_file("doesnotexist", "doesnotexist-0.0.1-py2.py3-none-any.whl", (char *[]) {"not", NULL}, WHEEL_MATCH_ANY);
+    struct Wheel *doesnotexist = get_wheel_info("doesnotexist", "doesnotexist-0.0.1-py2.py3-none-any.whl", (char *[]) {"not", NULL}, WHEEL_MATCH_ANY);
     STASIS_ASSERT(doesnotexist == NULL, "returned non-NULL on error");
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        struct Wheel *wheel = get_wheel_file(".", test->expected.distribution, (char *[]) {(char *) test->expected.version, NULL}, WHEEL_MATCH_ANY);
+        struct Wheel *wheel = get_wheel_info(".", test->expected.distribution, (char *[]) {(char *) test->expected.version, NULL}, WHEEL_MATCH_ANY);
         STASIS_ASSERT(wheel != NULL, "result should not be NULL!");
         STASIS_ASSERT(wheel->file_name && strcmp(wheel->file_name, test->expected.file_name) == 0, "mismatched file name");
         STASIS_ASSERT(wheel->version && strcmp(wheel->version, test->expected.version) == 0, "mismatched version");
