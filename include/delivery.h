@@ -419,4 +419,6 @@ int filter_repo_tags(char *repo, struct StrList *patterns);
  */
 int delivery_exists(struct Delivery *ctx);
 
+int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name);
+
 #endif //STASIS_DELIVERY_H
