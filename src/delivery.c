@@ -191,18 +191,24 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             // no data
             continue;
         }
-        msg(STASIS_MSG_L3, "package '%s': ", name);
 
         // Compile a list of packages that are *also* to be tested.
         char *version;
         char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
+        char package_name[255] = {0};
+
         if (spec_end) {
             // A version is present in the package name. Jump past operator(s).
             while (*spec_end != '\0' && !isalnum(*spec_end)) {
                 spec_end++;
             }
+            strncpy(package_name, name, spec_begin - name);
+        } else {
+            strncpy(package_name, name, sizeof(package_name) - 1);
         }
+
+        msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]) && ctx->tests[x].name != NULL; x++) {
