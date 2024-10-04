@@ -814,3 +814,6 @@ int mkdirs(const char *_path, mode_t mode) {
     return status;
 }
 
+char *find_version_spec(char *str) {
+    return strpbrk(str, "@~=<>!");
+}
