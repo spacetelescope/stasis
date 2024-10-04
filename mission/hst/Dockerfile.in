@@ -68,7 +68,7 @@ RUN conda config --set auto_update_conda false \
     && conda config --set always_yes true \
     && conda config --set quiet true \
     && conda config --set rollback_enabled false
-RUN sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--extra-index-url ${HOME}/packages/wheels|;" ${HOME}/SNAPSHOT.yml
+RUN sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--extra-index-url file://${HOME}/packages/wheels|;" ${HOME}/SNAPSHOT.yml
 RUN mamba install \
         git \
         ${CONDA_PACKAGES} \
