@@ -82,18 +82,29 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         // We can't match on version here (index 0). The wheel's version is not guaranteed to be
                         // equal to the tag; setuptools_scm auto-increments the value, the user can change it manually,
                         // etc.
-                        whl = get_wheel_file(ctx->storage.wheel_artifact_dir, info->name,
+                        errno = 0;
+                        whl = get_wheel_info(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
                                                          post_commit, hash,
                                                          NULL}, WHEEL_MATCH_ANY);
-
-                        guard_strlist_free(&tag_data);
-                        info->version = whl->version;
-                        sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, whl->version);
-                    } else {
-                        sprintf(cmd + strlen(cmd), " '%s==%s'", info->name, info->version);
+                        if (!whl && errno) {
+                            // error
+                            SYSERROR("Unable to read Python wheel info: %s\n", strerror(errno));
+                            exit(1);
+                        } else if (!whl) {
+                            // not found
+                            fprintf(stderr, "No wheel packages found that match the description of '%s'", info->name);
+                        } else {
+                            // found
+                            guard_strlist_free(&tag_data);
+                            info->version = strdup(whl->version);
+                        }
+                        wheel_free(&whl);
                     }
+                    snprintf(cmd + strlen(cmd),
+                             sizeof(cmd) - strlen(cmd) - strlen(info->name) - strlen(info->version) + 5,
+                             " '%s==%s'", info->name, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     return -1;
