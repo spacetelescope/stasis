@@ -67,6 +67,7 @@ void test_get_wheel_file() {
             STASIS_ASSERT(strcmp(wheel->build_tag, test->expected.build_tag) == 0,
                           "mismatched build tag (optional arbitrary string)");
         }
+        wheel_free(&wheel);
     }
 }
 
