@@ -220,7 +220,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
                 guard_free(test->version);
                 if (spec_begin && spec_end) {
-                    *spec_begin = '\0';
                     test->version = strdup(spec_end);
                 } else {
                     // There are too many possible default branches nowadays: master, main, develop, xyz, etc.
