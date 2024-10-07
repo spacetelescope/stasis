@@ -252,23 +252,36 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     }
                 }
 
-                ignore_pkg = 0;
-                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, nametmp, version)) {
-                    fprintf(stderr, "(%s provided by index %s): ", version, PYPI_INDEX_DEFAULT);
-                } else if (DEFER_CONDA == type && conda_provides(nametmp)) {
-                    fprintf(stderr, "(%s provided by conda channel): ", version);
+                int upstream_exists = 0;
+                if (DEFER_PIP == type) {
+                    upstream_exists = pip_index_provides(PYPI_INDEX_DEFAULT, name);
+                } else if (DEFER_CONDA == type) {
+                    upstream_exists = conda_provides(name);
                 } else {
-                    ignore_pkg = 1;
+                    fprintf(stderr, "\nUnknown package type: %d\n", type);
+                    exit(1);
                 }
+
+                if (upstream_exists < 0) {
+                    fprintf(stderr, "%s's existence command failed for '%s'\n"
+                        "(This may be due to a network/firewall issue!)\n", mode, name);
+                    exit(1);
+                }
+                if (!upstream_exists) {
+                    build_for_host = 1;
+                } else {
+                    build_for_host = 0;
+                }
+
                 break;
             }
         }
 
-        if (ignore_pkg) {
+        if (build_for_host) {
             printf("BUILD FOR HOST\n");
             strlist_append(&deferred, name);
         } else {
-            printf("USE EXISTING\n");
+            printf("USE EXTERNAL\n");
             strlist_append(&filtered, name);
         }
     }
