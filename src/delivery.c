@@ -196,7 +196,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         }
 
         // Compile a list of packages that are *also* to be tested.
-        char *version;
         char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
         char package_name[255] = {0};
@@ -216,9 +215,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]) && ctx->tests[x].name != NULL; x++) {
             struct Test *test = &ctx->tests[x];
-            version = NULL;
-
             char nametmp[1024] = {0};
+
             if (spec_end != NULL && spec_begin != NULL) {
                 strncpy(nametmp, name, spec_begin - name);
             } else {
@@ -235,7 +233,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     // HEAD is a safe bet.
                     test->version = strdup("HEAD");
                 }
-                version = test->version;
 
                 // Is the list item a git+schema:// URL?
                 if (strstr(nametmp, "git+") && strstr(nametmp, "://")) {
