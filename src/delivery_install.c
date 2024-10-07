@@ -69,7 +69,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         }
         struct Test *test_block = requirement_from_test(ctx, spec_name);
         if (!test_block) {
-            printf("using spec from config without test: %s\n", spec);
+            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "from config without test: %s\n", spec);
             strlist_append(&new_list, spec);
         }
     }
@@ -91,10 +91,10 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         if (test && strcmp(test->name, frozen_name) == 0) {
             char *config_spec = have_spec_in_config(ctx, frozen_name);
             if (config_spec) {
-                printf("using spec from config: %s\n", config_spec);
+                msg(STASIS_MSG_L2, "from config: %s\n", config_spec);
                 strlist_append(&new_list, config_spec);
             } else {
-                printf("using spec from environment: %s\n", frozen_spec);
+                msg(STASIS_MSG_L2, "from environment: %s\n", frozen_spec);
                 strlist_append(&new_list, frozen_spec);
             }
         }
