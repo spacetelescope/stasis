@@ -190,7 +190,7 @@ int conda_index(const char *path);
  * @param version package version (may be NULL)
  * @return not found = 0, found = 1, error = -1
  */
-int pip_index_provides(const char *index_url, const char *name, const char *version);
+int pip_index_provides(const char *index_url, const char *spec);
 
 char *conda_get_active_environment();
 
