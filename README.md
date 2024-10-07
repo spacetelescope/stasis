@@ -147,24 +147,26 @@ stasis mydelivery.ini
 
 ## Command Line Options
 
-| Long Option          | Short Option | Purpose                                                        |
-|:---------------------|:------------:|:---------------------------------------------------------------|
-| --help               |      -h      | Display usage statement                                        |
-| --version            |      -V      | Display program version                                        |
-| --continue-on-error  |      -C      | Allow tests to fail                                            |
-| --config ARG         |    -c ARG    | Read STASIS configuration file                                 |
-| --cpu-limit ARG      |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |
-| --python ARG         |    -p ARG    | Override version of Python in configuration                    |
-| --verbose            |      -v      | Increase output verbosity                                      |
-| --unbuffered         |      -U      | Disable line buffering                                         |
-| --update-base        |     n/a      | Update conda installation prior to STATIS environment creation |
-| --parallel-fail-fast |     n/a      | On test error, terminate all concurrent tasks                  |
-| --overwrite          |     n/a      | Overwrite an existing release                                  |
-| --no-docker          |     n/a      | Do not build docker images                                     |
-| --no-artifactory     |     n/a      | Do not upload artifacts to Artifactory                         |
-| --no-testing         |     n/a      | Do not execute test scripts                                    |
-| --no-rewrite         |     n/a      | Do not rewrite paths and URLs in output files                  |
-| DELIVERY_FILE        |     n/a      | STASIS delivery file                                           |
+| Long Option                | Short Option | Purpose                                                        |
+|:---------------------------|:------------:|:---------------------------------------------------------------|
+| --help                     |      -h      | Display usage statement                                        |
+| --version                  |      -V      | Display program version                                        |
+| --continue-on-error        |      -C      | Allow tests to fail                                            |
+| --config ARG               |    -c ARG    | Read STASIS configuration file                                 |
+| --cpu-limit ARG            |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |
+| --pool-status-interval ARG |     n/a      | Report task status every n seconds (default: 30)               |
+| --python ARG               |    -p ARG    | Override version of Python in configuration                    |
+| --verbose                  |      -v      | Increase output verbosity                                      |
+| --unbuffered               |      -U      | Disable line buffering                                         |
+| --update-base              |     n/a      | Update conda installation prior to STATIS environment creation |
+| --fail-fast                |     n/a      | On test error, terminate all tasks                             |
+| --overwrite                |     n/a      | Overwrite an existing release                                  |
+| --no-docker                |     n/a      | Do not build docker images                                     |
+| --no-artifactory           |     n/a      | Do not upload artifacts to Artifactory                         |
+| --no-testing               |     n/a      | Do not execute test scripts                                    |
+| --no-parallel              |     n/a      | Do not execute tests in parallel                               |
+| --no-rewrite               |     n/a      | Do not rewrite paths and URLs in output files                  |
+| DELIVERY_FILE              |     n/a      | STASIS delivery file                                           |
 
 ## Environment variables
 
@@ -344,11 +346,11 @@ python = {{ env:MY_DYNAMIC_PYTHON_VERSION }}
 
 Template functions can be accessed using the `{{ func:NAME(ARG,...) }}` notation.
 
-| Name                          | Purpose                                                          |
-|-------------------------------|------------------------------------------------------------------|
-| get_github_release_notes_auto | Generate release notes for all test contexts                     |
-| basetemp_dir                  | Generate directory path to test block's temporary data directory |
-| junitxml_file                 | Generate directory path and file name for test result file       |
+| Name                          | Arguments | Purpose                                                          |
+|-------------------------------|-----------|------------------------------------------------------------------|
+| get_github_release_notes_auto | n/a       | Generate release notes for all test contexts                     |
+| basetemp_dir                  | n/a       | Generate directory path to test block's temporary data directory |
+| junitxml_file                 | n/a       | Generate directory path and file name for test result file       |
 
 
 # Mission files
