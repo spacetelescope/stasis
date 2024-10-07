@@ -186,15 +186,18 @@ int conda_index(const char *path);
 /**
  * Determine whether a simple index contains a package
  * @param index_url a file system path or url pointing to a simple index
- * @param name package name (required)
- * @param version package version (may be NULL)
+ * @param spec a pip package specification (e.g. `name==1.2.3`)
  * @return not found = 0, found = 1, error = -1
  */
 int pip_index_provides(const char *index_url, const char *spec);
 
-char *conda_get_active_environment();
-
+/**
+ * Determine whether conda can find a package in its channel list
+ * @param spec a conda package specification (e.g. `name=1.2.3`)
+ * @return not found = 0, found = 1, error = -1
+ */
 int conda_provides(const char *spec);
 
+char *conda_get_active_environment();
 
 #endif //STASIS_CONDA_H
