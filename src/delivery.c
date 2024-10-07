@@ -187,7 +187,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     struct StrList *filtered = NULL;
     filtered = strlist_init();
     for (size_t i = 0; i < strlist_count(dataptr); i++) {
-        int ignore_pkg = 0;
+        int build_for_host = 0;
 
         name = strlist_item(dataptr, i);
         if (!strlen(name) || isblank(*name) || isspace(*name)) {
