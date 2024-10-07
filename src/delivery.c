@@ -178,6 +178,9 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         dataptr = ctx->conda.pip_packages;
         deferred = ctx->conda.pip_packages_defer;
         strcpy(mode, "pip");
+    } else {
+        SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
+        exit(1);
     }
     msg(STASIS_MSG_L2, "Filtering %s packages by test definition...\n", mode);
 
