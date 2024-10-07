@@ -178,38 +178,45 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         dataptr = ctx->conda.pip_packages;
         deferred = ctx->conda.pip_packages_defer;
         strcpy(mode, "pip");
+    } else {
+        SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
+        exit(1);
     }
     msg(STASIS_MSG_L2, "Filtering %s packages by test definition...\n", mode);
 
     struct StrList *filtered = NULL;
     filtered = strlist_init();
     for (size_t i = 0; i < strlist_count(dataptr); i++) {
-        int ignore_pkg = 0;
+        int build_for_host = 0;
 
         name = strlist_item(dataptr, i);
         if (!strlen(name) || isblank(*name) || isspace(*name)) {
             // no data
             continue;
         }
-        msg(STASIS_MSG_L3, "package '%s': ", name);
 
         // Compile a list of packages that are *also* to be tested.
-        char *version;
         char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
+        char package_name[255] = {0};
+
         if (spec_end) {
             // A version is present in the package name. Jump past operator(s).
             while (*spec_end != '\0' && !isalnum(*spec_end)) {
                 spec_end++;
             }
+            strncpy(package_name, name, spec_begin - name);
+        } else {
+            strncpy(package_name, name, sizeof(package_name) - 1);
         }
+
+        msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]) && ctx->tests[x].name != NULL; x++) {
             struct Test *test = &ctx->tests[x];
-            version = NULL;
-
             char nametmp[1024] = {0};
+
             if (spec_end != NULL && spec_begin != NULL) {
                 strncpy(nametmp, name, spec_begin - name);
             } else {
@@ -220,18 +227,16 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
                 guard_free(test->version);
                 if (spec_begin && spec_end) {
-                    *spec_begin = '\0';
                     test->version = strdup(spec_end);
                 } else {
                     // There are too many possible default branches nowadays: master, main, develop, xyz, etc.
                     // HEAD is a safe bet.
                     test->version = strdup("HEAD");
                 }
-                version = test->version;
 
                 // Is the list item a git+schema:// URL?
-                if (strstr(name, "git+") && strstr(name, "://")) {
-                    char *xrepo = strstr(name, "+");
+                if (strstr(nametmp, "git+") && strstr(nametmp, "://")) {
+                    char *xrepo = strstr(nametmp, "+");
                     if (xrepo) {
                         xrepo++;
                         guard_free(test->repository);
@@ -239,7 +244,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                         xrepo = NULL;
                     }
                     // Extract the name of the package
-                    char *xbasename = path_basename(name);
+                    char *xbasename = path_basename(nametmp);
                     if (xbasename) {
                         // Replace the git+schema:// URL with the package name
                         strlist_set(&dataptr, i, xbasename);
@@ -247,27 +252,36 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     }
                 }
 
-                if (DEFER_PIP == type && pip_index_provides(PYPI_INDEX_DEFAULT, name, version)) {
-                    fprintf(stderr, "(%s present on index %s): ", version, PYPI_INDEX_DEFAULT);
-                    ignore_pkg = 0;
+                int upstream_exists = 0;
+                if (DEFER_PIP == type) {
+                    upstream_exists = pip_index_provides(PYPI_INDEX_DEFAULT, name);
+                } else if (DEFER_CONDA == type) {
+                    upstream_exists = conda_provides(name);
                 } else {
-                    ignore_pkg = 1;
+                    fprintf(stderr, "\nUnknown package type: %d\n", type);
+                    exit(1);
                 }
+
+                if (upstream_exists < 0) {
+                    fprintf(stderr, "%s's existence command failed for '%s'\n"
+                        "(This may be due to a network/firewall issue!)\n", mode, name);
+                    exit(1);
+                }
+                if (!upstream_exists) {
+                    build_for_host = 1;
+                } else {
+                    build_for_host = 0;
+                }
+
                 break;
             }
         }
 
-        if (ignore_pkg) {
-            char build_at[PATH_MAX];
-            if (DEFER_CONDA == type) {
-                sprintf(build_at, "%s=%s", name, version);
-                name = build_at;
-            }
-
+        if (build_for_host) {
             printf("BUILD FOR HOST\n");
             strlist_append(&deferred, name);
         } else {
-            printf("USE EXISTING\n");
+            printf("USE EXTERNAL\n");
             strlist_append(&filtered, name);
         }
     }

@@ -496,11 +496,12 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L1, "Creating release environment(s)\n");
-    if (ctx.meta.based_on && strlen(ctx.meta.based_on)) {
+    if (!isempty(ctx.meta.based_on)) {
         if (conda_env_remove(env_name)) {
-           msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name_testing);
-           exit(1);
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
+            exit(1);
         }
+
         msg(STASIS_MSG_L2, "Based on release: %s\n", ctx.meta.based_on);
         if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install release environment using configuration file\n");
@@ -508,7 +509,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (conda_env_remove(env_name_testing)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment\n");
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment %s\n", env_name_testing);
             exit(1);
         }
         if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on)) {
@@ -544,8 +545,16 @@ int main(int argc, char *argv[]) {
     }
 
     if (pip_exec("install build")) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed");
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
         exit(1);
+    }
+
+    if (!isempty(ctx.meta.based_on)) {
+        msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
+        if (delivery_overlay_packages_from_env(&ctx, env_name)) {
+            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
+            exit(1);
+        }
     }
 
     msg(STASIS_MSG_L1, "Filter deliverable packages\n");

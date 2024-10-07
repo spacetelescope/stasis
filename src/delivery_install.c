@@ -1,16 +1,109 @@
 #include "delivery.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
-    struct Test *result;
-
-    result = NULL;
+    struct Test *result = NULL;
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        if (ctx->tests[i].name && strstr(name, ctx->tests[i].name)) {
+        if (ctx->tests[i].name && !strcmp(name, ctx->tests[i].name)) {
             result = &ctx->tests[i];
             break;
         }
     }
     return result;
+}
+
+static char *have_spec_in_config(struct Delivery *ctx, const char *name) {
+    for (size_t x = 0; x < strlist_count(ctx->conda.pip_packages); x++) {
+        char *config_spec = strlist_item(ctx->conda.pip_packages, x);
+        char *op = find_version_spec(config_spec);
+        char package[255] = {0};
+        if (op) {
+            strncpy(package, config_spec, op - config_spec);
+        } else {
+            strncpy(package, config_spec, sizeof(package) - 1);
+        }
+        if (strncmp(package, name, strlen(package)) == 0) {
+            return config_spec;
+        }
+    }
+    return NULL;
+}
+
+int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name) {
+    char *current_env = conda_get_active_environment();
+    int need_restore = current_env && strcmp(env_name, current_env) != 0;
+
+    conda_activate(ctx->storage.conda_install_prefix, env_name);
+    // Retrieve a listing of python packages installed under "env_name"
+    int freeze_status = 0;
+    char *freeze_output = shell_output("python -m pip freeze", &freeze_status);
+    if (freeze_status) {
+        guard_free(freeze_output);
+        guard_free(current_env);
+        return -1;
+    }
+
+    if (need_restore) {
+        // Restore the original conda environment
+        conda_activate(ctx->storage.conda_install_prefix, current_env);
+    }
+    guard_free(current_env);
+
+    struct StrList *frozen_list = strlist_init();
+    strlist_append_tokenize(frozen_list, freeze_output, LINE_SEP);
+    guard_free(freeze_output);
+
+    struct StrList *new_list = strlist_init();
+
+    // - consume package specs that have no test blocks.
+    // - these will be third-party packages like numpy, scipy, etc.
+    // - and they need to be present at the head of the list so they
+    //   get installed first.
+    for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
+        char *spec = strlist_item(ctx->conda.pip_packages, i);
+        char spec_name[255] = {0};
+        char *op = find_version_spec(spec);
+        if (op) {
+            strncpy(spec_name, spec, op - spec);
+        } else {
+            strncpy(spec_name, spec, sizeof(spec_name) - 1);
+        }
+        struct Test *test_block = requirement_from_test(ctx, spec_name);
+        if (!test_block) {
+            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "from config without test: %s\n", spec);
+            strlist_append(&new_list, spec);
+        }
+    }
+
+    // now consume packages that have a test block
+    // if the ini provides a spec, override the environment's version.
+    // otherwise, use the spec derived from the environment
+    for (size_t i = 0; i < strlist_count(frozen_list); i++) {
+        char *frozen_spec = strlist_item(frozen_list, i);
+        char frozen_name[255] = {0};
+        char *op = find_version_spec(frozen_spec);
+        // we only care about packages with specs here. if something else arrives, ignore it
+        if (op) {
+            strncpy(frozen_name, frozen_spec, op - frozen_spec);
+        } else {
+            strncpy(frozen_name, frozen_spec, sizeof(frozen_name) - 1);
+        }
+        struct Test *test = requirement_from_test(ctx, frozen_name);
+        if (test && strcmp(test->name, frozen_name) == 0) {
+            char *config_spec = have_spec_in_config(ctx, frozen_name);
+            if (config_spec) {
+                msg(STASIS_MSG_L2, "from config: %s\n", config_spec);
+                strlist_append(&new_list, config_spec);
+            } else {
+                msg(STASIS_MSG_L2, "from environment: %s\n", frozen_spec);
+                strlist_append(&new_list, frozen_spec);
+            }
+        }
+    }
+    guard_strlist_free(&ctx->conda.pip_packages);
+    ctx->conda.pip_packages = strlist_copy(new_list);
+    guard_strlist_free(&new_list);
+    guard_strlist_free(&frozen_list);
+    return 0;
 }
 
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
