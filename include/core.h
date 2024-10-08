@@ -1,4 +1,4 @@
-//! @file stasis.h
+//! @file core.h
 #ifndef STASIS_CORE_H
 #define STASIS_CORE_H
 

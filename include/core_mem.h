@@ -1,7 +1,4 @@
-//
-// Created by jhunk on 9/13/24.
-//
-
+//! @file core_mem.h
 #ifndef STASIS_CORE_MEM_H
 #define STASIS_CORE_MEM_H
 

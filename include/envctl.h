@@ -1,3 +1,4 @@
+//! @file envctl.h
 #ifndef STASIS_ENVCTL_H
 #define STASIS_ENVCTL_H
 

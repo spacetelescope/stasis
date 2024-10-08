@@ -1,3 +1,4 @@
+//! @file wheel.h
 #ifndef STASIS_WHEEL_H
 #define STASIS_WHEEL_H
 
