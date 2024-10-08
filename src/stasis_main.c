@@ -572,6 +572,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
+    // The base environment configuration not used past this point
     remove(mission_base);
 
     // Activate test environment
