@@ -495,7 +495,53 @@ int main(int argc, char *argv[]) {
         pathvar = NULL;
     }
 
+
+    //
+    // Implied environment creation modes/actions
+    //
+    // 1. No base environment config
+    //   1a. Caller is warned
+    //   1b. Caller has full control over all packages
+    // 2. Default base environment (etc/stasis/mission/[name]/base.yml)
+    //   2a. Depends on packages defined by base.yml
+    //   2b. Caller may issue a reduced package set in the INI config
+    //   2c. Caller must be vigilant to avoid incompatible packages (base.yml
+    //       *should* have no version constraints)
+    // 3. External base environment (based_on=schema://[release_name].yml)
+    //   3a. Depends on a previous release or arbitrary yaml configuration
+    //   3b. Bugs, conflicts, and dependency resolution issues are inherited and
+    //       must be handled in the INI config
     msg(STASIS_MSG_L1, "Creating release environment(s)\n");
+
+    char *mission_base = NULL;
+    if (isempty(ctx.meta.based_on)) {
+        guard_free(ctx.meta.based_on);
+        char *mission_base_orig = NULL;
+
+        if (asprintf(&mission_base_orig, "%s/%s/base.yml", ctx.storage.mission_dir, ctx.meta.mission) < 0) {
+            SYSERROR("Unable to allocate bytes for %s/%s/base.yml path\n", ctx.storage.mission_dir, ctx.meta.mission);
+            exit(1);
+        }
+
+        if (access(mission_base_orig, F_OK) < 0) {
+            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Mission does not provide a base.yml configuration: %s (%s)\n",
+                ctx.meta.mission, ctx.storage.mission_dir);
+        } else {
+            msg(STASIS_MSG_L2, "Using base environment configuration: %s\n", mission_base_orig);
+            if (asprintf(&mission_base, "%s/%s-base.yml", ctx.storage.tmpdir, ctx.info.release_name) < 0) {
+                SYSERROR("%s", "Unable to allocate bytes for temporary base.yml configuration");
+                remove(mission_base);
+                exit(1);
+            }
+            copy2(mission_base_orig, mission_base, CT_OWNER | CT_PERM);
+            char spec[255] = {0};
+            snprintf(spec, sizeof(spec) - 1, "- python=%s\n", ctx.meta.python);
+            file_replace_text(mission_base, "- python\n", spec, 0);
+            ctx.meta.based_on = mission_base;
+        }
+        guard_free(mission_base_orig);
+    }
+
     if (!isempty(ctx.meta.based_on)) {
         if (conda_env_remove(env_name)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
@@ -526,6 +572,8 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     }
+    remove(mission_base);
+    guard_free(mission_base);
 
     // Activate test environment
     msg(STASIS_MSG_L1, "Activating test environment\n");
