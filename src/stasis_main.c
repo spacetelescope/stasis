@@ -548,7 +548,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        msg(STASIS_MSG_L2, "Based on release: %s\n", ctx.meta.based_on);
+        msg(STASIS_MSG_L2, "Based on: %s\n", ctx.meta.based_on);
         if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install release environment using configuration file\n");
             exit(1);
