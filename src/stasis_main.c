@@ -573,7 +573,6 @@ int main(int argc, char *argv[]) {
         }
     }
     remove(mission_base);
-    guard_free(mission_base);
 
     // Activate test environment
     msg(STASIS_MSG_L1, "Activating test environment\n");
