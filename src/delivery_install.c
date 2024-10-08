@@ -99,8 +99,12 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
             }
         }
     }
-    guard_strlist_free(&ctx->conda.pip_packages);
-    ctx->conda.pip_packages = strlist_copy(new_list);
+
+    // Replace the package manifest as needed
+    if (strlist_count(new_list)) {
+        guard_strlist_free(&ctx->conda.pip_packages);
+        ctx->conda.pip_packages = strlist_copy(new_list);
+    }
     guard_strlist_free(&new_list);
     guard_strlist_free(&frozen_list);
     return 0;

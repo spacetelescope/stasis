@@ -1,0 +1,32 @@
+channels:
+  - conda-forge
+dependencies:
+  - fitsverify
+  - hstcal
+  - pip
+  - python
+  - setuptools
+  - pip:
+    - acstools
+    - calcos
+    - costools
+    - crds
+    - drizzlepac
+    - fitsblender
+    - gwcs
+    - hasp
+    - nictools
+    - spherical_geometry
+    - stistools
+    - stregion
+    - stsci.image
+    - stsci.imagestats
+    - stsci.skypac
+    - stsci.stimage
+    - stsci.tools
+    - stwcs
+    - tweakwcs
+    - ullyses
+    - ullyses-utils
+    - wfc3tools
+    - wfpc2tools
