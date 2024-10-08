@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - python
+  - setuptools
+  - pip:
+    - romancal
+    - stcal
