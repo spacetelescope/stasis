@@ -1,3 +1,4 @@
+//! @file template_func_proto.h
 #ifndef TEMPLATE_FUNC_PROTO_H
 #define TEMPLATE_FUNC_PROTO_H
 

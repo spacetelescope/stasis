@@ -1,3 +1,4 @@
+//! @file github.h
 #ifndef STASIS_GITHUB_H
 #define STASIS_GITHUB_H
 
