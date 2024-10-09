@@ -311,12 +311,12 @@ int indexer_make_website(struct Delivery *ctx) {
 
         // >= 1.10.0.1
         if (pandoc_version >= 0x010a0001) {
-            strcat(pandoc_versioned_args, "-f markdown+autolink_bare_uris ");
+            strcat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ");
         }
 
-        // >= 3.1.10
-        if (pandoc_version >= 0x03010a00) {
-            strcat(pandoc_versioned_args, "-f markdown+alerts ");
+        // > 3.1.9
+        if (pandoc_version > 0x03010900) {
+            strcat(pandoc_versioned_args, "-f gfm+alerts ");
         }
     }
 
@@ -396,18 +396,42 @@ int indexer_make_website(struct Delivery *ctx) {
     return 0;
 }
 
-int indexer_conda(struct Delivery *ctx) {
+static int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     int status = 0;
-    char micromamba_prefix[PATH_MAX] = {0};
-    sprintf(micromamba_prefix, "%s/bin", ctx->storage.tools_dir);
-    struct MicromambaInfo m = {.conda_prefix = globals.conda_install_prefix, .micromamba_prefix = micromamba_prefix};
-
-    status += micromamba(&m, "config prepend --env channels conda-forge");
-    if (!globals.verbose) {
-        status += micromamba(&m, "config set --env quiet true");
+    char *micromamba_prefix = NULL;
+    if (asprintf(&micromamba_prefix, "%s/bin", ctx->storage.tools_dir) < 0) {
+        return -1;
     }
-    status += micromamba(&m, "config set --env always_yes true");
-    status += micromamba(&m, "install conda-build");
+    m->conda_prefix = globals.conda_install_prefix;
+    m->micromamba_prefix = micromamba_prefix;
+
+    size_t pathvar_len = strlen(getenv("PATH")) + strlen(m->micromamba_prefix + strlen(m->conda_prefix)) + 3 + 4 + 1;
+    // ^^^^^^^^^^^^^^^^^^
+    // 3 = separators
+    // 4 = chars (/bin)
+    // 1 = nul terminator
+    char *pathvar = calloc(pathvar_len, sizeof(*pathvar));
+    if (!pathvar) {
+        SYSERROR("%s", "Unable to allocate bytes for temporary path string");
+        exit(1);
+    }
+    snprintf(pathvar, pathvar_len, "%s/bin:%s:%s", m->conda_prefix, m->micromamba_prefix, getenv("PATH"));
+    setenv("PATH", pathvar, 1);
+    guard_free(pathvar);
+
+    status += micromamba(m, "config prepend --env channels conda-forge");
+    if (!globals.verbose) {
+        status += micromamba(m, "config set --env quiet true");
+    }
+    status += micromamba(m, "config set --env always_yes true");
+    status += micromamba(m, "install conda-build pandoc");
+
+    return status;
+}
+
+int indexer_conda(struct Delivery *ctx, struct MicromambaInfo m) {
+    int status = 0;
+
     status += micromamba(&m, "run conda index %s", ctx->storage.conda_artifact_dir);
     return status;
 }
@@ -738,6 +762,12 @@ int main(int argc, char *argv[]) {
 
         int i = 0;
         while (optind < argc) {
+            if (argv[optind]) {
+                if (access(argv[optind], F_OK) < 0) {
+                    fprintf(stderr, "%s: %s\n", argv[optind], strerror(errno));
+                    exit(1);
+                }
+            }
             // use first positional argument
             rootdirs[i] = realpath(argv[optind], NULL);
             optind++;
@@ -825,8 +855,14 @@ int main(int argc, char *argv[]) {
         mkdirs(ctx.storage.wheel_artifact_dir, 0755);
     }
 
+    struct MicromambaInfo m;
+    if (micromamba_configure(&ctx, &m)) {
+        SYSERROR("%s", "Unable to configure micromamba");
+        exit(1);
+    }
+
     msg(STASIS_MSG_L1, "Indexing conda packages\n");
-    if (indexer_conda(&ctx)) {
+    if (indexer_conda(&ctx, m)) {
         SYSERROR("%s", "Conda package indexing operation failed");
         exit(1);
     }
