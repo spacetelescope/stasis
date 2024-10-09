@@ -175,7 +175,7 @@ char *join_ex(char *separator, ...) {
     }
 
     // Initialize array
-    argv = calloc(argc + 1, sizeof(char *));
+    argv = calloc(argc + 1, sizeof(char **));
     if (argv == NULL) {
         perror("join_ex calloc failed");
         return NULL;
@@ -196,6 +196,7 @@ char *join_ex(char *separator, ...) {
         char **tmp = realloc(argv, (argc + 1) * sizeof(char *));
         if (tmp == NULL) {
             perror("join_ex realloc failed");
+            guard_free(argv);
             return NULL;
         } else {
             argv = tmp;
@@ -583,7 +584,7 @@ char **strdup_array(char **array) {
     for (elems = 0; array[elems] != NULL; elems++);
 
     // Create new array
-    result = calloc(elems + 1, sizeof(result));
+    result = calloc(elems + 1, sizeof(*result));
     for (size_t i = 0; i < elems; i++) {
         result[i] = strdup(array[i]);
     }
