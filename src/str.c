@@ -197,7 +197,7 @@ char *join_ex(char *separator, ...) {
         if (tmp == NULL) {
             perror("join_ex realloc failed");
             return NULL;
-        } else if (tmp != argv) {
+        } else {
             argv = tmp;
         }
         size += strlen(current) + separator_len;
