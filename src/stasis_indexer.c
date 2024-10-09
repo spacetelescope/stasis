@@ -762,6 +762,12 @@ int main(int argc, char *argv[]) {
 
         int i = 0;
         while (optind < argc) {
+            if (argv[optind]) {
+                if (access(argv[optind], F_OK) < 0) {
+                    fprintf(stderr, "%s: %s\n", argv[optind], strerror(errno));
+                    exit(1);
+                }
+            }
             // use first positional argument
             rootdirs[i] = realpath(argv[optind], NULL);
             optind++;
