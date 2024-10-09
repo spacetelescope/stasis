@@ -405,7 +405,7 @@ static int micromamba_configure(const struct Delivery *ctx, struct MicromambaInf
     m->conda_prefix = globals.conda_install_prefix;
     m->micromamba_prefix = micromamba_prefix;
 
-    size_t pathvar_len = strlen(getenv("PATH")) + strlen(m->micromamba_prefix + strlen(m->conda_prefix)) + 3 + 4 + 1;
+    size_t pathvar_len = (strlen(getenv("PATH")) + strlen(m->micromamba_prefix) + strlen(m->conda_prefix)) + 3 + 4 + 1;
     // ^^^^^^^^^^^^^^^^^^
     // 3 = separators
     // 4 = chars (/bin)

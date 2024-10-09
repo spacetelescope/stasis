@@ -244,7 +244,7 @@ void test_join_ex() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result;
-        result = join_ex(tc[i].delim, "a", "b", "c", "d", "e", NULL);
+        result = join_ex((char *) tc[i].delim, "a", "b", "c", "d", "e", NULL);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }

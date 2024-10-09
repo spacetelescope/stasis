@@ -37,9 +37,9 @@ void junitxml_testsuite_free(struct JUNIT_Testsuite **testsuite) {
 static int testsuite_append_testcase(struct JUNIT_Testsuite **testsuite, struct JUNIT_Testcase *testcase) {
     struct JUNIT_Testsuite *suite = (*testsuite);
     struct JUNIT_Testcase **tmp = realloc(suite->testcase, (suite->_tc_alloc + 1 ) * sizeof(*testcase));
-    if (!tmp) {
+    if (tmp == NULL) {
         return -1;
-    } else if (tmp != suite->testcase) {
+    } else {
         suite->testcase = tmp;
     }
     suite->testcase[suite->_tc_inuse] = testcase;

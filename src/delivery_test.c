@@ -278,9 +278,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
         char path[PATH_MAX];
         memset(path, 0, sizeof(path));
 
-        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
-            continue;
-        } else if (!endswith(rec->d_name, ".xml")) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..") || !endswith(rec->d_name, ".xml")) {
             continue;
         }
 
