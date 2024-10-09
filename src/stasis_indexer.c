@@ -311,12 +311,12 @@ int indexer_make_website(struct Delivery *ctx) {
 
         // >= 1.10.0.1
         if (pandoc_version >= 0x010a0001) {
-            strcat(pandoc_versioned_args, "-f markdown+autolink_bare_uris ");
+            strcat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ");
         }
 
-        // >= 3.1.10
-        if (pandoc_version >= 0x03010a00) {
-            strcat(pandoc_versioned_args, "-f markdown+alerts ");
+        // > 3.1.9
+        if (pandoc_version > 0x03010900) {
+            strcat(pandoc_versioned_args, "-f gfm+alerts ");
         }
     }
 
