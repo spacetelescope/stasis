@@ -236,7 +236,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
 
             // Setup tasks run sequentially
-            if (p == (size_t) SETUP) {
+            if (p == (size_t) SETUP || p == (size_t) SERIAL) {
                 jobs = 1;
             }
 
