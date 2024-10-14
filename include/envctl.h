@@ -3,6 +3,7 @@
 #define STASIS_ENVCTL_H
 
 #include <stdlib.h>
+#include "core.h"
 
 #define STASIS_ENVCTL_PASSTHRU 0
 #define STASIS_ENVCTL_REQUIRED 1 << 1

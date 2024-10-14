@@ -1,4 +1,5 @@
 #include "testing.h"
+#include "multiprocessing.h"
 
 static struct MultiProcessingPool *pool;
 char *commands[] = {

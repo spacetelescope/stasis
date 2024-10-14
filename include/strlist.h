@@ -4,9 +4,14 @@
  */
 #ifndef STASIS_STRLIST_H
 #define STASIS_STRLIST_H
+
+typedef int (ReaderFn)(size_t line, char **);
+
 #include <stdlib.h>
+#include "core.h"
 #include "utils.h"
 #include "str.h"
+
 
 struct StrList {
     size_t num_alloc;

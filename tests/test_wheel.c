@@ -1,4 +1,5 @@
 #include "testing.h"
+#include "wheel.h"
 
 void test_get_wheel_file() {
     struct testcase {

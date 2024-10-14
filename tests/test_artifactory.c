@@ -1,4 +1,6 @@
 #include "testing.h"
+#include "artifactory.h"
+#include "delivery.h"
 
 // Import private functions from core
 extern int delivery_init_platform(struct Delivery *ctx);

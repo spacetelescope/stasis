@@ -1,4 +1,5 @@
 #include "testing.h"
+#include "junitxml.h"
 
 void test_junitxml_testsuite_read() {
     struct JUNIT_Testsuite *testsuite;

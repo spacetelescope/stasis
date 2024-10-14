@@ -4,7 +4,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/utsname.h>
 #include "core.h"
+#include "download.h"
 
 #define CONDA_INSTALL_PREFIX "conda"
 #define PYPI_INDEX_DEFAULT "https://pypi.org/simple"

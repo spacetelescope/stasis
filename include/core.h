@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
@@ -22,27 +23,6 @@
 
 #include "config.h"
 #include "core_mem.h"
-#include "multiprocessing.h"
-#include "envctl.h"
-#include "template.h"
-#include "utils.h"
-#include "copy.h"
-#include "ini.h"
-#include "conda.h"
-#include "environment.h"
-#include "artifactory.h"
-#include "docker.h"
-#include "delivery.h"
-#include "str.h"
-#include "strlist.h"
-#include "system.h"
-#include "download.h"
-#include "recipe.h"
-#include "relocation.h"
-#include "wheel.h"
-#include "junitxml.h"
-#include "github.h"
-#include "template_func_proto.h"
 
 #define COE_CHECK_ABORT(COND, MSG) \
     do {\
