@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "core.h"
+#include "envctl.h"
 
 const char *VERSION = "1.0.0";
 const char *AUTHOR = "Joseph Hunkeler";

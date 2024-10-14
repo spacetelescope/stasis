@@ -8,7 +8,12 @@
 #include <unistd.h>
 #include <limits.h>
 #include <errno.h>
+#include "core.h"
+#include "copy.h"
 #include "system.h"
+#include "strlist.h"
+#include "utils.h"
+#include "ini.h"
 
 #if defined(STASIS_OS_WINDOWS)
 #define PATH_ENV_VAR "path"
@@ -24,8 +29,6 @@
 
 #define STASIS_XML_PRETTY_PRINT_PROG "xmllint"
 #define STASIS_XML_PRETTY_PRINT_ARGS "--format"
-
-typedef int (ReaderFn)(size_t line, char **);
 
 /**
  * Change directory. Push path on directory stack.

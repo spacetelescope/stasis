@@ -1,4 +1,4 @@
-#include "core.h"
+#include "artifactory.h"
 
 extern struct STASIS_GLOBAL globals;
 

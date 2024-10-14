@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "template.h"
 
 #define INI_WRITE_RAW 0             ///< Dump INI data. Contents are not modified.
 #define INI_WRITE_PRESERVE 1        ///< Dump INI data. Template strings are

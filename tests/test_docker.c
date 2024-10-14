@@ -1,4 +1,6 @@
 #include "testing.h"
+#include "docker.h"
+
 struct DockerCapabilities cap_suite;
 
 void test_docker_capable() {

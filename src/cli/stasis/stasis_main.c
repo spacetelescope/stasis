@@ -2,215 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <getopt.h>
 #include "core.h"
+#include "delivery.h"
 
-#define OPT_ALWAYS_UPDATE_BASE 1000
-#define OPT_NO_DOCKER 1001
-#define OPT_NO_ARTIFACTORY 1002
-#define OPT_NO_ARTIFACTORY_BUILD_INFO 1003
-#define OPT_NO_TESTING 1004
-#define OPT_OVERWRITE 1005
-#define OPT_NO_REWRITE_SPEC_STAGE_2 1006
-#define OPT_FAIL_FAST 1007
-#define OPT_NO_PARALLEL 1008
-#define OPT_POOL_STATUS_INTERVAL 1009
+// local includes
+#include "args.h"
+#include "system_requirements.h"
+#include "tpl.h"
 
-static struct option long_options[] = {
-        {"help", no_argument, 0, 'h'},
-        {"version", no_argument, 0, 'V'},
-        {"continue-on-error", no_argument, 0, 'C'},
-        {"config", required_argument, 0, 'c'},
-        {"cpu-limit", required_argument, 0, 'l'},
-        {"pool-status-interval", required_argument, 0, OPT_POOL_STATUS_INTERVAL},
-        {"python", required_argument, 0, 'p'},
-        {"verbose", no_argument, 0, 'v'},
-        {"unbuffered", no_argument, 0, 'U'},
-        {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
-        {"fail-fast", no_argument, 0, OPT_FAIL_FAST},
-        {"overwrite", no_argument, 0, OPT_OVERWRITE},
-        {"no-docker", no_argument, 0, OPT_NO_DOCKER},
-        {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
-        {"no-artifactory-build-info", no_argument, 0, OPT_NO_ARTIFACTORY_BUILD_INFO},
-        {"no-testing", no_argument, 0, OPT_NO_TESTING},
-        {"no-parallel", no_argument, 0, OPT_NO_PARALLEL},
-        {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
-        {0, 0, 0, 0},
-};
-
-const char *long_options_help[] = {
-        "Display this usage statement",
-        "Display program version",
-        "Allow tests to fail",
-        "Read configuration file",
-        "Number of processes to spawn concurrently (default: cpus - 1)",
-        "Report task status every n seconds (default: 30)",
-        "Override version of Python in configuration",
-        "Increase output verbosity",
-        "Disable line buffering",
-        "Update conda installation prior to STASIS environment creation",
-        "On error, immediately terminate all tasks",
-        "Overwrite an existing release",
-        "Do not build docker images",
-        "Do not upload artifacts to Artifactory",
-        "Do not upload build info objects to Artifactory",
-        "Do not execute test scripts",
-        "Do not execute tests in parallel",
-        "Do not rewrite paths and URLs in output files",
-        NULL,
-};
-
-static int get_option_max_width(struct option option[]) {
-    int i = 0;
-    int max = 0;
-    const int indent = 4;
-    while (option[i].name != 0) {
-        int len = (int) strlen(option[i].name);
-        if (option[i].has_arg) {
-            len += indent;
-        }
-        if (len > max) {
-            max = len;
-        }
-        i++;
-    }
-    return max;
-}
-
-static void usage(char *progname) {
-    printf("usage: %s ", progname);
-    printf("[-");
-    for (int x = 0; long_options[x].val != 0; x++) {
-        if (long_options[x].has_arg == no_argument && long_options[x].val <= 'z') {
-            putchar(long_options[x].val);
-        }
-    }
-    printf("] {DELIVERY_FILE}\n");
-
-    int width = get_option_max_width(long_options);
-    for (int x = 0; long_options[x].name != 0; x++) {
-        char tmp[STASIS_NAME_MAX] = {0};
-        char output[sizeof(tmp)] = {0};
-        char opt_long[50] = {0};        // --? [ARG]?
-        char opt_short[50] = {0};        // -? [ARG]?
-
-        strcat(opt_long, "--");
-        strcat(opt_long, long_options[x].name);
-        if (long_options[x].has_arg) {
-            strcat(opt_long, " ARG");
-        }
-
-        if (long_options[x].val <= 'z') {
-            strcat(opt_short, "-");
-            opt_short[1] = (char) long_options[x].val;
-            if (long_options[x].has_arg) {
-                strcat(opt_short, " ARG");
-            }
-        } else {
-            strcat(opt_short, "  ");
-        }
-
-        sprintf(tmp, "  %%-%ds\t%%s\t\t%%s", width + 4);
-        sprintf(output, tmp, opt_long, opt_short, long_options_help[x]);
-        puts(output);
-    }
-}
-
-static int callback_except_jf(const void *a, const void *b) {
-    const struct EnvCtl_Item *item = a;
-    const char *name = b;
-
-    if (!globals.enable_artifactory) {
-        return STASIS_ENVCTL_RET_IGNORE;
-    }
-
-    if (envctl_check_required(item->flags)) {
-        const char *content = getenv(name);
-        if (!content || isempty((char *) content)) {
-            return STASIS_ENVCTL_RET_FAIL;
-        }
-    }
-
-    return STASIS_ENVCTL_RET_SUCCESS;
-}
-
-static int callback_except_gh(const void *a, const void *b) {
-    const struct EnvCtl_Item *item = a;
-    const char *name = b;
-    //printf("GH exception check: %s\n", name);
-    if (envctl_check_required(item->flags) && envctl_check_present(item, name)) {
-        return STASIS_ENVCTL_RET_SUCCESS;
-    }
-
-    return STASIS_ENVCTL_RET_FAIL;
-}
-
-static void check_system_env_requirements() {
-    msg(STASIS_MSG_L1, "Checking environment\n");
-    globals.envctl = envctl_init();
-    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "TMPDIR");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_ROOT");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_SYSCONFDIR");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_CPU_COUNT");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED | STASIS_ENVCTL_REDACT, callback_except_gh, "STASIS_GH_TOKEN");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_ARTIFACTORY_URL");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_ACCESS_TOKEN");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_JF_USER");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_PASSWORD");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_KEY_PATH");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_PASSPHRASE");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_CERT_PATH");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_KEY_PATH");
-    envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_REPO");
-    envctl_do_required(globals.envctl, globals.verbose);
-}
-
-static void check_system_requirements(struct Delivery *ctx) {
-    const char *tools_required[] = {
-        "rsync",
-        NULL,
-    };
-
-    msg(STASIS_MSG_L1, "Checking system requirements\n");
-    for (size_t i = 0; tools_required[i] != NULL; i++) {
-        if (!find_program(tools_required[i])) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
-            exit(1);
-        }
-    }
-
-    if (!globals.tmpdir && !ctx->storage.tmpdir) {
-        delivery_init_tmpdir(ctx);
-    }
-
-    struct DockerCapabilities dcap;
-    if (!docker_capable(&dcap)) {
-        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
-        msg(STASIS_MSG_L3, "Available: %s\n", dcap.available ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Usable: %s\n", dcap.usable ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap.podman ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Build plugin(s): ");
-        if (dcap.usable) {
-            if (dcap.build & STASIS_DOCKER_BUILD) {
-                printf("build ");
-            }
-            if (dcap.build & STASIS_DOCKER_BUILD_X) {
-                printf("buildx ");
-            }
-            puts("");
-        } else {
-            printf("N/A\n");
-        }
-
-        // disable docker builds
-        globals.enable_docker = false;
-    }
-}
-
-static void check_requirements(struct Delivery *ctx) {
-    check_system_requirements(ctx);
-    check_system_env_requirements();
-}
 
 int main(int argc, char *argv[]) {
     struct Delivery ctx;
@@ -336,45 +135,8 @@ int main(int argc, char *argv[]) {
 
     msg(STASIS_MSG_L1, "Setup\n");
 
-    // Expose variables for use with the template engine
-    // NOTE: These pointers are populated by delivery_init() so please avoid using
-    // tpl_render() until then.
-    tpl_register("meta.name", &ctx.meta.name);
-    tpl_register("meta.version", &ctx.meta.version);
-    tpl_register("meta.codename", &ctx.meta.codename);
-    tpl_register("meta.mission", &ctx.meta.mission);
-    tpl_register("meta.python", &ctx.meta.python);
-    tpl_register("meta.python_compact", &ctx.meta.python_compact);
-    tpl_register("info.time_str_epoch", &ctx.info.time_str_epoch);
-    tpl_register("info.release_name", &ctx.info.release_name);
-    tpl_register("info.build_name", &ctx.info.build_name);
-    tpl_register("info.build_number", &ctx.info.build_number);
-    tpl_register("storage.tmpdir", &ctx.storage.tmpdir);
-    tpl_register("storage.output_dir", &ctx.storage.output_dir);
-    tpl_register("storage.delivery_dir", &ctx.storage.delivery_dir);
-    tpl_register("storage.conda_artifact_dir", &ctx.storage.conda_artifact_dir);
-    tpl_register("storage.wheel_artifact_dir", &ctx.storage.wheel_artifact_dir);
-    tpl_register("storage.build_sources_dir", &ctx.storage.build_sources_dir);
-    tpl_register("storage.build_docker_dir", &ctx.storage.build_docker_dir);
-    tpl_register("storage.results_dir", &ctx.storage.results_dir);
-    tpl_register("storage.tools_dir", &ctx.storage.tools_dir);
-    tpl_register("conda.installer_baseurl", &ctx.conda.installer_baseurl);
-    tpl_register("conda.installer_name", &ctx.conda.installer_name);
-    tpl_register("conda.installer_version", &ctx.conda.installer_version);
-    tpl_register("conda.installer_arch", &ctx.conda.installer_arch);
-    tpl_register("conda.installer_platform", &ctx.conda.installer_platform);
-    tpl_register("deploy.jfrog.repo", &globals.jfrog.repo);
-    tpl_register("deploy.jfrog.url", &globals.jfrog.url);
-    tpl_register("deploy.docker.registry", &ctx.deploy.docker.registry);
-    tpl_register("workaround.conda_reactivate", &globals.workaround.conda_reactivate);
-
-    // Expose function(s) to the template engine
-    // Prototypes can be found in template_func_proto.h
-    tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3, NULL);
-    tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, &ctx);
-    tpl_register_func("junitxml_file", &get_junitxml_file_entrypoint, 1, &ctx);
-    tpl_register_func("basetemp_dir", &get_basetemp_dir_entrypoint, 1, &ctx);
-    tpl_register_func("tox_run", &tox_run_entrypoint, 2, &ctx);
+    tpl_setup_vars(&ctx);
+    tpl_setup_funcs(&ctx);
 
     // Set up PREFIX/etc directory information
     // The user may manipulate the base directory path with STASIS_SYSCONFDIR
@@ -482,19 +244,7 @@ int main(int argc, char *argv[]) {
 
     msg(STASIS_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
     delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
-
-    char *pathvar = NULL;
-    pathvar = getenv("PATH");
-    if (!pathvar) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "PATH variable is not set. Cannot continue.\n");
-        exit(1);
-    } else {
-        char pathvar_tmp[STASIS_BUFSIZ];
-        sprintf(pathvar_tmp, "%s/bin:%s", ctx.storage.conda_install_prefix, pathvar);
-        setenv("PATH", pathvar_tmp, 1);
-        pathvar = NULL;
-    }
-
+    check_pathvar(&ctx);
 
     //
     // Implied environment creation modes/actions

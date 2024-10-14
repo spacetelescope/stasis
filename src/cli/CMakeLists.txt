@@ -1,0 +1,2 @@
+add_subdirectory(stasis)
+add_subdirectory(stasis_indexer)

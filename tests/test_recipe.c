@@ -1,4 +1,6 @@
 #include "testing.h"
+#include "relocation.h"
+#include "recipe.h"
 
 static void make_local_recipe(const char *localdir) {
     char path[PATH_MAX] = {0};

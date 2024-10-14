@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "core.h"
+#include "github.h"
 
 struct GHContent {
     char *data;

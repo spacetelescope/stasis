@@ -1,4 +1,5 @@
 #include "testing.h"
+#include "download.h"
 
 void test_download() {
     struct testcase {

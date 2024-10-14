@@ -1,4 +1,6 @@
 #include "testing.h"
+#include "conda.h"
+#include "delivery.h"
 
 char cwd_start[PATH_MAX];
 char cwd_workspace[PATH_MAX];

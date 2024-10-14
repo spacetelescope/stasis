@@ -1,4 +1,4 @@
-#include "core.h"
+#include "delivery.h"
 
 void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->system.arch);

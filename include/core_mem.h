@@ -2,6 +2,9 @@
 #ifndef STASIS_CORE_MEM_H
 #define STASIS_CORE_MEM_H
 
+#include "environment.h"
+#include "strlist.h"
+
 #define guard_runtime_free(X) do { if (X) { runtime_free(X); X = NULL; } } while (0)
 #define guard_strlist_free(X) do { if ((*X)) { strlist_free(X); (*X) = NULL; } } while (0)
 #define guard_free(X) do { if (X) { free(X); X = NULL; } } while (0)

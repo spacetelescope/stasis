@@ -1,4 +1,6 @@
 #include "template_func_proto.h"
+#include "delivery.h"
+#include "github.h"
 
 int get_github_release_notes_tplfunc_entrypoint(void *frame, void *data_out) {
     int result;
