@@ -2,6 +2,7 @@
  * String array convenience functions
  * @file strlist.c
  */
+#include "download.h"
 #include "strlist.h"
 #include "utils.h"
 

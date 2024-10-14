@@ -1,4 +1,5 @@
 #include "core.h"
+#include "multiprocessing.h"
 
 /// The sum of all tasks started by mp_task()
 size_t mp_global_task_count = 0;

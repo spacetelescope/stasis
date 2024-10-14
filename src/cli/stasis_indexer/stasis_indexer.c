@@ -1,6 +1,7 @@
 #include <getopt.h>
 #include <fnmatch.h>
-#include "core.h"
+#include "delivery.h"
+#include "junitxml.h"
 
 static struct option long_options[] = {
         {"help", no_argument, 0, 'h'},

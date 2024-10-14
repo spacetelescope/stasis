@@ -1,4 +1,3 @@
-#include <fnmatch.h>
 #include "delivery.h"
 
 int delivery_build_recipes(struct Delivery *ctx) {

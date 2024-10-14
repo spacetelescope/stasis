@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include "core.h"
+#include "utils.h"
 
 char *dirstack[STASIS_DIRSTACK_MAX];
 const ssize_t dirstack_max = sizeof(dirstack) / sizeof(dirstack[0]);

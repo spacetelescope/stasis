@@ -4,6 +4,9 @@
 #include <limits.h>
 #include <getopt.h>
 #include "core.h"
+#include "envctl.h"
+#include "delivery.h"
+#include "template_func_proto.h"
 
 #define OPT_ALWAYS_UPDATE_BASE 1000
 #define OPT_NO_DOCKER 1001

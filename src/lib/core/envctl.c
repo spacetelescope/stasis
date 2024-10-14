@@ -1,5 +1,4 @@
 #include "envctl.h"
-#include "core.h"
 
 struct EnvCtl *envctl_init() {
     struct EnvCtl *result;

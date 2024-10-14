@@ -2,8 +2,6 @@
 // Created by jhunk on 10/5/23.
 //
 
-#include <string.h>
-#include <stdlib.h>
 #include "download.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {

@@ -2,9 +2,12 @@
 
 static struct MultiProcessingPool *pool;
 char *commands[] = {
-        "true",
-        "uname -a",
-        "/bin/echo hello world",
+        "sleep 1; true",
+        "sleep 2; uname -a",
+        "sleep 3; /bin/echo hello world",
+        "sleep 4; true",
+        "sleep 5; uname -a",
+        "sleep 6; /bin/echo hello world",
 };
 
 void test_mp_pool_init() {

@@ -2,7 +2,6 @@
 // Created by jhunk on 5/14/23.
 //
 
-#include <unistd.h>
 #include "conda.h"
 
 int micromamba(struct MicromambaInfo *info, char *command, ...) {
