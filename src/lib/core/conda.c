@@ -443,6 +443,15 @@ char *conda_get_active_environment() {
 int conda_provides(const char *spec) {
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
+
+    // Short circuit:
+    // Running "mamba search" without an argument will print every package in
+    // all channels, then return "found". Prevent this.
+    // No data implies "not found".
+    if (isempty((char *) spec)) {
+        return 0;
+    }
+
     strcpy(proc.f_stdout, "/dev/null");
     strcpy(proc.f_stderr, "/dev/null");
 
@@ -450,12 +459,12 @@ int conda_provides(const char *spec) {
     // conda_exec() expects the program output to be visible to the user.
     // For this operation we only need the exit value.
     char cmd[PATH_MAX] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "mamba search --use-index-cache %s", spec);
+    snprintf(cmd, sizeof(cmd) - 1, "mamba search %s", spec);
     if (shell(&proc, cmd) < 0) {
         fprintf(stderr, "shell: %s", strerror(errno));
         return -1;
     }
-    return proc.returncode == 0;
+    return proc.returncode == 0; // 0=not_found, 1=found
 }
 
 int conda_index(const char *path) {
