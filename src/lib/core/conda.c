@@ -109,7 +109,7 @@ int pip_index_provides(const char *index_url, const char *spec) {
     strcpy(proc.f_stdout, logfile);
 
     // Do an installation in dry-run mode to see if the package exists in the given index.
-    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-deps --index-url=%s %s", index_url, spec_local);
+    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-cache --no-deps --index-url=%s '%s'", index_url, spec_local);
     status = shell(&proc, cmd);
 
     // Print errors only when shell() itself throws one
