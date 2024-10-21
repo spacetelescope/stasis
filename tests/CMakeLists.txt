@@ -14,7 +14,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result.xml ${CMAKE_CURRENT_BINAR
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result_error.xml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 file(GLOB source_files "test_*.c")
 
-if (BASH_PROGRAM)
+if (BASH_PROGRAM AND BUILD_TESTING_RT)
     add_test (rt_generic ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/rt_generic.sh)
 endif()
 
