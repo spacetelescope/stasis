@@ -332,14 +332,15 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    delivery_gather_tool_versions(&ctx);
-    if (!ctx.conda.tool_version) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda version\n");
-        exit(1);
-    }
-    if (!ctx.conda.tool_build_version) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda-build version\n");
-        exit(1);
+    if (delivery_gather_tool_versions(&ctx)) {
+        if (!ctx.conda.tool_version) {
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda version\n");
+            exit(1);
+        }
+        if (!ctx.conda.tool_build_version) {
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda-build version\n");
+            exit(1);
+        }
     }
 
     if (pip_exec("install build")) {

@@ -126,6 +126,13 @@ void test_conda_index() {
     STASIS_ASSERT(conda_index("channel") == 0, "cannot index a simple conda channel");
 }
 
+void test_delivery_gather_tool_versions() {
+    int status = delivery_gather_tool_versions(&ctx);
+    STASIS_ASSERT(status == 0, "Failed to gather tool versions");
+    STASIS_ASSERT(!isempty(ctx.conda.tool_version), "conda version is empty");
+    STASIS_ASSERT(!isempty(ctx.conda.tool_build_version), "conda_build version is empty");
+}
+
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {

@@ -385,7 +385,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir);
 int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt);
 
 // helper function
-void delivery_gather_tool_versions(struct Delivery *ctx);
+int delivery_gather_tool_versions(struct Delivery *ctx);
 
 // helper function
 int delivery_init_tmpdir(struct Delivery *ctx);
