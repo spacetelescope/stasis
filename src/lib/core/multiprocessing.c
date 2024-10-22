@@ -98,7 +98,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     }
 
     // Set default status to "error"
-    slot->status = -1;
+    slot->status = MP_POOL_TASK_STATUS_INITIAL;
 
     // Set task identifier string
     memset(slot->ident, 0, sizeof(slot->ident));
@@ -254,7 +254,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
-            if (slot->status == -1) {
+            if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
                 if (mp_task_fork(pool, slot)) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
                     kill(0, SIGTERM);
