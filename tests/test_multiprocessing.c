@@ -120,20 +120,26 @@ void test_mp_pool_workflow() {
 }
 
 void test_mp_fail_fast() {
-    char *commands_ff[] = {
+    char *commands_ff[128] = {
         "sleep 1; true",
         "sleep 3; true",
         "sleep 5; false",
-        "sleep 30; true", // these...
-        "sleep 30; true", // shouldn't...
-        "sleep 30; true", // execute... but need to be here to satisfy the signaled_by test below
     };
+
+    // Pad the array with tasks. None of these should execute when
+    // the "fail fast" conditions are met
+    char *nopcmd = "sleep 30; true";
+    for (size_t i = 3; i < sizeof(commands_ff) / sizeof(*commands_ff); i++) {
+        commands_ff[i] = nopcmd;
+    }
 
     struct MultiProcessingPool *p;
     STASIS_ASSERT((p = mp_pool_init("failfast", "failfastlogs")) != NULL, "Failed to initialize pool");
     for (size_t i = 0; i < sizeof(commands_ff) / sizeof(*commands_ff); i++) {
         char *command = commands_ff[i];
-        STASIS_ASSERT(mp_pool_task(p, "task", NULL, (char *) command) != NULL, "Failed to queue task");
+        char taskname[100] = {0};
+        snprintf(taskname, sizeof(taskname) - 1, "task_%03zu", i);
+        STASIS_ASSERT(mp_pool_task(p, taskname, NULL, (char *) command) != NULL, "Failed to queue task");
     }
 
     STASIS_ASSERT(mp_pool_join(p, get_cpu_count(), MP_POOL_FAIL_FAST) < 0, "Unexpected result");
