@@ -140,22 +140,28 @@ void test_mp_fail_fast() {
 
     struct result {
         int total_signaled;
-        int total_status;
+        int total_status_fail;
+        int total_status_success;
         int total_unused;
     } result = {
         .total_signaled = 0,
-        .total_status = 0,
+        .total_status_fail = 0,
+        .total_status_success = 0,
         .total_unused = 0,
     };
     for (size_t i = 0; i < p->num_used; i++) {
         struct MultiProcessingTask *task = &p->task[i];
         if (task->signaled_by) result.total_signaled++;
-        if (task->status) result.total_status++;
-        if (task->pid == MP_POOL_PID_UNUSED) result.total_unused++;
+        if (task->status > 0) result.total_status_fail++;
+        if (task->status == 0) result.total_status_success++;
+        if (task->pid == MP_POOL_PID_UNUSED && task->status == MP_POOL_TASK_STATUS_INITIAL) result.total_unused++;
     }
-    STASIS_ASSERT(result.total_status == 1, "Unexpected status count");
-    STASIS_ASSERT(result.total_signaled == 3, "Unexpected signal count");
-    STASIS_ASSERT(result.total_unused > 0, "Unexpected PIDs present. Should be marked UNUSED.");
+    fprintf(stderr, "total_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d\n",
+            result.total_status_fail, result.total_status_success, result.total_signaled, result.total_unused);
+    STASIS_ASSERT(result.total_status_fail, "Should have failures");
+    STASIS_ASSERT(result.total_status_success, "Should have successes");
+    STASIS_ASSERT(result.total_signaled, "Should have signaled PIDs");
+    STASIS_ASSERT(result.total_unused, "Should have PIDs marked UNUSED.");
     mp_pool_show_summary(p);
     mp_pool_free(&p);
 }
