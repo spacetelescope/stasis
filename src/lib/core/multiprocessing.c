@@ -169,7 +169,13 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
     for (size_t i = 0; i < pool->num_used; i++) {
         struct MultiProcessingTask *task = &pool->task[i];
         char status_str[10] = {0};
-        if (!task->status && !task->signaled_by) {
+
+        if (task->status == MP_POOL_TASK_STATUS_INITIAL && task->pid == MP_POOL_PID_UNUSED) {
+            // You will only see this label if the task pool is killed by
+            // MP_POOL_FAIL_FAST and tasks are still queued for execution
+            strcpy(status_str, "HOLD");
+        } else if (!task->status && !task->signaled_by) {
+
             strcpy(status_str, "DONE");
         } else if (task->signaled_by) {
             strcpy(status_str, "TERM");
