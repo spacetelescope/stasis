@@ -38,6 +38,9 @@ struct MultiProcessingPool {
     int status_interval; ///< Report a pooled task is "running" every n seconds
 };
 
+/// A multiprocessing task's initial state (i.e. "FAIL")
+#define MP_POOL_TASK_STATUS_INITIAL (-1)
+
 /// Maximum number of multiprocessing tasks STASIS can execute
 #define MP_POOL_TASK_MAX 1000
 

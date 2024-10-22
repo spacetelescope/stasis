@@ -98,7 +98,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     }
 
     // Set default status to "error"
-    slot->status = -1;
+    slot->status = MP_POOL_TASK_STATUS_INITIAL;
 
     // Set task identifier string
     memset(slot->ident, 0, sizeof(slot->ident));
@@ -169,7 +169,13 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
     for (size_t i = 0; i < pool->num_used; i++) {
         struct MultiProcessingTask *task = &pool->task[i];
         char status_str[10] = {0};
-        if (!task->status && !task->signaled_by) {
+
+        if (task->status == MP_POOL_TASK_STATUS_INITIAL && task->pid == MP_POOL_PID_UNUSED) {
+            // You will only see this label if the task pool is killed by
+            // MP_POOL_FAIL_FAST and tasks are still queued for execution
+            strcpy(status_str, "HOLD");
+        } else if (!task->status && !task->signaled_by) {
+
             strcpy(status_str, "DONE");
         } else if (task->signaled_by) {
             strcpy(status_str, "TERM");
@@ -254,7 +260,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
-            if (slot->status == -1) {
+            if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
                 if (mp_task_fork(pool, slot)) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
                     kill(0, SIGTERM);

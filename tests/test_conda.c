@@ -126,6 +126,57 @@ void test_conda_index() {
     STASIS_ASSERT(conda_index("channel") == 0, "cannot index a simple conda channel");
 }
 
+void test_pip_index_provides() {
+    struct testcase {
+        const char *pindex;
+        const char *name;
+        int expected;
+    };
+    struct testcase tc[] = {
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "firewatch", .expected = 1},
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "doesnotexistfirewatch", .expected = 0},
+        {.pindex = "bad_index", .name = "firewatch", .expected = 0},
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "", .expected = -1},
+        {.pindex = "", .name = "", .expected = -1},
+    };
+    for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
+        struct testcase *test = &tc[i];
+        int result = pip_index_provides(test->pindex, test->name) ;
+        STASIS_ASSERT(result == test->expected, "Unexpected result");
+    }
+}
+
+void test_conda_get_active_environment() {
+    conda_activate(ctx.storage.conda_install_prefix, "base");
+    STASIS_ASSERT(strcmp(conda_get_active_environment(), "base") == 0, "base environment not active");
+}
+
+void test_conda_provides() {
+    struct testcase {
+        const char *name;
+        int expected;
+    };
+    struct testcase tc[] = {
+        {.name = "fitsverify", .expected = 1},
+        {.name = "doesnotexistfitsverify", .expected = 0},
+        {.name = "", .expected = 0},
+    };
+
+    for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
+        struct testcase *test = &tc[i];
+        int result = conda_provides(test->name);
+        printf("%s returned %d, expecting %d\n", test->name, result, test->expected);
+        STASIS_ASSERT(result == test->expected, "Unexpected result");
+    }
+}
+
+void test_delivery_gather_tool_versions() {
+    int status = delivery_gather_tool_versions(&ctx);
+    STASIS_ASSERT(status == 0, "Failed to gather tool versions");
+    STASIS_ASSERT(!isempty(ctx.conda.tool_version), "conda version is empty");
+    STASIS_ASSERT(!isempty(ctx.conda.tool_build_version), "conda_build version is empty");
+}
+
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
@@ -133,11 +184,15 @@ int main(int argc, char *argv[]) {
         test_conda_installation,
         test_conda_activate,
         test_conda_setup_headless,
+        test_conda_provides,
+        test_conda_get_active_environment,
         test_conda_exec,
         test_python_exec,
         test_conda_env_create_from_uri,
         test_conda_env_create_export_remove,
         test_conda_index,
+        test_pip_index_provides,
+        test_delivery_gather_tool_versions,
     };
 
     const char *ws = "workspace";
@@ -165,8 +220,8 @@ int main(int argc, char *argv[]) {
     ctx._stasis_ini_fp.delivery = ini;
     ctx._stasis_ini_fp.delivery_path = realpath("mock.ini", NULL);
 
-    setenv("TMPDIR", cwd_workspace, 1);
-    globals.sysconfdir = getenv("STASIS_SYSCONFDIR");
+    const char *sysconfdir = getenv("STASIS_SYSCONFDIR");
+    globals.sysconfdir = strdup(sysconfdir ? sysconfdir : STASIS_SYSCONFDIR);
     ctx.storage.root = strdup(cwd_workspace);
 
     setenv("LANG", "C", 1);
@@ -179,5 +234,7 @@ int main(int argc, char *argv[]) {
     if (rmtree(cwd_workspace)) {
         perror(cwd_workspace);
     }
+    delivery_free(&ctx);
+    globals_free();
     STASIS_TEST_END_MAIN();
 }

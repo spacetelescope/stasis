@@ -109,7 +109,7 @@ int pip_index_provides(const char *index_url, const char *spec) {
     strcpy(proc.f_stdout, logfile);
 
     // Do an installation in dry-run mode to see if the package exists in the given index.
-    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-deps --index-url=%s %s", index_url, spec_local);
+    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-cache --no-deps --index-url=%s '%s'", index_url, spec_local);
     status = shell(&proc, cmd);
 
     // Print errors only when shell() itself throws one
@@ -443,6 +443,15 @@ char *conda_get_active_environment() {
 int conda_provides(const char *spec) {
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
+
+    // Short circuit:
+    // Running "mamba search" without an argument will print every package in
+    // all channels, then return "found". Prevent this.
+    // No data implies "not found".
+    if (isempty((char *) spec)) {
+        return 0;
+    }
+
     strcpy(proc.f_stdout, "/dev/null");
     strcpy(proc.f_stderr, "/dev/null");
 
@@ -450,12 +459,12 @@ int conda_provides(const char *spec) {
     // conda_exec() expects the program output to be visible to the user.
     // For this operation we only need the exit value.
     char cmd[PATH_MAX] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "mamba search --use-index-cache %s", spec);
+    snprintf(cmd, sizeof(cmd) - 1, "mamba search %s", spec);
     if (shell(&proc, cmd) < 0) {
         fprintf(stderr, "shell: %s", strerror(errno));
         return -1;
     }
-    return proc.returncode == 0;
+    return proc.returncode == 0; // 0=not_found, 1=found
 }
 
 int conda_index(const char *path) {

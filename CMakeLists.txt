@@ -26,14 +26,30 @@ endif()
 
 add_subdirectory(src)
 
+# Toggle extremely verbose output
 option(BUILD_TESTING_DEBUG OFF)
 if (BUILD_TESTING_DEBUG)
 	add_compile_options(-DDEBUG)
 endif()
+
+# Toggle regression testing on/off
+option(BUILD_TESTING_RT ON)
+
+# Toggle testing
 option(BUILD_TESTING OFF)
+message(CHECK_START "Run unit tests")
 if (BUILD_TESTING)
+	message(CHECK_PASS "yes")
 	enable_testing()
+	message(CHECK_START "Run regression tests")
+	if (BUILD_TESTING_RT)
+		message(CHECK_PASS "yes")
+	else()
+		message(CHECK_PASS "no")
+	endif()
 	add_subdirectory(tests)
+else()
+	message(CHECK_PASS "no")
 endif()
 
 set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")

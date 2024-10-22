@@ -257,7 +257,7 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
 
     char cache_local[PATH_MAX];
     sprintf(cache_local, "%s/%s", ctx->storage.tmpdir, "cache");
-    setenv("XDG_CACHE_HOME", ctx->storage.tmpdir, 1);
+    setenv("XDG_CACHE_HOME", cache_local, 1);
 
     // add tools to PATH
     char pathvar_tmp[STASIS_BUFSIZ];
