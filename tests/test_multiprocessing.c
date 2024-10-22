@@ -121,7 +121,6 @@ void test_mp_pool_workflow() {
 
 void test_mp_fail_fast() {
     char *commands_ff[128] = {
-        "sleep 1; true",
         "sleep 3; true",
         "sleep 5; false",
     };
@@ -129,7 +128,7 @@ void test_mp_fail_fast() {
     // Pad the array with tasks. None of these should execute when
     // the "fail fast" conditions are met
     char *nopcmd = "sleep 30; true";
-    for (size_t i = 3; i < sizeof(commands_ff) / sizeof(*commands_ff); i++) {
+    for (size_t i = 2; i < sizeof(commands_ff) / sizeof(*commands_ff); i++) {
         commands_ff[i] = nopcmd;
     }
 
