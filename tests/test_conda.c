@@ -133,16 +133,23 @@ void test_pip_index_provides() {
         int expected;
     };
     struct testcase tc[] = {
-        {.pindex = PYPI_INDEX_DEFAULT, .name = "firewatch", .expected = 1},
-        {.pindex = PYPI_INDEX_DEFAULT, .name = "doesnotexistfirewatch", .expected = 0},
-        {.pindex = "bad_index", .name = "firewatch", .expected = 0},
-        {.pindex = PYPI_INDEX_DEFAULT, .name = "", .expected = -1},
-        {.pindex = "", .name = "", .expected = -1},
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "firewatch", .expected = PKG_FOUND},
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "doesnotexistfirewatch", .expected = PKG_NOT_FOUND},
+        {.pindex = "bad_index", .name = "firewatch", .expected = PKG_NOT_FOUND},
+        {.pindex = PYPI_INDEX_DEFAULT, .name = "", .expected = PKG_NOT_FOUND},
+        {.pindex = "", .name = "", .expected = PKG_NOT_FOUND},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = pip_index_provides(test->pindex, test->name) ;
+        int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name);
         STASIS_ASSERT(result == test->expected, "Unexpected result");
+        if (PKG_INDEX_PROVIDES_FAILED(result)) {
+            fprintf(stderr, "error: %s\n", pkg_index_provides_strerror(result));
+        } else if (result == PKG_NOT_FOUND) {
+            fprintf(stderr, "package not found: '%s'\n", test->name);
+        } else {
+            printf("package found: '%s'\n", test->name);
+        }
     }
 }
 
@@ -157,14 +164,14 @@ void test_conda_provides() {
         int expected;
     };
     struct testcase tc[] = {
-        {.name = "fitsverify", .expected = 1},
-        {.name = "doesnotexistfitsverify", .expected = 0},
-        {.name = "", .expected = 0},
+        {.name = "fitsverify", .expected = PKG_FOUND},
+        {.name = "doesnotexistfitsverify", .expected = PKG_NOT_FOUND},
+        {.name = "", .expected = PKG_NOT_FOUND},
     };
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = conda_provides(test->name);
+        int result = pkg_index_provides(PKG_USE_CONDA, NULL, test->name);
         printf("%s returned %d, expecting %d\n", test->name, result, test->expected);
         STASIS_ASSERT(result == test->expected, "Unexpected result");
     }
@@ -185,13 +192,13 @@ int main(int argc, char *argv[]) {
         test_conda_activate,
         test_conda_setup_headless,
         test_conda_provides,
+        test_pip_index_provides,
         test_conda_get_active_environment,
         test_conda_exec,
         test_python_exec,
         test_conda_env_create_from_uri,
         test_conda_env_create_export_remove,
         test_conda_index,
-        test_pip_index_provides,
         test_delivery_gather_tool_versions,
     };
 

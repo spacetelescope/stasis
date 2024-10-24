@@ -254,20 +254,16 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
                 int upstream_exists = 0;
                 if (DEFER_PIP == type) {
-                    upstream_exists = pip_index_provides(PYPI_INDEX_DEFAULT, name);
+                    upstream_exists = pkg_index_provides(PKG_USE_PIP, PYPI_INDEX_DEFAULT, name);
                 } else if (DEFER_CONDA == type) {
-                    upstream_exists = conda_provides(name);
-                } else {
-                    fprintf(stderr, "\nUnknown package type: %d\n", type);
-                    exit(1);
+                    upstream_exists = pkg_index_provides(PKG_USE_CONDA, NULL, name);
                 }
 
-                if (upstream_exists < 0) {
-                    fprintf(stderr, "%s's existence command failed for '%s'\n"
-                        "(This may be due to a network/firewall issue!)\n", mode, name);
+                if (PKG_INDEX_PROVIDES_FAILED(upstream_exists)) {
+                    fprintf(stderr, "%s's existence command failed for '%s': %s\n",
+                            mode, name, pkg_index_provides_strerror(upstream_exists));
                     exit(1);
-                }
-                if (!upstream_exists) {
+                } else if (upstream_exists == PKG_NOT_FOUND) {
                     build_for_host = 1;
                 } else {
                     build_for_host = 0;

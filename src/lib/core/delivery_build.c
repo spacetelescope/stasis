@@ -140,48 +140,59 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
         return NULL;
     }
 
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        if (!ctx->tests[i].build_recipe && ctx->tests[i].repository) { // build from source
-            char srcdir[PATH_MAX];
-            char wheeldir[PATH_MAX];
-            memset(srcdir, 0, sizeof(srcdir));
-            memset(wheeldir, 0, sizeof(wheeldir));
+    for (size_t p = 0; p < strlist_count(ctx->conda.pip_packages_defer); p++) {
+        char name[100] = {0};
+        char *fullspec = strlist_item(ctx->conda.pip_packages_defer, p);
+        strncpy(name, fullspec, sizeof(name) - 1);
+        char *spec = find_version_spec(name);
+        if (spec) {
+            *spec = '\0';
+        }
 
-            sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests[i].name);
-            git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version);
+        for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+            if ((ctx->tests[i].name && !strcmp(name, ctx->tests[i].name)) && (!ctx->tests[i].build_recipe && ctx->tests[i].repository)) { // build from source
+                char srcdir[PATH_MAX];
+                char wheeldir[PATH_MAX];
+                memset(srcdir, 0, sizeof(srcdir));
+                memset(wheeldir, 0, sizeof(wheeldir));
 
-            if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
-                filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
-            }
+                sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests[i].name);
+                git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version);
 
-            if (!pushd(srcdir)) {
-                char dname[NAME_MAX];
-                char outdir[PATH_MAX];
-                char cmd[PATH_MAX * 2];
-                memset(dname, 0, sizeof(dname));
-                memset(outdir, 0, sizeof(outdir));
-                memset(cmd, 0, sizeof(outdir));
+                if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
+                    filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
+                }
 
-                strcpy(dname, ctx->tests[i].name);
-                tolower_s(dname);
-                sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
-                if (mkdirs(outdir, 0755)) {
-                    fprintf(stderr, "failed to create output directory: %s\n", outdir);
+                if (!pushd(srcdir)) {
+                    char dname[NAME_MAX];
+                    char outdir[PATH_MAX];
+                    char cmd[PATH_MAX * 2];
+                    memset(dname, 0, sizeof(dname));
+                    memset(outdir, 0, sizeof(outdir));
+                    memset(cmd, 0, sizeof(outdir));
+
+                    strcpy(dname, ctx->tests[i].name);
+                    tolower_s(dname);
+                    sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
+                    if (mkdirs(outdir, 0755)) {
+                        fprintf(stderr, "failed to create output directory: %s\n", outdir);
+                        guard_strlist_free(&result);
+                        return NULL;
+                    }
+
+                    sprintf(cmd, "-m build -w -o %s", outdir);
+                    if (python_exec(cmd)) {
+                        fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name,
+                                ctx->tests[i].version);
+                        guard_strlist_free(&result);
+                        return NULL;
+                    }
+                    popd();
+                } else {
+                    fprintf(stderr, "Unable to enter source directory %s: %s\n", srcdir, strerror(errno));
                     guard_strlist_free(&result);
                     return NULL;
                 }
-
-                sprintf(cmd, "-m build -w -o %s", outdir);
-                if (python_exec(cmd)) {
-                    fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name, ctx->tests[i].version);
-                    guard_strlist_free(&result);
-                    return NULL;
-                }
-                popd();
-            } else {
-                fprintf(stderr, "Unable to enter source directory %s: %s\n", srcdir, strerror(errno));
-                guard_strlist_free(&result);
-                return NULL;
             }
         }
     }

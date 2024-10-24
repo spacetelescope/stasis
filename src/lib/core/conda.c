@@ -78,13 +78,27 @@ int pip_exec(const char *args) {
     return system(command);
 }
 
-int pip_index_provides(const char *index_url, const char *spec) {
+static const char *PKG_ERROR_STR[] = {
+    "success",
+    "[internal] unhandled package manager mode",
+    "[internal] unable to create temporary log for process output",
+    "package manager encountered an error at runtime",
+    "package manager received a signal",
+    "package manager failed to execute",
+};
+
+const char *pkg_index_provides_strerror(int code) {
+    code = -code - (-PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET);
+    return PKG_ERROR_STR[code];
+}
+
+int pkg_index_provides(int mode, const char *index, const char *spec) {
     char cmd[PATH_MAX] = {0};
     char spec_local[255] = {0};
 
     if (isempty((char *) spec)) {
         // NULL or zero-length; no package spec means there's nothing to do.
-        return -1;
+        return PKG_NOT_FOUND;
     }
 
     // Normalize the local spec string
@@ -98,9 +112,8 @@ int pip_index_provides(const char *index_url, const char *spec) {
     if (logfd < 0) {
         perror(logfile);
         remove(logfile);  // fail harmlessly if not present
-        return -1;
+        return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
     }
-
 
     int status = 0;
     struct Process proc;
@@ -108,12 +121,27 @@ int pip_index_provides(const char *index_url, const char *spec) {
     proc.redirect_stderr = 1;
     strcpy(proc.f_stdout, logfile);
 
-    // Do an installation in dry-run mode to see if the package exists in the given index.
-    snprintf(cmd, sizeof(cmd) - 1, "python -m pip install --dry-run --no-cache --no-deps --index-url=%s '%s'", index_url, spec_local);
-    status = shell(&proc, cmd);
+    if (mode == PKG_USE_PIP) {
+        // Do an installation in dry-run mode to see if the package exists in the given index.
+        strncpy(cmd, "python -m pip install --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
+        if (index) {
+            snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "--index-url='%s' ", index);
+        }
+        snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "'%s' ", spec_local);
+    } else if (mode == PKG_USE_CONDA) {
+        strncpy(cmd, "mamba search ", sizeof(cmd) - 1);
+        if (index) {
+            snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "--channel '%s' ", index);
+        }
+        snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "'%s' ", spec_local);
+    } else {
+        return PKG_INDEX_PROVIDES_E_INTERNAL_MODE_UNKNOWN;
+    }
 
     // Print errors only when shell() itself throws one
-    // If some day we want to see the errors thrown by pip too, use this condition instead:  (status != 0)
+    // If some day we want to see the errors thrown by pip too, use this
+    // condition instead:  (status != 0)
+    status = shell(&proc, cmd);
     if (status < 0) {
         FILE *fp = fdopen(logfd, "r");
         if (!fp) {
@@ -131,7 +159,25 @@ int pip_index_provides(const char *index_url, const char *spec) {
         }
     }
     remove(logfile);
-    return proc.returncode == 0;
+
+    if (WTERMSIG(proc.returncode)) {
+        // This gets its own return value because if the external program
+        // received a signal, even its status is zero, it's not reliable
+        return PKG_INDEX_PROVIDES_E_MANAGER_SIGNALED;
+    }
+
+    if (status < 0) {
+        return PKG_INDEX_PROVIDES_E_MANAGER_EXEC;
+    } else if (WEXITSTATUS(proc.returncode) > 1) {
+        // Pip and conda both return 2 on argument parsing errors
+        return PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME;
+    } else if (WEXITSTATUS(proc.returncode) == 1) {
+        // Pip and conda both return 1 when a package is not found.
+        // Unfortunately this applies to botched version specs, too.
+        return PKG_NOT_FOUND;
+    } else {
+        return PKG_FOUND;
+    }
 }
 
 int conda_exec(const char *args) {
@@ -167,7 +213,6 @@ int conda_exec(const char *args) {
 }
 
 int conda_activate(const char *root, const char *env_name) {
-    int fd = -1;
     FILE *fp = NULL;
     const char *init_script_conda = "/etc/profile.d/conda.sh";
     const char *init_script_mamba = "/etc/profile.d/mamba.sh";
@@ -185,7 +230,8 @@ int conda_activate(const char *root, const char *env_name) {
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
     // the file handle at all. We'll open it as a FILE stream soon enough.
     sprintf(logfile, "%s/%s", globals.tmpdir, "shell_XXXXXX");
-    fd = mkstemp(logfile);
+
+    int fd = mkstemp(logfile);
     if (fd < 0) {
        perror(logfile);
        return -1;
@@ -438,33 +484,6 @@ char *conda_get_active_environment() {
     }
 
     return result;
-}
-
-int conda_provides(const char *spec) {
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
-
-    // Short circuit:
-    // Running "mamba search" without an argument will print every package in
-    // all channels, then return "found". Prevent this.
-    // No data implies "not found".
-    if (isempty((char *) spec)) {
-        return 0;
-    }
-
-    strcpy(proc.f_stdout, "/dev/null");
-    strcpy(proc.f_stderr, "/dev/null");
-
-    // It's worth noting the departure from using conda_exec() here:
-    // conda_exec() expects the program output to be visible to the user.
-    // For this operation we only need the exit value.
-    char cmd[PATH_MAX] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "mamba search %s", spec);
-    if (shell(&proc, cmd) < 0) {
-        fprintf(stderr, "shell: %s", strerror(errno));
-        return -1;
-    }
-    return proc.returncode == 0; // 0=not_found, 1=found
 }
 
 int conda_index(const char *path) {
