@@ -213,7 +213,6 @@ int conda_exec(const char *args) {
 }
 
 int conda_activate(const char *root, const char *env_name) {
-    int fd = -1;
     FILE *fp = NULL;
     const char *init_script_conda = "/etc/profile.d/conda.sh";
     const char *init_script_mamba = "/etc/profile.d/mamba.sh";
@@ -231,7 +230,8 @@ int conda_activate(const char *root, const char *env_name) {
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
     // the file handle at all. We'll open it as a FILE stream soon enough.
     sprintf(logfile, "%s/%s", globals.tmpdir, "shell_XXXXXX");
-    fd = mkstemp(logfile);
+
+    int fd = mkstemp(logfile);
     if (fd < 0) {
        perror(logfile);
        return -1;
