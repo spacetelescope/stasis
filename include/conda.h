@@ -11,6 +11,21 @@
 #define CONDA_INSTALL_PREFIX "conda"
 #define PYPI_INDEX_DEFAULT "https://pypi.org/simple"
 
+#define PKG_USE_PIP 0
+#define PKG_USE_CONDA 1
+
+#define PKG_NOT_FOUND 0
+#define PKG_FOUND 1
+
+#define PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET (-10)
+#define PKG_E_SUCCESS (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 0)
+#define PKG_INDEX_PROVIDES_E_INTERNAL_MODE_UNKNOWN (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 1)
+#define PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 2)
+#define PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 3)
+#define PKG_INDEX_PROVIDES_E_MANAGER_SIGNALED (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 4)
+#define PKG_INDEX_PROVIDES_E_MANAGER_EXEC (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 5)
+#define PKG_INDEX_PROVIDES_FAILED(ECODE) (ECODE <= PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET)
+
 struct MicromambaInfo {
     char *micromamba_prefix;    //!< Path to write micromamba binary
     char *conda_prefix;         //!< Path to install conda base tree
@@ -186,19 +201,31 @@ int conda_env_export(char *name, char *output_dir, char *output_filename);
 int conda_index(const char *path);
 
 /**
- * Determine whether a simple index contains a package
- * @param index_url a file system path or url pointing to a simple index
+ * Determine whether a package index contains a package
+ *
+ * ```c
+ * int result = pkg_index_provides(USE_PIP, NULL, "numpy>1.26");
+ * if (PKG_INDEX_PROVIDES_FAILED(result)) {
+ *     fprintf(stderr, "failed: %s\n", pkg_index_provides_strerror(result));
+ *     exit(1);
+ * } else if (result == PKG_NOT_FOUND) {
+ *     // package does not exist upstream
+ * } else {
+ *     // package exists upstream
+ * }
+ * ```
+ *
+ * @param mode USE_PIP
+ * @param mode USE_CONDA
+ * @param index a file system path or url pointing to a simple index or conda channel
  * @param spec a pip package specification (e.g. `name==1.2.3`)
- * @return not found = 0, found = 1, error = -1
- */
-int pip_index_provides(const char *index_url, const char *spec);
-
-/**
- * Determine whether conda can find a package in its channel list
  * @param spec a conda package specification (e.g. `name=1.2.3`)
- * @return not found = 0, found = 1, error = -1
+ * @return PKG_NOT_FOUND, if not found
+ * @return PKG_FOUND, if found
+ * @return PKG_E_INDEX_PROVIDES_{ERROR}, on error (see conda.h)
  */
-int conda_provides(const char *spec);
+int pkg_index_provides(int mode, const char *index, const char *spec);
+const char *pkg_index_provides_strerror(int code);
 
 char *conda_get_active_environment();
 
