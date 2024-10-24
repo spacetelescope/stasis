@@ -67,7 +67,7 @@ void check_requirements(struct Delivery *ctx) {
     check_system_env_requirements();
 }
 
-char *check_pathvar(struct Delivery *ctx) {
+void check_pathvar(struct Delivery *ctx) {
     char *pathvar = NULL;
     pathvar = getenv("PATH");
     if (!pathvar) {
