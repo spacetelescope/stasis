@@ -8,6 +8,6 @@
 void check_system_env_requirements();
 void check_system_requirements(struct Delivery *ctx);
 void check_requirements(struct Delivery *ctx);
-char *check_pathvar(struct Delivery *ctx);
+void check_pathvar(struct Delivery *ctx);
 
 #endif //STASIS_SYSTEM_REQUIREMENTS_H
