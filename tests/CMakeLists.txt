@@ -10,11 +10,14 @@ set(nix_clang_cflags -Wno-format-truncation -Wno-unused-parameter -Wno-unused-re
 set(win_msvc_cflags /Wall)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/generic.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/generic_based_on.ini ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/generic_based_on.yml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result.xml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/result_error.xml ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 file(GLOB source_files "test_*.c")
 
 if (BASH_PROGRAM AND BUILD_TESTING_RT)
+    add_test (rt_generic_based_on ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/rt_generic_based_on.sh)
     add_test (rt_generic ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/rt_generic.sh)
 endif()
 

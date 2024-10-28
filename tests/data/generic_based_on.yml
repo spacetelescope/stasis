@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - python
+  - setuptools
+  - pip:
+    - firewatch==0.0.3
+    - tweakwcs==0.8.7
