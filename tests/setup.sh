@@ -103,13 +103,23 @@ run_command() {
     local cmd="${@}"
     local lines_on_error=100
     /bin/echo "Testing: $cmd "
-    if ! $cmd &>"$logfile"; then
-        echo "... FAIL"
-        echo "#"
-        echo "# Last $lines_on_error line(s) follow:"
-        echo "#"
-        tail -n $lines_on_error "$logfile"
-        (( STASIS_TEST_RESULT_FAIL++ ))
+
+    $cmd &>"$logfile"
+    code=$?
+    if (( code )); then
+        if (( code == 127 )); then
+            echo "... SKIP"
+            (( STASIS_TEST_RESULT_SKIP++ ))
+        else
+            echo "... FAIL"
+            if (( $(wc -c "$logfile" | cut -d ' ' -f 1) > 1 )); then
+                echo "#"
+                echo "# Last $lines_on_error line(s) follow:"
+                echo "#"
+                tail -n $lines_on_error "$logfile"
+            fi
+            (( STASIS_TEST_RESULT_FAIL++ ))
+        fi
     else
         echo "... PASS"
         (( STASIS_TEST_RESULT_PASS++ ))
