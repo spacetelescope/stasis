@@ -94,6 +94,36 @@ install_stasis() {
     popd
 }
 
+
+STASIS_TEST_RESULT_FAIL=0
+STASIS_TEST_RESULT_PASS=0
+STASIS_TEST_RESULT_SKIP=0
+run_command() {
+    local logfile="$(mktemp).log"
+    local cmd="${@}"
+    local lines_on_error=100
+    /bin/echo "Testing: $cmd "
+    if ! $cmd &>"$logfile"; then
+        echo "... FAIL"
+        echo "#"
+        echo "# Last $lines_on_error line(s) follow:"
+        echo "#"
+        tail -n $lines_on_error "$logfile"
+        (( STASIS_TEST_RESULT_FAIL++ ))
+    else
+        echo "... PASS"
+        (( STASIS_TEST_RESULT_PASS++ ))
+    fi
+    rm -f "$logfile"
+}
+
+run_summary() {
+    local total=$(( STASIS_TEST_RESULT_PASS + STASIS_TEST_RESULT_FAIL + STASIS_TEST_RESULT_SKIP))
+    echo
+    echo "[RT] ${STASIS_TEST_RESULT_PASS} tests passed, ${STASIS_TEST_RESULT_FAIL} failed, ${STASIS_TEST_RESULT_SKIP} skipped out of ${total}"
+    echo
+}
+
 run_stasis() {
     local logfile="$LOGFILE_STASIS"
     $(type -P stasis) --unbuffered -v $@ 2>&1 | tee "$logfile"
@@ -119,6 +149,7 @@ check_output_reset() {
 }
 
 check_output_stasis_dir() {
+    local retcode=0
     local startdir="$1"
     local logfile="$LOGFILE_STASIS"
 
@@ -149,7 +180,11 @@ check_output_stasis_dir() {
         done
     done
 
-    return $retcode
+    if (( retcode )); then
+        return 1
+    else
+        return 0
+    fi
 }
 
 check_output_indexed_dir() {
@@ -177,11 +212,46 @@ check_output_indexed_dir() {
         echo "[EOF]"
         echo
     done
-    return $retcode
+    if (( retcode )); then
+        return 1
+    else
+        return 0
+    fi
+}
+
+assert_eq() {
+    local a="$1"
+    local b="$2"
+    local msg="$3"
+    if [[ "$a" == "$b" ]]; then
+        return 0
+    else
+        [[ -n "$msg" ]] && echo "'$a' != '$b' :: $msg" >&2
+        return 1
+    fi
+}
+
+assert_file_contains() {
+    local file="$1"
+    local str="$2"
+    local msg="$3"
+    if grep -E "$str" "$file" &>/dev/null; then
+        return 0
+    else
+        [[ -n "$msg" ]] && echo "'$str' not in file '$file' :: $msg" >&2
+        return 1
+    fi
 }
 
 clean_up() {
     if [ -z "$RT_KEEP_WORKSPACE" ] && [ -d "$WORKSPACE" ]; then
         rm -rf "$WORKSPACE"
+    fi
+
+    run_summary
+    if (( STASIS_TEST_RESULT_FAIL )); then
+        exit 1
+    else
+        exit 0
     fi
 }
