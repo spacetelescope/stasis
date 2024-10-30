@@ -21,7 +21,8 @@ if [[ -z "$PYTHON_VERSIONS" ]]; then
 fi
 
 setup_script_dir="$(dirname ${BASH_SOURCE[0]})"
-TOPDIR=$(pwd)
+export TOPDIR=$(pwd)
+export TEST_DATA="$TOPDIR"/data
 
 WS_DEFAULT=rt_workspace_
 setup_workspace() {
