@@ -3,7 +3,7 @@
 
 void test_junitxml_testsuite_read() {
     struct JUNIT_Testsuite *testsuite;
-    STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read("result.xml")) != NULL, "failed to load testsuite data");
+    STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read("data/result.xml")) != NULL, "failed to load testsuite data");
     STASIS_ASSERT(testsuite->name != NULL, "Test suite must be named");
     STASIS_ASSERT(testsuite->skipped > 0, "missed skipped tests");
     STASIS_ASSERT(testsuite->failures > 0, "missed failed tests");
@@ -44,7 +44,7 @@ void test_junitxml_testsuite_read() {
 
 void test_junitxml_testsuite_read_error() {
     struct JUNIT_Testsuite *testsuite;
-    STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read("result_error.xml")) != NULL, "failed to load testsuite data");
+    STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read("data/result_error.xml")) != NULL, "failed to load testsuite data");
 
     STASIS_ASSERT(testsuite->name != NULL, "test suite must be named");
     STASIS_ASSERT(testsuite->skipped == 0, "should not have any skipped tests");
