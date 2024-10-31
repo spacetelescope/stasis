@@ -218,13 +218,11 @@ int conda_activate(const char *root, const char *env_name) {
     const char *init_script_mamba = "/etc/profile.d/mamba.sh";
     char path_conda[PATH_MAX] = {0};
     char path_mamba[PATH_MAX] = {0};
-    char path_bin[PATH_MAX] = {0};
     char logfile[PATH_MAX] = {0};
     struct Process proc;
     memset(&proc, 0, sizeof(proc));
 
     // Where to find conda's init scripts
-    sprintf(path_bin, "%s/bin", root);
     sprintf(path_conda, "%s%s", root, init_script_conda);
     sprintf(path_mamba, "%s%s", root, init_script_mamba);
 
@@ -258,7 +256,7 @@ int conda_activate(const char *root, const char *env_name) {
 
     // Fully activate conda and record its effect on the runtime environment
     char command[PATH_MAX * 3];
-    snprintf(command, sizeof(command) - 1, "set -a; source %s; source %s; PATH=\"%s:$PATH\" conda activate %s &>/dev/null; env -0", path_conda, path_mamba, path_bin, env_name);
+    snprintf(command, sizeof(command) - 1, "set -a; source %s; source %s; conda activate %s &>/dev/null; env -0", path_conda, path_mamba, env_name);
     int retval = shell(&proc, command);
     if (retval) {
         // it didn't work; drop out for cleanup
