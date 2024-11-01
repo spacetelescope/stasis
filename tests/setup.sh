@@ -24,7 +24,7 @@ setup_script_dir="$(dirname ${BASH_SOURCE[0]})"
 export TOPDIR=$(pwd)
 export TEST_DATA="$TOPDIR"/data
 
-WS_DEFAULT=rt_workspace_
+WS_DEFAULT="workspaces/rt_workspace_"
 setup_workspace() {
     if [ -z "$1" ]; then
         echo "setup_workspace requires a name argument" >&2
