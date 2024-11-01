@@ -253,8 +253,18 @@ assert_file_contains() {
     fi
 }
 
+clean_up_docker() {
+    CONTAINERS_DIR="$WORKSPACE/.local/share/containers"
+    # HOME points to the WORKSPACE. The only reason we'd have this directory is if docker/podman was executed
+    # Fair to assume if the directory exists, docker/podman is functional.
+    if [ -d "$CONTAINERS_DIR" ]; then
+        docker run --rm -it -v $CONTAINERS_DIR:/data alpine sh -c '/bin/rm -r -f /data/*'
+    fi
+}
+
 clean_up() {
-    if [ -z "$RT_KEEP_WORKSPACE" ] && [ -d "$WORKSPACE" ]; then
+    if ([ -z "$RT_KEEP_WORKSPACE" ] || [ -z "$KEEP_WORKSPACE" ]) && [ -d "$WORKSPACE" ]; then
+        clean_up_docker
         rm -rf "$WORKSPACE"
     fi
 
