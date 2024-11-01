@@ -115,7 +115,6 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         char *dest;
     } data;
     struct INIFILE *cfg = ctx->_stasis_ini_fp.mission;
-    union INIVal val;
 
     memset(&data, 0, sizeof(data));
     data.src = calloc(PATH_MAX, sizeof(*data.src));
@@ -125,6 +124,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
     }
 
     for (size_t i = 0; i < cfg->section_count; i++) {
+        union INIVal val;
         char *section_name = cfg->section[i]->key;
         if (!startswith(section_name, "template:")) {
             continue;
@@ -140,7 +140,6 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         int err = 0;
         data.dest = ini_getval_str(cfg, section_name, "destination", INI_READ_RENDER, &err);
 
-        char *contents;
         struct stat st;
         if (lstat(data.src, &st)) {
             perror(data.src);
@@ -148,15 +147,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
             continue;
         }
 
-        contents = calloc(st.st_size + 1, sizeof(*contents));
+        char *contents = calloc(st.st_size + 1, sizeof(*contents));
         if (!contents) {
             perror("template file contents");
             guard_free(data.dest);
             continue;
         }
 
-        FILE *fp;
-        fp = fopen(data.src, "rb");
+        FILE *fp = fopen(data.src, "rb");
         if (!fp) {
             perror(data.src);
             guard_free(contents);

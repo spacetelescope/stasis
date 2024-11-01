@@ -202,7 +202,11 @@ int main(int argc, char *argv[]) {
         test_delivery_gather_tool_versions,
     };
 
-    const char *ws = "workspace";
+    char ws[] = "workspace_XXXXXX";
+    if (!mkdtemp(ws)) {
+        perror("mkdtemp");
+        exit(1);
+    }
     getcwd(cwd_start, sizeof(cwd_start) - 1);
     mkdir(ws, 0755);
     chdir(ws);

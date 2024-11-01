@@ -1,5 +1,5 @@
 /**
- * @file strings.c
+ * @file str.c
  */
 #include <unistd.h>
 #include "str.h"
@@ -196,11 +196,10 @@ char *join_ex(char *separator, ...) {
         char **tmp = realloc(argv, (argc + 1) * sizeof(char *));
         if (tmp == NULL) {
             perror("join_ex realloc failed");
-            guard_free(argv);
+            GENERIC_ARRAY_FREE(argv);
             return NULL;
-        } else {
-            argv = tmp;
         }
+        argv = tmp;
         size += strlen(current) + separator_len;
         argv[argc] = strdup(current);
     }
@@ -280,14 +279,14 @@ char *substring_between(char *sptr, const char *delims) {
 /*
  * Comparison functions for `strsort`
  */
-static int _strsort_alpha_compare(const void *a, const void *b) {
+static int strsort_alpha_compare(const void *a, const void *b) {
     const char *aa = *(const char **)a;
     const char *bb = *(const char **)b;
     int result = strcmp(aa, bb);
     return result;
 }
 
-static int _strsort_numeric_compare(const void *a, const void *b) {
+static int strsort_numeric_compare(const void *a, const void *b) {
     const char *aa = *(const char **)a;
     const char *bb = *(const char **)b;
 
@@ -306,7 +305,7 @@ static int _strsort_numeric_compare(const void *a, const void *b) {
     return 0;
 }
 
-static int _strsort_asc_compare(const void *a, const void *b) {
+static int strsort_asc_compare(const void *a, const void *b) {
     const char *aa = *(const char**)a;
     const char *bb = *(const char**)b;
     size_t len_a = strlen(aa);
@@ -317,7 +316,7 @@ static int _strsort_asc_compare(const void *a, const void *b) {
 /*
  * Helper function for `strsortlen`
  */
-static int _strsort_dsc_compare(const void *a, const void *b) {
+static int strsort_dsc_compare(const void *a, const void *b) {
     const char *aa = *(const char**)a;
     const char *bb = *(const char**)b;
     size_t len_a = strlen(aa);
@@ -332,16 +331,16 @@ void strsort(char **arr, unsigned int sort_mode) {
 
     typedef int (*compar)(const void *, const void *);
     // Default mode is alphabetic sort
-    compar fn = _strsort_alpha_compare;
+    compar fn = strsort_alpha_compare;
 
     if (sort_mode == STASIS_SORT_LEN_DESCENDING) {
-        fn = _strsort_dsc_compare;
+        fn = strsort_dsc_compare;
     } else if (sort_mode == STASIS_SORT_LEN_ASCENDING) {
-        fn = _strsort_asc_compare;
+        fn = strsort_asc_compare;
     } else if (sort_mode == STASIS_SORT_ALPHA) {
-        fn = _strsort_alpha_compare; // ^ still selectable though ^
+        fn = strsort_alpha_compare; // ^ still selectable though ^
     } else if (sort_mode == STASIS_SORT_NUMERIC) {
-        fn = _strsort_numeric_compare;
+        fn = strsort_numeric_compare;
     }
 
     size_t arr_size = 0;
@@ -377,7 +376,7 @@ char **strdeldup(char **arr) {
 
     size_t records;
     // Determine the length of the array
-    for (records = 0; arr[records] != NULL; records++);
+    for (records = 0; arr[records] != NULL; records++) {}
 
     // Allocate enough memory to store the original array contents
     // (It might not have duplicate values, for example)
@@ -520,7 +519,6 @@ void print_banner(const char *s, int len) {
  * @return pointer to `s`
  */
 char *normalize_space(char *s) {
-    size_t len;
     size_t trim_pos;
     int add_whitespace = 0;
     char *result = s;
@@ -537,11 +535,11 @@ char *normalize_space(char *s) {
     char *tmp_orig = tmp;
 
     // count whitespace, if any
-    for (trim_pos = 0; isblank(s[trim_pos]); trim_pos++);
+    for (trim_pos = 0; isblank(s[trim_pos]); trim_pos++) {}
     // trim whitespace from the left, if any
     memmove(s, &s[trim_pos], strlen(&s[trim_pos]));
     // cull bytes not part of the string after moving
-    len = strlen(s);
+    size_t len = strlen(s);
     s[len - trim_pos] = '\0';
 
     // Generate a new string with extra whitespace stripped out
@@ -581,7 +579,7 @@ char **strdup_array(char **array) {
     }
 
     // Count elements in `array`
-    for (elems = 0; array[elems] != NULL; elems++);
+    for (elems = 0; array[elems] != NULL; elems++) {}
 
     // Create new array
     result = calloc(elems + 1, sizeof(*result));
@@ -606,8 +604,8 @@ int strcmp_array(const char **a, const char **b) {
     }
 
     // Get length of arrays
-    for (a_len = 0; a[a_len] != NULL; a_len++);
-    for (b_len = 0; b[b_len] != NULL; b_len++);
+    for (a_len = 0; a[a_len] != NULL; a_len++) {}
+    for (b_len = 0; b[b_len] != NULL; b_len++) {}
 
     // Check lengths are equal
     if (a_len < b_len) return (int)(b_len - a_len);
@@ -644,8 +642,7 @@ char *tolower_s(char *s) {
 }
 
 char *to_short_version(const char *s) {
-    char *result;
-    result = strdup(s);
+    char *result = strdup(s);
     if (!result) {
         return NULL;
     }

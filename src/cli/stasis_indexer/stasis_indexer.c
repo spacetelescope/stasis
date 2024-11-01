@@ -23,9 +23,9 @@ const char *long_options_help[] = {
 
 static void usage(char *name) {
     int maxopts = sizeof(long_options) / sizeof(long_options[0]);
-    unsigned char *opts = calloc(maxopts + 1, sizeof(char));
+    char *opts = calloc(maxopts + 1, sizeof(char));
     for (int i = 0; i < maxopts; i++) {
-        opts[i] = long_options[i].val;
+        opts[i] = (char) long_options[i].val;
     }
     printf("usage: %s [-%s] {{STASIS_ROOT}...}\n", name, opts);
     guard_free(opts);
@@ -93,9 +93,8 @@ int indexer_wheels(struct Delivery *ctx) {
 
 int indexer_load_metadata(struct Delivery *ctx, const char *filename) {
     char line[STASIS_NAME_MAX] = {0};
-    FILE *fp;
 
-    fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "r");
     if (!fp) {
         return -1;
     }
@@ -179,9 +178,8 @@ int indexer_get_files(struct StrList **out, const char *path, const char *patter
         char *item = strlist_item(list, i);
         if (fnmatch(userpattern, item, 0)) {
             no_match++;
-            continue;
         } else {
-            strlist_append(&(*out), item);
+            strlist_append((out), item);
         }
     }
     if (no_match >= strlist_count(list)) {
@@ -254,7 +252,7 @@ int get_pandoc_version(size_t *result) {
         }
 
         size_t parts_total;
-        for (parts_total = 0; parts[parts_total] != NULL; parts_total++);
+        for (parts_total = 0; parts[parts_total] != NULL; parts_total++) {}
 
         // generate the version as an integer
         // note: pandoc version scheme never exceeds four elements (or bytes in this case)
@@ -276,7 +274,6 @@ int get_pandoc_version(size_t *result) {
 }
 
 int indexer_make_website(struct Delivery *ctx) {
-    char cmd[PATH_MAX];
     const char *pattern = "*.md";
 
     if (!find_program("pandoc")) {
@@ -334,6 +331,7 @@ int indexer_make_website(struct Delivery *ctx) {
         }
         char *root = strlist_item(dirs, i);
         for (size_t x = 0; x < strlist_count(inputs); x++) {
+            char cmd[PATH_MAX] = {0};
             char *filename = strlist_item(inputs, x);
             char fullpath_src[PATH_MAX] = {0};
             char fullpath_dest[PATH_MAX] = {0};
@@ -524,8 +522,7 @@ int indexer_readmes(struct Delivery ctx[], size_t nelem) {
     sprintf(indexfile, "%s/README.md", ctx->storage.delivery_dir);
 
     if (!pushd(ctx->storage.delivery_dir)) {
-        FILE *indexfp;
-        indexfp = fopen(indexfile, "w+");
+        FILE *indexfp = fopen(indexfile, "w+");
         if (!indexfp) {
             fprintf(stderr, "Unable to open %s for writing\n", indexfile);
             return -1;
@@ -604,8 +601,7 @@ int indexer_junitxml_report(struct Delivery ctx[], size_t nelem) {
     }
 
     if (!pushd(ctx->storage.results_dir)) {
-        FILE *indexfp;
-        indexfp = fopen(indexfile, "w+");
+        FILE *indexfp = fopen(indexfile, "w+");
         if (!indexfp) {
             fprintf(stderr, "Unable to open %s for writing\n", indexfile);
             return -1;
@@ -814,7 +810,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    char *workdir;
     char workdir_template[PATH_MAX] = {0};
     char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
@@ -823,7 +818,7 @@ int main(int argc, char *argv[]) {
         strcat(workdir_template, "/tmp");
     }
     strcat(workdir_template, "/stasis-combine.XXXXXX");
-    workdir = mkdtemp(workdir_template);
+    char *workdir = mkdtemp(workdir_template);
     if (!workdir) {
         SYSERROR("Unable to create temporary directory: %s", workdir_template);
         exit(1);
@@ -832,8 +827,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    struct Delivery ctx;
-    memset(&ctx, 0, sizeof(ctx));
+    struct Delivery ctx = {0};
 
     printf(BANNER, VERSION, AUTHOR);
 
@@ -919,8 +913,7 @@ int main(int argc, char *argv[]) {
     }
 
     msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
-    char cmd[PATH_MAX];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[PATH_MAX] = {0};
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
     guard_free(destdir);
 

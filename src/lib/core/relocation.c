@@ -21,6 +21,7 @@
  * @param original string to modify
  * @param target string value to replace
  * @param replacement string value
+ * @param flags REPLACE_TRUNCATE_AFTER_MATCH
  * @return 0 on success, -1 on error
  */
 int replace_text(char *original, const char *target, const char *replacement, unsigned flags) {
@@ -65,7 +66,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
                 break;
             }
             // find more matches
-            if (!(match = strstr(pos, target))) {
+            if (!((match = strstr(pos, target)))) {
                 // no more matches
                 // append whatever remains to the buffer
                 strcat(buffer, pos);
@@ -100,22 +101,20 @@ int replace_text(char *original, const char *target, const char *replacement, un
  * @param filename path to file
  * @param target string value to replace
  * @param replacement string
+ * @param flags REPLACE_TRUNCATE_AFTER_MATCH
  * @return 0 on success, -1 on error
  */
 int file_replace_text(const char* filename, const char* target, const char* replacement, unsigned flags) {
-    int result;
     char buffer[STASIS_BUFSIZ];
     char tempfilename[] = "tempfileXXXXXX";
-    FILE *fp;
-    FILE *tfp;
 
-    fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "r");
     if (!fp) {
         fprintf(stderr, "unable to open for reading: %s\n", filename);
         return -1;
     }
 
-    tfp = fopen(tempfilename, "w+");
+    FILE *tfp = fopen(tempfilename, "w+");
     if (!tfp) {
         SYSERROR("unable to open temporary fp for writing: %s", tempfilename);
         fclose(fp);
@@ -123,7 +122,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
     }
 
     // Write modified strings to temporary file
-    result = 0;
+    int result = 0;
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (strstr(buffer, target)) {
             if (replace_text(buffer, target, replacement, flags)) {

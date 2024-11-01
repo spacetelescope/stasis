@@ -45,8 +45,7 @@ int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url) {
 }
 
 void delivery_install_conda(char *install_script, char *conda_install_dir) {
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
+    struct Process proc = {0};
 
     if (globals.conda_fresh_start) {
         if (!access(conda_install_dir, F_OK)) {

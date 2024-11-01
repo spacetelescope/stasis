@@ -25,13 +25,13 @@ int docker_script(const char *image, char *data, unsigned flags) {
 
     snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
 
-    outfile = popen(cmd, "w");
+    FILE *outfile = popen(cmd, "w");
     if (!outfile) {
         // opening command pipe for writing failed
         return -1;
     }
 
-    infile = fmemopen(data, strlen(data), "r");
+    FILE *infile = fmemopen(data, strlen(data), "r");
     if (!infile) {
         // opening memory file for reading failed
         return -1;

@@ -241,7 +241,7 @@ char *tpl_render(char *str) {
                 char *k = func_name_temp;
                 char **params = split(param_begin, ",", 0);
                 int params_count;
-                for (params_count = 0; params[params_count] != NULL; params_count++);
+                for (params_count = 0; params[params_count] != NULL; params_count++) {}
 
                 struct tplfunc_frame *frame = tpl_getfunc(k);
                 if (params_count > frame->argc || params_count < frame->argc) {
@@ -293,17 +293,14 @@ char *tpl_render(char *str) {
 }
 
 int tpl_render_to_file(char *str, const char *filename) {
-    char *result;
-    FILE *fp;
-
     // Render the input string
-    result = tpl_render(str);
+    char *result = tpl_render(str);
     if (!result) {
         return -1;
     }
 
     // Open the destination file for writing
-    fp = fopen(filename, "w+");
+    FILE *fp = fopen(filename, "w+");
     if (!fp) {
         guard_free(result);
         return -1;

@@ -11,7 +11,7 @@ int delivery_docker(struct Delivery *ctx) {
     size_t total_build_args = strlist_count(ctx->deploy.docker.build_args);
 
     if (!has_registry) {
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker registry defined. You will need to manually retag the resulting image.\n");
+        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker registry defined. You will need to manually re-tag the resulting image.\n");
     }
 
     if (!total_tags) {

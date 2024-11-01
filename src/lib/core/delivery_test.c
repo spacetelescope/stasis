@@ -5,8 +5,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     static const int PARALLEL = 1;
     static const int SERIAL = 2;
     struct MultiProcessingPool *pool[3];
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
+    struct Process proc = {0};
 
     if (!globals.workaround.conda_reactivate) {
         globals.workaround.conda_reactivate = calloc(PATH_MAX, sizeof(*globals.workaround.conda_reactivate));
@@ -227,7 +226,6 @@ void delivery_tests_run(struct Delivery *ctx) {
 
         // Execute all queued tasks
         for (size_t p = 0; p < sizeof(pool) / sizeof(*pool); p++) {
-            int pool_status;
             long jobs = globals.cpu_limit;
 
             if (!pool[p]->num_used) {
@@ -244,7 +242,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             // 1. Setup (builds)
             // 2. Parallel (fast jobs)
             // 3. Serial (long jobs)
-            pool_status = mp_pool_join(pool[p], jobs, opt_flags);
+            int pool_status = mp_pool_join(pool[p], jobs, opt_flags);
 
             // On error show a summary of the current pool, and die
             if (pool_status != 0) {
@@ -266,9 +264,8 @@ void delivery_tests_run(struct Delivery *ctx) {
 
 int delivery_fixup_test_results(struct Delivery *ctx) {
     struct dirent *rec;
-    DIR *dp;
 
-    dp = opendir(ctx->storage.results_dir);
+    DIR *dp = opendir(ctx->storage.results_dir);
     if (!dp) {
         perror(ctx->storage.results_dir);
         return -1;

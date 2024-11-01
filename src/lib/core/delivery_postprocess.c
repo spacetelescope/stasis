@@ -21,10 +21,9 @@ char *delivery_get_release_header(struct Delivery *ctx) {
 }
 
 int delivery_dump_metadata(struct Delivery *ctx) {
-    FILE *fp;
     char filename[PATH_MAX];
     sprintf(filename, "%s/meta-%s.stasis", ctx->storage.meta_dir, ctx->info.release_name);
-    fp = fopen(filename, "w+");
+    FILE *fp = fopen(filename, "w+");
     if (!fp) {
         return -1;
     }
@@ -128,7 +127,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         remove(tempfile);
         guard_free(tempfile);
     } else if (globals.enable_rewrite_spec_stage_2 && stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
-        char output[PATH_MAX] = {0];
+        char output[PATH_MAX] = {0};
         // Replace "local" channel with the staging URL
         if (ctx->storage.conda_staging_url) {
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
@@ -192,20 +191,17 @@ int delivery_copy_wheel_artifacts(struct Delivery *ctx) {
 
 int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     struct dirent *rec;
-    DIR *dp;
-    FILE *top_fp;
 
-    dp = opendir(ctx->storage.wheel_artifact_dir);
+    DIR *dp = opendir(ctx->storage.wheel_artifact_dir);
     if (!dp) {
         return -1;
     }
 
     // Generate a "dumb" local pypi index that is compatible with:
     // pip install --extra-index-url
-    char top_index[PATH_MAX];
-    memset(top_index, 0, sizeof(top_index));
+    char top_index[PATH_MAX] = {0};
     sprintf(top_index, "%s/index.html", ctx->storage.wheel_artifact_dir);
-    top_fp = fopen(top_index, "w+");
+    FILE *top_fp = fopen(top_index, "w+");
     if (!top_fp) {
         closedir(dp);
         return -2;
@@ -217,11 +213,9 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
             continue;
         }
 
-        FILE *bottom_fp;
-        char bottom_index[PATH_MAX * 2];
-        memset(bottom_index, 0, sizeof(bottom_index));
+        char bottom_index[PATH_MAX * 2] = {0};
         sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
-        bottom_fp = fopen(bottom_index, "w+");
+        FILE *bottom_fp = fopen(bottom_index, "w+");
         if (!bottom_fp) {
             closedir(dp);
             return -3;

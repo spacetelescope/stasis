@@ -204,8 +204,7 @@ void test_split() {
             {.data = NULL, .delim = NULL, NULL},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char **result;
-        result = split(tc[i].data, tc[i].delim, tc[i].max_split);
+        char **result = split((char *) tc[i].data, tc[i].delim, tc[i].max_split);
         STASIS_ASSERT(strcmp_array((const char **) result, tc[i].expected) == 0, "Split failed");
         GENERIC_ARRAY_FREE(result);
     }
@@ -243,8 +242,7 @@ void test_join_ex() {
             {.delim = "\n\n", .expected = "a\n\nb\n\nc\n\nd\n\ne"},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char *result;
-        result = join_ex((char *) tc[i].delim, "a", "b", "c", "d", "e", NULL);
+        char *result = join_ex((char *) tc[i].delim, "a", "b", "c", "d", "e", NULL);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }
@@ -270,7 +268,7 @@ void test_substring_between() {
             {.data = "nothing () here", .delim = "()", .expected = ""}, // nothing exists between delimiters
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char *result = substring_between(tc[i].data, tc[i].delim);
+        char *result = substring_between((char *) tc[i].data, tc[i].delim);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "unable to extract substring");
         guard_free(result);
     }

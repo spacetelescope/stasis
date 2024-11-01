@@ -53,7 +53,7 @@ int recipe_get_type(char *repopath) {
     for (size_t i = 0; marker[i] != NULL; i++) {
         char path[PATH_MAX] = {0};
         sprintf(path, "%s/%s", repopath, marker[i]);
-        result = access(path, F_OK);
+        int result = access(path, F_OK);
         if (!result) {
             return type[i];
         }

@@ -1,9 +1,7 @@
 #include "envctl.h"
 
 struct EnvCtl *envctl_init() {
-    struct EnvCtl *result;
-
-    result = calloc(1, sizeof(*result));
+    struct EnvCtl *result = calloc(1, sizeof(*result));
     if (!result) {
         return NULL;
     }

@@ -395,7 +395,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strlist_count(ctx.conda.pip_packages_defer)) {
-        if (!(ctx.conda.wheels_packages = delivery_build_wheels(&ctx))) {
+        if (!((ctx.conda.wheels_packages = delivery_build_wheels(&ctx)))) {
             exit(1);
         }
         if (delivery_index_wheel_artifacts(&ctx)) {

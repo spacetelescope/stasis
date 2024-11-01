@@ -70,7 +70,6 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             NULL,
     };
 
-    char output[STASIS_BUFSIZ];
     char export_command[7]; // export=6 and setenv=6... convenient
     char *_sh = getenv("SHELL");
     char *sh = path_basename(_sh);
@@ -277,7 +276,6 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
  */
 char *runtime_expand_var(RuntimeEnv *env, char *input) {
     const char delim = '$';
-    const char *delim_literal = "$$";
     char *expanded = NULL;
 
     // Input is invalid
