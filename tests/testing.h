@@ -21,14 +21,21 @@ struct stasis_test_result_t {
 } stasis_test_results[STASIS_TEST_RUN_MAX];
 size_t stasis_test_results_i = 0;
 
-void stasis_testing_record_result(struct stasis_test_result_t result);
+extern inline void stasis_testing_setup_workspace();
+extern inline void stasis_testing_clean_up_docker();
+extern inline void stasis_testing_teardown_workspace();
+extern inline void stasis_testing_record_result(struct stasis_test_result_t result);
+extern inline int stasis_testing_has_failed();
+extern inline void stasis_testing_record_result_summary();
+extern inline char *stasis_testing_read_ascii(const char *filename);
+extern inline int stasis_testing_write_ascii(const char *filename, const char *data);
 
-void stasis_testing_record_result(struct stasis_test_result_t result) {
+inline void stasis_testing_record_result(struct stasis_test_result_t result) {
     memcpy(&stasis_test_results[stasis_test_results_i], &result, sizeof(result));
     stasis_test_results_i++;
 }
 
-int stasis_testing_has_failed() {
+inline int stasis_testing_has_failed() {
     for (size_t i = 0; i < stasis_test_results_i; i++) {
         if (stasis_test_results[i].status == false) {
             return 1;
@@ -36,7 +43,8 @@ int stasis_testing_has_failed() {
     }
     return 0;
 }
-void stasis_testing_record_result_summary() {
+
+inline void stasis_testing_record_result_summary() {
     size_t failed = 0;
     size_t skipped = 0;
     size_t passed = 0;
@@ -70,7 +78,7 @@ void stasis_testing_record_result_summary() {
     fprintf(stdout, "\n[UNIT] %zu tests passed, %zu tests failed, %zu tests skipped out of %zu\n", passed, failed, skipped, stasis_test_results_i);
 }
 
-char *stasis_testing_read_ascii(const char *filename) {
+inline char *stasis_testing_read_ascii(const char *filename) {
     struct stat st;
     if (stat(filename, &st)) {
         perror(filename);
@@ -96,7 +104,7 @@ char *stasis_testing_read_ascii(const char *filename) {
     return result;
 }
 
-int stasis_testing_write_ascii(const char *filename, const char *data) {
+inline int stasis_testing_write_ascii(const char *filename, const char *data) {
     FILE *fp;
     fp = fopen(filename, "w+");
     if (!fp) {
@@ -114,13 +122,85 @@ int stasis_testing_write_ascii(const char *filename, const char *data) {
     return 0;
 }
 
+char TEST_DATA_DIR[PATH_MAX] = {0};
+char TEST_START_DIR[PATH_MAX] = {0};
+char TEST_WORKSPACE_DIR[PATH_MAX] = {0};
+inline void stasis_testing_setup_workspace() {
+    if (!realpath("data", TEST_DATA_DIR)) {
+        SYSERROR("%s", "Data directory is missing");
+        exit(1);
+    }
+
+    if (mkdir("workspaces", 0755) < 0) {
+        if (errno != EEXIST) {
+            SYSERROR("%s", "Unable to create workspaces directory");
+            exit(1);
+        }
+    }
+    char ws[] = "workspaces/workspace_XXXXXX";
+    if (mkdtemp(ws) == NULL) {
+        SYSERROR("Unable to create testing workspace: %s", ws);
+        exit(1);
+    }
+    if (!realpath(ws, TEST_WORKSPACE_DIR)) {
+        SYSERROR("%s", "Unable to determine absolute path to temporary workspace");
+        exit(1);
+    }
+    if (chdir(TEST_WORKSPACE_DIR) < 0) {
+        SYSERROR("Unable to enter workspace directory: '%s'", TEST_WORKSPACE_DIR);
+        exit(1);
+    }
+    if (setenv("HOME", TEST_WORKSPACE_DIR, 1) < 0) {
+        SYSERROR("Unable to reset HOME to '%s'", TEST_WORKSPACE_DIR);
+    }
+}
+
+inline void stasis_testing_clean_up_docker() {
+    char containers_dir[PATH_MAX] = {0};
+    snprintf(containers_dir, sizeof(containers_dir) - 1, "%s/.local/share/containers", TEST_WORKSPACE_DIR);
+
+    if (access(containers_dir, F_OK) == 0) {
+        char cmd[PATH_MAX] = {0};
+        snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -it -v %s:/data alpine sh -c '/bin/rm -r -f /data/*' &>/dev/null", containers_dir);
+        // This command will "fail" due to podman's internal protection(s). However, this gets us close enough.
+        system(cmd);
+
+        // Podman seems to defer the rollback operation on-error for a short period.
+        // This buys time, so we can delete it.
+        sleep(1);
+        sync();
+        if (rmtree(containers_dir)) {
+            SYSERROR("WARNING: Unable to fully remove container directory: '%s'", containers_dir);
+        }
+    }
+}
+
+inline void stasis_testing_teardown_workspace() {
+    if (chdir(TEST_START_DIR) < 0) {
+        SYSERROR("Unable to re-enter test start directory from workspace directory: %s", TEST_START_DIR);
+        exit(1);
+    }
+    if (!getenv("KEEP_WORKSPACE")) {
+        if (strlen(TEST_WORKSPACE_DIR) > 1) {
+            stasis_testing_clean_up_docker();
+            rmtree(TEST_WORKSPACE_DIR);
+        }
+    }
+}
+
 #define STASIS_TEST_BEGIN_MAIN() do { \
         setenv("PYTHONUNBUFFERED", "1", 1); \
         fflush(stdout); \
         fflush(stderr); \
         setvbuf(stdout, NULL, _IONBF, 0); \
         setvbuf(stderr, NULL, _IONBF, 0); \
+        if (!getcwd(TEST_START_DIR, sizeof(TEST_START_DIR) - 1)) { \
+            SYSERROR("%s", "Unable to determine current working directory"); \
+            exit(1); \
+        } \
         atexit(stasis_testing_record_result_summary); \
+        atexit(stasis_testing_teardown_workspace); \
+        stasis_testing_setup_workspace(); \
     } while (0)
 #define STASIS_TEST_END_MAIN() do { return stasis_testing_has_failed(); } while (0)
 
