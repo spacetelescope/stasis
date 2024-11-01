@@ -346,10 +346,8 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
 
 char *git_describe(const char *path) {
-    static char version[NAME_MAX];
-    FILE *pp;
+    static char version[NAME_MAX] = {0};
 
-    memset(version, 0, sizeof(version));
     if (pushd(path)) {
         return NULL;
     }

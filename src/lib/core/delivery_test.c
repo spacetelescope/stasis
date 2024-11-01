@@ -275,8 +275,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
     }
 
     while ((rec = readdir(dp)) != NULL) {
-        char path[PATH_MAX];
-        memset(path, 0, sizeof(path));
+        char path[PATH_MAX] = {0};
 
         if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..") || !endswith(rec->d_name, ".xml")) {
             continue;

@@ -59,9 +59,9 @@ int delivery_docker(struct Delivery *ctx) {
     }
 
     // Build the image
-    char delivery_file[PATH_MAX];
-    char dest[PATH_MAX];
-    char rsync_cmd[PATH_MAX * 2];
+    char delivery_file[PATH_MAX] = {0};
+    char dest[PATH_MAX] = {0};
+    char rsync_cmd[PATH_MAX * 2] = {0};
     memset(delivery_file, 0, sizeof(delivery_file));
     memset(dest, 0, sizeof(dest));
 

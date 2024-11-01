@@ -24,7 +24,7 @@
  * @return 0 on success, -1 on error
  */
 int replace_text(char *original, const char *target, const char *replacement, unsigned flags) {
-    char buffer[STASIS_BUFSIZ];
+    char buffer[STASIS_BUFSIZ] = {0};
     char *pos = original;
     char *match = NULL;
     size_t original_len = strlen(original);

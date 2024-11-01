@@ -40,8 +40,7 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
         }
     }
 
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
     sprintf(cmd, "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
     va_list args;
     va_start(args, command);
@@ -63,16 +62,14 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
 }
 
 int python_exec(const char *args) {
-    char command[PATH_MAX];
-    memset(command, 0, sizeof(command));
+    char command[PATH_MAX] = {0};
     snprintf(command, sizeof(command) - 1, "python %s", args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
     return system(command);
 }
 
 int pip_exec(const char *args) {
-    char command[PATH_MAX];
-    memset(command, 0, sizeof(command));
+    char command[PATH_MAX] = {0};
     snprintf(command, sizeof(command) - 1, "python -m pip %s", args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
     return system(command);
@@ -116,8 +113,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
     }
 
     int status = 0;
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
+    struct Process proc = {0};
     proc.redirect_stderr = 1;
     strcpy(proc.f_stdout, logfile);
 
@@ -196,8 +192,7 @@ int conda_exec(const char *args) {
             "deactivate",
             NULL
     };
-    char conda_as[6];
-    memset(conda_as, 0, sizeof(conda_as));
+    char conda_as[6] = {0};
 
     strcpy(conda_as, "conda");
     for (size_t i = 0; mamba_commands[i] != NULL; i++) {
@@ -219,8 +214,7 @@ int conda_activate(const char *root, const char *env_name) {
     char path_conda[PATH_MAX] = {0};
     char path_mamba[PATH_MAX] = {0};
     char logfile[PATH_MAX] = {0};
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
+    struct Process proc = {0};
 
     // Where to find conda's init scripts
     sprintf(path_conda, "%s%s", root, init_script_conda);

@@ -3,7 +3,6 @@
 int copy2(const char *src, const char *dest, unsigned int op) {
     size_t bytes_read;
     size_t bytes_written;
-    char buf[STASIS_BUFSIZ];
     struct stat src_stat, dnamest;
     FILE *fp1, *fp2;
 
@@ -47,7 +46,9 @@ int copy2(const char *src, const char *dest, unsigned int op) {
             return -1;
         }
     } else if (S_ISREG(src_stat.st_mode)) {
-        fp1 = fopen(src, "rb");
+        char buf[STASIS_BUFSIZ] = {0};
+        size_t bytes_read;
+        FILE *fp1 = fopen(src, "rb");
         if (!fp1) {
             perror(src);
             return -1;

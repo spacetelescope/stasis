@@ -165,9 +165,6 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     struct StrList *dataptr = NULL;
     struct StrList *deferred = NULL;
     char *name = NULL;
-    char cmd[PATH_MAX];
-
-    memset(cmd, 0, sizeof(cmd));
 
     char mode[10];
     if (DEFER_CONDA == type) {

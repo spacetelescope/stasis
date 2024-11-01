@@ -1,7 +1,5 @@
 #include "artifactory.h"
 
-extern struct STASIS_GLOBAL globals;
-
 int artifactory_download_cli(char *dest,
                              char *jfrog_artifactory_base_url,
                              char *jfrog_artifactory_product,
@@ -73,8 +71,7 @@ int artifactory_download_cli(char *dest,
 }
 
 void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[STASIS_BUFSIZ];
-    memset(data, 0, sizeof(data));
+    char data[STASIS_BUFSIZ] = {0};
 
     if (jfrt_val == NULL) {
         // no data
@@ -85,8 +82,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
 }
 
 void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[STASIS_BUFSIZ];
-    memset(data, 0, sizeof(data));
+    char data[STASIS_BUFSIZ] = {0};
 
     if (jfrt_val == false) {
         // option will not be used
@@ -97,8 +93,7 @@ void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList 
 }
 
 void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[STASIS_BUFSIZ];
-    memset(data, 0, sizeof(data));
+    char data[STASIS_BUFSIZ] = {0};
 
     if (jfrt_val == 0) {
         // option will not be used
@@ -109,8 +104,7 @@ void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **
 }
 
 void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList **opt_map) {
-    char data[STASIS_BUFSIZ];
-    memset(data, 0, sizeof(data));
+    char data[STASIS_BUFSIZ] = {0};
 
     if (jfrt_val == 0) {
         // option will not be used
@@ -260,15 +254,13 @@ static int jfrog_cli_rt(struct JFRT_Auth *auth, char *task, char *args) {
 }
 
 int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
     snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-collect-env", cmd);
 }
 
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
     snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-publish", cmd);
 }
@@ -278,8 +270,7 @@ int jfrog_cli_rt_ping(struct JFRT_Auth *auth) {
 }
 
 int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, char *repo_path, char *dest) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(repo_path)) {
         fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");
@@ -345,8 +336,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
 }
 
 int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *src, char *repo_path) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(src)) {
         fprintf(stderr, "src argument must be a valid file system path\n");
@@ -444,8 +434,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
 }
 
 int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *repo_path, char *pattern) {
-    char cmd[STASIS_BUFSIZ];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(repo_path)) {
         fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");

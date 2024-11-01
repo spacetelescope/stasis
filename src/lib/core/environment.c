@@ -93,6 +93,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
     }
 
     for (size_t i = 0; i < strlist_count(env); i++) {
+        char output[STASIS_BUFSIZ] = {0};
         char **pair = split(strlist_item(env, i), "=", 0);
         char *key = pair[0];
         char *value = NULL;
@@ -297,10 +298,9 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
     }
 
     // Parse the input string
-    size_t i;
-    for (i = 0; i < strlen(input); i++) {
-        char var[MAXNAMLEN];    // environment variable name
-        memset(var, '\0', MAXNAMLEN);   // zero out name
+    for (size_t i = 0; i < strlen(input); i++) {
+        const char *delim_literal = "$$";
+        char var[MAXNAMLEN] = {0};    // environment variable name
 
         // Handle literal statement "$$var"
         // Value becomes "$var" (unexpanded)

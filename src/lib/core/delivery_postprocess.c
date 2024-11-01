@@ -62,7 +62,6 @@ int delivery_dump_metadata(struct Delivery *ctx) {
 }
 
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage) {
-    char output[PATH_MAX];
     char *header = NULL;
     char *tempfile = NULL;
     FILE *tp = NULL;
@@ -129,6 +128,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         remove(tempfile);
         guard_free(tempfile);
     } else if (globals.enable_rewrite_spec_stage_2 && stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
+        char output[PATH_MAX] = {0];
         // Replace "local" channel with the staging URL
         if (ctx->storage.conda_staging_url) {
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
@@ -183,8 +183,7 @@ int delivery_index_conda_artifacts(struct Delivery *ctx) {
 }
 
 int delivery_copy_wheel_artifacts(struct Delivery *ctx) {
-    char cmd[PATH_MAX];
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[PATH_MAX] = {0};
     snprintf(cmd, sizeof(cmd) - 1, "rsync -avi --progress %s/*/dist/*.whl %s",
              ctx->storage.build_sources_dir,
              ctx->storage.wheel_artifact_dir);
@@ -234,8 +233,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         // Add record to top level index
         fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
-        char dpath[PATH_MAX * 2];
-        memset(dpath, 0, sizeof(dpath));
+        char dpath[PATH_MAX * 2] = {0};
         sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
         struct StrList *packages = listdir(dpath);
         if (!packages) {

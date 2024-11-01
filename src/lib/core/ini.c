@@ -550,9 +550,8 @@ struct INIFILE *ini_open(const char *filename) {
     char inikey[2][255];
     char *key = inikey[0];
     char *key_last = inikey[1];
-    char value[STASIS_BUFSIZ];
+    char value[STASIS_BUFSIZ] = {0};
 
-    memset(value, 0, sizeof(value));
     memset(inikey, 0, sizeof(inikey));
 
     // Read file
