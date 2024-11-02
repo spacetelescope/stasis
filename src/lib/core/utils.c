@@ -165,7 +165,6 @@ char *path_dirname(char *path) {
 char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn *readerFn) {
     FILE *fp = NULL;
     char **result = NULL;
-    char *buffer = NULL;
     size_t lines = 0;
     int use_stdin = 0;
 
@@ -186,7 +185,8 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // Allocate buffer
-    if ((buffer = calloc(STASIS_BUFSIZ, sizeof(char))) == NULL) {
+    char *buffer = calloc(STASIS_BUFSIZ, sizeof(char));
+    if (buffer == NULL) {
         SYSERROR("unable to allocate %d bytes for buffer", STASIS_BUFSIZ);
         if (!use_stdin) {
             fclose(fp);

@@ -11,20 +11,17 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
 
 long download(char *url, const char *filename, char **errmsg) {
     extern char *VERSION;
-    CURL *c;
-    CURLcode curl_code;
     long http_code = -1;
-    FILE *fp;
     char user_agent[20];
     sprintf(user_agent, "stasis/%s", VERSION);
     long timeout = 30L;
     char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
 
     curl_global_init(CURL_GLOBAL_ALL);
-    c = curl_easy_init();
+    CURL *c = curl_easy_init();
     curl_easy_setopt(c, CURLOPT_URL, url);
     curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
-    fp = fopen(filename, "wb");
+    FILE *fp = fopen(filename, "wb");
     if (!fp) {
         return -1;
     }
@@ -40,7 +37,7 @@ long download(char *url, const char *filename, char **errmsg) {
     }
     curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
 
-    curl_code = curl_easy_perform(c);
+    CURLcode curl_code = curl_easy_perform(c);
     if (curl_code != CURLE_OK) {
         if (errmsg) {
             strcpy(*errmsg, curl_easy_strerror(curl_code));
