@@ -24,6 +24,14 @@ setup_script_dir="$(dirname ${BASH_SOURCE[0]})"
 export TOPDIR=$(pwd)
 export TEST_DATA="$TOPDIR"/data
 
+pushd() {
+    command pushd "$@" 1>/dev/null
+}
+
+popd() {
+    command popd 1>/dev/null
+}
+
 WS_DEFAULT="workspaces/rt_workspace_"
 setup_workspace() {
     if [ -z "$1" ]; then
