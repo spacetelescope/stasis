@@ -716,6 +716,7 @@ char *collapse_whitespace(char **s) {
 /**
  * Replace sensitive text in strings with ***REDACTED***
  * @param to_redact a list of tokens to redact
+ * @param to_redact_size limit to n tokens in list
  * @param src to read
  * @param dest to write modified string
  * @param maxlen maximum length of dest string
