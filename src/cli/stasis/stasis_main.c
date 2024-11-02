@@ -133,6 +133,8 @@ int main(int argc, char *argv[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
+    check_system_path();
+
     msg(STASIS_MSG_L1, "Setup\n");
 
     tpl_setup_vars(&ctx);
@@ -241,7 +243,6 @@ int main(int argc, char *argv[]) {
 
     msg(STASIS_MSG_L2, "Installing: %s\n", ctx.conda.installer_name);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
-    check_pathvar(&ctx);
 
     msg(STASIS_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
     delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
