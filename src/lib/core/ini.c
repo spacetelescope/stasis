@@ -438,8 +438,6 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                     value = xvalue;
                 }
                 char **parts = split(value, LINE_SEP, 0);
-                size_t parts_total = 0;
-                for (; parts && parts[parts_total] != NULL; parts_total++);
                 for (size_t p = 0; parts && parts[p] != NULL; p++) {
                     char *render = NULL;
                     if (mode == INI_WRITE_PRESERVE) {
