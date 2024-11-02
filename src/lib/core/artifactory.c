@@ -191,7 +191,6 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
     struct Process proc;
     char cmd[STASIS_BUFSIZ];
     char cmd_redacted[STASIS_BUFSIZ];
-    int status;
 
     memset(&proc, 0, sizeof(proc));
     memset(cmd, 0, sizeof(cmd));
@@ -245,8 +244,7 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
         strcpy(proc.f_stdout, "/dev/null");
         strcpy(proc.f_stderr, "/dev/null");
     }
-    status = shell(&proc, cmd);
-    return status;
+    return shell(&proc, cmd);
 }
 
 static int jfrog_cli_rt(struct JFRT_Auth *auth, char *task, char *args) {
