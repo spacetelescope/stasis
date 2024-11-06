@@ -3,7 +3,6 @@
 
 int shell(struct Process *proc, char *args) {
     struct Process selfproc;
-    pid_t pid;
     pid_t status;
     status = 0;
     errno = 0;
@@ -21,8 +20,7 @@ int shell(struct Process *proc, char *args) {
     }
 
     FILE *tp = NULL;
-    char *t_name;
-    t_name = xmkstemp(&tp, "w");
+    char *t_name = xmkstemp(&tp, "w");
     if (!t_name || !tp) {
         return -1;
     }
@@ -36,7 +34,7 @@ int shell(struct Process *proc, char *args) {
     // somewhere.
     chmod(t_name, 0700);
 
-    pid = fork();
+    pid_t pid = fork();
     if (pid == -1) {
         fprintf(stderr, "fork failed\n");
         exit(1);
@@ -100,14 +98,13 @@ int shell(struct Process *proc, char *args) {
 int shell_safe(struct Process *proc, char *args) {
     FILE *fp;
     char buf[1024] = {0};
-    int result;
 
     char *invalid_ch = strpbrk(args, STASIS_SHELL_SAFE_RESTRICT);
     if (invalid_ch) {
         args = NULL;
     }
 
-    result = shell(proc, args);
+    int result = shell(proc, args);
     if (strlen(proc->f_stdout)) {
         fp = fopen(proc->f_stdout, "r");
         if (fp) {
@@ -138,11 +135,10 @@ char *shell_output(const char *command, int *status) {
     size_t current_size = initial_size;
     char *result = NULL;
     char line[STASIS_BUFSIZ];
-    FILE *pp;
 
     errno = 0;
     *status = 0;
-    pp = popen(command, "r");
+    FILE *pp = popen(command, "r");
     if (!pp) {
         *status = -1;
         return NULL;

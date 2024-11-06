@@ -286,8 +286,7 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
 }
 
 int bootstrap_build_info(struct Delivery *ctx) {
-    struct Delivery local;
-    memset(&local, 0, sizeof(local));
+    struct Delivery local = {0};
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
     delivery_init_platform(&local);

@@ -5,9 +5,9 @@
 #include "callbacks.h"
 #include "envctl.h"
 
+void check_system_path();
 void check_system_env_requirements();
 void check_system_requirements(struct Delivery *ctx);
 void check_requirements(struct Delivery *ctx);
-void check_pathvar(struct Delivery *ctx);
 
 #endif //STASIS_SYSTEM_REQUIREMENTS_H

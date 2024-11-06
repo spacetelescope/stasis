@@ -23,7 +23,7 @@ static struct Test *requirement_from_test(struct Delivery *ctx, const char *name
     return result;
 }
 
-static char *have_spec_in_config(struct Delivery *ctx, const char *name) {
+static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
     for (size_t x = 0; x < strlist_count(ctx->conda.pip_packages); x++) {
         char *config_spec = strlist_item(ctx->conda.pip_packages, x);
         char *op = find_version_spec(config_spec);
@@ -125,7 +125,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char cmd[PATH_MAX];
     char pkgs[STASIS_BUFSIZ];
-    char *env_current = getenv("CONDA_DEFAULT_ENV");
+    const char *env_current = getenv("CONDA_DEFAULT_ENV");
 
     if (env_current) {
         // The requested environment is not the current environment

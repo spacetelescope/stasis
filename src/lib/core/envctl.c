@@ -1,9 +1,7 @@
 #include "envctl.h"
 
 struct EnvCtl *envctl_init() {
-    struct EnvCtl *result;
-
-    result = calloc(1, sizeof(*result));
+    struct EnvCtl *result = calloc(1, sizeof(*result));
     if (!result) {
         return NULL;
     }
@@ -102,13 +100,13 @@ void envctl_do_required(const struct EnvCtl *envctl, int verbose) {
         int code = callback((const void *) item, (const void *) name);
         if (code == STASIS_ENVCTL_RET_IGNORE || code == STASIS_ENVCTL_RET_SUCCESS) {
             continue;
-        } else if (code == STASIS_ENVCTL_RET_FAIL) {
+        }
+        if (code == STASIS_ENVCTL_RET_FAIL) {
             fprintf(stderr, "\n%s must be set. Exiting.\n", name);
             exit(1);
-        } else {
-            fprintf(stderr, "\nan unknown envctl callback code occurred: %d\n", code);
-            exit(1);
         }
+        fprintf(stderr, "\nan unknown envctl callback code occurred: %d\n", code);
+        exit(1);
     }
 }
 

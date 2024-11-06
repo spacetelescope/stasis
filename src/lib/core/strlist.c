@@ -43,9 +43,8 @@ void strlist_append(struct StrList **pStrList, char *str) {
         guard_strlist_free(pStrList);
         perror("failed to append to array");
         exit(1);
-    } else if (tmp != (*pStrList)->data) {
-        (*pStrList)->data = tmp;
     }
+    (*pStrList)->data = tmp;
     (*pStrList)->data[(*pStrList)->num_inuse] = strdup(str);
     (*pStrList)->data[(*pStrList)->num_alloc] = NULL;
     strcpy((*pStrList)->data[(*pStrList)->num_inuse], str);
@@ -62,7 +61,7 @@ static int reader_strlist_append_file(size_t lineno, char **line) {
 /**
  * Append lines from a local file or remote URL (HTTP/s only)
  * @param pStrList
- * @param path file path or HTTP/s address
+ * @param _path file path or HTTP/s address
  * @param readerFn pointer to a reader function (use NULL to retrieve all data)
  * @return 0=success 1=no data, -1=error (spmerrno set)
  */
@@ -170,13 +169,12 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  * @param delim
  */
  void strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim) {
-    char **token;
      if (!str || !delim) {
          return;
      }
 
      char *tmp = strdup(str);
-     token = split(tmp, delim, 0);
+     char **token = split(tmp, delim, 0);
      if (token) {
          for (size_t i = 0; token[i] != NULL; i++) {
              lstrip(token[i]);
@@ -310,6 +308,7 @@ size_t strlist_count(struct StrList *pStrList) {
 /**
  * Set value at index
  * @param pStrList
+ * @param index pStrlist->data[index] to set
  * @param value string
  * @return
  */
@@ -390,10 +389,9 @@ char *strlist_item_as_str(struct StrList *pStrList, size_t index) {
  */
 char strlist_item_as_char(struct StrList *pStrList, size_t index) {
     char *error_p;
-    char result;
 
     strlist_clear_error();
-    result = (char) strtol(strlist_item(pStrList, index), &error_p, 10);
+    char result = (char) strtol(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -410,10 +408,9 @@ char strlist_item_as_char(struct StrList *pStrList, size_t index) {
  */
 unsigned char strlist_item_as_uchar(struct StrList *pStrList, size_t index) {
     char *error_p;
-    unsigned char result;
 
     strlist_clear_error();
-    result = (unsigned char) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    unsigned char result = (unsigned char) strtoul(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -430,10 +427,9 @@ unsigned char strlist_item_as_uchar(struct StrList *pStrList, size_t index) {
  */
 short strlist_item_as_short(struct StrList *pStrList, size_t index) {
     char *error_p;
-    short result;
 
     strlist_clear_error();
-    result = (short) strtol(strlist_item(pStrList, index), &error_p, 10);
+    short result = (short) strtol(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -450,10 +446,9 @@ short strlist_item_as_short(struct StrList *pStrList, size_t index) {
  */
 unsigned short strlist_item_as_ushort(struct StrList *pStrList, size_t index) {
     char *error_p;
-    unsigned short result;
 
     strlist_clear_error();
-    result = (unsigned short) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    unsigned short result = (unsigned short) strtoul(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -470,10 +465,9 @@ unsigned short strlist_item_as_ushort(struct StrList *pStrList, size_t index) {
  */
 int strlist_item_as_int(struct StrList *pStrList, size_t index) {
     char *error_p;
-    int result;
 
     strlist_clear_error();
-    result = (int) strtol(strlist_item(pStrList, index), &error_p, 10);
+    int result = (int) strtol(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -490,10 +484,9 @@ int strlist_item_as_int(struct StrList *pStrList, size_t index) {
  */
 unsigned int strlist_item_as_uint(struct StrList *pStrList, size_t index) {
     char *error_p;
-    unsigned int result;
 
     strlist_clear_error();
-    result = (unsigned int) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    unsigned int result = (unsigned int) strtoul(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -510,10 +503,9 @@ unsigned int strlist_item_as_uint(struct StrList *pStrList, size_t index) {
  */
 long strlist_item_as_long(struct StrList *pStrList, size_t index) {
     char *error_p;
-    long result;
 
     strlist_clear_error();
-    result = (long) strtol(strlist_item(pStrList, index), &error_p, 10);
+    long result = (long) strtol(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -530,10 +522,9 @@ long strlist_item_as_long(struct StrList *pStrList, size_t index) {
  */
 unsigned long strlist_item_as_ulong(struct StrList *pStrList, size_t index) {
     char *error_p;
-    unsigned long result;
 
     strlist_clear_error();
-    result = (unsigned long) strtoul(strlist_item(pStrList, index), &error_p, 10);
+    unsigned long result = (unsigned long) strtoul(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -550,10 +541,9 @@ unsigned long strlist_item_as_ulong(struct StrList *pStrList, size_t index) {
  */
 long long strlist_item_as_long_long(struct StrList *pStrList, size_t index) {
     char *error_p;
-    long long result;
 
     strlist_clear_error();
-    result = (long long) strtoll(strlist_item(pStrList, index), &error_p, 10);
+    long long result = (long long) strtoll(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -570,10 +560,9 @@ long long strlist_item_as_long_long(struct StrList *pStrList, size_t index) {
  */
 unsigned long long strlist_item_as_ulong_long(struct StrList *pStrList, size_t index) {
     char *error_p;
-    unsigned long long result;
 
     strlist_clear_error();
-    result = (unsigned long long) strtol(strlist_item(pStrList, index), &error_p, 10);
+    unsigned long long result = (unsigned long long) strtol(strlist_item(pStrList, index), &error_p, 10);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -590,10 +579,9 @@ unsigned long long strlist_item_as_ulong_long(struct StrList *pStrList, size_t i
  */
 float strlist_item_as_float(struct StrList *pStrList, size_t index) {
     char *error_p;
-    float result;
 
     strlist_clear_error();
-    result = (float) strtof(strlist_item(pStrList, index), &error_p);
+    float result = (float) strtof(strlist_item(pStrList, index), &error_p);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -610,10 +598,9 @@ float strlist_item_as_float(struct StrList *pStrList, size_t index) {
  */
 double strlist_item_as_double(struct StrList *pStrList, size_t index) {
     char *error_p;
-    double result;
 
     strlist_clear_error();
-    result = (double) strtod(strlist_item(pStrList, index), &error_p);
+    double result = (double) strtod(strlist_item(pStrList, index), &error_p);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
@@ -630,10 +617,9 @@ double strlist_item_as_double(struct StrList *pStrList, size_t index) {
  */
 long double strlist_item_as_long_double(struct StrList *pStrList, size_t index) {
     char *error_p;
-    long double result;
 
     strlist_clear_error();
-    result = (long double) strtold(strlist_item(pStrList, index), &error_p);
+    long double result = (long double) strtold(strlist_item(pStrList, index), &error_p);
     if (!result && error_p && *error_p != 0) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;

@@ -36,10 +36,9 @@ int rmtree(char *_path) {
     int status = 0;
     char path[PATH_MAX] = {0};
     strncpy(path, _path, sizeof(path) - 1);
-    DIR *dir;
     struct dirent *d_entity;
 
-    dir = opendir(path);
+    DIR *dir = opendir(path);
     if (!dir) {
         return 1;
     }
@@ -166,7 +165,6 @@ char *path_dirname(char *path) {
 char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn *readerFn) {
     FILE *fp = NULL;
     char **result = NULL;
-    char *buffer = NULL;
     size_t lines = 0;
     int use_stdin = 0;
 
@@ -187,7 +185,8 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     // Allocate buffer
-    if ((buffer = calloc(STASIS_BUFSIZ, sizeof(char))) == NULL) {
+    char *buffer = calloc(STASIS_BUFSIZ, sizeof(char));
+    if (buffer == NULL) {
         SYSERROR("unable to allocate %d bytes for buffer", STASIS_BUFSIZ);
         if (!use_stdin) {
             fclose(fp);
@@ -346,15 +345,13 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
 
 char *git_describe(const char *path) {
-    static char version[NAME_MAX];
-    FILE *pp;
+    static char version[NAME_MAX] = {0};
 
-    memset(version, 0, sizeof(version));
     if (pushd(path)) {
         return NULL;
     }
 
-    pp = popen("git describe --first-parent --always --tags", "r");
+    FILE *pp = popen("git describe --first-parent --always --tags", "r");
     if (!pp) {
         return NULL;
     }
@@ -368,7 +365,6 @@ char *git_describe(const char *path) {
 char *git_rev_parse(const char *path, char *args) {
     static char version[NAME_MAX];
     char cmd[PATH_MAX];
-    FILE *pp;
 
     memset(version, 0, sizeof(version));
     if (isempty(args)) {
@@ -381,7 +377,7 @@ char *git_rev_parse(const char *path, char *args) {
     }
 
     sprintf(cmd, "git rev-parse %s", args);
-    pp = popen(cmd, "r");
+    FILE *pp = popen(cmd, "r");
     if (!pp) {
         return NULL;
     }
@@ -490,11 +486,10 @@ char *xmkstemp(FILE **fp, const char *mode) {
 }
 
 int isempty_dir(const char *path) {
-    DIR *dp;
     struct dirent *rec;
     size_t count = 0;
 
-    dp = opendir(path);
+    DIR *dp = opendir(path);
     if (!dp) {
         return -1;
     }
@@ -509,7 +504,6 @@ int isempty_dir(const char *path) {
 }
 
 int path_store(char **destptr, size_t maxlen, const char *base, const char *path) {
-    char *path_tmp;
     size_t base_len = 0;
     size_t path_len = 0;
 
@@ -519,7 +513,7 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
     }
 
     // Initialize destination pointer to length of maxlen
-    path_tmp = calloc(maxlen, sizeof(*path_tmp));
+    char *path_tmp = calloc(maxlen, sizeof(*path_tmp));
     if (!path_tmp) {
         return -1;
     }
@@ -541,7 +535,7 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
         guard_free(*destptr);
     }
 
-    if (!(*destptr = realpath(path_tmp, NULL))) {
+    if (!((*destptr = realpath(path_tmp, NULL)))) {
         goto l_path_setup_error;
     }
 
@@ -620,11 +614,9 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
 int fix_tox_conf(const char *filename, char **result) {
     struct INIFILE *toxini;
     FILE *fptemp;
-    char *tempfile;
-    const char *with_posargs = " \\\n    {posargs}\n";
 
     // Create new temporary tox configuration file
-    tempfile = xmkstemp(&fptemp, "w+");
+    char *tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
         return -1;
     }
@@ -663,17 +655,16 @@ int fix_tox_conf(const char *filename, char **result) {
                     char *value = ini_getval_str(toxini, section->key, data->key, INI_READ_RENDER, &err);
                     if (key && value) {
                         if (startswith(value, "pytest") && !strstr(value, "{posargs}")) {
+                            const char *with_posargs = " \\\n    {posargs}\n";
                             strip(value);
-                            char *tmp;
-                            tmp = realloc(value, strlen(value) + strlen(with_posargs) + 1);
+                            char *tmp = realloc(value, strlen(value) + strlen(with_posargs) + 1);
                             if (!tmp) {
                                 SYSERROR("failed to increase size to +%zu bytes",
                                          strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
                                 return -1;
-                            } else if (tmp != value) {
-                                value = tmp;
                             }
+                            value = tmp;
                             strcat(value, with_posargs);
                             ini_setval(&toxini, INI_SETVAL_REPLACE, section_name, key, value);
                         }
@@ -725,6 +716,7 @@ char *collapse_whitespace(char **s) {
 /**
  * Replace sensitive text in strings with ***REDACTED***
  * @param to_redact a list of tokens to redact
+ * @param to_redact_size limit to n tokens in list
  * @param src to read
  * @param dest to write modified string
  * @param maxlen maximum length of dest string
@@ -762,10 +754,9 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
  */
 struct StrList *listdir(const char *path) {
     struct StrList *node;
-    DIR *dp;
     struct dirent *rec;
 
-    dp = opendir(path);
+    DIR *dp = opendir(path);
     if (!dp) {
         return NULL;
     }
@@ -790,7 +781,6 @@ long get_cpu_count() {
 }
 
 int mkdirs(const char *_path, mode_t mode) {
-    int status;
     char *token;
     char pathbuf[PATH_MAX] = {0};
     char *path;
@@ -799,7 +789,7 @@ int mkdirs(const char *_path, mode_t mode) {
     errno = 0;
 
     char result[PATH_MAX] = {0};
-    status = 0;
+    int status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
         if (token[0] == '.')
             continue;

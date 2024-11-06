@@ -1,7 +1,6 @@
 #include "wheel.h"
 
 struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_match[], unsigned match_mode) {
-    DIR *dp;
     struct dirent *rec;
     struct Wheel *result = NULL;
     char package_path[PATH_MAX];
@@ -11,7 +10,7 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
     tolower_s(package_name);
     sprintf(package_path, "%s/%s", basepath, package_name);
 
-    dp = opendir(package_path);
+    DIR *dp = opendir(package_path);
     if (!dp) {
         return NULL;
     }
@@ -80,7 +79,7 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
             return NULL;
         }
 
-        for (parts_total = 0; parts[parts_total] != NULL; parts_total++);
+        for (parts_total = 0; parts[parts_total] != NULL; parts_total++) {}
         if (parts_total == 5) {
             // no build tag
             result->distribution = strdup(parts[0]);

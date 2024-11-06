@@ -49,9 +49,7 @@ static int testsuite_append_testcase(struct JUNIT_Testsuite **testsuite, struct 
 }
 
 static struct JUNIT_Failure *testcase_failure_from_attributes(struct StrList *attrs) {
-    struct JUNIT_Failure *result;
-
-    result = calloc(1, sizeof(*result));
+    struct JUNIT_Failure *result = calloc(1, sizeof(*result));
     if(!result) {
         return NULL;
     }
@@ -66,9 +64,7 @@ static struct JUNIT_Failure *testcase_failure_from_attributes(struct StrList *at
 }
 
 static struct JUNIT_Error *testcase_error_from_attributes(struct StrList *attrs) {
-    struct JUNIT_Error *result;
-
-    result = calloc(1, sizeof(*result));
+    struct JUNIT_Error *result = calloc(1, sizeof(*result));
     if(!result) {
         return NULL;
     }
@@ -83,9 +79,7 @@ static struct JUNIT_Error *testcase_error_from_attributes(struct StrList *attrs)
 }
 
 static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *attrs) {
-    struct JUNIT_Skipped *result;
-
-    result = calloc(1, sizeof(*result));
+    struct JUNIT_Skipped *result = calloc(1, sizeof(*result));
     if(!result) {
         return NULL;
     }
@@ -100,9 +94,7 @@ static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *at
 }
 
 static struct JUNIT_Testcase *testcase_from_attributes(struct StrList *attrs) {
-    struct JUNIT_Testcase *result;
-
-    result = calloc(1, sizeof(*result));
+    struct JUNIT_Testcase *result = calloc(1, sizeof(*result));
     if(!result) {
         return NULL;
     }
@@ -145,10 +137,9 @@ static struct StrList *attributes_to_strlist(xmlTextReaderPtr reader) {
 }
 
 static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **testsuite) {
-    const xmlChar *name;
     //const xmlChar *value;
 
-    name = xmlTextReaderConstName(reader);
+    const xmlChar *name = xmlTextReaderConstName(reader);
     if (!name) {
         // name could not be converted to string
         name = BAD_CAST "--";
@@ -206,15 +197,12 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
 }
 
 static int read_xml_file(const char *filename, struct JUNIT_Testsuite **testsuite) {
-    xmlTextReaderPtr reader;
-    int result;
-
-    reader = xmlReaderForFile(filename, NULL, 0);
+    xmlTextReaderPtr reader = xmlReaderForFile(filename, NULL, 0);
     if (!reader) {
         return -1;
     }
 
-    result = xmlTextReaderRead(reader);
+    int result = xmlTextReaderRead(reader);
     while (result == 1) {
         read_xml_data(reader, testsuite);
         result = xmlTextReaderRead(reader);

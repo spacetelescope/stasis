@@ -36,8 +36,6 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
 
 
 int recipe_get_type(char *repopath) {
-    int result;
-    char path[PATH_MAX];
     // conda-forge is a collection of repositories
     // "conda-forge.yml" is guaranteed to exist
     const char *marker[] = {
@@ -53,8 +51,9 @@ int recipe_get_type(char *repopath) {
     };
 
     for (size_t i = 0; marker[i] != NULL; i++) {
+        char path[PATH_MAX] = {0};
         sprintf(path, "%s/%s", repopath, marker[i]);
-        result = access(path, F_OK);
+        int result = access(path, F_OK);
         if (!result) {
             return type[i];
         }

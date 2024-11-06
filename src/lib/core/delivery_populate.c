@@ -75,15 +75,13 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
 }
 
 int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
-    union INIVal val;
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
-    RuntimeEnv *rt;
 
     validate_delivery_ini(ini);
     // Populate runtime variables first they may be interpreted by other
     // keys in the configuration
-    rt = runtime_copy(__environ);
+    RuntimeEnv *rt = runtime_copy(__environ);
     while ((rtdata = ini_getall(ini, "runtime")) != NULL) {
         char rec[STASIS_BUFSIZ];
         sprintf(rec, "%s=%s", lstrip(strip(rtdata->key)), lstrip(strip(rtdata->value)));
@@ -191,6 +189,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     for (size_t z = 0, i = 0; i < ini->section_count; i++) {
         char *section_name = ini->section[i]->key;
         if (startswith(section_name, "test:")) {
+            union INIVal val;
             struct Test *test = &ctx->tests[z];
             val.as_char_p = strchr(ini->section[i]->key, ':') + 1;
             if (val.as_char_p && isempty(val.as_char_p)) {
@@ -257,7 +256,6 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
 
 int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     int err = 0;
-    struct INIFILE *ini;
 
     if ((*ctx)->_stasis_ini_fp.mission) {
         return 0;
@@ -275,7 +273,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
 
     msg(STASIS_MSG_L2, "Reading mission configuration: %s\n", missionfile);
     (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
-    ini = (*ctx)->_stasis_ini_fp.mission;
+    struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read mission configuration: %s, %s\n", missionfile, strerror(errno));
         exit(1);

@@ -21,28 +21,24 @@ int docker_exec(const char *args, unsigned flags) {
 
 int docker_script(const char *image, char *data, unsigned flags) {
     (void)flags;  // TODO: placeholder
-    FILE *infile;
-    FILE *outfile;
-    char cmd[PATH_MAX];
-    char buffer[STASIS_BUFSIZ];
+    char cmd[PATH_MAX] = {0};
 
-    memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
 
-    outfile = popen(cmd, "w");
+    FILE *outfile = popen(cmd, "w");
     if (!outfile) {
         // opening command pipe for writing failed
         return -1;
     }
 
-    infile = fmemopen(data, strlen(data), "r");
+    FILE *infile = fmemopen(data, strlen(data), "r");
     if (!infile) {
         // opening memory file for reading failed
         return -1;
     }
 
     do {
-        memset(buffer, 0, sizeof(buffer));
+        char buffer[STASIS_BUFSIZ] = {0};
         if (fgets(buffer, sizeof(buffer) - 1, infile) != NULL) {
             fputs(buffer, outfile);
         }
@@ -54,9 +50,8 @@ int docker_script(const char *image, char *data, unsigned flags) {
 
 int docker_build(const char *dirpath, const char *args, int engine) {
     char cmd[PATH_MAX];
-    char build[15];
+    char build[15] = {0};
 
-    memset(build, 0, sizeof(build));
     memset(cmd, 0, sizeof(cmd));
 
     if (engine & STASIS_DOCKER_BUILD) {
@@ -70,13 +65,10 @@ int docker_build(const char *dirpath, const char *args, int engine) {
 }
 
 int docker_save(const char *image, const char *destdir, const char *compression_program) {
-    char cmd[PATH_MAX];
-
-    memset(cmd, 0, sizeof(cmd));
+    char cmd[PATH_MAX] = {0};
 
     if (compression_program && strlen(compression_program)) {
-        char ext[255];
-        memset(ext, 0, sizeof(ext));
+        char ext[255] = {0};
         if (startswith(compression_program, "zstd")) {
             strcpy(ext, "zst");
         } else if (startswith(compression_program, "xz")) {

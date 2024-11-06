@@ -70,7 +70,6 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             NULL,
     };
 
-    char output[STASIS_BUFSIZ];
     char export_command[7]; // export=6 and setenv=6... convenient
     char *_sh = getenv("SHELL");
     char *sh = path_basename(_sh);
@@ -93,6 +92,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
     }
 
     for (size_t i = 0; i < strlist_count(env); i++) {
+        char output[STASIS_BUFSIZ] = {0};
         char **pair = split(strlist_item(env, i), "=", 0);
         char *key = pair[0];
         char *value = NULL;
@@ -145,7 +145,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
 RuntimeEnv *runtime_copy(char **env) {
     RuntimeEnv *rt = NULL;
     size_t env_count;
-    for (env_count = 0; env[env_count] != NULL; env_count++);
+    for (env_count = 0; env[env_count] != NULL; env_count++) {};
 
     rt = strlist_init();
     for (size_t i = 0; i < env_count; i++) {
@@ -276,7 +276,6 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
  */
 char *runtime_expand_var(RuntimeEnv *env, char *input) {
     const char delim = '$';
-    const char *delim_literal = "$$";
     char *expanded = NULL;
 
     // Input is invalid
@@ -297,10 +296,9 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
     }
 
     // Parse the input string
-    size_t i;
-    for (i = 0; i < strlen(input); i++) {
-        char var[MAXNAMLEN];    // environment variable name
-        memset(var, '\0', MAXNAMLEN);   // zero out name
+    for (size_t i = 0; i < strlen(input); i++) {
+        const char *delim_literal = "$$";
+        char var[MAXNAMLEN] = {0};    // environment variable name
 
         // Handle literal statement "$$var"
         // Value becomes "$var" (unexpanded)

@@ -6,8 +6,7 @@
 #include "ini.h"
 
 struct INIFILE *ini_init() {
-    struct INIFILE *ini;
-    ini = calloc(1, sizeof(*ini));
+    struct INIFILE *ini = calloc(1, sizeof(*ini));
     ini->section_count = 0;
     return ini;
 }
@@ -116,8 +115,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
     char *token = NULL;
     char tbuf[STASIS_BUFSIZ];
     char *tbufp = tbuf;
-    struct INIData *data;
-    data = ini_data_get(ini, section_name, key);
+    struct INIData *data = ini_data_get(ini, section_name, key);
     if (!data) {
         result->as_char_p = NULL;
         return -1;
@@ -305,8 +303,7 @@ char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, i
 
 struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state) {
     getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
-    struct StrList *list;
-    list = strlist_init();
+    struct StrList *list = strlist_init();
     strlist_append_tokenize(list, result.as_char_p, tok);
     guard_free(result.as_char_p);
     return list;
@@ -441,8 +438,6 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                     value = xvalue;
                 }
                 char **parts = split(value, LINE_SEP, 0);
-                size_t parts_total = 0;
-                for (; parts && parts[parts_total] != NULL; parts_total++);
                 for (size_t p = 0; parts && parts[p] != NULL; p++) {
                     char *render = NULL;
                     if (mode == INI_WRITE_PRESERVE) {
@@ -520,7 +515,6 @@ void ini_free(struct INIFILE **ini) {
 }
 
 struct INIFILE *ini_open(const char *filename) {
-    FILE *fp;
     char line[STASIS_BUFSIZ] = {0};
     char current_section[STASIS_BUFSIZ] = {0};
     char reading_value = 0;
@@ -537,7 +531,7 @@ struct INIFILE *ini_open(const char *filename) {
     strcpy(current_section, "default");
 
     // Open the configuration file for reading
-    fp = fopen(filename, "r");
+    FILE *fp = fopen(filename, "r");
     if (!fp) {
         ini_free(&ini);
         ini = NULL;
@@ -550,9 +544,8 @@ struct INIFILE *ini_open(const char *filename) {
     char inikey[2][255];
     char *key = inikey[0];
     char *key_last = inikey[1];
-    char value[STASIS_BUFSIZ];
+    char value[STASIS_BUFSIZ] = {0};
 
-    memset(value, 0, sizeof(value));
     memset(inikey, 0, sizeof(inikey));
 
     // Read file

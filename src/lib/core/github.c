@@ -9,7 +9,7 @@ struct GHContent {
     size_t len;
 };
 
-static size_t writer(void *contents, size_t size, size_t nmemb, void *result) {
+static size_t writer(const void *contents, size_t size, size_t nmemb, void *result) {
     const size_t newlen = size * nmemb;
     struct GHContent *content = (struct GHContent *) result;
 
@@ -42,8 +42,6 @@ static char *unescape_lf(char *value) {
 }
 
 int get_github_release_notes(const char *api_token, const char *repo, const char *tag, const char *target_commitish, char **output) {
-    const char *field_body = "\"body\":\"";
-    const char *field_message = "\"message\":\"";
     const char *endpoint_header_auth_fmt = "Authorization: Bearer %s";
     const char *endpoint_header_api_version = "X-GitHub-Api-Version: " STASIS_GITHUB_API_VERSION;
     const char *endpoint_post_fields_fmt = "{\"tag_name\":\"%s\", \"target_commitish\":\"%s\"}";
@@ -84,8 +82,7 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
 
     // Execute curl request
     memset(&content, 0, sizeof(content));
-    CURLcode res;
-    res = curl_easy_perform(curl);
+    CURLcode res = curl_easy_perform(curl);
 
     // Clean up
     curl_slist_free_all(list);
@@ -100,6 +97,8 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
     // Replace all "\\n" literals with new line characters
     char *line = unescape_lf(content.data);
     if (line) {
+        const char *field_message = "\"message\":\"";
+        const char *field_body = "\"body\":\"";
         char *data_offset = NULL;
         if ((data_offset = strstr(line, field_body))) {
             // Skip past the body field

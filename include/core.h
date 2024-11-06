@@ -12,7 +12,7 @@
 #include <sys/statvfs.h>
 
 #define SYSERROR(MSG, ...) do { \
-    fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, strerror(errno) ? "info" : strerror(errno)); \
+    fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, (errno > 0) ? strerror(errno) : "info"); \
     fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
 } while (0)
 #define STASIS_BUFSIZ 8192

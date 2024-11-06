@@ -67,16 +67,11 @@ void check_requirements(struct Delivery *ctx) {
     check_system_env_requirements();
 }
 
-void check_pathvar(struct Delivery *ctx) {
+void check_system_path() {
     char *pathvar = NULL;
     pathvar = getenv("PATH");
     if (!pathvar) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "PATH variable is not set. Cannot continue.\n");
         exit(1);
-    } else {
-        char pathvar_tmp[STASIS_BUFSIZ];
-        sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.conda_install_prefix, pathvar);
-        setenv("PATH", pathvar_tmp, 1);
-        pathvar = NULL;
     }
 }

@@ -75,9 +75,6 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         ctx->deploy.jfrog[i].upload_ctx.build_name = ctx->info.build_name;
         ctx->deploy.jfrog[i].upload_ctx.build_number = ctx->info.build_number;
 
-        char files[PATH_MAX];
-        char dest[PATH_MAX];  // repo + remote dir
-
         if (jfrog_cli_rt_ping(&ctx->deploy.jfrog_auth)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog_auth.url);
             return -1;
@@ -85,8 +82,8 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
         if (strlist_count(ctx->deploy.jfrog[i].files)) {
             for (size_t f = 0; f < strlist_count(ctx->deploy.jfrog[i].files); f++) {
-                memset(dest, 0, sizeof(dest));
-                memset(files, 0, sizeof(files));
+                char dest[PATH_MAX] = {0};
+                char files[PATH_MAX] = {0};
                 snprintf(dest, sizeof(dest) - 1, "%s/%s", ctx->deploy.jfrog[i].repo, ctx->deploy.jfrog[i].dest);
                 snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy.jfrog[i].files, f));
                 status += jfrog_cli_rt_upload(&ctx->deploy.jfrog_auth, &ctx->deploy.jfrog[i].upload_ctx, files, dest);
@@ -118,7 +115,6 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         char *dest;
     } data;
     struct INIFILE *cfg = ctx->_stasis_ini_fp.mission;
-    union INIVal val;
 
     memset(&data, 0, sizeof(data));
     data.src = calloc(PATH_MAX, sizeof(*data.src));
@@ -128,6 +124,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
     }
 
     for (size_t i = 0; i < cfg->section_count; i++) {
+        union INIVal val;
         char *section_name = cfg->section[i]->key;
         if (!startswith(section_name, "template:")) {
             continue;
@@ -143,7 +140,6 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         int err = 0;
         data.dest = ini_getval_str(cfg, section_name, "destination", INI_READ_RENDER, &err);
 
-        char *contents;
         struct stat st;
         if (lstat(data.src, &st)) {
             perror(data.src);
@@ -151,15 +147,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
             continue;
         }
 
-        contents = calloc(st.st_size + 1, sizeof(*contents));
+        char *contents = calloc(st.st_size + 1, sizeof(*contents));
         if (!contents) {
             perror("template file contents");
             guard_free(data.dest);
             continue;
         }
 
-        FILE *fp;
-        fp = fopen(data.src, "rb");
+        FILE *fp = fopen(data.src, "rb");
         if (!fp) {
             perror(data.src);
             guard_free(contents);

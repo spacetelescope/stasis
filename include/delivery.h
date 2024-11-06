@@ -277,6 +277,8 @@ char *delivery_get_release_header(struct Delivery *ctx);
  * Finalizes a delivery artifact for distribution
  * @param ctx poitner to Delivery context
  * @param filename path to delivery artifact (Conda YAML file)
+ * @param stage DELIVERY_REWRITE_SPEC_STAGE_1 - Replacements for build
+ * @param stage DELIVERY_REWRITE_SPEC_STAGE_2 - Replacements for export
  */
 void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage);
 
@@ -298,6 +300,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx);
 
 /**
  * Retrieve Conda installer
+ * @param ctx pointer to Delivery context
  * @param installer_url URL to installation script
  */
 int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url);

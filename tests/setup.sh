@@ -24,7 +24,15 @@ setup_script_dir="$(dirname ${BASH_SOURCE[0]})"
 export TOPDIR=$(pwd)
 export TEST_DATA="$TOPDIR"/data
 
-WS_DEFAULT=rt_workspace_
+pushd() {
+    command pushd "$@" 1>/dev/null
+}
+
+popd() {
+    command popd 1>/dev/null
+}
+
+WS_DEFAULT="workspaces/rt_workspace_"
 setup_workspace() {
     if [ -z "$1" ]; then
         echo "setup_workspace requires a name argument" >&2
@@ -253,8 +261,18 @@ assert_file_contains() {
     fi
 }
 
+clean_up_docker() {
+    CONTAINERS_DIR="$WORKSPACE/.local/share/containers"
+    # HOME points to the WORKSPACE. The only reason we'd have this directory is if docker/podman was executed
+    # Fair to assume if the directory exists, docker/podman is functional.
+    if [ -d "$CONTAINERS_DIR" ]; then
+        docker run --rm -it -v $CONTAINERS_DIR:/data alpine sh -c '/bin/rm -r -f /data/*'
+    fi
+}
+
 clean_up() {
-    if [ -z "$RT_KEEP_WORKSPACE" ] && [ -d "$WORKSPACE" ]; then
+    if ([ -z "$RT_KEEP_WORKSPACE" ] || [ -z "$KEEP_WORKSPACE" ]) && [ -d "$WORKSPACE" ]; then
+        clean_up_docker
         rm -rf "$WORKSPACE"
     fi
 

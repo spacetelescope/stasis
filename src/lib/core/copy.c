@@ -1,11 +1,7 @@
 #include "copy.h"
 
 int copy2(const char *src, const char *dest, unsigned int op) {
-    size_t bytes_read;
-    size_t bytes_written;
-    char buf[STASIS_BUFSIZ];
     struct stat src_stat, dnamest;
-    FILE *fp1, *fp2;
 
     if (lstat(src, &src_stat) < 0) {
         perror(src);
@@ -18,9 +14,8 @@ int copy2(const char *src, const char *dest, unsigned int op) {
 
     char dname[1024] = {0};
     strcpy(dname, dest);
-    char *dname_endptr;
 
-    dname_endptr = strrchr(dname, '/');
+    char *dname_endptr = strrchr(dname, '/');
     if (dname_endptr != NULL) {
         *dname_endptr = '\0';
     }
@@ -47,19 +42,21 @@ int copy2(const char *src, const char *dest, unsigned int op) {
             return -1;
         }
     } else if (S_ISREG(src_stat.st_mode)) {
-        fp1 = fopen(src, "rb");
+        char buf[STASIS_BUFSIZ] = {0};
+        size_t bytes_read;
+        FILE *fp1 = fopen(src, "rb");
         if (!fp1) {
             perror(src);
             return -1;
         }
 
-        fp2 = fopen(dest, "w+b");
+        FILE *fp2 = fopen(dest, "w+b");
         if (!fp2) {
             perror(dest);
             return -1;
         }
 
-        bytes_written = 0;
+        size_t bytes_written = 0;
         while ((bytes_read = fread(buf, sizeof(char), sizeof(buf), fp1)) != 0) {
             bytes_written += fwrite(buf, sizeof(char), bytes_read, fp2);
         }

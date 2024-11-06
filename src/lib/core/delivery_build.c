@@ -4,8 +4,6 @@ int delivery_build_recipes(struct Delivery *ctx) {
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
         char *recipe_dir = NULL;
         if (ctx->tests[i].build_recipe) { // build a conda recipe
-            int recipe_type;
-            int status;
             if (recipe_clone(ctx->storage.build_recipes_dir, ctx->tests[i].build_recipe, NULL, &recipe_dir)) {
                 fprintf(stderr, "Encountered an issue while cloning recipe for: %s\n", ctx->tests[i].name);
                 return -1;
@@ -14,7 +12,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 fprintf(stderr, "BUG: recipe_clone() succeeded but recipe_dir is NULL: %s\n", strerror(errno));
                 return -1;
             }
-            recipe_type = recipe_get_type(recipe_dir);
+            int recipe_type = recipe_get_type(recipe_dir);
             if(!pushd(recipe_dir)) {
                 if (RECIPE_TYPE_ASTROCONDA == recipe_type) {
                     pushd(path_basename(ctx->tests[i].repository));
@@ -77,7 +75,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 } else {
                     sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
                 }
-                status = conda_exec(command);
+                int status = conda_exec(command);
                 if (status) {
                     guard_free(recipe_dir);
                     return -1;
@@ -131,8 +129,7 @@ int filter_repo_tags(char *repo, struct StrList *patterns) {
 
 struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     struct StrList *result = NULL;
-    struct Process proc;
-    memset(&proc, 0, sizeof(proc));
+    struct Process proc = {0};
 
     result = strlist_init();
     if (!result) {
