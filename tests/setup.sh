@@ -120,7 +120,7 @@ run_command() {
             (( STASIS_TEST_RESULT_SKIP++ ))
         else
             echo "... FAIL"
-            if (( $(wc -c "$logfile" | cut -d ' ' -f 1) > 1 )); then
+            if [[ -s "$logfile" ]]; then
                 echo "#"
                 echo "# Last $lines_on_error line(s) follow:"
                 echo "#"
