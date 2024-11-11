@@ -282,7 +282,9 @@ int conda_activate(const char *root, const char *env_name) {
     snprintf(command, sizeof(command) - 1,
         "set -a\n"
         "source %s\n"
-        "function __conda_exe (\n\t\"$CONDA_PYTHON_EXE\" \"$CONDA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n)\n"
+        "__conda_exe() (\n"
+        "    \"$CONDA_PYTHON_EXE\" \"$CONDA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
+        ")\n\n"
         "source %s\n"
         "%s\n"
         "conda activate %s 1>&2\n"
