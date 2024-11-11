@@ -346,7 +346,6 @@ int conda_check_required() {
     const char *conda_minimum_viable_tools[] = {
             "boa",
             "conda-build",
-            "conda-verify",
             NULL
     };
 
