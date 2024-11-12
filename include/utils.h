@@ -30,6 +30,10 @@
 #define STASIS_XML_PRETTY_PRINT_PROG "xmllint"
 #define STASIS_XML_PRETTY_PRINT_ARGS "--format"
 
+#define PM_APPEND 1 << 0
+#define PM_PREPEND 1 << 1
+#define PM_ONCE  1 << 2
+
 /**
  * Change directory. Push path on directory stack.
  *
@@ -391,5 +395,14 @@ int mkdirs(const char *_path, mode_t mode);
  * @return NULL if not found
  */
 char *find_version_spec(char *package_name);
+
+/**
+* Manipulate the PATH environment variable
+* @param path to insert (does not need to exist)
+* @param mode PM_APPEND `$path:$PATH`
+* @param mode PM_PREPEND `$PATH:path`
+* @param mode PM_ONCE do not manipulate if `path` is present in PATH variable
+*/
+int path_manip(char *path, int mode);
 
 #endif //STASIS_UTILS_H
