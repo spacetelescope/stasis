@@ -227,6 +227,49 @@ static int conda_prepend_condabin(const char *root) {
     return 0;
 }
 
+static int env0_to_runtime(const char *logfile) {
+    FILE *fp = fopen(logfile, "r");
+    if (!fp) {
+        perror(logfile);
+        return -1;
+    }
+
+    while (!feof(fp)) {
+        char buf[STASIS_BUFSIZ] = {0};
+        int ch = 0;
+        size_t z = 0;
+        // We are ingesting output from "env -0" and can't use fgets()
+        // Copy each character into the buffer until we encounter '\0' or EOF
+        while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
+            if (ch == EOF) {
+                break;
+            }
+            buf[z] = (char) ch;
+            z++;
+        }
+        buf[strlen(buf)] = 0;
+
+        if (!strlen(buf)) {
+            continue;
+        }
+
+        char **part = split(buf, "=", 1);
+        if (!part) {
+            perror("unable to split environment variable buffer");
+            return -1;
+        }
+        if (!part[0]) {
+            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
+        } else if (!part[1]) {
+            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
+        } else {
+            setenv(part[0], part[1], 1);
+        }
+        GENERIC_ARRAY_FREE(part);
+    }
+    fclose(fp);
+    return 0;
+}
 
 int conda_activate(const char *root, const char *env_name) {
     FILE *fp = NULL;
@@ -315,47 +358,9 @@ int conda_activate(const char *root, const char *env_name) {
     // Parse the log file:
     // 1. Extract the environment keys and values from the sub-shell
     // 2. Apply it to STASIS's runtime environment
-    // 3. Now we're ready to execute conda commands anywhere
-    fp = fopen(proc.f_stdout, "r");
-    if (!fp) {
-        perror(logfile);
+    if (env0_to_runtime(logfile) < 0) {
         return -1;
     }
-
-    while (!feof(fp)) {
-        char buf[STASIS_BUFSIZ] = {0};
-        int ch = 0;
-        size_t z = 0;
-        // We are ingesting output from "env -0" and can't use fgets()
-        // Copy each character into the buffer until we encounter '\0' or EOF
-        while (z < sizeof(buf) && (ch = (int) fgetc(fp)) != 0) {
-            if (ch == EOF) {
-                break;
-            }
-            buf[z] = (char) ch;
-            z++;
-        }
-        buf[strlen(buf)] = 0;
-
-        if (!strlen(buf)) {
-            continue;
-        }
-
-        char **part = split(buf, "=", 1);
-        if (!part) {
-            perror("unable to split environment variable buffer");
-            return -1;
-        }
-        if (!part[0]) {
-            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
-        } else if (!part[1]) {
-            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
-        } else {
-            setenv(part[0], part[1], 1);
-        }
-        GENERIC_ARRAY_FREE(part);
-    }
-    fclose(fp);
     remove(logfile);
     return 0;
 }
