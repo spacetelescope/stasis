@@ -272,7 +272,6 @@ static int env0_to_runtime(const char *logfile) {
 }
 
 int conda_activate(const char *root, const char *env_name) {
-    FILE *fp = NULL;
     const char *init_script_conda = "/etc/profile.d/conda.sh";
     const char *init_script_mamba = "/etc/profile.d/mamba.sh";
     char path_conda[PATH_MAX] = {0};
