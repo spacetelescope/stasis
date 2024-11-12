@@ -208,22 +208,25 @@ int conda_exec(const char *args) {
 }
 
 static int conda_prepend_bin(const char *root) {
-    const char *system_path_old = getenv("PATH");
     char conda_bin[PATH_MAX] = {0};
 
-    snprintf(conda_bin, sizeof(conda_bin) - 1, "%s/bin:%s/condabin", root, root);
-
-    if (!strstr(system_path_old, conda_bin)) {
-        // conda_bin is not present in PATH. Add it to the head.
-        char system_path_new[STASIS_BUFSIZ];
-        sprintf(system_path_new, "%s:%s", conda_bin, system_path_old);
-        if (setenv("PATH", system_path_new, 1) < 0) {
-            SYSERROR("Unable to prepend to PATH: %s", conda_bin);
-            return -1;
-        }
+    snprintf(conda_bin, sizeof(conda_bin) - 1, "%s/bin", root);
+    if (path_manip(conda_bin, PM_PREPEND | PM_ONCE)) {
+        return -1;
     }
     return 0;
 }
+
+static int conda_prepend_condabin(const char *root) {
+    char conda_condabin[PATH_MAX] = {0};
+
+    snprintf(conda_condabin, sizeof(conda_condabin) - 1, "%s/condabin", root);
+    if (path_manip(conda_condabin, PM_PREPEND | PM_ONCE)) {
+        return -1;
+    }
+    return 0;
+}
+
 
 int conda_activate(const char *root, const char *env_name) {
     FILE *fp = NULL;
@@ -272,6 +275,11 @@ int conda_activate(const char *root, const char *env_name) {
     unsigned long conda_shlvl = 0;
     if (conda_shlvl_str) {
         conda_shlvl = strtol(conda_shlvl_str, NULL, 10);
+    }
+
+    if (conda_prepend_condabin(root)) {
+        remove(logfile);
+        return -1;
     }
 
     if (conda_prepend_bin(root)) {
