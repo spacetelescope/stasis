@@ -293,7 +293,7 @@ int conda_activate(const char *root, const char *env_name) {
         "__conda_exe() (\n"
         "    \"$CONDA_PYTHON_EXE\" \"$CONDA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
         ")\n\n"
-        "export -f __conda_exe()\n"
+        "export -f __conda_exe\n"
         "source %s\n"
         "__mamba_exe() (\n"
         "    \\local MAMBA_CONDA_EXE_BACKUP=$CONDA_EXE\n"
