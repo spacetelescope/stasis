@@ -542,3 +542,9 @@ int conda_index(const char *path) {
     sprintf(command, "index %s", path);
     return conda_exec(command);
 }
+
+int conda_env_exists(const char *root, const char *name) {
+    char path[PATH_MAX] = {0};
+    snprintf(path, sizeof(path) - 1 - 6, "%s/envs/%s", root, name);
+    return access(path, F_OK) == 0;
+}

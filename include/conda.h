@@ -229,4 +229,6 @@ const char *pkg_index_provides_strerror(int code);
 
 char *conda_get_active_environment();
 
+int conda_env_exists(const char *root, const char *name);
+
 #endif //STASIS_CONDA_H

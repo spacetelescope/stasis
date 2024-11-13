@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!isempty(ctx.meta.based_on)) {
-        if (conda_env_remove(env_name)) {
+        if (conda_env_exists(ctx.storage.conda_install_prefix, env_name) && conda_env_remove(env_name)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
             exit(1);
         }
@@ -321,7 +321,7 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        if (conda_env_remove(env_name_testing)) {
+        if (conda_env_exists(ctx.storage.conda_install_prefix, env_name_testing) && conda_env_remove(env_name_testing)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment %s\n", env_name_testing);
             exit(1);
         }
