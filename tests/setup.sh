@@ -32,7 +32,7 @@ popd() {
     command popd 1>/dev/null
 }
 
-WS_DEFAULT="workspaces/rt_workspace_"
+WS_DEFAULT="ws/_"
 setup_workspace() {
     if [ -z "$1" ]; then
         echo "setup_workspace requires a name argument" >&2
