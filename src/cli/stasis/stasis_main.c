@@ -225,19 +225,35 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    msg(STASIS_MSG_L1, "Conda setup\n");
-    delivery_get_conda_installer_url(&ctx, installer_url);
-    msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
-    if (delivery_get_conda_installer(&ctx, installer_url)) {
-        msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
-        exit(1);
-    }
-
     // Unlikely to occur: this should help prevent rmtree() from destroying your entire filesystem
     // if path is "/" then, die
     // or if empty string, die
     if (!strcmp(ctx.storage.conda_install_prefix, DIR_SEP) || !strlen(ctx.storage.conda_install_prefix)) {
         fprintf(stderr, "error: ctx.storage.conda_install_prefix is malformed!\n");
+        exit(1);
+    }
+
+    // 2 = #!
+    // 5 = /bin\n
+    const size_t prefix_len = strlen(ctx.storage.conda_install_prefix) + 2 + 5;
+    const size_t prefix_len_max = 127;
+    msg(STASIS_MSG_L1, "Checking length of conda installation prefix\n");
+    if (!strcmp(ctx.system.platform[DELIVERY_PLATFORM], "Linux") && prefix_len > prefix_len_max) {
+        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+            "The shebang, '#!%s/bin/python\\n' is too long (%zu > %zu).\n",
+            ctx.storage.conda_install_prefix, prefix_len, prefix_len_max);
+        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+            "Conda's workaround to handle long path names does not work consistently within STASIS.\n");
+        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+            "Please try again from a different, \"shorter\", directory.\n");
+        exit(1);
+    }
+
+    msg(STASIS_MSG_L1, "Conda setup\n");
+    delivery_get_conda_installer_url(&ctx, installer_url);
+    msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
+    if (delivery_get_conda_installer(&ctx, installer_url)) {
+        msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
         exit(1);
     }
 
