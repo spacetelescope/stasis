@@ -211,7 +211,7 @@ static int conda_prepend_bin(const char *root) {
     char conda_bin[PATH_MAX] = {0};
 
     snprintf(conda_bin, sizeof(conda_bin) - 1, "%s/bin", root);
-    if (path_manip(conda_bin, PM_PREPEND | PM_ONCE)) {
+    if (env_manipulate_pathstr("PATH", conda_bin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
     return 0;
@@ -221,7 +221,7 @@ static int conda_prepend_condabin(const char *root) {
     char conda_condabin[PATH_MAX] = {0};
 
     snprintf(conda_condabin, sizeof(conda_condabin) - 1, "%s/condabin", root);
-    if (path_manip(conda_condabin, PM_PREPEND | PM_ONCE)) {
+    if (env_manipulate_pathstr("PATH", conda_condabin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
     return 0;
