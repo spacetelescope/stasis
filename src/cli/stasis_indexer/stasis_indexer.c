@@ -713,6 +713,21 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     }
 }
 
+static int sort_deliveries_cmpfn(const void *a, const void *b) {
+    const struct Delivery *delivery1 = (struct Delivery *) a;
+    const size_t delivery1_python = strtoul(delivery1->meta.python_compact, NULL, 10);
+    const struct Delivery *delivery2 = (struct Delivery *) b;
+    const size_t delivery2_python = strtoul(delivery2->meta.python_compact, NULL, 10);
+
+    if (delivery2_python > delivery1_python) {
+        return 1;
+    }
+    if (delivery2_python < delivery1_python) {
+        return -1;
+    }
+    return 0;
+}
+
 int main(int argc, char *argv[]) {
     size_t rootdirs_total = 0;
     char *destdir = NULL;
@@ -885,6 +900,7 @@ int main(int argc, char *argv[]) {
         }
         indexer_load_metadata(&local[i], path);
     }
+    qsort(local, strlist_count(metafiles), sizeof(*local), sort_deliveries_cmpfn);
 
     msg(STASIS_MSG_L1, "Generating links to latest release iteration\n");
     if (indexer_symlinks(local, strlist_count(metafiles))) {
