@@ -392,4 +392,20 @@ int mkdirs(const char *_path, mode_t mode);
  */
 char *find_version_spec(char *package_name);
 
+// mode flags for env_manipulate_pathstr
+#define PM_APPEND 1 << 0
+#define PM_PREPEND 1 << 1
+#define PM_ONCE  1 << 2
+
+/**
+* Add paths to the head or tail of an environment variable.
+*
+* @param key environment variable to manipulate
+* @param path to insert (does not need to exist)
+* @param mode PM_APPEND `$path:$PATH`
+* @param mode PM_PREPEND `$PATH:path`
+* @param mode PM_ONCE do not manipulate if `path` is present in PATH variable
+*/
+int env_manipulate_pathstr(const char *key, char *path, int mode);
+
 #endif //STASIS_UTILS_H

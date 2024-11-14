@@ -32,7 +32,7 @@ popd() {
     command popd 1>/dev/null
 }
 
-WS_DEFAULT="workspaces/rt_workspace_"
+WS_DEFAULT="ws/_"
 setup_workspace() {
     if [ -z "$1" ]; then
         echo "setup_workspace requires a name argument" >&2
@@ -46,8 +46,8 @@ setup_workspace() {
     fi
     WORKSPACE="$(realpath $WORKSPACE)"
     
-    export PREFIX="$WORKSPACE"/local
-    if ! mkdir -p "$PREFIX"; then
+    export INSTALL_DIR="$WORKSPACE"/local
+    if ! mkdir -p "$INSTALL_DIR"; then
         echo "directory creation failed. cannot continue" >&2
         return 1;
     fi
@@ -78,7 +78,7 @@ teardown_workspace() {
 
 install_stasis() {
     pushd "$BUILD_DIR"
-    if ! cmake -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_BUILD_TYPE=Debug "${TOPDIR}"/../..; then
+    if ! cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" -DCMAKE_BUILD_TYPE=Debug "${TOPDIR}"/../..; then
         echo "cmake failed" >&2
         return 1
     fi
@@ -88,7 +88,7 @@ install_stasis() {
         return 1
     fi
 
-    export PATH="$PREFIX/bin:$PATH"
+    export PATH="$INSTALL_DIR/bin:$PATH"
     hash -r
     if ! type -P stasis; then
         echo "stasis program not on PATH" >&2
@@ -120,7 +120,7 @@ run_command() {
             (( STASIS_TEST_RESULT_SKIP++ ))
         else
             echo "... FAIL"
-            if (( $(wc -c "$logfile" | cut -d ' ' -f 1) > 1 )); then
+            if [[ -s "$logfile" ]]; then
                 echo "#"
                 echo "# Last $lines_on_error line(s) follow:"
                 echo "#"

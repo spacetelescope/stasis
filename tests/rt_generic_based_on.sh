@@ -2,7 +2,7 @@
 here="$(dirname ${BASH_SOURCE[0]})"
 source $here/setup.sh
 
-TEST_NAME=generic_based_on
+TEST_NAME=gbo
 PYTHON_VERSIONS=(
     3.11
 )

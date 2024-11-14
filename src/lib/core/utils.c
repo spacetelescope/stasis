@@ -808,3 +808,45 @@ int mkdirs(const char *_path, mode_t mode) {
 char *find_version_spec(char *str) {
     return strpbrk(str, "@~=<>!");
 }
+
+int env_manipulate_pathstr(const char *key, char *path, int mode) {
+    if (isempty(path)) {
+        SYSERROR("%s", "New PATH element cannot be zero-length or NULL");
+        return -1;
+    }
+
+    const char *system_path_old = getenv("PATH");
+    if (!system_path_old) {
+        SYSERROR("%s", "Unable to read PATH");
+        return -1;
+    }
+
+    char *system_path_new = NULL;
+
+    if (mode & PM_APPEND) {
+        asprintf(&system_path_new, "%s%s%s", system_path_old, PATH_SEP, path);
+    } else if (mode & PM_PREPEND) {
+        asprintf(&system_path_new, "%s%s%s", path, PATH_SEP, system_path_old);
+    }
+
+    if (!system_path_new) {
+        SYSERROR("%s", "Unable to allocate memory to update PATH");
+        return -1;
+    }
+
+    if (mode & PM_ONCE) {
+        if (!strstr(system_path_old, path)) {
+            guard_free(system_path_new);
+            return 0;
+        }
+    }
+    if (setenv(key, system_path_new, 1) < 0) {
+        SYSERROR("Unable to %s to PATH: %s", mode & PM_APPEND ? "append" : "prepend", path);
+        guard_free(system_path_new);
+        return -1;
+    }
+
+    guard_free(system_path_new);
+    return 0;
+}
+
