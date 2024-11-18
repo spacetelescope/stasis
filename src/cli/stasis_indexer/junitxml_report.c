@@ -109,7 +109,8 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                         }
                     } else {
                         if (!no_printable_data) {
-                            fprintf(indexfp, "|No data|-|-|-|-|-|-|\n");
+                            // Triggering for reasons unknown
+                            //fprintf(indexfp, "|No data|-|-|-|-|-|-|\n");
                             no_printable_data++;
                         }
                     }
