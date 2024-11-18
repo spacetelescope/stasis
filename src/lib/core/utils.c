@@ -850,3 +850,13 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     return 0;
 }
 
+int gen_file_extension_str(char *filename, const char *extension) {
+    char *ext_orig = strrchr(filename, '.');
+    if (!ext_orig) {
+        strcat(filename, extension);
+        return 0;
+    }
+
+    return replace_text(ext_orig, ext_orig, extension, 0);
+}
+
