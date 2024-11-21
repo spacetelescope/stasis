@@ -207,6 +207,15 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             strncpy(package_name, name, sizeof(package_name) - 1);
         }
 
+        char *extra_begin = strchr(package_name, '[');
+        char *extra_end = NULL;
+        if (extra_begin) {
+            extra_end = strchr(extra_begin, ']');
+            if (extra_end) {
+                *extra_begin = '\0';
+            }
+        }
+
         msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
         // When spec is present in name, set tests->version to the version detected in the name
@@ -214,11 +223,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             struct Test *test = &ctx->tests[x];
             char nametmp[1024] = {0};
 
-            if (spec_end != NULL && spec_begin != NULL) {
-                strncpy(nametmp, name, spec_begin - name);
-            } else {
-                strcpy(nametmp, name);
-            }
+            strncpy(nametmp, package_name, sizeof(nametmp) - 1);
             // Is the [test:NAME] in the package name?
             if (!strcmp(nametmp, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
@@ -260,7 +265,9 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                     fprintf(stderr, "%s's existence command failed for '%s': %s\n",
                             mode, name, pkg_index_provides_strerror(upstream_exists));
                     exit(1);
-                } else if (upstream_exists == PKG_NOT_FOUND) {
+                }
+
+                if (upstream_exists == PKG_NOT_FOUND) {
                     build_for_host = 1;
                 } else {
                     build_for_host = 0;
