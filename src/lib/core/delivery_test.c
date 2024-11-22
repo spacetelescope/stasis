@@ -192,6 +192,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                         SYSERROR("An error occurred while rendering the following:\n%s", cmd);
                         exit(1);
                     }
+                    unindent(cmd);
 
                     struct MultiProcessingTask *task = NULL;
                     char *runner_cmd = NULL;
