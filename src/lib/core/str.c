@@ -649,3 +649,28 @@ char *to_short_version(const char *s) {
     strchrdel(result, ".");
     return result;
 }
+
+void unindent(char *s) {
+    char *pos = NULL;
+    size_t leading_spaces;
+
+    // Set position to beginning of string
+    pos = s;
+
+    while (pos != NULL) {
+        const size_t len = strlen(s);
+        for (leading_spaces = 0; isspace(pos[leading_spaces]); leading_spaces++) {}
+
+        // For each new line strip an indent
+        if (leading_spaces >= 4 && len >= 4) {
+            leading_spaces = 4;  // remove first level of indentation
+            memmove(pos, pos + leading_spaces, len - leading_spaces);
+            pos[len - leading_spaces] = '\0';
+        }
+
+        pos = strchr(pos, '\n');
+        if (pos && strlen(pos)) {
+            pos++;
+        }
+    }
+}
