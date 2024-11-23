@@ -308,4 +308,6 @@ char *tolower_s(char *s);
  */
 char *to_short_version(const char *s);
 
+void unindent(char *s);
+
 #endif //STASIS_STR_H

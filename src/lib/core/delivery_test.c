@@ -118,6 +118,9 @@ void delivery_tests_run(struct Delivery *ctx) {
                     SYSERROR("An error occurred while rendering the following:\n%s", cmd);
                     exit(1);
                 }
+                // Move indents
+                // HEREDOCs will not work otherwise
+                unindent(cmd);
 
                 if (test->disable) {
                     msg(STASIS_MSG_L2, "Script execution disabled by configuration\n", test->name);
@@ -189,6 +192,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                         SYSERROR("An error occurred while rendering the following:\n%s", cmd);
                         exit(1);
                     }
+                    unindent(cmd);
 
                     struct MultiProcessingTask *task = NULL;
                     char *runner_cmd = NULL;
