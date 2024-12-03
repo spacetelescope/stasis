@@ -102,6 +102,10 @@ int main(int argc, char *argv[]) {
             case OPT_NO_ARTIFACTORY_BUILD_INFO:
                 globals.enable_artifactory_build_info = false;
                 break;
+            case OPT_NO_ARTIFACTORY_UPLOAD:
+                globals.enable_artifactory_build_info = false;
+                globals.enable_artifactory_upload = false;
+                break;
             case OPT_NO_TESTING:
                 globals.enable_testing = false;
                 break;
@@ -561,7 +565,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (want_artifactory) {
-        if (globals.enable_artifactory) {
+        if (globals.enable_artifactory && globals.enable_artifactory_upload) {
             msg(STASIS_MSG_L1, "Uploading artifacts\n");
             delivery_artifact_upload(&ctx);
         } else {
