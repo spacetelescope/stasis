@@ -185,3 +185,20 @@ int delivery_mission_render_files(struct Delivery *ctx) {
     return 0;
 }
 
+int delivery_series_sync(struct Delivery *ctx) {
+    struct JFRT_Download dl = {0};
+
+    char *remote_dir = NULL;
+    if (asprintf(&remote_dir, "%s/%s/%s/(*)", globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name) < 0) {
+        SYSERROR("%s", "Unable to allocate bytes for remote directory path");
+        return -1;
+    }
+
+    char *dest_dir = NULL;
+    if (asprintf(&dest_dir, "%s/{1}", ctx->storage.output_dir) < 0) {
+        SYSERROR("%s", "Unable to allocate bytes for destination directory path");
+        return -1;
+    }
+
+    return jfrog_cli_rt_download(&ctx->deploy.jfrog_auth, &dl, remote_dir, dest_dir);
+}
