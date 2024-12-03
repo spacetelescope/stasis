@@ -201,6 +201,18 @@ int get_latest_rc(struct Delivery ctx[], size_t nelem) {
     return result;
 }
 
+int sort_by_latest_rc(const void *a, const void *b) {
+    const struct Delivery *aa = a;
+    const struct Delivery *bb = b;
+    if (aa->meta.rc > bb->meta.rc) {
+        return -1;
+    }
+    if (aa->meta.rc < bb->meta.rc) {
+        return 1;
+    }
+    return 0;
+}
+
 struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     struct Delivery **result = NULL;
     int latest = 0;
@@ -213,13 +225,10 @@ struct Delivery **get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     }
 
     latest = get_latest_rc(ctx, nelem);
+    qsort(ctx, nelem, sizeof(*ctx), sort_by_latest_rc);
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].meta.rc == latest) {
-            result[n] = &ctx[i];
-            n++;
-        }
+        result[i] = &ctx[i];
     }
-
     return result;
 }
 
@@ -517,6 +526,9 @@ int indexer_symlinks(struct Delivery ctx[], size_t nelem) {
 int indexer_readmes(struct Delivery ctx[], size_t nelem) {
     struct Delivery **latest = NULL;
     latest = get_latest_deliveries(ctx, nelem);
+    if (!latest) {
+        return 0;
+    }
 
     char indexfile[PATH_MAX] = {0};
     sprintf(indexfile, "%s/README.md", ctx->storage.delivery_dir);
