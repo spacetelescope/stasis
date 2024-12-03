@@ -220,9 +220,7 @@ int main(int argc, char *argv[]) {
 
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
     msg(STASIS_MSG_L1, "Checking release history\n");
-    const int found_delivery = delivery_exists(&ctx);
-
-    if (!globals.enable_overwrite && found_delivery) {
+    if (!globals.enable_overwrite && delivery_exists(&ctx) == DELIVERY_FOUND) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx.info.release_name);
         exit(1);
     }

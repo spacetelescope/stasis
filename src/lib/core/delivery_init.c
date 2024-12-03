@@ -309,7 +309,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
 }
 
 int delivery_exists(struct Delivery *ctx) {
-    int release_exists = 0;
+    int release_exists = DELIVERY_NOT_FOUND;
     char release_pattern[PATH_MAX] = {0};
     sprintf(release_pattern, "*%s*", ctx->info.release_name);
 
@@ -323,24 +323,24 @@ int delivery_exists(struct Delivery *ctx) {
         // release_exists error states:
         //   `jf rt search --fail_no_op` returns 2 on failure
         //   otherwise, search returns an empty list "[]" and returns 0
-        release_exists = jfrog_cli_rt_search(&ctx->deploy.jfrog_auth, &search, globals.jfrog.repo, release_pattern);
+        const int match = jfrog_cli_rt_search(&ctx->deploy.jfrog_auth, &search, globals.jfrog.repo, release_pattern);
+        if (!match) {
+            release_exists = DELIVERY_FOUND;
+        }
     } else {
         struct StrList *files = listdir(ctx->storage.delivery_dir);
-        for (size_t i = 0; i < strlist_count(files); i++) {
+        const size_t files_count = strlist_count(files);
+
+        for (size_t i = 0; i < files_count; i++) {
             char *filename = strlist_item(files, i);
-            release_exists = fnmatch(release_pattern, filename, FNM_PATHNAME);
-            if (!release_exists) {
+            const int match = fnmatch(release_pattern, filename, FNM_PATHNAME);
+            if (match == 0) {
+                release_exists = DELIVERY_FOUND;
                 break;
             }
         }
         guard_strlist_free(&files);
     }
 
-    if (release_exists < 0) {
-        return -1;  // error
-    }
-    if (release_exists >= 1) {
-        return DELIVERY_NOT_FOUND;
-    }
-    return DELIVERY_FOUND;
+    return release_exists;
 }
