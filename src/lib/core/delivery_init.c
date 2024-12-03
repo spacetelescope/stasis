@@ -309,7 +309,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
 }
 
 int delivery_exists(struct Delivery *ctx) {
-    int release_exists = 0;
+    int release_exists = DELIVERY_NOT_FOUND;
     char release_pattern[PATH_MAX] = {0};
     sprintf(release_pattern, "*%s*", ctx->info.release_name);
 
@@ -320,25 +320,27 @@ int delivery_exists(struct Delivery *ctx) {
         }
 
         struct JFRT_Search search = {.fail_no_op = true};
-        release_exists = jfrog_cli_rt_search(&ctx->deploy.jfrog_auth, &search, globals.jfrog.repo, release_pattern);
-        if (release_exists != 2) {
-            if (!globals.enable_overwrite && !release_exists) {
-                // --fail_no_op returns 2 on failure
-                // without: it returns an empty list "[]" and exit code 0
-                return 1;  // found
-            }
+        // release_exists error states:
+        //   `jf rt search --fail_no_op` returns 2 on failure
+        //   otherwise, search returns an empty list "[]" and returns 0
+        const int match = jfrog_cli_rt_search(&ctx->deploy.jfrog_auth, &search, globals.jfrog.repo, release_pattern);
+        if (!match) {
+            release_exists = DELIVERY_FOUND;
         }
     } else {
         struct StrList *files = listdir(ctx->storage.delivery_dir);
-        for (size_t i = 0; i < strlist_count(files); i++) {
+        const size_t files_count = strlist_count(files);
+
+        for (size_t i = 0; i < files_count; i++) {
             char *filename = strlist_item(files, i);
-            release_exists = fnmatch(release_pattern, filename, FNM_PATHNAME);
-            if (!globals.enable_overwrite && !release_exists) {
-                guard_strlist_free(&files);
-                return 1;  // found
+            const int match = fnmatch(release_pattern, filename, FNM_PATHNAME);
+            if (match == 0) {
+                release_exists = DELIVERY_FOUND;
+                break;
             }
         }
         guard_strlist_free(&files);
     }
-    return 0;  // not found
+
+    return release_exists;
 }

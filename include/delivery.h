@@ -424,6 +424,9 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode);
 void validate_delivery_ini(struct INIFILE *ini);
 
 int filter_repo_tags(char *repo, struct StrList *patterns);
+
+#define DELIVERY_NOT_FOUND 0
+#define DELIVERY_FOUND 1
 /**
  * Determine whether a release on-disk matches the release name in use
  * @param ctx Delivery context
@@ -432,5 +435,14 @@ int filter_repo_tags(char *repo, struct StrList *patterns);
 int delivery_exists(struct Delivery *ctx);
 
 int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name);
+
+/**
+ * Retrieve remote deliveries associated with the current version series
+ * @param ctx Delivery context
+ * @return -1 on error
+ * @return 1 on failure
+ * @return 0 on success
+ */
+int delivery_series_sync(struct Delivery *ctx);
 
 #endif //STASIS_DELIVERY_H

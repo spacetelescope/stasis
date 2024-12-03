@@ -163,6 +163,8 @@ stasis mydelivery.ini
 | --overwrite                |     n/a      | Overwrite an existing release                                  |
 | --no-docker                |     n/a      | Do not build docker images                                     |
 | --no-artifactory           |     n/a      | Do not upload artifacts to Artifactory                         |
+| --no-artifactory-build-info|     n/a      | Do not upload build info objects to Artifactory                |
+| --no-artifactory-upload    |     n/a      | Do not upload artifacts to Artifactory (dry-run)               |
 | --no-testing               |     n/a      | Do not execute test scripts                                    |
 | --no-parallel              |     n/a      | Do not execute tests in parallel                               |
 | --no-rewrite               |     n/a      | Do not rewrite paths and URLs in output files                  |

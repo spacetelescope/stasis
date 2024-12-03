@@ -40,6 +40,7 @@ struct STASIS_GLOBAL {
     bool enable_docker; //!< Enable docker image builds
     bool enable_artifactory; //!< Enable artifactory uploads
     bool enable_artifactory_build_info; //!< Enable build info (best disabled for pure test runs)
+    bool enable_artifactory_upload; //!< Enable artifactory file upload (dry-run when false)
     bool enable_testing; //!< Enable package testing
     bool enable_overwrite; //!< Enable release file clobbering
     bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
