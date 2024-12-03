@@ -220,9 +220,31 @@ int main(int argc, char *argv[]) {
 
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
     msg(STASIS_MSG_L1, "Checking release history\n");
-    if (delivery_exists(&ctx)) {
+    const int found_delivery = delivery_exists(&ctx);
+
+    if (!globals.enable_overwrite && found_delivery) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx.info.release_name);
         exit(1);
+    }
+
+    if (globals.enable_artifactory) {
+        // We need to download previous revisions to ensure processed packages are available at build-time
+        // This is also a docker requirement. Python wheels must exist locally.
+        if (ctx.meta.rc > 1) {
+            msg(STASIS_MSG_L1, "Syncing delivery artifacts for %s\n", ctx.info.build_name);
+            if (delivery_series_sync(&ctx) != 0) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to sync artifacts for %s\n", ctx.info.build_name);
+                msg(STASIS_MSG_L3, "Case #1:\n"
+                                   "\tIf this is a new 'version', and 'rc' is greater "
+                                   "than 1, then no previous deliveries exist remotely. "
+                                   "Reset 'rc' to 1.\n");
+                msg(STASIS_MSG_L3, "Case #2:\n"
+                                   "\tThe Artifactory server %s is unreachable, or the credentials used "
+                                   "are invalid.\n", globals.jfrog.url);
+                // No continue-on-error check. Without the previous delivery nothing can be done.
+                exit(1);
+            }
+        }
     }
 
     // Unlikely to occur: this should help prevent rmtree() from destroying your entire filesystem
