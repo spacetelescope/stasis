@@ -133,9 +133,15 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
         fprintf(stderr, "Failed to configure temporary storage directory\n");
         exit(1);
     }
+
+    char *user_dir = expandpath("~/.stasis/indexer");
+    if (!user_dir) {
+        SYSERROR("%s", "expandpath failed");
+    }
+
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "");
-    path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.output_dir, "tools");
-    path_store(&globals.conda_install_prefix, PATH_MAX, ctx->storage.tools_dir, "conda");
+    path_store(&ctx->storage.tools_dir, PATH_MAX, user_dir, "tools");
+    path_store(&globals.conda_install_prefix, PATH_MAX, user_dir, "conda");
     path_store(&ctx->storage.cfgdump_dir, PATH_MAX, ctx->storage.output_dir, "config");
     path_store(&ctx->storage.meta_dir, PATH_MAX, ctx->storage.output_dir, "meta");
     path_store(&ctx->storage.delivery_dir, PATH_MAX, ctx->storage.output_dir, "delivery");
@@ -143,6 +149,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+    guard_free(user_dir);
 
     char newpath[PATH_MAX] = {0};
     if (getenv("PATH")) {
