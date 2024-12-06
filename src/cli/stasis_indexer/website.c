@@ -26,8 +26,7 @@ int indexer_make_website(const struct Delivery *ctx) {
 
         char *root = strlist_item(dirs, i);
         for (size_t x = 0; x < strlist_count(inputs); x++) {
-            char cmd[PATH_MAX] = {0};
-            char *filename = strlist_item(inputs, x);
+            char *filename = path_basename(strlist_item(inputs, x));
             char fullpath_src[PATH_MAX] = {0};
             char fullpath_dest[PATH_MAX] = {0};
             sprintf(fullpath_src, "%s/%s", root, filename);
