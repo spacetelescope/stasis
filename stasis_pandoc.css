@@ -7,7 +7,7 @@ html {
 
 body {
 	margin: 0 auto;
-	max-width: 50%;
+	max-width: 100%;
 	padding-left: 50px;
 	padding-right: 50px;
 	padding-top: 50px;
@@ -92,6 +92,10 @@ h6 {
 
 h6 {
 	font-weight: normal;
+}
+
+h1.title {
+    text-align: left;
 }
 
 ol,
