@@ -18,11 +18,12 @@ int indexer_make_website(const struct Delivery *ctx) {
     struct StrList *inputs = NULL;
     for (size_t i = 0; i < strlist_count(dirs); i++) {
         const char *pattern = "*.md";
-        if (get_files(&inputs, ctx->storage.delivery_dir, pattern)) {
-            SYSERROR("%s does not contain files with pattern: %s", ctx->storage.delivery_dir, pattern);
-            guard_strlist_free(&inputs);
+        char *dirpath = strlist_item(dirs, i);
+        if (get_files(&inputs, dirpath, pattern)) {
+            SYSERROR("%s does not contain files with pattern: %s", dirpath, pattern);
             continue;
         }
+
         char *root = strlist_item(dirs, i);
         for (size_t x = 0; x < strlist_count(inputs); x++) {
             char cmd[PATH_MAX] = {0};
