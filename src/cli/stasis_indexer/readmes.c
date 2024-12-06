@@ -36,9 +36,6 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                     continue;
                 }
                 fprintf(indexfp, "### %s-%s\n\n", platform, arch);
-
-                fprintf(indexfp, "|Release|Info|Receipt|\n");
-                fprintf(indexfp, "|:----:|:----:|:----:|\n");
                 for (size_t i = 0; i < nelem; i++) {
                     char link_name[PATH_MAX];
                     char readme_name[PATH_MAX];
@@ -52,13 +49,26 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                     sprintf(conf_name, "%s.ini", latest[i].info.release_name);
                     sprintf(conf_name_relative, "../config/%s.ini", latest[i].info.release_name);
                     if (strstr(link_name, platform) && strstr(link_name, arch)) {
-                        fprintf(indexfp, "|[%s](%s)|[%s](%s)|[%s](%s)|\n", link_name, link_name, readme_name, readme_name, conf_name, conf_name_relative);
+                        fprintf(indexfp, "- Info: [README](%s)\n", readme_name);
+                        fprintf(indexfp, "- Release: [Conda Environment YAML](%s)\n", link_name);
+                        fprintf(indexfp, "- Receipt: [STASIS input file](%s)\n", conf_name_relative);
                     }
                 }
                 fprintf(indexfp, "\n");
             }
             fprintf(indexfp, "\n");
         }
+
+        fprintf(indexfp, "## Releases\n");
+        for (size_t i = 0; ctx[i].meta.name != NULL; i++) {
+            struct Delivery *current = &ctx[i];
+            fprintf(indexfp, "### %s\n", current->info.release_name);
+            fprintf(indexfp, "- Info: [README](README-%s.html)\n", current->info.release_name);
+            fprintf(indexfp, "- Release: [Conda Environment YAML](%s.yml)\n", current->info.release_name);
+            fprintf(indexfp, "- Receipt: [STASIS input file](%s.ini)\n", current->info.release_name);
+        }
+        fprintf(indexfp, "\n");
+
         guard_strlist_free(&archs);
         guard_strlist_free(&platforms);
         fclose(indexfp);

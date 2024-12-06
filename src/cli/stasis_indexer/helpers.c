@@ -204,6 +204,7 @@ struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     }
 
     latest = get_latest_rc(ctx, nelem);
+    qsort(ctx, nelem, sizeof(*ctx), sort_by_latest_rc);
     for (size_t i = 0; i < nelem; i++) {
         if (ctx[i].meta.rc == latest) {
             result[n] = ctx[i];
