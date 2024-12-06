@@ -8,8 +8,10 @@
 struct StrList *get_architectures(struct Delivery ctx[], const size_t nelem) {
     struct StrList *architectures = strlist_init();
     for (size_t i = 0; i < nelem; i++) {
-        if (!strstr_array(architectures->data, ctx[i].system.arch)) {
-            strlist_append(&architectures, ctx[i].system.arch);
+        if (ctx[i].system.arch) {
+            if (!strstr_array(architectures->data, ctx[i].system.arch)) {
+                strlist_append(&architectures, ctx[i].system.arch);
+            }
         }
     }
     return architectures;
@@ -18,8 +20,10 @@ struct StrList *get_architectures(struct Delivery ctx[], const size_t nelem) {
 struct StrList *get_platforms(struct Delivery ctx[], const size_t nelem) {
     struct StrList *platforms = strlist_init();
     for (size_t i = 0; i < nelem; i++) {
-        if (!strstr_array(platforms->data, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE])) {
-            strlist_append(&platforms, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE]);
+        if (ctx[i].system.platform) {
+            if (!strstr_array(platforms->data, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE])) {
+                strlist_append(&platforms, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE]);
+            }
         }
     }
     return platforms;
