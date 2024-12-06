@@ -23,9 +23,9 @@ int callback_sort_deliveries_cmpfn(const void *a, const void *b) {
 
 // qsort callback to sort dynamically allocated delivery contexts by compact python version
 int callback_sort_deliveries_dynamic_cmpfn(const void *a, const void *b) {
-    const struct Delivery *delivery1 = *(struct Delivery **) a;
+    const struct Delivery *delivery1 = a;
     const size_t delivery1_python = strtoul(delivery1->meta.python_compact, NULL, 10);
-    const struct Delivery *delivery2 = *(struct Delivery **) b;
+    const struct Delivery *delivery2 = b;
     const size_t delivery2_python = strtoul(delivery2->meta.python_compact, NULL, 10);
 
     if (delivery2_python > delivery1_python) {

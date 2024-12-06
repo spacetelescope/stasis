@@ -8,8 +8,12 @@
 #include "junitxml_report.h"
 
 int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
-    struct Delivery **latest = NULL;
-    latest = get_latest_deliveries(ctx, nelem);
+    struct Delivery *latest = get_latest_deliveries(ctx, nelem);
+    if (!latest) {
+        return -1;
+    }
+    size_t latest_count;
+    ARRAY_COUNT_BY_STRUCT_MEMBER(latest, meta.name, latest_count);
 
     char indexfile[PATH_MAX] = {0};
     sprintf(indexfile, "%s/README.md", ctx->storage.results_dir);
@@ -29,7 +33,9 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         struct StrList *archs = get_architectures(*latest, nelem);
         struct StrList *platforms = get_platforms(*latest, nelem);
 
-        qsort(latest, nelem, sizeof(*latest), callback_sort_deliveries_dynamic_cmpfn);
+        struct StrList *archs = get_architectures(latest, nelem);
+        struct StrList *platforms = get_platforms(latest, nelem);
+        qsort(latest, latest_count, sizeof(*latest), callback_sort_deliveries_dynamic_cmpfn);
         fprintf(indexfp, "# %s-%s Test Report\n\n", ctx->meta.name, ctx->meta.version);
         fprintf(indexfp, "## Current Release\n\n");
         size_t no_printable_data = 0;

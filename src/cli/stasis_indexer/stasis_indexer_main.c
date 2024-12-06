@@ -67,8 +67,8 @@ int indexer_conda(const struct Delivery *ctx, struct MicromambaInfo m) {
     return status;
 }
 
-int indexer_symlinks(struct Delivery ctx[], const size_t nelem) {
-    struct Delivery **data = NULL;
+int indexer_symlinks(struct Delivery *ctx, const size_t nelem) {
+    struct Delivery *data = NULL;
     data = get_latest_deliveries(ctx, nelem);
     //int latest = get_latest_rc(ctx, nelem);
 
@@ -80,14 +80,14 @@ int indexer_symlinks(struct Delivery ctx[], const size_t nelem) {
             char file_name_spec[PATH_MAX];
             char file_name_readme[PATH_MAX];
 
-            if (!data[i]) {
+            if (!data[i].meta.name) {
                 continue;
             }
-            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_spec, "%s.yml", data[i]->info.release_name);
+            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i].meta.python_compact, data[i].system.platform[DELIVERY_PLATFORM_RELEASE], data[i].system.arch);
+            sprintf(file_name_spec, "%s.yml", data[i].info.release_name);
 
-            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_readme, "README-%s.md", data[i]->info.release_name);
+            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i].meta.python_compact, data[i].system.platform[DELIVERY_PLATFORM_RELEASE], data[i].system.arch);
+            sprintf(file_name_readme, "README-%s.md", data[i].info.release_name);
 
             if (!access(link_name_spec, F_OK)) {
                 if (unlink(link_name_spec)) {
@@ -316,18 +316,21 @@ int main(const int argc, char *argv[]) {
     struct StrList *metafiles = NULL;
     get_files(&metafiles, ctx.storage.meta_dir, "*.stasis");
     strlist_sort(metafiles, STASIS_SORT_LEN_ASCENDING);
-    struct Delivery local[strlist_count(metafiles)];
+
+    struct Delivery *local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
+    if (!local) {
+        SYSERROR("%s", "Unable to allocate bytes for local delivery context array");
+        exit(1);
+    }
 
     for (size_t i = 0; i < strlist_count(metafiles); i++) {
         char *item = strlist_item(metafiles, i);
-        memset(&local[i], 0, sizeof(ctx));
+        // Copy the pre-filled contents of the main delivery context
         memcpy(&local[i], &ctx, sizeof(ctx));
-        char path[PATH_MAX];
-        sprintf(path, "%s/%s", ctx.storage.meta_dir, item);
         if (globals.verbose) {
-            puts(path);
+            puts(item);
         }
-        load_metadata(&local[i], path);
+        load_metadata(&local[i], item);
     }
     qsort(local, strlist_count(metafiles), sizeof(*local), callback_sort_deliveries_cmpfn);
 
