@@ -79,6 +79,65 @@ int get_pandoc_version(size_t *result) {
     return 0;
 }
 
+int pandoc_exec(const char *in_file, const char *out_file, const char *css_file, const char *title) {
+    if (!find_program("pandoc")) {
+        fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
+        return 0;
+    }
+
+    char pandoc_versioned_args[255] = {0};
+    size_t pandoc_version = 0;
+    if (!get_pandoc_version(&pandoc_version)) {
+        // < 2.19
+        if (pandoc_version < 0x02130000) {
+            strcat(pandoc_versioned_args, "--self-contained ");
+        } else {
+            // >= 2.19
+            strcat(pandoc_versioned_args, "--embed-resources ");
+        }
+
+        // >= 1.15.0.4
+        if (pandoc_version >= 0x010f0004) {
+            strcat(pandoc_versioned_args, "--standalone ");
+        }
+
+        // >= 1.10.0.1
+        if (pandoc_version >= 0x010a0001) {
+            strcat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ");
+        }
+
+        // > 3.1.9
+        if (pandoc_version > 0x03010900) {
+            strcat(pandoc_versioned_args, "-f gfm+alerts ");
+        }
+    }
+
+    // Converts a markdown file to html
+    char cmd[STASIS_BUFSIZ] = {0};
+    strcpy(cmd, "pandoc ");
+    strcat(cmd, pandoc_versioned_args);
+    if (css_file && strlen(css_file)) {
+        strcat(cmd, "--css ");
+        strcat(cmd, css_file);
+    }
+    strcat(cmd, " ");
+    strcat(cmd, "--metadata title=\"");
+    strcat(cmd, title);
+    strcat(cmd, "\" ");
+    strcat(cmd, "-o ");
+    strcat(cmd, out_file);
+    strcat(cmd, " ");
+    strcat(cmd, in_file);
+
+    if (globals.verbose) {
+        puts(cmd);
+    }
+
+    // This might be negative when killed by a signal.
+    return system(cmd);
+}
+
+
 int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     int status = 0;
     char *micromamba_prefix = NULL;

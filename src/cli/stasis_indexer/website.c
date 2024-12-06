@@ -2,11 +2,6 @@
 #include "website.h"
 
 int indexer_make_website(const struct Delivery *ctx) {
-    if (!find_program("pandoc")) {
-        fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
-        return 0;
-    }
-
     char *css_filename = calloc(PATH_MAX, sizeof(*css_filename));
     if (!css_filename) {
         SYSERROR("unable to allocate string for CSS file path: %s", strerror(errno));
@@ -15,34 +10,6 @@ int indexer_make_website(const struct Delivery *ctx) {
 
     sprintf(css_filename, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
     const int have_css = access(css_filename, F_OK | R_OK) == 0;
-
-    char pandoc_versioned_args[255] = {0};
-    size_t pandoc_version = 0;
-
-    if (!get_pandoc_version(&pandoc_version)) {
-        // < 2.19
-        if (pandoc_version < 0x02130000) {
-            strcat(pandoc_versioned_args, "--self-contained ");
-        } else {
-            // >= 2.19
-            strcat(pandoc_versioned_args, "--embed-resources ");
-        }
-
-        // >= 1.15.0.4
-        if (pandoc_version >= 0x010f0004) {
-            strcat(pandoc_versioned_args, "--standalone ");
-        }
-
-        // >= 1.10.0.1
-        if (pandoc_version >= 0x010a0001) {
-            strcat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ");
-        }
-
-        // > 3.1.9
-        if (pandoc_version > 0x03010900) {
-            strcat(pandoc_versioned_args, "-f gfm+alerts ");
-        }
-    }
 
     struct StrList *dirs = strlist_init();
     strlist_append(&dirs, ctx->storage.delivery_dir);
@@ -71,29 +38,11 @@ int indexer_make_website(const struct Delivery *ctx) {
             strcpy(fullpath_dest, fullpath_src);
             gen_file_extension_str(fullpath_dest, ".html");
 
-            // Converts a markdown file to html
-            strcpy(cmd, "pandoc ");
-            strcat(cmd, pandoc_versioned_args);
-            if (have_css) {
-                strcat(cmd, "--css ");
-                strcat(cmd, css_filename);
+            // Convert markdown to html
+            if (pandoc_exec(fullpath_src, fullpath_dest, have_css ? css_filename : NULL, "STASIS")) {
+                msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Unable to convert %s\n", fullpath_src);
             }
-            strcat(cmd, " ");
-            strcat(cmd, "--metadata title=\"STASIS\" ");
-            strcat(cmd, "-o ");
-            strcat(cmd, fullpath_dest);
-            strcat(cmd, " ");
-            strcat(cmd, fullpath_src);
-            if (globals.verbose) {
-                puts(cmd);
-            }
-            // This might be negative when killed by a signal.
-            // Otherwise, the return code is not critical to us.
-            if (system(cmd) < 0) {
-                guard_free(css_filename);
-                guard_strlist_free(&dirs);
-                return 1;
-            }
+
             if (file_replace_text(fullpath_dest, ".md", ".html", 0)) {
                 // inform-only
                 SYSERROR("%s: failed to rewrite *.md urls with *.html extension", fullpath_dest);
