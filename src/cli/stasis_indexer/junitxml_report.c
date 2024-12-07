@@ -136,7 +136,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                 if (!no_printable_data) {
                                     // Triggering for reasons unknown
                                     //fprintf(indexfp, "|No data|-|-|-|-|-|-|\n");
-                                    no_printable_data++;
+                                    no_printable_data = 1;
                                 }
                             }
                         }
