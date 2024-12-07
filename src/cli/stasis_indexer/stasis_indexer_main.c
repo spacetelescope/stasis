@@ -149,6 +149,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.results_dir, PATH_MAX, ctx->storage.output_dir, "results");
     path_store(&ctx->storage.wheel_artifact_dir, PATH_MAX, ctx->storage.package_dir, "wheels");
     path_store(&ctx->storage.conda_artifact_dir, PATH_MAX, ctx->storage.package_dir, "conda");
+    path_store(&ctx->storage.docker_artifact_dir, PATH_MAX, ctx->storage.package_dir, "docker");
     guard_free(user_dir);
 
     char newpath[PATH_MAX] = {0};
