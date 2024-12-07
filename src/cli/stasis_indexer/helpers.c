@@ -220,6 +220,10 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
     char userpattern[PATH_MAX] = {0};
     vsprintf(userpattern, pattern, args);
     va_end(args);
+    if (!strlen(userpattern)) {
+        userpattern[0] = '*';
+        userpattern[1] = 0;
+    }
     struct StrList *list = listdir(path);
     if (!list) {
         return -1;
