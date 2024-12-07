@@ -255,6 +255,23 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
     return 0;
 }
 
+struct StrList *get_docker_images(struct Delivery *ctx, char *pattern) {
+    char *tarball = NULL;
+    asprintf(&tarball, "%s*.tar*", pattern);
+    if (!tarball) {
+        SYSERROR("%s", "Unable to allocate bytes for docker image wildcard pattern");
+        return NULL;
+    }
+    tolower_s(tarball);
+    replace_text(tarball, "+", "-", 0);
+
+    struct StrList *files = NULL;
+    get_files(&files, ctx->storage.docker_artifact_dir, tarball);
+    guard_free(tarball);
+
+    return files;
+}
+
 int load_metadata(struct Delivery *ctx, const char *filename) {
     char line[STASIS_NAME_MAX] = {0};
 
