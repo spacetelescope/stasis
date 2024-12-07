@@ -79,11 +79,6 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                     guard_free(bname_tmp);
 
                                     char result_outfile[PATH_MAX] = {0};
-
-                                    char result_path[PATH_MAX] = {0};
-                                    //snprintf(result_path, sizeof(result_path) -1 , "%s/%s", platform, arch);
-                                    //mkdirs(result_path, 0755);
-
                                     char *short_name_pattern = NULL;
                                     asprintf(&short_name_pattern, "-%s", current->info.release_name);
 
