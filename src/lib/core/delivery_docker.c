@@ -92,7 +92,7 @@ int delivery_docker(struct Delivery *ctx) {
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
     sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
     if (system(rsync_cmd)) {
-        fprintf(stderr, "Failed to copy wheel artifactory to docker build directory\n");
+        fprintf(stderr, "Failed to copy wheel artifacts to docker build directory\n");
     }
 
     if (docker_build(ctx->storage.build_docker_dir, args, ctx->deploy.docker.capabilities.build)) {

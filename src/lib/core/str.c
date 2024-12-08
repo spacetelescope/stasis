@@ -162,7 +162,7 @@ char *join(char **arr, const char *separator) {
 }
 
 char *join_ex(char *separator, ...) {
-    va_list ap;                 // Variadic argument list
+    va_list ap = {0};                 // Variadic argument list
     size_t separator_len = 0;   // Length of separator string
     size_t size = 0;            // Length of output string
     size_t argc = 0;            // Number of arguments ^ "..."
@@ -171,13 +171,6 @@ char *join_ex(char *separator, ...) {
     char *result = NULL;        // Output string
 
     if (separator == NULL) {
-        return NULL;
-    }
-
-    // Initialize array
-    argv = calloc(argc + 1, sizeof(char **));
-    if (argv == NULL) {
-        perror("join_ex calloc failed");
         return NULL;
     }
 
@@ -192,16 +185,21 @@ char *join_ex(char *separator, ...) {
     // 5. Append `current` string to `argv` array
     // 6. Update argument counter `argc`
     va_start(ap, separator);
-    for(argc = 0; (current = va_arg(ap, char *)) != NULL; argc++) {
-        char **tmp = realloc(argv, (argc + 1) * sizeof(char *));
-        if (tmp == NULL) {
-            perror("join_ex realloc failed");
-            GENERIC_ARRAY_FREE(argv);
-            return NULL;
-        }
-        argv = tmp;
+    va_list ap_tmp = {0};
+    va_copy(ap_tmp, ap);
+    for(argc = 0; (current = va_arg(ap_tmp, char *)) != NULL; argc++) {}
+    va_end(ap_tmp);
+
+    // Initialize array
+    argv = calloc(argc + 1, sizeof(char **));
+    if (argv == NULL) {
+        perror("join_ex calloc failed");
+        return NULL;
+    }
+
+    for(size_t i = 0; i < argc && (current = va_arg(ap, char *)); i++) {
         size += strlen(current) + separator_len;
-        argv[argc] = strdup(current);
+        argv[i] = strdup(current);
     }
     va_end(ap);
 

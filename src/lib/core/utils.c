@@ -766,7 +766,15 @@ struct StrList *listdir(const char *path) {
         if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
             continue;
         }
-        strlist_append(&node, rec->d_name);
+        char *fullpath = join_ex("/", path, rec->d_name, NULL);
+        if (!fullpath) {
+            SYSERROR("%s", "Unable to allocate bytes to construct full path");
+            guard_strlist_free(&node);
+            closedir(dp);
+            return NULL;
+        }
+        strlist_append(&node, fullpath);
+        guard_free(fullpath);
     }
     closedir(dp);
     return node;
@@ -791,8 +799,6 @@ int mkdirs(const char *_path, mode_t mode) {
     char result[PATH_MAX] = {0};
     int status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
-        if (token[0] == '.')
-            continue;
         strcat(result, token);
         strcat(result, "/");
         status = mkdir(result, mode);
@@ -848,5 +854,15 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
 
     guard_free(system_path_new);
     return 0;
+}
+
+int gen_file_extension_str(char *filename, const char *extension) {
+    char *ext_orig = strrchr(filename, '.');
+    if (!ext_orig) {
+        strcat(filename, extension);
+        return 0;
+    }
+
+    return replace_text(ext_orig, ext_orig, extension, 0);
 }
 
