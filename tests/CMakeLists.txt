@@ -36,7 +36,10 @@ foreach(source_file ${source_files})
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${test_executable} PRIVATE ${win_cflags} ${win_msvc_cflags})
     endif()
-    target_link_libraries(${test_executable} PRIVATE stasis_core)
+    target_link_libraries(${test_executable} PRIVATE
+            stasis_core
+            stasis_delivery
+    )
     add_test(${test_executable} ${test_executable})
     set_tests_properties(${test_executable}
             PROPERTIES

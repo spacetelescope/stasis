@@ -10,6 +10,9 @@ add_executable(stasis_indexer
         readmes.h
 )
 target_include_directories(stasis_indexer PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(stasis_indexer PRIVATE stasis_core)
+target_link_libraries(stasis_indexer PRIVATE
+        stasis_core
+        stasis_delivery
+)
 
 install(TARGETS stasis_indexer RUNTIME)
