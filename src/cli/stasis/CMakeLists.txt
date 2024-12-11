@@ -6,7 +6,6 @@ add_executable(stasis
         tpl.c
 )
 target_link_libraries(stasis PRIVATE
-        stasis_core
         stasis_delivery
 )
 target_include_directories(stasis PRIVATE

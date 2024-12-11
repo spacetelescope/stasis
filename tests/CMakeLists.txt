@@ -36,7 +36,6 @@ foreach(source_file ${source_files})
             ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
     target_link_libraries(${test_executable} PRIVATE
-            stasis_core
             stasis_delivery
     )
     add_test(${test_executable} ${test_executable})
