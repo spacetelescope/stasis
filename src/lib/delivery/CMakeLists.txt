@@ -1,5 +1,3 @@
-include_directories(${PROJECT_BINARY_DIR})
-
 add_library(stasis_delivery STATIC
         delivery_postprocess.c
         delivery_conda.c
@@ -12,5 +10,10 @@ add_library(stasis_delivery STATIC
         delivery_populate.c
         delivery_init.c
         delivery.c
+)
+target_include_directories(stasis_delivery PRIVATE
+        ${core_INCLUDE}
+        ${delivery_INCLUDE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(stasis_delivery stasis_core)

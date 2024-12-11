@@ -1,5 +1,3 @@
-include_directories(${PROJECT_BINARY_DIR})
-
 add_library(stasis_core STATIC
         globals.c
         str.c
@@ -24,4 +22,8 @@ add_library(stasis_core STATIC
         envctl.c
         multiprocessing.c
 )
-
+target_include_directories(stasis_core PRIVATE
+        ${core_INCLUDE}
+        ${delivery_INCLUDE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
