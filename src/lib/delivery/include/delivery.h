@@ -9,16 +9,16 @@
 #include <sys/utsname.h>
 #include <fnmatch.h>
 #include <sys/statvfs.h>
-#include "core.h"
-#include "copy.h"
-#include "environment.h"
-#include "conda.h"
-#include "ini.h"
 #include "artifactory.h"
+#include "conda.h"
+#include "copy.h"
+#include "core.h"
 #include "docker.h"
-#include "wheel.h"
+#include "environment.h"
+#include "ini.h"
 #include "multiprocessing.h"
 #include "recipe.h"
+#include "wheel.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65

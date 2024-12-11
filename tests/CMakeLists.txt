@@ -1,7 +1,3 @@
-include_directories(
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_BINARY_DIR}/include
-)
 find_program(BASH_PROGRAM bash)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/tests)
 set(CTEST_BINARY_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
@@ -22,8 +18,6 @@ if (BASH_PROGRAM AND BUILD_TESTING_RT)
         string(REGEX REPLACE ${ext_pattern} "" rt_name ${rt_file})
         add_test (${rt_name} ${BASH_PROGRAM} ${rt_file})
     endforeach()
-    add_test (rt_generic_based_on ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/rt_generic_based_on.sh)
-    add_test (rt_generic ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/rt_generic.sh)
 endif()
 
 foreach(source_file ${source_files})
@@ -36,7 +30,15 @@ foreach(source_file ${source_files})
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${test_executable} PRIVATE ${win_cflags} ${win_msvc_cflags})
     endif()
-    target_link_libraries(${test_executable} PRIVATE stasis_core)
+    target_include_directories(${test_executable} PRIVATE
+            ${core_INCLUDE}
+            ${delivery_INCLUDE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_link_libraries(${test_executable} PRIVATE
+            stasis_core
+            stasis_delivery
+    )
     add_test(${test_executable} ${test_executable})
     set_tests_properties(${test_executable}
             PROPERTIES

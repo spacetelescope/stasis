@@ -1,5 +1,3 @@
-include_directories(${PROJECT_BINARY_DIR})
-
 add_library(stasis_core STATIC
         globals.c
         str.c
@@ -10,17 +8,6 @@ add_library(stasis_core STATIC
         utils.c
         system.c
         download.c
-        delivery_postprocess.c
-        delivery_conda.c
-        delivery_docker.c
-        delivery_install.c
-        delivery_artifactory.c
-        delivery_test.c
-        delivery_build.c
-        delivery_show.c
-        delivery_populate.c
-        delivery_init.c
-        delivery.c
         recipe.c
         relocation.c
         wheel.c
@@ -35,4 +22,8 @@ add_library(stasis_core STATIC
         envctl.c
         multiprocessing.c
 )
-
+target_include_directories(stasis_core PRIVATE
+        ${core_INCLUDE}
+        ${delivery_INCLUDE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)

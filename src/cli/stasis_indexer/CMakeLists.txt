@@ -5,11 +5,16 @@ add_executable(stasis_indexer
         helpers.c
         junitxml_report.c
         website.c
-        website.h
         readmes.c
-        readmes.h
 )
-target_include_directories(stasis_indexer PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(stasis_indexer PRIVATE stasis_core)
+target_include_directories(stasis_indexer PRIVATE
+        ${core_INCLUDE}
+        ${delivery_INCLUDE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(stasis_indexer PRIVATE
+        stasis_core
+        stasis_delivery
+)
 
 install(TARGETS stasis_indexer RUNTIME)

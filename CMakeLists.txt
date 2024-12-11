@@ -24,6 +24,11 @@ elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(${win_cflags})
 endif()
 
+set(core_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/core/include)
+set(delivery_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/delivery/include)
+set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")
+configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h @ONLY)
+include_directories(${PROJECT_BINARY_DIR}/include)
 add_subdirectory(src)
 
 # Toggle extremely verbose output
@@ -52,8 +57,6 @@ else()
 	message(CHECK_PASS "no")
 endif()
 
-set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h @ONLY)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/stasis_pandoc.css DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/stasis)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/stasis.ini DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/stasis)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mission DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/stasis)
