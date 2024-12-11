@@ -325,7 +325,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' %s", args, repo_path, dest ? dest : "");
+    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' '%s'", args, repo_path, dest ? dest : "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 

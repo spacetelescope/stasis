@@ -13,7 +13,6 @@ target_include_directories(stasis_indexer PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(stasis_indexer PRIVATE
-        stasis_core
         stasis_delivery
 )
 

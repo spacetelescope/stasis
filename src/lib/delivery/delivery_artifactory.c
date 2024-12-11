@@ -188,6 +188,11 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 int delivery_series_sync(struct Delivery *ctx) {
     struct JFRT_Download dl = {0};
 
+    if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
+        fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+        return -1;  // error
+    }
+
     char *remote_dir = NULL;
     if (asprintf(&remote_dir, "%s/%s/%s/(*)", globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name) < 0) {
         SYSERROR("%s", "Unable to allocate bytes for remote directory path");
