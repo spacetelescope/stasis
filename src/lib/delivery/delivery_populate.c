@@ -74,6 +74,37 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     return 0;
 }
 
+static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, char * const section, char * const key, int render_mode) {
+    struct INIFILE *ini = *inip;
+    struct StrList *list = *listp;
+    if (!list) {
+        return;
+    }
+    char **data = list->data;
+    if (!data) {
+        return;
+    }
+
+    if (data[0] && strpbrk(data[0], " \t")) {
+        normalize_space(data[0]);
+        replace_text(data[0], " ", LINE_SEP, 0);
+        char *replacement = join(data, LINE_SEP);
+        ini_setval(&ini, INI_SETVAL_REPLACE, section, key, replacement);
+        guard_free(replacement);
+        guard_strlist_free(&list);
+        int err = 0;
+        list = ini_getval_strlist(ini, section, key, LINE_SEP, render_mode, &err);
+    }
+
+    for (size_t i = 0; i < strlist_count(list); i++) {
+        char *pkg = strlist_item(list, i);
+        if (strpbrk(pkg, ";#") || isempty(pkg)) {
+            strlist_remove(list, i);
+        }
+    }
+    (*inip) = ini;
+    (*listp) = list;
+}
 int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
@@ -118,42 +149,12 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", render_mode, &err);
     ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err);
     ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err);
-    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", " "LINE_SEP, render_mode, &err);
-
-    if (ctx->conda.conda_packages->data && ctx->conda.conda_packages->data[0] && strpbrk(ctx->conda.conda_packages->data[0], " \t")) {
-        normalize_space(ctx->conda.conda_packages->data[0]);
-        replace_text(ctx->conda.conda_packages->data[0], " ", LINE_SEP, 0);
-        char *pip_packages_replacement = join(ctx->conda.conda_packages->data, LINE_SEP);
-        ini_setval(&ini, INI_SETVAL_REPLACE, "conda", "conda_packages", pip_packages_replacement);
-        guard_free(pip_packages_replacement);
-        guard_strlist_free(&ctx->conda.conda_packages);
-        ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
-    }
-
-    for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
-        char *pkg = strlist_item(ctx->conda.conda_packages, i);
-        if (strpbrk(pkg, ";#") || isempty(pkg)) {
-            strlist_remove(ctx->conda.conda_packages, i);
-        }
-    }
-
+    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
     ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
-    if (ctx->conda.pip_packages->data && ctx->conda.pip_packages->data[0] && strpbrk(ctx->conda.pip_packages->data[0], " \t")) {
-        normalize_space(ctx->conda.pip_packages->data[0]);
-        replace_text(ctx->conda.pip_packages->data[0], " ", LINE_SEP, 0);
-        char *pip_packages_replacement = join(ctx->conda.pip_packages->data, LINE_SEP);
-        ini_setval(&ini, INI_SETVAL_REPLACE, "conda", "pip_packages", pip_packages_replacement);
-        guard_free(pip_packages_replacement);
-        guard_strlist_free(&ctx->conda.pip_packages);
-        ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
-    }
 
-    for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
-        char *pkg = strlist_item(ctx->conda.pip_packages, i);
-        if (strpbrk(pkg, ";#") || isempty(pkg)) {
-            strlist_remove(ctx->conda.pip_packages, i);
-        }
-    }
+    normalize_ini_list(&ini, &ctx->conda.conda_packages, "conda", "conda_packages", render_mode);
+    normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode);
+
 
     // Delivery metadata consumed
     populate_mission_ini(&ctx, render_mode);
