@@ -94,8 +94,6 @@ int main(int argc, char *argv[]) {
     STASIS_TEST_FUNC *tests[] = {
         test_recipe_clone,
     };
-    mkdir("workspace", 0755);
-    pushd("workspace");
     STASIS_TEST_RUN(tests);
     popd();
     STASIS_TEST_END_MAIN();
