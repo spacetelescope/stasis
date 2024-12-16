@@ -331,7 +331,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     {
         memset(command, 0, sizeof(command));
         sprintf(command, "%s fetch --all", program);
-        result += shell(proc, command);
+        result = shell(proc, command);
 
         if (gitref != NULL) {
             memset(command, 0, sizeof(command));
