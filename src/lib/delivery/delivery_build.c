@@ -154,7 +154,11 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 memset(wheeldir, 0, sizeof(wheeldir));
 
                 sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests[i].name);
-                git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version);
+                if (git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version)) {
+                    SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'\n",
+                    ctx->tests[i].version, ctx->tests[i].name, ctx->tests[i].repository);
+                    return NULL;
+                }
 
                 if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
                     filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
