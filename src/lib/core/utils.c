@@ -307,39 +307,64 @@ int touch(const char *filename) {
 }
 
 int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
-    int result = -1;
+    int result = 0;
     char *chdir_to = NULL;
     char *program = find_program("git");
     if (!program) {
-        return result;
+        result = -1;
+        goto die_quick;
     }
 
-    static char command[PATH_MAX];
+    static char command[PATH_MAX] = {0};
     sprintf(command, "%s clone -c advice.detachedHead=false --recursive %s", program, url);
+
     if (destdir && access(destdir, F_OK) < 0) {
+        // Destination directory does not exist
         sprintf(command + strlen(command), " %s", destdir);
+        // Clone the repo
         result = shell(proc, command);
+        if (result) {
+            goto die_quick;
+        }
     }
 
     if (destdir) {
         chdir_to = destdir;
     } else {
+        // Assume the name of the directory to be the basename of the URL
+        // like it is when executed in a shell session
         chdir_to = path_basename(url);
     }
 
-    pushd(chdir_to);
-    {
+    if (!pushd(chdir_to)) {
         memset(command, 0, sizeof(command));
         sprintf(command, "%s fetch --all", program);
-        result += shell(proc, command);
+        result = shell(proc, command);
+        if (result) {
+            goto die_pop;
+        }
 
         if (gitref != NULL) {
             memset(command, 0, sizeof(command));
             sprintf(command, "%s checkout %s", program, gitref);
-            result += shell(proc, command);
+
+            result = shell(proc, command);
+            if (result) {
+                goto die_pop;
+            }
         }
         popd();
+    } else {
+        result = -1;
+        goto die_quick;
     }
+    return 0;
+
+    die_pop:
+    // close out last pushd() call
+    popd();
+
+    die_quick:
     return result;
 }
 
