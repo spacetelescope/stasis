@@ -122,6 +122,64 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     return 0;
 }
 
+int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_pkg_manager) {
+    int status = 0;
+    char subcommand[100] = {0};
+    char package_manager[100] = {0};
+    typedef int (fnptr)(const char *);
+
+    const char *current_env = conda_get_active_environment();
+    if (current_env) {
+        conda_activate(globals.conda_install_prefix, env_name);
+    }
+
+    struct StrList *list = NULL;
+    fnptr *fn = NULL;
+    switch (use_pkg_manager) {
+        case PKG_USE_CONDA:
+            fn = conda_exec;
+            list = ctx->conda.conda_packages_purge;
+            strcpy(package_manager, "conda");
+            // conda is already configured for "always_yes"
+            strcpy(subcommand, "remove");
+            break;
+        case PKG_USE_PIP:
+            fn = pip_exec;
+            list = ctx->conda.pip_packages_purge;
+            strcpy(package_manager, "pip");
+            // avoid user prompt to remove packages
+            strcpy(subcommand, "uninstall -y");
+            break;
+        default:
+            SYSERROR("Unknown package manager: %d", use_pkg_manager);
+            status = -1;
+            break;
+    }
+
+    for (size_t i = 0; i < strlist_count(list); i++) {
+        char *package = strlist_item(list, i);
+        char *command = NULL;
+        if (asprintf(&command, "%s '%s'", subcommand, package) < 0) {
+            SYSERROR("%s", "Unable to allocate bytes for removal command");
+            status = -1;
+            break;
+        }
+
+        if (fn(command)) {
+            SYSERROR("%s removal operation failed", package_manager);
+            guard_free(command);
+            status = 1;
+            break;
+        }
+    }
+
+    if (current_env) {
+        conda_activate(globals.conda_install_prefix, current_env);
+    }
+
+    return status;
+}
+
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char cmd[PATH_MAX];
     char pkgs[STASIS_BUFSIZ];

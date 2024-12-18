@@ -150,11 +150,13 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err);
     ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err);
     ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
-    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
-
     normalize_ini_list(&ini, &ctx->conda.conda_packages, "conda", "conda_packages", render_mode);
+    ctx->conda.conda_packages_purge = ini_getval_strlist(ini, "conda", "conda_packages_purge", LINE_SEP, render_mode, &err);
+    normalize_ini_list(&ini, &ctx->conda.conda_packages_purge, "conda", "conda_package_purge", render_mode);
+    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode);
-
+    ctx->conda.pip_packages_purge = ini_getval_strlist(ini, "conda", "pip_packages_purge", LINE_SEP, render_mode, &err);
+    normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
 
     // Delivery metadata consumed
     populate_mission_ini(&ctx, render_mode);
