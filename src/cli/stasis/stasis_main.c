@@ -366,6 +366,27 @@ int main(int argc, char *argv[]) {
     // The base environment configuration not used past this point
     remove(mission_base);
 
+    const char *envs[] = {env_name_testing, env_name};
+    for (size_t e = 0; e < sizeof(envs) / sizeof(*envs); e++) {
+        const char *name = envs[e];
+        if (ctx.conda.conda_packages_purge && strlist_count(ctx.conda.conda_packages_purge)) {
+            msg(STASIS_MSG_L2, "Purging conda packages from %s\n", name);
+            if (delivery_purge_packages(&ctx, name, PKG_USE_CONDA)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested conda packages from %s\n", name);
+                exit(1);
+            }
+        }
+
+        if (ctx.conda.pip_packages_purge && strlist_count(ctx.conda.pip_packages_purge)) {
+            msg(STASIS_MSG_L2, "Purging pip packages from %s\n", name);
+            if (delivery_purge_packages(&ctx, env_name_testing, PKG_USE_PIP)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested pip packages from %s\n",
+                    env_name_testing);
+                exit(1);
+            }
+        }
+    }
+
     // Activate test environment
     msg(STASIS_MSG_L1, "Activating test environment\n");
     if (conda_activate(ctx.storage.conda_install_prefix, env_name_testing)) {
@@ -390,20 +411,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (!isempty(ctx.meta.based_on)) {
-        if (ctx.conda.conda_packages_purge && strlist_count(ctx.conda.conda_packages_purge)) {
-            msg(STASIS_MSG_L2, "Purging conda packages\n");
-            if (delivery_purge_packages(&ctx, env_name_testing, PKG_USE_CONDA)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested conda packages from %s\n", env_name_testing);
-                exit(1);
-            }
-        }
-        if (ctx.conda.pip_packages_purge && strlist_count(ctx.conda.pip_packages_purge)) {
-            msg(STASIS_MSG_L2, "Purging pip packages\n");
-            if (delivery_purge_packages(&ctx, env_name_testing, PKG_USE_PIP)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested pip packages from %s\n", env_name_testing);
-                exit(1);
-            }
-        }
         msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
         if (delivery_overlay_packages_from_env(&ctx, env_name)) {
             msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
@@ -474,22 +481,6 @@ int main(int argc, char *argv[]) {
         }
     } else {
         msg(STASIS_MSG_L3, "No deferred conda packages\n");
-    }
-
-    if (ctx.conda.conda_packages_purge && strlist_count(ctx.conda.conda_packages_purge)) {
-        msg(STASIS_MSG_L2, "Purging conda packages\n");
-        if (delivery_purge_packages(&ctx, env_name, PKG_USE_CONDA)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested conda packages\n");
-            exit(1);
-        }
-    }
-
-    if (ctx.conda.pip_packages_purge && strlist_count(ctx.conda.pip_packages_purge)) {
-        msg(STASIS_MSG_L2, "Purging pip packages\n");
-        if (delivery_purge_packages(&ctx, env_name, PKG_USE_PIP)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested pip packages");
-            exit(1);
-        }
     }
 
     msg(STASIS_MSG_L2, "Installing pip packages\n");
