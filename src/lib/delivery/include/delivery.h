@@ -141,8 +141,10 @@ struct Delivery {
         char *tool_build_version;               ///< Installed version of "build" package
         struct StrList *conda_packages;         ///< Conda packages to deliver
         struct StrList *conda_packages_defer;   ///< Conda recipes to be built for delivery
+        struct StrList *conda_packages_purge;   ///< Conda packages to remove from a delivery (for: based_on)
         struct StrList *pip_packages;           ///< Python packages to install (pip)
         struct StrList *pip_packages_defer;     ///< Python packages to be built for delivery
+        struct StrList *pip_packages_purge;     ///< Python packages to remove from a delivery (for: based_on)
         struct StrList *wheels_packages;        ///< Wheel packages built for delivery
     } conda;
 
@@ -444,5 +446,17 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
  * @return 0 on success
  */
 int delivery_series_sync(struct Delivery *ctx);
+
+/**
+ * Remove packages from an environment
+ * @param ctx Delivery context
+ * @param env_name Name of conda environment
+ * @param use_pkg_manager PKG_USE_PIP
+ * @param use_pkg_manager PKG_USE_CONDA
+ * @returns -1 on error
+ * @returns 0 on success
+ * @returns >0 on failure
+ */
+int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_pkg_manager);
 
 #endif //STASIS_DELIVERY_H

@@ -246,15 +246,17 @@ All configuration section names and keys are _case-sensitive_.
 
 ### conda
 
-| Key                | Type   | Purpose                    | Required |
-|--------------------|--------|----------------------------|----------|
-| installer_name     | String | Conda distribution name    | Y        |
-| installer_version  | String | Conda distribution version | Y        |
-| installer_platform | String | Conda target platform      | Y        |
-| installer_arch     | String | Conda target architecture  | Y        |
-| installer_baseurl  | String | Conda installer URL        | Y        |
-| conda_packages     | List   | Conda packages to install  | N        |
-| pip_packages       | List   | Pypi packages to install   | N        |
+| Key                  | Type   | Purpose                    | Required |
+|----------------------|--------|----------------------------|----------|
+| installer_name       | String | Conda distribution name    | Y        |
+| installer_version    | String | Conda distribution version | Y        |
+| installer_platform   | String | Conda target platform      | Y        |
+| installer_arch       | String | Conda target architecture  | Y        |
+| installer_baseurl    | String | Conda installer URL        | Y        |
+| conda_packages       | List   | Conda packages to install  | N        |
+| conda_packages_purge | List   | Conda packages to remove   | N        |
+| pip_packages         | List   | Pypi packages to install   | N        |
+| pip_packages_purge   | List   | Conda packages to remove   | N        |
 
 ### runtime
 
