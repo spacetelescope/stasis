@@ -130,7 +130,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
 
     const char *current_env = conda_get_active_environment();
     if (current_env) {
-        conda_activate(globals.conda_install_prefix, env_name);
+        conda_activate(ctx->storage.conda_install_prefix, env_name);
     }
 
     struct StrList *list = NULL;
@@ -174,7 +174,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
     }
 
     if (current_env) {
-        conda_activate(globals.conda_install_prefix, current_env);
+        conda_activate(ctx->storage.conda_install_prefix, current_env);
     }
 
     return status;
