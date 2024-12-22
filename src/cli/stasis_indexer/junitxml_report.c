@@ -53,8 +53,8 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                         }
 
                         fprintf(indexfp, "### %s\n", current->info.release_name);
-                        fprintf(indexfp, "\n|Suite|Duration|Fail    |Skip |Error |\n");
-                        fprintf(indexfp, "|:----|:------:|:------:|:---:|:----:|\n");
+                        fprintf(indexfp, "\n|Suite|Duration|Total|Pass|Fail    |Skip |Error |\n");
+                        fprintf(indexfp, "|:----|:------:|:-----:|:----:|:------:|:---:|:----:|\n");
                         for (size_t f = 0; f < strlist_count(file_listing); f++) {
                             char *filename = strlist_item(file_listing, f);
                             if (!endswith(filename, ".xml")) {
@@ -68,9 +68,10 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                 struct JUNIT_Testsuite *testsuite = junitxml_testsuite_read(filename);
                                 if (testsuite) {
                                     if (globals.verbose) {
-                                        printf("%s: duration: %0.4f, failed: %d, skipped: %d, errors: %d\n", filename,
-                                               testsuite->time, testsuite->failures, testsuite->skipped,
-                                               testsuite->errors);
+                                        printf("%s: duration: %0.4f, total: %d, passed: %d, failed: %d, skipped: %d, errors: %d\n", filename,
+                                               testsuite->time, testsuite->tests,
+                                               testsuite->passed, testsuite->failures,
+                                               testsuite->skipped, testsuite->errors);
                                     }
 
                                     char *bname_tmp = strdup(filename);
@@ -88,10 +89,10 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                     replace_text(short_name, "results-", "", 0);
                                     guard_free(short_name_pattern);
 
-                                    fprintf(indexfp, "|[%s](%s.html)|%0.4f|%d|%d|%d|\n", short_name,
-                                            bname,
-                                            testsuite->time, testsuite->failures, testsuite->skipped,
-                                            testsuite->errors);
+                                    fprintf(indexfp, "|[%s](%s.html)|%0.4f|%d|%d|%d|%d|%d|\n", short_name, bname,
+                                            testsuite->time, testsuite->tests,
+                                            testsuite->passed, testsuite->failures,
+                                            testsuite->skipped, testsuite->errors);
 
                                     snprintf(result_outfile, sizeof(result_outfile) - strlen(bname) - 3, "%s.md",
                                              bname);
@@ -102,7 +103,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                     }
 
                                     for (size_t i = 0; i < testsuite->_tc_inuse; i++) {
-                                        if (testsuite->testcase[i]->tc_result_state_type) {
+                                        //if (testsuite->testcase[i]->tc_result_state_type) {
                                             const char *type_str = NULL;
                                             const int state = testsuite->testcase[i]->tc_result_state_type;
                                             const char *message = NULL;
@@ -115,12 +116,16 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                             } else if (state == JUNIT_RESULT_STATE_SKIPPED) {
                                                 message = testsuite->testcase[i]->result_state.skipped->message;
                                                 type_str = "[SKIPPED]";
+                                            } else {
+                                                message = testsuite->testcase[i]->message ? testsuite->testcase[i]->message : "";
+                                                type_str = "[PASSED]";
                                             }
+                                            printf("type_str = %s, message = %s\n", type_str, message);
                                             fprintf(resultfp, "### %s %s :: %s\n", type_str,
                                                     testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
                                             fprintf(resultfp, "\nDuration: %0.04fs\n", testsuite->testcase[i]->time);
                                             fprintf(resultfp, "\n```\n%s\n```\n", message);
-                                        }
+                                        //}
                                     }
                                     junitxml_testsuite_free(&testsuite);
                                     fclose(resultfp);
