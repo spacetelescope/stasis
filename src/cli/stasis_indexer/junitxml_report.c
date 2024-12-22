@@ -38,30 +38,35 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         size_t no_printable_data = 0;
 
         size_t delivery_count = get_latest_rc(latest, latest_count);
+        for (size_t f = 0; f < strlist_count(file_listing); f++) {
+            char *filename = strlist_item(file_listing, f);
             for (size_t p = 0; p < strlist_count(platforms); p++) {
                 char *platform = strlist_item(platforms, p);
                 for (size_t a = 0; a < strlist_count(archs); a++) {
                     char *arch = strlist_item(archs, a);
 
-                    fprintf(indexfp, "## %s-%s\n\n", platform, arch);
+                    //fprintf(indexfp, "## %s-%s\n\n", platform, arch);
                     for (size_t d = 0; d < latest_count; d++) {
                         struct Delivery *current = &ctx[d];
+                        if (!endswith(filename, ".xml") || !strstr(current->system.arch, arch) ||
+                            !strstr(current->system.platform[DELIVERY_PLATFORM_RELEASE], platform)) {
+                            continue;
+                        }
+
                         /*
-                        if (current->meta.rc == (int) d + 1) {
+                        if (current->meta.rc == (int) d + 1
                             && strcmp(current->system.arch, arch) != 0
                             && strcmp(current->system.platform[DELIVERY_PLATFORM_RELEASE], platform) != 0) {
                             continue;
                         }
                          */
 
+                        if (!strstr(filename, current->info.release_name)) {
+                            continue;
+                        }
                         fprintf(indexfp, "### %s\n", current->info.release_name);
                         fprintf(indexfp, "\n|Suite|Duration|Total|Pass|Fail    |Skip |Error |\n");
                         fprintf(indexfp, "|:----|:------:|:-----:|:----:|:------:|:---:|:----:|\n");
-                        for (size_t f = 0; f < strlist_count(file_listing); f++) {
-                            char *filename = strlist_item(file_listing, f);
-                            if (!endswith(filename, ".xml")) {
-                                continue;
-                            }
 
                             char pattern[PATH_MAX] = {0};
                             snprintf(pattern, sizeof(pattern) - 1, "*%s*", current->info.release_name);
@@ -70,10 +75,12 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                 struct JUNIT_Testsuite *testsuite = junitxml_testsuite_read(filename);
                                 if (testsuite) {
                                     if (globals.verbose) {
-                                        printf("%s: duration: %0.4f, total: %d, passed: %d, failed: %d, skipped: %d, errors: %d\n", filename,
-                                               testsuite->time, testsuite->tests,
-                                               testsuite->passed, testsuite->failures,
-                                               testsuite->skipped, testsuite->errors);
+                                        printf(
+                                            "%s: duration: %0.4f, total: %d, passed: %d, failed: %d, skipped: %d, errors: %d\n",
+                                            filename,
+                                            testsuite->time, testsuite->tests,
+                                            testsuite->passed, testsuite->failures,
+                                            testsuite->skipped, testsuite->errors);
                                     }
 
                                     char *bname_tmp = strdup(filename);
@@ -106,26 +113,27 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
 
                                     for (size_t i = 0; i < testsuite->_tc_inuse; i++) {
                                         //if (testsuite->testcase[i]->tc_result_state_type) {
-                                            const char *type_str = NULL;
-                                            const int state = testsuite->testcase[i]->tc_result_state_type;
-                                            const char *message = NULL;
-                                            if (state == JUNIT_RESULT_STATE_FAILURE) {
-                                                message = testsuite->testcase[i]->result_state.failure->message;
-                                                type_str = "[FAILED]";
-                                            } else if (state == JUNIT_RESULT_STATE_ERROR) {
-                                                message = testsuite->testcase[i]->result_state.error->message;
-                                                type_str = "[ERROR]";
-                                            } else if (state == JUNIT_RESULT_STATE_SKIPPED) {
-                                                message = testsuite->testcase[i]->result_state.skipped->message;
-                                                type_str = "[SKIPPED]";
-                                            } else {
-                                                message = testsuite->testcase[i]->message ? testsuite->testcase[i]->message : "";
-                                                type_str = "[PASSED]";
-                                            }
-                                            fprintf(resultfp, "### %s %s :: %s\n", type_str,
-                                                    testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
-                                            fprintf(resultfp, "\nDuration: %0.04fs\n", testsuite->testcase[i]->time);
-                                            fprintf(resultfp, "\n```\n%s\n```\n", message);
+                                        const char *type_str = NULL;
+                                        const int state = testsuite->testcase[i]->tc_result_state_type;
+                                        const char *message = NULL;
+                                        if (state == JUNIT_RESULT_STATE_FAILURE) {
+                                            message = testsuite->testcase[i]->result_state.failure->message;
+                                            type_str = "[FAILED]";
+                                        } else if (state == JUNIT_RESULT_STATE_ERROR) {
+                                            message = testsuite->testcase[i]->result_state.error->message;
+                                            type_str = "[ERROR]";
+                                        } else if (state == JUNIT_RESULT_STATE_SKIPPED) {
+                                            message = testsuite->testcase[i]->result_state.skipped->message;
+                                            type_str = "[SKIPPED]";
+                                        } else {
+                                            message = testsuite->testcase[i]->message ? testsuite->testcase[i]->message
+                                                                                      : "";
+                                            type_str = "[PASSED]";
+                                        }
+                                        fprintf(resultfp, "### %s %s :: %s\n", type_str,
+                                                testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
+                                        fprintf(resultfp, "\nDuration: %0.04fs\n", testsuite->testcase[i]->time);
+                                        fprintf(resultfp, "\n```\n%s\n```\n", message);
                                         //}
                                     }
                                     junitxml_testsuite_free(&testsuite);
@@ -140,12 +148,12 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                     no_printable_data = 1;
                                 }
                             }
-                        }
                     }
                     fprintf(indexfp, "\n");
                     no_printable_data = 0;
                 }
-                fprintf(indexfp, "\n");
+            }
+            fprintf(indexfp, "\n");
         }
         guard_strlist_free(&archs);
         guard_strlist_free(&platforms);
