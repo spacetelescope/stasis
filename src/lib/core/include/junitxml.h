@@ -68,6 +68,8 @@ struct JUNIT_Testsuite {
     int failures;
     /// Total number of skipped tests
     int skipped;
+    /// Total number of successful tests
+    int passed;
     /// Total number of tests
     int tests;
     /// Total duration in fractional seconds
