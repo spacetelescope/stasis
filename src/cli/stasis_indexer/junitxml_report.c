@@ -44,13 +44,15 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                     char *arch = strlist_item(archs, a);
 
                     fprintf(indexfp, "## %s-%s\n\n", platform, arch);
-                    for (size_t d = 0; d < delivery_count; d++) {
+                    for (size_t d = 0; d < latest_count; d++) {
                         struct Delivery *current = &ctx[d];
-                        if (current->meta.rc == (int) d + 1
+                        /*
+                        if (current->meta.rc == (int) d + 1) {
                             && strcmp(current->system.arch, arch) != 0
                             && strcmp(current->system.platform[DELIVERY_PLATFORM_RELEASE], platform) != 0) {
                             continue;
                         }
+                         */
 
                         fprintf(indexfp, "### %s\n", current->info.release_name);
                         fprintf(indexfp, "\n|Suite|Duration|Total|Pass|Fail    |Skip |Error |\n");
@@ -120,7 +122,6 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                                                 message = testsuite->testcase[i]->message ? testsuite->testcase[i]->message : "";
                                                 type_str = "[PASSED]";
                                             }
-                                            printf("type_str = %s, message = %s\n", type_str, message);
                                             fprintf(resultfp, "### %s %s :: %s\n", type_str,
                                                     testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
                                             fprintf(resultfp, "\nDuration: %0.04fs\n", testsuite->testcase[i]->time);
