@@ -192,6 +192,7 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
             (*testsuite)->testcase[cur_tc]->result_state.skipped = skipped;
         }
     }
+    (*testsuite)->passed = (*testsuite)->tests - (*testsuite)->failures - (*testsuite)->errors - (*testsuite)->skipped;
     guard_strlist_free(&attrs);
     return 0;
 }

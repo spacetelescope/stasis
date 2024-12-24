@@ -53,10 +53,11 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                 sprintf(conf_name, "%s.ini", latest_deliveries[i].info.release_name);
                 sprintf(conf_name_relative, "../config/%s.ini", latest_deliveries[i].info.release_name);
                 if (strstr(link_name, platform) && strstr(link_name, arch)) {
-                    fprintf(indexfp, "- Info: [README](%s)\n", readme_name);
-                    fprintf(indexfp, "- Release: [Conda Environment YAML](%s)\n", link_name);
-                    fprintf(indexfp, "- Receipt: [STASIS input file](%s)\n", conf_name_relative);
-                    fprintf(indexfp, "- Docker: ");
+                    fprintf(indexfp, "- Python %s\n", latest_deliveries[i].meta.python);
+                    fprintf(indexfp, "  - Info: [README](%s)\n", readme_name);
+                    fprintf(indexfp, "  - Release: [Conda Environment YAML](%s)\n", link_name);
+                    fprintf(indexfp, "  - Receipt: [STASIS input file](%s)\n", conf_name_relative);
+                    fprintf(indexfp, "  - Docker: ");
                     struct StrList *docker_images = get_docker_images(&latest_deliveries[i], "");
                     if (docker_images
                         && strlist_count(docker_images)

@@ -801,6 +801,7 @@ struct StrList *listdir(const char *path) {
         strlist_append(&node, fullpath);
         guard_free(fullpath);
     }
+    strlist_sort(node, STASIS_SORT_ALPHA);
     closedir(dp);
     return node;
 }
