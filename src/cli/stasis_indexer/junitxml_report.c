@@ -29,7 +29,9 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
         char *bname_tmp = strdup(xmlfilename);
         char *bname = path_basename(bname_tmp);
-        bname[strlen(bname) - 4] = 0;
+        if (endswith(bname, ".xml")) {
+            bname[strlen(bname) - 4] = 0;
+        }
         guard_free(bname_tmp);
 
         char result_outfile[PATH_MAX] = {0};
