@@ -17,20 +17,13 @@ int main(int argc, char *argv[]) {
     char env_name_testing[STASIS_NAME_MAX] = {0};
     char *delivery_input = NULL;
     char *config_input = NULL;
-    char installer_url[PATH_MAX];
-    char python_override_version[STASIS_NAME_MAX];
+    char installer_url[PATH_MAX] = {0};
+    char python_override_version[STASIS_NAME_MAX] = {0};
     int user_disabled_docker = false;
     globals.cpu_limit = get_cpu_count();
     if (globals.cpu_limit > 1) {
         globals.cpu_limit--; // max - 1
     }
-
-    memset(env_name, 0, sizeof(env_name));
-    memset(env_name_testing, 0, sizeof(env_name_testing));
-    memset(installer_url, 0, sizeof(installer_url));
-    memset(python_override_version, 0, sizeof(python_override_version));
-    memset(&proc, 0, sizeof(proc));
-    memset(&ctx, 0, sizeof(ctx));
 
     int c;
     int option_index = 0;
@@ -121,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     if (optind < argc) {
         while (optind < argc) {
-            // use first positional argument
+            // use first positional argument as delivery file
             delivery_input = argv[optind++];
             break;
         }

@@ -38,6 +38,7 @@ struct STASIS_GLOBAL globals = {
         .enable_artifactory = true, ///< Toggle artifactory server usage
         .enable_artifactory_build_info = true, ///< Toggle build-info uploads
         .enable_artifactory_upload = true, ///< Toggle artifactory file uploads
+        .enable_export = true, //< Toggle conda environment creation and export
         .enable_testing = true, ///< Toggle [test] block "script" execution. "script_setup" always executes.
         .enable_rewrite_spec_stage_2 = true, ///< Leave template stings in output files
         .enable_parallel = true, ///< Toggle testing in parallel
