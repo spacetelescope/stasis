@@ -40,6 +40,7 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value);
 size_t strlist_count(struct StrList *pStrList);
 void strlist_reverse(struct StrList *pStrList);
 void strlist_sort(struct StrList *pStrList, unsigned int mode);
+int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_of);
 int strlist_append_file(struct StrList *pStrList, char *path, ReaderFn *readerFn);
 void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2);
 void strlist_append(struct StrList **pStrList, char *str);
