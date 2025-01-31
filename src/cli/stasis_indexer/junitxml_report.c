@@ -28,7 +28,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         }
 
         char *bname_tmp = strdup(xmlfilename);
-        char *bname = path_basename(bname_tmp);
+        char *bname = strdup(path_basename(bname_tmp));
         if (endswith(bname, ".xml")) {
             bname[strlen(bname) - 4] = 0;
         }
@@ -51,6 +51,8 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
         snprintf(result_outfile, sizeof(result_outfile) - strlen(bname) - 3, "%s.md",
                  bname);
+        guard_free(bname);
+
         FILE *resultfp = fopen(result_outfile, "w+");
         if (!resultfp) {
             SYSERROR("Unable to open %s for writing", result_outfile);
