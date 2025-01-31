@@ -139,8 +139,10 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         popd();
     } else {
         fprintf(stderr, "Unable to enter delivery directory: %s\n", ctx->storage.delivery_dir);
+        guard_strlist_free(&file_listing);
         return -1;
     }
 
+    guard_strlist_free(&file_listing);
     return 0;
 }
