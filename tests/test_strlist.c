@@ -247,6 +247,53 @@ void test_strlist_remove() {
     guard_strlist_free(&list);
 }
 
+void test_strlist_contains() {
+    struct StrList *list = strlist_init();
+    strlist_append(&list, "abc");                  // 0
+    strlist_append(&list, "abc123");               // 1
+    strlist_append(&list, "abcdef");               // 2
+    strlist_append(&list, "abc123def456");         // 3
+    strlist_append(&list, "abcdefghi");            // 4
+    strlist_append(&list, "abc123def456ghi789");   // 5
+
+    struct testcase {
+        struct StrList *haystack;
+        const char *needle;
+        int expected_retval;
+        size_t expected_index;
+    };
+
+    struct testcase tc[] = {
+        // found
+        {.haystack = list, .needle = "abc", .expected_retval = 1, .expected_index = 0},
+        {.haystack = list, .needle = "abc123", .expected_retval = 1, .expected_index = 1},
+        {.haystack = list, .needle = "abcdef", .expected_retval = 1, .expected_index = 2},
+        {.haystack = list, .needle = "abc123def456", .expected_retval = 1, .expected_index = 3},
+        {.haystack = list, .needle = "abcdefghi", .expected_retval = 1, .expected_index = 4},
+        {.haystack = list, .needle = "abc123def456ghi789", .expected_retval = 1, .expected_index = 5},
+        // not found
+        {.haystack = list, .needle = "ZabcZ", .expected_retval = 0, .expected_index = 0},
+        {.haystack = list, .needle = "Zabc123Z", .expected_retval = 0, .expected_index = 0},
+        {.haystack = list, .needle = "ZabcdefZ", .expected_retval = 0, .expected_index = 0},
+        {.haystack = list, .needle = "Zabc123def456Z", .expected_retval = 0, .expected_index = 0},
+        {.haystack = list, .needle = "ZabcdefghiZ", .expected_retval = 0, .expected_index = 0},
+        {.haystack = list, .needle = "Zabc123def456ghi789Z", .expected_retval = 0, .expected_index = 0},
+    };
+
+    for (size_t i = 0; i < strlist_count(list); i++) {
+        struct testcase *t = &tc[i];
+        size_t index_of = 0;
+        int result = strlist_contains(t->haystack, t->needle, &index_of);
+
+        STASIS_ASSERT(result == t->expected_retval, "unexpected return value");
+        if (result) {
+            STASIS_ASSERT(index_of == t->expected_index && strcmp(strlist_item(t->haystack, index_of), t->needle) == 0, "value at index is the wrong item in the list");
+        }
+    }
+
+    guard_strlist_free(&list);
+}
+
 void test_strlist_cmp() {
     struct StrList *left;
     struct StrList *right;
@@ -589,6 +636,7 @@ int main(int argc, char *argv[]) {
         test_strlist_append_strlist,
         test_strlist_append_tokenize,
         test_strlist_append_array,
+        test_strlist_contains,
         test_strlist_copy,
         test_strlist_remove,
         test_strlist_cmp,
