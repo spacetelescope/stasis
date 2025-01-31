@@ -28,7 +28,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         }
 
         char *bname_tmp = strdup(xmlfilename);
-        char *bname = path_basename(bname_tmp);
+        char *bname = strdup(path_basename(bname_tmp));
         if (endswith(bname, ".xml")) {
             bname[strlen(bname) - 4] = 0;
         }
@@ -51,6 +51,8 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
         snprintf(result_outfile, sizeof(result_outfile) - strlen(bname) - 3, "%s.md",
                  bname);
+        guard_free(bname);
+
         FILE *resultfp = fopen(result_outfile, "w+");
         if (!resultfp) {
             SYSERROR("Unable to open %s for writing", result_outfile);
@@ -103,7 +105,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
             fprintf(stderr, "Unable to open %s for writing\n", indexfile);
             return -1;
         }
-        printf("index %s opened for writing", indexfile);
+        printf("Index %s opened for writing\n", indexfile);
 
         for (size_t d = 0; d < nelem; d++) {
             char pattern[PATH_MAX] = {0};
@@ -137,8 +139,10 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         popd();
     } else {
         fprintf(stderr, "Unable to enter delivery directory: %s\n", ctx->storage.delivery_dir);
+        guard_strlist_free(&file_listing);
         return -1;
     }
 
+    guard_strlist_free(&file_listing);
     return 0;
 }

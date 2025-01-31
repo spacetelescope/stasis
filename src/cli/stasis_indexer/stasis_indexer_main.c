@@ -204,7 +204,7 @@ int main(const int argc, char *argv[]) {
     const int current_index = optind;
     if (optind < argc) {
         rootdirs_total = argc - current_index;
-        rootdirs = calloc(rootdirs_total + 1, sizeof(**rootdirs));
+        rootdirs = calloc(rootdirs_total + 1, sizeof(*rootdirs));
 
         int i = 0;
         while (optind < argc) {
@@ -391,8 +391,12 @@ int main(const int argc, char *argv[]) {
     guard_free(destdir);
     GENERIC_ARRAY_FREE(rootdirs);
     guard_strlist_free(&metafiles);
+    guard_free(m.micromamba_prefix);
     delivery_free(&ctx);
+    guard_free(local);
     globals_free();
+
     msg(STASIS_MSG_L1, "Done!\n");
+
     return 0;
 }
