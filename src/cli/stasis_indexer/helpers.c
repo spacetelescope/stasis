@@ -35,6 +35,7 @@ int get_pandoc_version(size_t *result) {
     char *version_str = shell_output("pandoc --version", &state);
     if (state || !version_str) {
         // an error occurred
+        guard_free(version_str);
         return -1;
     }
 
@@ -44,6 +45,7 @@ int get_pandoc_version(size_t *result) {
         char *v_begin = &version_str[7];
         if (!v_begin) {
             SYSERROR("unexpected pandoc output: %s", version_str);
+            guard_free(version_str);
             return -1;
         }
         char *v_end = strchr(version_str, '\n');
@@ -54,6 +56,7 @@ int get_pandoc_version(size_t *result) {
         char **parts = split(v_begin, ".", 0);
         if (!parts) {
             SYSERROR("unable to split pandoc version string, '%s': %s", version_str, strerror(errno));
+            guard_free(version_str);
             return -1;
         }
 
@@ -71,11 +74,14 @@ int get_pandoc_version(size_t *result) {
             // pack version element into result
             *result = *result << 8 | tmp;
         }
+        GENERIC_ARRAY_FREE(parts);
     } else {
         // invalid version string
+        guard_free(version_str);
         return 1;
     }
 
+    guard_free(version_str);
     return 0;
 }
 
