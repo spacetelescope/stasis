@@ -105,7 +105,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
             fprintf(stderr, "Unable to open %s for writing\n", indexfile);
             return -1;
         }
-        printf("index %s opened for writing", indexfile);
+        printf("Index %s opened for writing\n", indexfile);
 
         for (size_t d = 0; d < nelem; d++) {
             char pattern[PATH_MAX] = {0};
