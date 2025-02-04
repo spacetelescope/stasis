@@ -18,6 +18,7 @@ void test_shell_output_null_args() {
     result = shell_output(NULL, &status);
     STASIS_ASSERT(strcmp(result, "") == 0, "no output expected");
     STASIS_ASSERT(status != 0, "expected a non-zero exit code due to null argument string");
+    guard_free(result);
 }
 
 void test_shell_output_non_zero_exit() {
@@ -26,6 +27,7 @@ void test_shell_output_non_zero_exit() {
     result = shell_output("HELLO1234 WORLD", &status);
     STASIS_ASSERT(strcmp(result, "") == 0, "no output expected");
     STASIS_ASSERT(status != 0, "expected a non-zero exit code due to intentional error");
+    guard_free(result);
 }
 
 void test_shell_output() {
@@ -34,6 +36,7 @@ void test_shell_output() {
     result = shell_output("echo HELLO WORLD", &status);
     STASIS_ASSERT(strcmp(result, "HELLO WORLD\n") == 0, "output message was incorrect");
     STASIS_ASSERT(status == 0, "expected zero exit code");
+    guard_free(result);
 }
 
 void test_shell_safe() {
