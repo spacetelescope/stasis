@@ -218,6 +218,7 @@ void strlist_remove(struct StrList *pStrList, size_t index) {
         return;
     }
     if (pStrList->data[index] != NULL) {
+        guard_free(pStrList->data[index]);
         for (size_t i = index; i < count; i++) {
             pStrList->data[i] = pStrList->data[i + 1];
         }
