@@ -34,7 +34,7 @@ int populate_info(struct Delivery *ctx) {
 
         ctx->info.time_str_epoch = calloc(STASIS_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
         if (!ctx->info.time_str_epoch) {
-            msg(STASIS_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+            msg(STASIS_MSG_ERROR, "%s: Unable to allocate memory for Unix epoch string\n", strerror(errno));
             return -1;
         }
         snprintf(ctx->info.time_str_epoch, STASIS_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
