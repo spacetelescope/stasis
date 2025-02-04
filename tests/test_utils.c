@@ -46,6 +46,7 @@ void test_redact_sensitive() {
         char output[100] = {0};
         redact_sensitive(to_redact, sizeof(to_redact) / sizeof(*to_redact), input, output, sizeof(output) - 1);
         STASIS_ASSERT(strcmp(output, expected[i]) == 0, "incorrect redaction");
+        guard_free(input);
     }
 }
 
@@ -118,6 +119,7 @@ void test_path_store() {
     STASIS_ASSERT(dest != NULL, "dest should not be NULL");
     STASIS_ASSERT(dest && (access(dest, F_OK) == 0), "destination path was not created");
     rmtree(dest);
+    guard_free(dest);
 }
 
 void test_isempty_dir() {
@@ -226,6 +228,7 @@ void test_git_clone_and_describe() {
     char *taginfo_bad = git_describe("abc1234_not_here_or_there");
     STASIS_ASSERT(taginfo_bad == NULL, "a repository that shouldn't exist... exists and has a tag.");
     chdir(cwd);
+    guard_free(cwd);
 }
 
 void test_touch() {
@@ -414,9 +417,11 @@ void test_pushd_popd() {
     // we should be inside the test directory, not the starting directory
     STASIS_ASSERT(strcmp(cwd_workspace, cwd) != 0, "");
     STASIS_ASSERT(popd() == 0, "return from directory failed");
+    guard_free(cwd);
 
     char *cwd_after_popd = getcwd(NULL, PATH_MAX);
     STASIS_ASSERT(strcmp(cwd_workspace, cwd_after_popd) == 0, "should be the path where we started");
+    guard_free(cwd_after_popd);
 }
 
 void test_pushd_popd_suggested_workflow() {
@@ -436,6 +441,7 @@ void test_pushd_popd_suggested_workflow() {
         // cwd should be our starting directory
         char *cwd = getcwd(NULL, PATH_MAX);
         STASIS_ASSERT(strcmp(cwd_workspace, cwd) == 0, NULL);
+        guard_free(cwd);
     } else {
         STASIS_ASSERT(false, "mkdir function failed");
     }
