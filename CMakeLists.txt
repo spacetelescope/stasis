@@ -7,6 +7,13 @@ set(win_cflags /Wall)
 set(CMAKE_C_STANDARD 99)
 find_package(LibXml2)
 find_package(CURL)
+
+option(ASAN OFF)
+if (ASAN)
+	add_compile_options(-fsanitize=address)
+	add_link_options(-fsanitize=address)
+endif()
+
 link_libraries(CURL::libcurl)
 link_libraries(LibXml2::LibXml2)
 include_directories(${LIBXML2_INCLUDE_DIR})
