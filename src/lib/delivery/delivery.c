@@ -40,6 +40,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->info.build_name);
     guard_free(ctx->info.build_number);
     guard_free(ctx->info.release_name);
+    guard_free(ctx->info.time_info);
     guard_free(ctx->conda.installer_baseurl);
     guard_free(ctx->conda.installer_name);
     guard_free(ctx->conda.installer_version);

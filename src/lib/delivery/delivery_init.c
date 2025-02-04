@@ -296,10 +296,12 @@ int bootstrap_build_info(struct Delivery *ctx) {
     ctx->info.build_name = strdup(local.info.build_name);
     ctx->info.build_number = strdup(local.info.build_number);
     ctx->info.release_name = strdup(local.info.release_name);
-    ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
     if (!ctx->info.time_info) {
-        SYSERROR("Unable to allocate %zu bytes for tm struct: %s", sizeof(*local.info.time_info), strerror(errno));
-        return -1;
+        ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
+        if (!ctx->info.time_info) {
+            SYSERROR("Unable to allocate %zu bytes for tm struct: %s", sizeof(*local.info.time_info), strerror(errno));
+            return -1;
+        }
     }
     memcpy(ctx->info.time_info, local.info.time_info, sizeof(*local.info.time_info));
     ctx->info.time_now = local.info.time_now;
