@@ -34,6 +34,7 @@ void junitxml_testsuite_free(struct JUNIT_Testsuite **testsuite) {
     for (size_t i = 0; i < suite->_tc_alloc; i++) {
         testcase_free(&suite->testcase[i]);
     }
+    guard_free(suite->testcase);
     guard_free(suite);
 }
 
