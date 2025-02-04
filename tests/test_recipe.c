@@ -85,6 +85,7 @@ void test_recipe_clone() {
             // Verify the result path does not exist
             STASIS_ASSERT(result_path && access(result_path, F_OK) != 0, "result path should not exist");
         }
+        guard_free(result_path);
     }
 
 }
