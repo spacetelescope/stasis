@@ -30,11 +30,21 @@ int populate_info(struct Delivery *ctx) {
     if (!ctx->info.time_str_epoch) {
         // Record timestamp used for release
         time(&ctx->info.time_now);
-        ctx->info.time_info = localtime(&ctx->info.time_now);
+        if (!ctx->info.time_info) {
+            ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
+            if (!ctx->info.time_info) {
+                msg(STASIS_MSG_ERROR, "%s: Unable to allocate memory for time_info\n", strerror(errno));
+                return -1;
+            }
+            if (!localtime_r(&ctx->info.time_now, ctx->info.time_info)) {
+                msg(STASIS_MSG_ERROR, "%s: localtime_r failed\n", strerror(errno));
+                return -1;
+            }
+        }
 
         ctx->info.time_str_epoch = calloc(STASIS_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
         if (!ctx->info.time_str_epoch) {
-            msg(STASIS_MSG_ERROR, "Unable to allocate memory for Unix epoch string\n");
+            msg(STASIS_MSG_ERROR, "%s: Unable to allocate memory for Unix epoch string\n", strerror(errno));
             return -1;
         }
         snprintf(ctx->info.time_str_epoch, STASIS_TIME_STR_MAX - 1, "%li", ctx->info.time_now);

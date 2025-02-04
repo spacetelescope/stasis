@@ -121,5 +121,6 @@ void wheel_free(struct Wheel **wheel) {
     guard_free(w->python_tag);
     guard_free(w->abi_tag);
     guard_free(w->python_tag);
+    guard_free(w->platform_tag);
     guard_free(w);
 }

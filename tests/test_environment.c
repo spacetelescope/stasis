@@ -31,7 +31,7 @@ void test_runtime() {
     STASIS_ASSERT((idx = runtime_contains(env, "CUSTOM_KEY")) >= 0, "CUSTOM_KEY should exist in object");
     STASIS_ASSERT(strcmp(strlist_item(env, idx), "CUSTOM_KEY=Very custom") == 0, "Incorrect index returned by runtime_contains");
 
-    const char *custom_value = runtime_get(env, "CUSTOM_KEY");
+    char *custom_value = runtime_get(env, "CUSTOM_KEY");
     STASIS_ASSERT_FATAL(custom_value != NULL, "CUSTOM_KEY should not be NULL");
     STASIS_ASSERT(strcmp(custom_value, "Very custom") == 0, "CUSTOM_KEY has incorrect data");
     STASIS_ASSERT(strstr_array(environ, "CUSTOM_KEY") == NULL, "CUSTOM_KEY should not exist in the global environment");
@@ -44,6 +44,7 @@ void test_runtime() {
     STASIS_ASSERT(setenv("CUSTOM_KEY", "modified", 1) == 0, "modifying global CUSTOM_KEY failed");
     global_custom_value = getenv("CUSTOM_KEY");
     STASIS_ASSERT(strcmp(global_custom_value, custom_value) != 0, "local and global CUSTOM_KEY variable are supposed to be different");
+    guard_free(custom_value);
 
     runtime_replace(&env, environ);
     runtime_apply(env);
@@ -53,13 +54,19 @@ void test_runtime() {
     STASIS_ASSERT_FATAL(custom_value != NULL, "CUSTOM_KEY must exist in local environment after calling runtime_replace()");
     STASIS_ASSERT_FATAL(global_custom_value != NULL, "CUSTOM_KEY must exist in global environment after calling runtime_replace()");
     STASIS_ASSERT(strcmp(global_custom_value, custom_value) == 0, "local and global CUSTOM_KEY variable are supposed to be identical");
+    guard_free(custom_value);
 
     char output_truth[BUFSIZ] = {0};
-    sprintf(output_truth, "Your PATH is '%s'.", runtime_get(env, "PATH"));
-    const char *output_expanded = runtime_expand_var(env, "Your PATH is '${PATH}'.");
+    char *your_path = runtime_get(env, "PATH");
+    sprintf(output_truth, "Your PATH is '%s'.", your_path);
+    guard_free(your_path);
+
+    char *output_expanded = runtime_expand_var(env, "Your PATH is '${PATH}'.");
     STASIS_ASSERT(output_expanded != NULL, "expansion of PATH should not fail");
     STASIS_ASSERT(strcmp(output_expanded, output_truth) == 0, "the expansion, and the expected result should be identical");
+    guard_free(output_expanded);
 
+    guard_runtime_free(env);
     // TODO: runtime_export()
     // requires dumping stdout to a file and comparing it with the current environment array
 }

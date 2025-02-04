@@ -18,7 +18,7 @@ void test_copy() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct stat st_a, st_b;
         struct testcase *test = &tc[i];
-        char *mock_data = malloc(test->expect_size * sizeof(*mock_data));
+        char *mock_data = malloc(test->expect_size + 1 * sizeof(*mock_data));
         memset(mock_data, 'A', test->expect_size);
         mock_data[test->expect_size] = '\0';
         stasis_testing_write_ascii(test->in_file, mock_data);

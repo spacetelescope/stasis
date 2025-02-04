@@ -40,6 +40,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->info.build_name);
     guard_free(ctx->info.build_number);
     guard_free(ctx->info.release_name);
+    guard_free(ctx->info.time_info);
     guard_free(ctx->conda.installer_baseurl);
     guard_free(ctx->conda.installer_name);
     guard_free(ctx->conda.installer_version);
@@ -50,8 +51,10 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->conda.tool_build_version);
     guard_strlist_free(&ctx->conda.conda_packages);
     guard_strlist_free(&ctx->conda.conda_packages_defer);
+    guard_strlist_free(&ctx->conda.conda_packages_purge);
     guard_strlist_free(&ctx->conda.pip_packages);
     guard_strlist_free(&ctx->conda.pip_packages_defer);
+    guard_strlist_free(&ctx->conda.pip_packages_purge);
     guard_strlist_free(&ctx->conda.wheels_packages);
 
     for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
@@ -62,6 +65,7 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests[i].repository_info_tag);
         guard_strlist_free(&ctx->tests[i].repository_remove_tags);
         guard_free(ctx->tests[i].script);
+        guard_free(ctx->tests[i].script_setup);
         guard_free(ctx->tests[i].build_recipe);
         // test-specific runtime variables
         guard_runtime_free(ctx->tests[i].runtime.environ);
