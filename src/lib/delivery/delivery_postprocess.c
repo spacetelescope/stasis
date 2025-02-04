@@ -238,7 +238,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         }
 
         for (size_t i = 0; i < strlist_count(packages); i++) {
-            char *package = strlist_item(packages, i);
+            char *package = path_basename(strlist_item(packages, i));
             if (!endswith(package, ".whl")) {
                 continue;
             }
