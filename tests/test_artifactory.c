@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     memset(&gnoauth, 0, sizeof(gnoauth));
     memset(&ctx, 0, sizeof(ctx));
 
-    const char *basedir = realpath(".", NULL);
+    char *basedir = realpath(".", NULL);
     const char *ws = "workspace";
     mkdir(ws, 0755);
     if (pushd(ws)) {
@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
     ctx._stasis_ini_fp.cfg = ini_open(cfg_path);
     if (!ctx._stasis_ini_fp.cfg) {
         SYSERROR("%s: configuration is invalid", cfg_path);
+        guard_free(basedir);
         return STASIS_TEST_SUITE_SKIP;
     }
     delivery_init_platform(&ctx);
@@ -118,6 +119,7 @@ int main(int argc, char *argv[]) {
         SYSERROR("%s", "Not configured to test Artifactory. Skipping.");
         return STASIS_TEST_SUITE_SKIP;
     }
+    guard_free(basedir);
 
     STASIS_TEST_FUNC *tests[] = {
         test_jfrog_cli_rt_ping,
