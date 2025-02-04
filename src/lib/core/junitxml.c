@@ -8,6 +8,9 @@ static void testcase_result_state_free(struct JUNIT_Testcase **testcase) {
     if (tc->tc_result_state_type == JUNIT_RESULT_STATE_FAILURE) {
         guard_free(tc->result_state.failure->message);
         guard_free(tc->result_state.failure);
+    } else if (tc->tc_result_state_type == JUNIT_RESULT_STATE_ERROR) {
+        guard_free(tc->result_state.error->message);
+        guard_free(tc->result_state.error);
     } else if (tc->tc_result_state_type == JUNIT_RESULT_STATE_SKIPPED) {
         guard_free(tc->result_state.skipped->message);
         guard_free(tc->result_state.skipped);
