@@ -12,30 +12,18 @@
 
 
 int main(int argc, char *argv[]) {
-    struct Delivery ctx;
-    struct Process proc = {
-            .f_stdout = "",
-            .f_stderr = "",
-            .redirect_stderr = 0,
-    };
+    struct Delivery ctx = {0};
     char env_name[STASIS_NAME_MAX] = {0};
     char env_name_testing[STASIS_NAME_MAX] = {0};
     char *delivery_input = NULL;
     char *config_input = NULL;
-    char installer_url[PATH_MAX];
-    char python_override_version[STASIS_NAME_MAX];
+    char installer_url[PATH_MAX] = {0};
+    char python_override_version[STASIS_NAME_MAX] = {0};
     int user_disabled_docker = false;
     globals.cpu_limit = get_cpu_count();
     if (globals.cpu_limit > 1) {
         globals.cpu_limit--; // max - 1
     }
-
-    memset(env_name, 0, sizeof(env_name));
-    memset(env_name_testing, 0, sizeof(env_name_testing));
-    memset(installer_url, 0, sizeof(installer_url));
-    memset(python_override_version, 0, sizeof(python_override_version));
-    memset(&proc, 0, sizeof(proc));
-    memset(&ctx, 0, sizeof(ctx));
 
     int c;
     int option_index = 0;
@@ -109,6 +97,9 @@ int main(int argc, char *argv[]) {
             case OPT_NO_TESTING:
                 globals.enable_testing = false;
                 break;
+            case OPT_NO_EXPORT:
+                globals.enable_export = false;
+                break;
             case OPT_NO_REWRITE_SPEC_STAGE_2:
                 globals.enable_rewrite_spec_stage_2 = false;
                 break;
@@ -123,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     if (optind < argc) {
         while (optind < argc) {
-            // use first positional argument
+            // use first positional argument as delivery file
             delivery_input = argv[optind++];
             break;
         }
@@ -273,154 +264,158 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    msg(STASIS_MSG_L1, "Conda setup\n");
-    delivery_get_conda_installer_url(&ctx, installer_url);
-    msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
-    if (delivery_get_conda_installer(&ctx, installer_url)) {
-        msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
-        exit(1);
-    }
-
-    msg(STASIS_MSG_L2, "Installing: %s\n", ctx.conda.installer_name);
-    delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
-
-    msg(STASIS_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
-    delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
-
-    //
-    // Implied environment creation modes/actions
-    //
-    // 1. No base environment config
-    //   1a. Caller is warned
-    //   1b. Caller has full control over all packages
-    // 2. Default base environment (etc/stasis/mission/[name]/base.yml)
-    //   2a. Depends on packages defined by base.yml
-    //   2b. Caller may issue a reduced package set in the INI config
-    //   2c. Caller must be vigilant to avoid incompatible packages (base.yml
-    //       *should* have no version constraints)
-    // 3. External base environment (based_on=schema://[release_name].yml)
-    //   3a. Depends on a previous release or arbitrary yaml configuration
-    //   3b. Bugs, conflicts, and dependency resolution issues are inherited and
-    //       must be handled in the INI config
-    msg(STASIS_MSG_L1, "Creating release environment(s)\n");
-
-    char *mission_base = NULL;
-    if (isempty(ctx.meta.based_on)) {
-        guard_free(ctx.meta.based_on);
-        char *mission_base_orig = NULL;
-
-        if (asprintf(&mission_base_orig, "%s/%s/base.yml", ctx.storage.mission_dir, ctx.meta.mission) < 0) {
-            SYSERROR("Unable to allocate bytes for %s/%s/base.yml path\n", ctx.storage.mission_dir, ctx.meta.mission);
+    if (globals.enable_export) {
+        msg(STASIS_MSG_L1, "Conda setup\n");
+        delivery_get_conda_installer_url(&ctx, installer_url);
+        msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
+        if (delivery_get_conda_installer(&ctx, installer_url)) {
+            msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
             exit(1);
         }
 
-        if (access(mission_base_orig, F_OK) < 0) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Mission does not provide a base.yml configuration: %s (%s)\n",
-                ctx.meta.mission, ctx.storage.mission_dir);
+        msg(STASIS_MSG_L2, "Installing: %s\n", ctx.conda.installer_name);
+        delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
+
+        msg(STASIS_MSG_L2, "Configuring: %s\n", ctx.storage.conda_install_prefix);
+        delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
+
+        //
+        // Implied environment creation modes/actions
+        //
+        // 1. No base environment config
+        //   1a. Caller is warned
+        //   1b. Caller has full control over all packages
+        // 2. Default base environment (etc/stasis/mission/[name]/base.yml)
+        //   2a. Depends on packages defined by base.yml
+        //   2b. Caller may issue a reduced package set in the INI config
+        //   2c. Caller must be vigilant to avoid incompatible packages (base.yml
+        //       *should* have no version constraints)
+        // 3. External base environment (based_on=schema://[release_name].yml)
+        //   3a. Depends on a previous release or arbitrary yaml configuration
+        //   3b. Bugs, conflicts, and dependency resolution issues are inherited and
+        //       must be handled in the INI config
+        msg(STASIS_MSG_L1, "Creating release environment(s)\n");
+
+        char *mission_base = NULL;
+        if (isempty(ctx.meta.based_on)) {
+            guard_free(ctx.meta.based_on);
+            char *mission_base_orig = NULL;
+
+            if (asprintf(&mission_base_orig, "%s/%s/base.yml", ctx.storage.mission_dir, ctx.meta.mission) < 0) {
+                SYSERROR("Unable to allocate bytes for %s/%s/base.yml path\n", ctx.storage.mission_dir, ctx.meta.mission);
+                exit(1);
+            }
+
+            if (access(mission_base_orig, F_OK) < 0) {
+                msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Mission does not provide a base.yml configuration: %s (%s)\n",
+                    ctx.meta.mission, ctx.storage.mission_dir);
+            } else {
+                msg(STASIS_MSG_L2, "Using base environment configuration: %s\n", mission_base_orig);
+                if (asprintf(&mission_base, "%s/%s-base.yml", ctx.storage.tmpdir, ctx.info.release_name) < 0) {
+                    SYSERROR("%s", "Unable to allocate bytes for temporary base.yml configuration");
+                    remove(mission_base);
+                    exit(1);
+                }
+                copy2(mission_base_orig, mission_base, CT_OWNER | CT_PERM);
+                char spec[255] = {0};
+                snprintf(spec, sizeof(spec) - 1, "- python=%s\n", ctx.meta.python);
+                file_replace_text(mission_base, "- python\n", spec, 0);
+                ctx.meta.based_on = mission_base;
+            }
+            guard_free(mission_base_orig);
+        }
+
+        if (!isempty(ctx.meta.based_on)) {
+            if (conda_env_exists(ctx.storage.conda_install_prefix, env_name) && conda_env_remove(env_name)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
+                exit(1);
+            }
+
+            msg(STASIS_MSG_L2, "Based on: %s\n", ctx.meta.based_on);
+            if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install release environment using configuration file\n");
+                exit(1);
+            }
+
+            if (conda_env_exists(ctx.storage.conda_install_prefix, env_name_testing) && conda_env_remove(env_name_testing)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment %s\n", env_name_testing);
+                exit(1);
+            }
+            if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install testing environment using configuration file\n");
+                exit(1);
+            }
         } else {
-            msg(STASIS_MSG_L2, "Using base environment configuration: %s\n", mission_base_orig);
-            if (asprintf(&mission_base, "%s/%s-base.yml", ctx.storage.tmpdir, ctx.info.release_name) < 0) {
-                SYSERROR("%s", "Unable to allocate bytes for temporary base.yml configuration");
-                remove(mission_base);
+            if (conda_env_create(env_name, ctx.meta.python, NULL)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create release environment\n");
                 exit(1);
             }
-            copy2(mission_base_orig, mission_base, CT_OWNER | CT_PERM);
-            char spec[255] = {0};
-            snprintf(spec, sizeof(spec) - 1, "- python=%s\n", ctx.meta.python);
-            file_replace_text(mission_base, "- python\n", spec, 0);
-            ctx.meta.based_on = mission_base;
+            if (conda_env_create(env_name_testing, ctx.meta.python, NULL)) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create testing environment\n");
+                exit(1);
+            }
         }
-        guard_free(mission_base_orig);
-    }
+        // The base environment configuration not used past this point
+        remove(mission_base);
 
-    if (!isempty(ctx.meta.based_on)) {
-        if (conda_env_exists(ctx.storage.conda_install_prefix, env_name) && conda_env_remove(env_name)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove release environment: %s\n", env_name);
+        const char *envs[] = {env_name_testing, env_name};
+        for (size_t e = 0; e < sizeof(envs) / sizeof(*envs); e++) {
+            const char *name = envs[e];
+            if (ctx.conda.conda_packages_purge && strlist_count(ctx.conda.conda_packages_purge)) {
+                msg(STASIS_MSG_L2, "Purging conda packages from %s\n", name);
+                if (delivery_purge_packages(&ctx, name, PKG_USE_CONDA)) {
+                    msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested conda packages from %s\n", name);
+                    exit(1);
+                }
+            }
+
+            if (ctx.conda.pip_packages_purge && strlist_count(ctx.conda.pip_packages_purge)) {
+                msg(STASIS_MSG_L2, "Purging pip packages from %s\n", name);
+                if (delivery_purge_packages(&ctx, env_name_testing, PKG_USE_PIP)) {
+                    msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested pip packages from %s\n",
+                        env_name_testing);
+                    exit(1);
+                }
+            }
+        }
+
+        // Activate test environment
+        msg(STASIS_MSG_L1, "Activating test environment\n");
+        if (conda_activate(ctx.storage.conda_install_prefix, env_name_testing)) {
+            fprintf(stderr, "failed to activate test environment\n");
             exit(1);
         }
 
-        msg(STASIS_MSG_L2, "Based on: %s\n", ctx.meta.based_on);
-        if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install release environment using configuration file\n");
+        if (delivery_gather_tool_versions(&ctx)) {
+            if (!ctx.conda.tool_version) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda version\n");
+                exit(1);
+            }
+            if (!ctx.conda.tool_build_version) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda-build version\n");
+                exit(1);
+            }
+        }
+
+        if (pip_exec("install build")) {
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
             exit(1);
         }
 
-        if (conda_env_exists(ctx.storage.conda_install_prefix, env_name_testing) && conda_env_remove(env_name_testing)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment %s\n", env_name_testing);
-            exit(1);
+        if (!isempty(ctx.meta.based_on)) {
+            msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
+            if (delivery_overlay_packages_from_env(&ctx, env_name)) {
+                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
+                exit(1);
+            }
         }
-        if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install testing environment using configuration file\n");
-            exit(1);
-        }
+
+        msg(STASIS_MSG_L1, "Filter deliverable packages\n");
+        delivery_defer_packages(&ctx, DEFER_CONDA);
+        delivery_defer_packages(&ctx, DEFER_PIP);
     } else {
-        if (conda_env_create(env_name, ctx.meta.python, NULL)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create release environment\n");
-            exit(1);
-        }
-        if (conda_env_create(env_name_testing, ctx.meta.python, NULL)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create testing environment\n");
-            exit(1);
-        }
+        delivery_conda_enable(&ctx, ctx.storage.conda_install_prefix);
     }
-    // The base environment configuration not used past this point
-    remove(mission_base);
-
-    const char *envs[] = {env_name_testing, env_name};
-    for (size_t e = 0; e < sizeof(envs) / sizeof(*envs); e++) {
-        const char *name = envs[e];
-        if (ctx.conda.conda_packages_purge && strlist_count(ctx.conda.conda_packages_purge)) {
-            msg(STASIS_MSG_L2, "Purging conda packages from %s\n", name);
-            if (delivery_purge_packages(&ctx, name, PKG_USE_CONDA)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested conda packages from %s\n", name);
-                exit(1);
-            }
-        }
-
-        if (ctx.conda.pip_packages_purge && strlist_count(ctx.conda.pip_packages_purge)) {
-            msg(STASIS_MSG_L2, "Purging pip packages from %s\n", name);
-            if (delivery_purge_packages(&ctx, env_name_testing, PKG_USE_PIP)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested pip packages from %s\n",
-                    env_name_testing);
-                exit(1);
-            }
-        }
-    }
-
-    // Activate test environment
-    msg(STASIS_MSG_L1, "Activating test environment\n");
-    if (conda_activate(ctx.storage.conda_install_prefix, env_name_testing)) {
-        fprintf(stderr, "failed to activate test environment\n");
-        exit(1);
-    }
-
-    if (delivery_gather_tool_versions(&ctx)) {
-        if (!ctx.conda.tool_version) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda version\n");
-            exit(1);
-        }
-        if (!ctx.conda.tool_build_version) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda-build version\n");
-            exit(1);
-        }
-    }
-
-    if (pip_exec("install build")) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
-        exit(1);
-    }
-
-    if (!isempty(ctx.meta.based_on)) {
-        msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
-        if (delivery_overlay_packages_from_env(&ctx, env_name)) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
-            exit(1);
-        }
-    }
-
-    msg(STASIS_MSG_L1, "Filter deliverable packages\n");
-    delivery_defer_packages(&ctx, DEFER_CONDA);
-    delivery_defer_packages(&ctx, DEFER_PIP);
 
     msg(STASIS_MSG_L1, "Overview\n");
     delivery_meta_show(&ctx);
@@ -466,79 +461,81 @@ int main(int argc, char *argv[]) {
 
     }
 
-    // Populate the release environment
-    msg(STASIS_MSG_L1, "Populating release environment\n");
-    msg(STASIS_MSG_L2, "Installing conda packages\n");
-    if (strlist_count(ctx.conda.conda_packages)) {
-        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL})) {
+    if (globals.enable_export) {
+        // Populate the release environment
+        msg(STASIS_MSG_L1, "Populating release environment\n");
+        msg(STASIS_MSG_L2, "Installing conda packages\n");
+        if (strlist_count(ctx.conda.conda_packages)) {
+            if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx.conda.conda_packages, NULL})) {
+                exit(1);
+            }
+        }
+        if (strlist_count(ctx.conda.conda_packages_defer)) {
+            msg(STASIS_MSG_L3, "Installing deferred conda packages\n");
+            if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA | INSTALL_PKG_CONDA_DEFERRED, (struct StrList *[]) {ctx.conda.conda_packages_defer, NULL})) {
+                exit(1);
+            }
+        } else {
+            msg(STASIS_MSG_L3, "No deferred conda packages\n");
+        }
+
+        msg(STASIS_MSG_L2, "Installing pip packages\n");
+        if (strlist_count(ctx.conda.pip_packages)) {
+            if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL})) {
+                exit(1);
+            }
+        }
+
+        if (strlist_count(ctx.conda.pip_packages_defer)) {
+            msg(STASIS_MSG_L3, "Installing deferred pip packages\n");
+            if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL})) {
+                exit(1);
+            }
+        } else {
+            msg(STASIS_MSG_L3, "No deferred pip packages\n");
+        }
+
+        conda_exec("list");
+
+        msg(STASIS_MSG_L1, "Creating release\n");
+        msg(STASIS_MSG_L2, "Exporting delivery configuration\n");
+        if (!pushd(ctx.storage.cfgdump_dir)) {
+            char filename[PATH_MAX] = {0};
+            sprintf(filename, "%s.ini", ctx.info.release_name);
+            FILE *spec = fopen(filename, "w+");
+            if (!spec) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
+                exit(1);
+            }
+            ini_write(ctx._stasis_ini_fp.delivery, &spec, INI_WRITE_RAW);
+            fclose(spec);
+
+            memset(filename, 0, sizeof(filename));
+            sprintf(filename, "%s-rendered.ini", ctx.info.release_name);
+            spec = fopen(filename, "w+");
+            if (!spec) {
+                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
+                exit(1);
+            }
+            ini_write(ctx._stasis_ini_fp.delivery, &spec, INI_WRITE_PRESERVE);
+            fclose(spec);
+            popd();
+        } else {
+            SYSERROR("Failed to enter directory: %s", ctx.storage.delivery_dir);
             exit(1);
         }
-    }
-    if (strlist_count(ctx.conda.conda_packages_defer)) {
-        msg(STASIS_MSG_L3, "Installing deferred conda packages\n");
-        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA | INSTALL_PKG_CONDA_DEFERRED, (struct StrList *[]) {ctx.conda.conda_packages_defer, NULL})) {
+
+        msg(STASIS_MSG_L2, "Exporting %s\n", env_name_testing);
+        if (conda_env_export(env_name_testing, ctx.storage.delivery_dir, env_name_testing)) {
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", env_name_testing);
             exit(1);
         }
-    } else {
-        msg(STASIS_MSG_L3, "No deferred conda packages\n");
-    }
 
-    msg(STASIS_MSG_L2, "Installing pip packages\n");
-    if (strlist_count(ctx.conda.pip_packages)) {
-        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP, (struct StrList *[]) {ctx.conda.pip_packages, NULL})) {
+        msg(STASIS_MSG_L2, "Exporting %s\n", env_name);
+        if (conda_env_export(env_name, ctx.storage.delivery_dir, env_name)) {
+            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", env_name);
             exit(1);
         }
-    }
-
-    if (strlist_count(ctx.conda.pip_packages_defer)) {
-        msg(STASIS_MSG_L3, "Installing deferred pip packages\n");
-        if (delivery_install_packages(&ctx, ctx.storage.conda_install_prefix, env_name, INSTALL_PKG_PIP | INSTALL_PKG_PIP_DEFERRED, (struct StrList *[]) {ctx.conda.pip_packages_defer, NULL})) {
-            exit(1);
-        }
-    } else {
-        msg(STASIS_MSG_L3, "No deferred pip packages\n");
-    }
-
-    conda_exec("list");
-
-    msg(STASIS_MSG_L1, "Creating release\n");
-    msg(STASIS_MSG_L2, "Exporting delivery configuration\n");
-    if (!pushd(ctx.storage.cfgdump_dir)) {
-        char filename[PATH_MAX] = {0};
-        sprintf(filename, "%s.ini", ctx.info.release_name);
-        FILE *spec = fopen(filename, "w+");
-        if (!spec) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
-            exit(1);
-        }
-        ini_write(ctx._stasis_ini_fp.delivery, &spec, INI_WRITE_RAW);
-        fclose(spec);
-
-        memset(filename, 0, sizeof(filename));
-        sprintf(filename, "%s-rendered.ini", ctx.info.release_name);
-        spec = fopen(filename, "w+");
-        if (!spec) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
-            exit(1);
-        }
-        ini_write(ctx._stasis_ini_fp.delivery, &spec, INI_WRITE_PRESERVE);
-        fclose(spec);
-        popd();
-    } else {
-        SYSERROR("Failed to enter directory: %s", ctx.storage.delivery_dir);
-        exit(1);
-    }
-
-    msg(STASIS_MSG_L2, "Exporting %s\n", env_name_testing);
-    if (conda_env_export(env_name_testing, ctx.storage.delivery_dir, env_name_testing)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", env_name_testing);
-        exit(1);
-    }
-
-    msg(STASIS_MSG_L2, "Exporting %s\n", env_name);
-    if (conda_env_export(env_name, ctx.storage.delivery_dir, env_name)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", env_name);
-        exit(1);
     }
 
     // Rewrite release environment output (i.e. set package origin(s) to point to the deployment server, etc.)
