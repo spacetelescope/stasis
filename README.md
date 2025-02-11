@@ -170,6 +170,16 @@ stasis mydelivery.ini
 | --no-rewrite               |     n/a      | Do not rewrite paths and URLs in output files                  |
 | DELIVERY_FILE              |     n/a      | STASIS delivery file                                           |
 
+## Indexer Command Line Options
+
+| Long Option  | Short Option | Purpose                                 |
+|:-------------|:------------:|:----------------------------------------|
+| --help       |      -h      | Display this usage statement            |
+| --destdir    |      -d      | Destination directory                   |
+| --verbose    |      -v      | Increase output verbosity               |
+| --unbuffered |      -U      | Disable line buffering                  |
+| --web        |      -w      | Generate HTML indexes (requires pandoc) |
+
 ## Environment variables
 
 | Name                            | Purpose                                                                 | 
