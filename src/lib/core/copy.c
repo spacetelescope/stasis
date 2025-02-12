@@ -3,6 +3,7 @@
 int copy2(const char *src, const char *dest, unsigned int op) {
     struct stat src_stat, dnamest;
 
+    SYSDEBUG("Stat source file: %s", src);
     if (lstat(src, &src_stat) < 0) {
         perror(src);
         return -1;
@@ -20,7 +21,9 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         *dname_endptr = '\0';
     }
 
+    SYSDEBUG("Stat destination file: %s", dname);
     stat(dname, &dnamest);
+
     if (S_ISLNK(src_stat.st_mode)) {
         char lpath[1024] = {0};
         if (readlink(src, lpath, sizeof(lpath)) < 0) {
@@ -44,12 +47,14 @@ int copy2(const char *src, const char *dest, unsigned int op) {
     } else if (S_ISREG(src_stat.st_mode)) {
         char buf[STASIS_BUFSIZ] = {0};
         size_t bytes_read;
+        SYSDEBUG("%s", "Opening source file for reading");
         FILE *fp1 = fopen(src, "rb");
         if (!fp1) {
             perror(src);
             return -1;
         }
 
+        SYSDEBUG("%s", "Opening destination file for writing");
         FILE *fp2 = fopen(dest, "w+b");
         if (!fp2) {
             perror(dest);
@@ -79,5 +84,6 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         errno = EOPNOTSUPP;
         return -1;
     }
+    SYSDEBUG("%s", "Data copied");
     return 0;
 }
