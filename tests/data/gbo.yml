@@ -6,4 +6,5 @@ dependencies:
   - setuptools
   - pip:
     - firewatch==0.0.3
+    - gwcs==0.22.1
     - tweakwcs==0.8.7
