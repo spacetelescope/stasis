@@ -26,7 +26,7 @@
 
 #define COE_CHECK_ABORT(COND, MSG) \
     do {\
-        if (!globals.continue_on_error && COND) { \
+        if (!globals.continue_on_error && (COND)) { \
             msg(STASIS_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
             exit(1);                       \
         } \
@@ -75,7 +75,6 @@ extern struct STASIS_GLOBAL globals;
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;
-
 
 /**
  * Free memory allocated in global configuration structure

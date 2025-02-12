@@ -211,7 +211,7 @@ inline void stasis_testing_teardown_workspace() {
             .lineno = __LINE__,        \
             .status = (COND),             \
             .msg_assertion = "ASSERT(" #COND ")",                 \
-            .msg_reason = REASON } );  \
+            .msg_reason = (REASON) } );  \
     } while (0)
 
 #define STASIS_ASSERT_FATAL(COND, REASON) do { \
@@ -221,7 +221,7 @@ inline void stasis_testing_teardown_workspace() {
             .lineno = __LINE__,        \
             .status = (COND),             \
             .msg_assertion = "ASSERT FATAL (" #COND ")",                 \
-            .msg_reason = REASON }       \
+            .msg_reason = (REASON) }       \
         );    \
         if (stasis_test_results[stasis_test_results_i ? stasis_test_results_i - 1 : stasis_test_results_i].status == false) {\
             exit(STASIS_TEST_SUITE_FATAL); \
@@ -236,7 +236,7 @@ inline void stasis_testing_teardown_workspace() {
             .status = true, \
             .skip = (COND), \
             .msg_assertion = "SKIP (" #COND ")",                 \
-            .msg_reason = REASON }       \
+            .msg_reason = (REASON) }       \
         );    \
         if (stasis_test_results[stasis_test_results_i ? stasis_test_results_i - 1 : stasis_test_results_i].skip == true) {\
             return; \
@@ -244,9 +244,9 @@ inline void stasis_testing_teardown_workspace() {
     } while (0)
 
 #define STASIS_TEST_RUN(X) do { \
-        for (size_t i = 0; i < sizeof(X) / sizeof(*X); i++) { \
-            if (X[i]) { \
-                X[i](); \
+        for (size_t i = 0; i < sizeof(X) / sizeof(*(X)); i++) { \
+            if ((X)[i]) { \
+                (X)[i](); \
             } \
         } \
     } while (0)

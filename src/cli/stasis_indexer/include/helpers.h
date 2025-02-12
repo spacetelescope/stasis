@@ -5,12 +5,12 @@
 
 #define ARRAY_COUNT_DYNAMIC(X, COUNTER) \
     do { \
-        for (COUNTER = 0; X && X[COUNTER] != NULL; COUNTER++) {} \
+        for ((COUNTER) = 0; (X) && (X)[COUNTER] != NULL; (COUNTER)++) {} \
     } while(0)
 
 #define ARRAY_COUNT_BY_STRUCT_MEMBER(X, MEMBER, COUNTER) \
     do { \
-        for (COUNTER = 0; X[COUNTER].MEMBER != NULL; COUNTER++) {} \
+        for ((COUNTER) = 0; (X)[COUNTER].MEMBER != NULL; (COUNTER)++) {} \
     } while(0)
 
 struct StrList *get_architectures(struct Delivery ctx[], size_t nelem);
