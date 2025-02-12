@@ -3,6 +3,7 @@
 //
 
 #include "download.h"
+#include "core.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
     size_t bytes = fwrite(fp, size, nmemb, (FILE *) stream);
