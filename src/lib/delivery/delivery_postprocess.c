@@ -66,7 +66,9 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
     FILE *tp = NULL;
 
     if (stage == DELIVERY_REWRITE_SPEC_STAGE_1) {
+        SYSDEBUG("%s", "Entering stage 1");
         header = delivery_get_release_header(ctx);
+        SYSDEBUG("Release header:\n%s", header);
         if (!header) {
             msg(STASIS_MSG_ERROR, "failed to generate release header string\n", filename);
             exit(1);
@@ -76,6 +78,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             msg(STASIS_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
             exit(1);
         }
+        SYSDEBUG("Writing header to temporary file: %s", tempfile);
         fprintf(tp, "%s", header);
 
         // Read the original file
@@ -88,19 +91,22 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         // Write temporary data
         for (size_t i = 0; contents[i] != NULL; i++) {
             if (startswith(contents[i], "channels:")) {
-                // Allow for additional conda channel injection
                 if (ctx->conda.conda_packages_defer && strlist_count(ctx->conda.conda_packages_defer)) {
+                    // Allow for additional conda channel injection
+                    SYSDEBUG("Appending conda channel template on line %zu", i);
                     fprintf(tp, "%s  - @CONDA_CHANNEL@\n", contents[i]);
                     continue;
                 }
             } else if (strstr(contents[i], "- pip:")) {
                 if (ctx->conda.pip_packages_defer && strlist_count(ctx->conda.pip_packages_defer)) {
                     // Allow for additional pip argument injection
+                    SYSDEBUG("Appending pip argument template on line %zu", i);
                     fprintf(tp, "%s      - @PIP_ARGUMENTS@\n", contents[i]);
                     continue;
                 }
             } else if (startswith(contents[i], "prefix:")) {
                 // Remove the prefix key
+                SYSDEBUG("Removing prefix key on line %zu", i);
                 if (strstr(contents[i], "/") || strstr(contents[i], "\\")) {
                     // path is on the same line as the key
                     continue;
@@ -118,38 +124,49 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         guard_free(header);
         fflush(tp);
         fclose(tp);
+        SYSDEBUG("Done writing temporary file: %s", tempfile);
 
         // Replace the original file with our temporary data
         if (copy2(tempfile, filename, CT_PERM) < 0) {
             fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
             exit(1);
         }
+        SYSDEBUG("Removing file: %s", tempfile);
         remove(tempfile);
         guard_free(tempfile);
     } else if (globals.enable_rewrite_spec_stage_2 && stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
+        SYSDEBUG("%s", "Entering stage 2");
         char output[PATH_MAX] = {0};
         // Replace "local" channel with the staging URL
         if (ctx->storage.conda_staging_url) {
+            SYSDEBUG("%s", "Will replace conda channel with staging area url");
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
         } else if (globals.jfrog.repo) {
+            SYSDEBUG("%s", "Will replace conda channel with artifactory repo packages/conda url");
             sprintf(output, "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
+            SYSDEBUG("%s", "Will replace conda channel with local conda artifact directory");
             msg(STASIS_MSG_WARN, "conda_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.conda_artifact_dir);
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_artifact_dir, 0);
         }
 
         if (ctx->storage.wheel_staging_url) {
+            SYSDEBUG("%s", "Will replace pip arguments with wheel staging url");
+            sprintf(output, "--extra-index-url %s/%s/%s/packages/wheels", ctx->storage.wheel_staging_url, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
         } else if (globals.enable_artifactory && globals.jfrog.url && globals.jfrog.repo) {
+            SYSDEBUG("%s", "Will replace pip arguments with artifactory repo packages/wheel url");
             sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
+            SYSDEBUG("%s", "Will replace pip arguments with local wheel artifact directory");
             msg(STASIS_MSG_WARN, "wheel_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.wheel_artifact_dir);
             sprintf(output, "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
     }
+    SYSDEBUG("%s", "Rewriting finished");
 }
 
 int delivery_copy_conda_artifacts(struct Delivery *ctx) {
@@ -201,6 +218,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     // pip install --extra-index-url
     char top_index[PATH_MAX] = {0};
     sprintf(top_index, "%s/index.html", ctx->storage.wheel_artifact_dir);
+    SYSDEBUG("Opening top-level index for writing: %s", top_index);
     FILE *top_fp = fopen(top_index, "w+");
     if (!top_fp) {
         closedir(dp);
@@ -215,6 +233,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
 
         char bottom_index[PATH_MAX * 2] = {0};
         sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
+        SYSDEBUG("Opening bottom-level for writing: %s", bottom_index);
         FILE *bottom_fp = fopen(bottom_index, "w+");
         if (!bottom_fp) {
             closedir(dp);
@@ -225,6 +244,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
             printf("+ %s\n", rec->d_name);
         }
         // Add record to top level index
+        SYSDEBUG("Appending top-level link for %s", rec->d_name);
         fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
         char dpath[PATH_MAX * 2] = {0};
@@ -246,6 +266,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
                 printf("`- %s\n", package);
             }
             // Write record to bottom level index
+            SYSDEBUG("Appending bottom-level link for %s", package);
             fprintf(bottom_fp, "<a href=\"%s\">%s</a><br/>\n", package, package);
         }
         fclose(bottom_fp);
@@ -254,5 +275,6 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     }
     closedir(dp);
     fclose(top_fp);
+    SYSDEBUG("%s", "Wheel indexing complete");
     return 0;
 }
