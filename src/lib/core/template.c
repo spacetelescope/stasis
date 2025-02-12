@@ -20,6 +20,7 @@ struct tplfunc_frame *tpl_pool_func[1024] = {0};
 unsigned tpl_pool_func_used = 0;
 
 extern void tpl_reset() {
+    SYSDEBUG("%s", "Resetting template engine");
     tpl_free();
     tpl_pool_used = 0;
     tpl_pool_func_used = 0;
@@ -31,19 +32,23 @@ void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in) {
     frame->argc = argc;
     frame->func = tplfunc_ptr;
     frame->data_in = data_in;
+    SYSDEBUG("Registering function:\n\tkey=%s\n\targc=%d\n\tfunc=%p\n\tdata_in=%p", frame->key, frame->argc, frame->func, frame->data_in);
 
     tpl_pool_func[tpl_pool_func_used] = frame;
     tpl_pool_func_used++;
 }
 
 int tpl_key_exists(char *key) {
+    SYSDEBUG("Key '%s' exists?", key);
     for (size_t i = 0; i < tpl_pool_used; i++) {
         if (tpl_pool[i]->key) {
             if (!strcmp(tpl_pool[i]->key, key)) {
+                SYSDEBUG("%s", "YES");
                 return true;
             }
         }
     }
+    SYSDEBUG("%s", "NO");
     return false;
 }
 
@@ -51,6 +56,7 @@ void tpl_register(char *key, char **ptr) {
     struct tpl_item *item = NULL;
     int replacing = 0;
 
+    SYSDEBUG("Registering string:\n\tkey=%s\n\tptr=%s", key, *ptr ? *ptr : "NOT SET");
     if (tpl_key_exists(key)) {
         for (size_t i = 0; i < tpl_pool_used; i++) {
             if (tpl_pool[i]->key) {
@@ -61,7 +67,9 @@ void tpl_register(char *key, char **ptr) {
             }
         }
         replacing = 1;
+        SYSDEBUG("%s", "Item will be replaced");
     } else {
+        SYSDEBUG("%s", "Creating new item");
         item = calloc(1, sizeof(*item));
         item->key = strdup(key);
     }
@@ -73,6 +81,7 @@ void tpl_register(char *key, char **ptr) {
 
     item->ptr = ptr;
     if (!replacing) {
+        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr);
         tpl_pool[tpl_pool_used] = item;
         tpl_pool_used++;
     }
@@ -83,27 +92,26 @@ void tpl_free() {
         struct tpl_item *item = tpl_pool[i];
         if (item) {
             if (item->key) {
-#ifdef DEBUG
-                SYSERROR("freeing template item key: %s", item->key);
-#endif
+                SYSDEBUG("freeing template item key: %s", item->key);
                 guard_free(item->key);
             }
-#ifdef DEBUG
-            SYSERROR("freeing template item: %p", item);
-#endif
+            SYSDEBUG("freeing template item: %p", item);
             item->ptr = NULL;
         }
         guard_free(item);
     }
     for (unsigned i = 0; i < tpl_pool_func_used; i++) {
         struct tplfunc_frame *item = tpl_pool_func[i];
+        SYSDEBUG("freeing template function key: %s", item->key);
         guard_free(item->key);
+        SYSDEBUG("freeing template item: %p", item);
         guard_free(item);
     }
 }
 
 char *tpl_getval(char *key) {
     char *result = NULL;
+    SYSDEBUG("Getting value of template string: %s", key);
     for (size_t i = 0; i < tpl_pool_used; i++) {
         if (tpl_pool[i]->key) {
             if (!strcmp(tpl_pool[i]->key, key)) {
@@ -116,6 +124,7 @@ char *tpl_getval(char *key) {
 }
 
 struct tplfunc_frame *tpl_getfunc(char *key) {
+    SYSDEBUG("Getting function frame: %s", key);
     struct tplfunc_frame *result = NULL;
     for (size_t i = 0; i < tpl_pool_func_used; i++) {
         if (tpl_pool_func[i]->key) {
@@ -131,9 +140,8 @@ struct tplfunc_frame *tpl_getfunc(char *key) {
 static int grow(size_t z, size_t *output_bytes, char **output) {
     if (z >= *output_bytes) {
         size_t new_size = *output_bytes + z + 1;
-#ifdef DEBUG
-        fprintf(stderr, "template output buffer new size: %zu\n", new_size);
-#endif
+        SYSDEBUG("template output buffer new size: %zu\n", new_size);
+
         char *tmp = realloc(*output, new_size);
         if (!tmp) {
             perror("realloc failed");
@@ -178,6 +186,7 @@ char *tpl_render(char *str) {
             }
 
             // Read key name
+            SYSDEBUG("%s", "Reading key");
             size_t key_len = 0;
             while (isalnum(pos[off]) || pos[off] != '}') {
                 if (isspace(pos[off]) || isblank(pos[off])) {
@@ -189,6 +198,7 @@ char *tpl_render(char *str) {
                 key_len++;
                 off++;
             }
+            SYSDEBUG("Key is %s", key);
 
             char *type_stop = NULL;
             type_stop = strchr(key, ':');
@@ -197,8 +207,10 @@ char *tpl_render(char *str) {
             int do_func = 0;
             if (type_stop) {
                 if (!strncmp(key, "env", type_stop - key)) {
+                    SYSDEBUG("%s", "Will render as value of environment variable");
                     do_env = 1;
                 } else if (!strncmp(key, "func", type_stop - key)) {
+                    SYSDEBUG("%s", "Will render as output from function");
                     do_func = 1;
                 }
             }
@@ -207,6 +219,7 @@ char *tpl_render(char *str) {
             b_close = strstr(&pos[off], "}}");
             if (!b_close) {
                 fprintf(stderr, "error while templating '%s'\n\nunbalanced brace at position %zu\n", str, z);
+                guard_free(output);
                 return NULL;
             } else {
                 // Jump past closing brace
@@ -259,12 +272,14 @@ char *tpl_render(char *str) {
                         fprintf(stderr, "%s returned non-zero status: %d\n", frame->key, func_status);
                     }
                     value = strdup(func_result ? func_result : "");
+                    SYSDEBUG("Returned from function: %s (status: %d)\nData OUT\n--------\n'%s'", k, func_status, value);
                     guard_free(func_result);
                 }
                 GENERIC_ARRAY_FREE(params);
             } else {
                 // Read replacement value
                 value = strdup(tpl_getval(key) ? tpl_getval(key) : "");
+                SYSDEBUG("Rendered:\nData\n----\n'%s'", value);
             }
         }
 
@@ -279,16 +294,11 @@ char *tpl_render(char *str) {
             output[z] = 0;
         }
 
-#ifdef DEBUG
-        fprintf(stderr, "z=%zu, output_bytes=%zu\n", z, output_bytes);
-#endif
         output[z] = pos[off];
         z++;
     }
-#ifdef DEBUG
-    fprintf(stderr, "template output length: %zu\n", strlen(output));
-    fprintf(stderr, "template output bytes: %zu\n", output_bytes);
-#endif
+    SYSDEBUG("template output length: %zu", strlen(output));
+    SYSDEBUG("template output bytes: %zu", output_bytes);
     return output;
 }
 
@@ -300,6 +310,7 @@ int tpl_render_to_file(char *str, const char *filename) {
     }
 
     // Open the destination file for writing
+    SYSDEBUG("Rendering to %s", filename);
     FILE *fp = fopen(filename, "w+");
     if (!fp) {
         guard_free(result);
@@ -309,6 +320,7 @@ int tpl_render_to_file(char *str, const char *filename) {
     // Write rendered string to file
     fprintf(fp, "%s", result);
     fclose(fp);
+    SYSDEBUG("%s", "Rendered successfully");
 
     guard_free(result);
     return 0;

@@ -3,6 +3,7 @@
 //
 
 #include "download.h"
+#include "core.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
     size_t bytes = fwrite(fp, size, nmemb, (FILE *) stream);
@@ -10,7 +11,6 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
 }
 
 long download(char *url, const char *filename, char **errmsg) {
-    extern char *VERSION;
     long http_code = -1;
     char user_agent[20];
     sprintf(user_agent, "stasis/%s", VERSION);
@@ -37,7 +37,9 @@ long download(char *url, const char *filename, char **errmsg) {
     }
     curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
 
+    SYSDEBUG("curl_easy_perform(): \n\turl=%s\n\tfilename=%s\n\tuser agent=%s\n\ttimeout=%zu", url, filename, user_agent, timeout);
     CURLcode curl_code = curl_easy_perform(c);
+    SYSDEBUG("curl status code: %d", curl_code);
     if (curl_code != CURLE_OK) {
         if (errmsg) {
             strcpy(*errmsg, curl_easy_strerror(curl_code));
@@ -47,8 +49,8 @@ long download(char *url, const char *filename, char **errmsg) {
         goto failed;
     }
     curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
-
     failed:
+    SYSDEBUG("HTTP code: %li", http_code);
     fclose(fp);
     curl_easy_cleanup(c);
     curl_global_cleanup();

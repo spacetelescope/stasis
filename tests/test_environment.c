@@ -1,6 +1,6 @@
 #include "testing.h"
 
-extern char **environ;
+
 
 void test_runtime_copy() {
     RuntimeEnv *env = runtime_copy(environ);
@@ -27,7 +27,7 @@ void test_runtime_copy_empty() {
 void test_runtime() {
     RuntimeEnv *env = runtime_copy(environ);
     runtime_set(env, "CUSTOM_KEY", "Very custom");
-    ssize_t idx = -1;
+    ssize_t idx;
     STASIS_ASSERT((idx = runtime_contains(env, "CUSTOM_KEY")) >= 0, "CUSTOM_KEY should exist in object");
     STASIS_ASSERT(strcmp(strlist_item(env, idx), "CUSTOM_KEY=Very custom") == 0, "Incorrect index returned by runtime_contains");
 

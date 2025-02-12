@@ -128,7 +128,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
     char package_manager[100] = {0};
     typedef int (fnptr)(const char *);
 
-    const char *current_env = conda_get_active_environment();
+    char *current_env = conda_get_active_environment();
     if (current_env) {
         conda_activate(ctx->storage.conda_install_prefix, env_name);
     }
@@ -171,10 +171,12 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
             status = 1;
             break;
         }
+        guard_free(command);
     }
 
     if (current_env) {
         conda_activate(ctx->storage.conda_install_prefix, current_env);
+        guard_free(current_env);
     }
 
     return status;

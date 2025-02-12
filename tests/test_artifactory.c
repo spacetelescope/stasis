@@ -2,9 +2,7 @@
 #include "artifactory.h"
 #include "delivery.h"
 
-// Import private functions from core
-extern int delivery_init_platform(struct Delivery *ctx);
-extern int populate_delivery_cfg(struct Delivery *ctx, int render_mode);
+
 
 struct JFRT_Auth gauth;
 struct JFRT_Auth gnoauth;
@@ -78,6 +76,7 @@ int main(int argc, char *argv[]) {
     mkdir(ws, 0755);
     if (pushd(ws)) {
         SYSERROR("failed to change directory to %s", ws);
+        guard_free(basedir);
         STASIS_ASSERT_FATAL(true, "workspace creation failed");
     }
 

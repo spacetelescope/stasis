@@ -145,7 +145,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
 RuntimeEnv *runtime_copy(char **env) {
     RuntimeEnv *rt = NULL;
     size_t env_count;
-    for (env_count = 0; env[env_count] != NULL; env_count++) {};
+    for (env_count = 0; env[env_count] != NULL; env_count++) {}
 
     rt = strlist_init();
     for (size_t i = 0; i < env_count; i++) {

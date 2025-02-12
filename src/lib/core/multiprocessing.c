@@ -78,6 +78,7 @@ int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, p
 }
 
 static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
+    SYSDEBUG("Preparing to fork() child task %s:%s", pool->ident, task->ident);
     pid_t pid = fork();
     int child_status = 0;
     if (pid == -1) {
@@ -89,8 +90,10 @@ static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessing
 }
 
 struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *working_dir, char *cmd) {
+    SYSDEBUG("%s", "Finding next available slot");
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
     if (pool->num_used != pool->num_alloc) {
+        SYSDEBUG("Using slot %zu of %zu", pool->num_used, pool->num_alloc);
         pool->num_used++;
     } else {
         fprintf(stderr, "Maximum number of tasks reached\n");
@@ -119,6 +122,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Create a temporary file to act as our intermediate command script
     FILE *tp = NULL;
     char *t_name = NULL;
+
     t_name = xmkstemp(&tp, "w");
     if (!t_name || !tp) {
         return NULL;
@@ -135,11 +139,13 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     guard_free(t_name);
 
     // Populate the script
+    SYSDEBUG("Generating runner script: %s", slot->parent_script);
     fprintf(tp, "#!/bin/bash\n%s\n", cmd);
     fflush(tp);
     fclose(tp);
 
     // Record the command(s)
+    SYSDEBUG("%s", "mmap() slot command");
     slot->cmd_len = (strlen(cmd) * sizeof(*cmd)) + 1;
     slot->cmd = mmap(NULL, slot->cmd_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     memset(slot->cmd, 0, slot->cmd_len);
@@ -230,14 +236,17 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
                         exit(1);
                     }
                     // We are short-circuiting the normal flow, and the process is now dead, so mark it as such
+                    SYSDEBUG("Marking slot %zu: UNUSED", i);
                     slot->pid = MP_POOL_PID_UNUSED;
                 }
             }
         }
         if (!access(slot->log_file, F_OK)) {
+            SYSDEBUG("Removing log file: %s", slot->log_file);
             remove(slot->log_file);
         }
         if (!access(slot->parent_script, F_OK)) {
+            SYSDEBUG("Removing runner script: %s", slot->parent_script);
             remove(slot->parent_script);
         }
     }
@@ -261,6 +270,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
             if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
+                slot->_startup = time(NULL);
                 if (mp_task_fork(pool, slot)) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
                     kill(0, SIGTERM);
@@ -271,6 +281,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             if (slot->pid == MP_POOL_PID_UNUSED) {
                 // Child is already used up, skip it
                 hang_check++;
+                SYSDEBUG("slot %zu: hang_check=%zu", i, hang_check);
                 if (hang_check >= pool->num_used) {
                     // If you join a pool that's already finished it will spin
                     // forever. This protects the program from entering an
@@ -331,7 +342,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
-                    fprintf(stderr, "%s Task failed\n", progress);
+                    fprintf(stderr, "%s Task failed after %lus\n", progress, slot->elapsed);
                     failures++;
 
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
@@ -339,7 +350,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                         return -2;
                     }
                 } else {
-                    printf("%s Task finished\n", progress);
+                    printf("%s Task finished after %lus\n", progress, slot->elapsed);
                 }
 
                 // Clean up logs and scripts left behind by the task
@@ -365,9 +376,10 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     slot->_seconds = 0;
                 }
                 if (slot->_seconds == 0) {
-                    printf("[%s:%s] Task is running (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
+                    printf("[%s:%s] Task is running (pid: %d, elapsed: %lus)\n", pool->ident, slot->ident, slot->parent_pid, slot->elapsed);
                 }
             }
+            slot->elapsed = time(NULL) - slot->_startup;
         }
 
         if (tasks_complete == pool->num_used) {

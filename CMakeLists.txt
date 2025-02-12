@@ -23,6 +23,12 @@ if (FORTIFY_SOURCE)
 	set(nix_cflags ${nix_cflags} -O -D_FORTIFY_SOURCE=1)
 endif ()
 
+# Toggle extremely verbose output
+option(DEBUG_MESSAGES OFF)
+if (DEBUG_MESSAGES)
+	set(nix_cflags ${nix_cflags} -DDEBUG)
+endif()
+
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options(${nix_cflags})
 elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -30,6 +36,7 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
 elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(${win_cflags})
 endif()
+message(CHECK_START "Compiler flags: ${nix_cflags}")
 
 set(core_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/core/include)
 set(delivery_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/delivery/include)
@@ -38,23 +45,17 @@ configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_
 include_directories(${PROJECT_BINARY_DIR}/include)
 add_subdirectory(src)
 
-# Toggle extremely verbose output
-option(BUILD_TESTING_DEBUG OFF)
-if (BUILD_TESTING_DEBUG)
-	add_compile_options(-DDEBUG)
-endif()
-
 # Toggle regression testing on/off
-option(BUILD_TESTING_RT ON)
+option(TESTS_RT ON)
 
 # Toggle testing
-option(BUILD_TESTING OFF)
+option(TESTS OFF)
 message(CHECK_START "Run unit tests")
-if (BUILD_TESTING)
+if (TESTS)
 	message(CHECK_PASS "yes")
 	enable_testing()
 	message(CHECK_START "Run regression tests")
-	if (BUILD_TESTING_RT)
+	if (TESTS_RT)
 		message(CHECK_PASS "yes")
 	else()
 		message(CHECK_PASS "no")

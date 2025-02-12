@@ -16,7 +16,9 @@ struct MultiProcessingTask {
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
     time_t _now; ///< Current time
-    time_t _seconds; ///< Time elapsed (used by MultiprocessingPool.status_interval)
+    time_t _seconds; ///< Time elapsed since status interval (used by MultiprocessingPool.status_interval)
+    time_t _startup; ///< Time elapsed since task started
+    long elapsed; ///< Total time elapsed in seconds
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
     size_t cmd_len; ///< Length of command string (for mmap/munmap)

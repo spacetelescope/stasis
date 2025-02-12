@@ -11,10 +11,6 @@
 #include <time.h>
 #include <sys/statvfs.h>
 
-#define SYSERROR(MSG, ...) do { \
-    fprintf(stderr, "%s:%s:%d:%s - ", path_basename(__FILE__), __FUNCTION__, __LINE__, (errno > 0) ? strerror(errno) : "info"); \
-    fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
-} while (0)
 #define STASIS_BUFSIZ 8192
 #define STASIS_NAME_MAX 255
 #define STASIS_DIRSTACK_MAX 1024
@@ -23,10 +19,11 @@
 
 #include "config.h"
 #include "core_mem.h"
+#include "core_message.h"
 
 #define COE_CHECK_ABORT(COND, MSG) \
     do {\
-        if (!globals.continue_on_error && COND) { \
+        if (!globals.continue_on_error && (COND)) { \
             msg(STASIS_MSG_ERROR, MSG ": Aborting execution (--continue-on-error/-C is not enabled)\n"); \
             exit(1);                       \
         } \
@@ -75,7 +72,6 @@ extern struct STASIS_GLOBAL globals;
 extern const char *VERSION;
 extern const char *AUTHOR;
 extern const char *BANNER;
-
 
 /**
  * Free memory allocated in global configuration structure

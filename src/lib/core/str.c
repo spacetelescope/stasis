@@ -526,7 +526,7 @@ char *normalize_space(char *s) {
         return NULL;
     }
 
-    if ((tmp = calloc(strlen(s) + 1, sizeof(char))) == NULL) {
+    if (!(tmp = strdup(s))) {
         perror("could not allocate memory for temporary string");
         return NULL;
     }
