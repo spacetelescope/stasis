@@ -22,7 +22,7 @@ const char *BANNER =
         "                           Delivery Generator                           \n"
         "                                 v%s                                    \n"
         "------------------------------------------------------------------------\n"
-        "Copyright (C) 2023-2024 %s,\n"
+        "Copyright (C) 2023-2025 %s,\n"
         "Association of Universities for Research in Astronomy (AURA)\n";
 
 struct STASIS_GLOBAL globals = {
