@@ -43,6 +43,8 @@ void test_conda_installation() {
     delivery_get_conda_installer_url(&ctx, install_url);
     delivery_get_conda_installer(&ctx, install_url);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
+
+    guard_free(install_url);
     STASIS_ASSERT_FATAL(access(ctx.storage.conda_install_prefix, F_OK) == 0, "conda was not installed correctly");
     STASIS_ASSERT_FATAL(conda_activate(ctx.storage.conda_install_prefix, "base") == 0, "unable to activate base environment");
     STASIS_ASSERT_FATAL(conda_exec("info") == 0, "conda was not installed correctly");
@@ -155,7 +157,9 @@ void test_pip_index_provides() {
 
 void test_conda_get_active_environment() {
     conda_activate(ctx.storage.conda_install_prefix, "base");
-    STASIS_ASSERT(strcmp(conda_get_active_environment(), "base") == 0, "base environment not active");
+    char *active_env = conda_get_active_environment();
+    STASIS_ASSERT(strcmp(active_env, "base") == 0, "base environment not active");
+    guard_free(active_env);
 }
 
 void test_conda_provides() {
