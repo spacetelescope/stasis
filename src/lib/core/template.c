@@ -207,6 +207,7 @@ char *tpl_render(char *str) {
             b_close = strstr(&pos[off], "}}");
             if (!b_close) {
                 fprintf(stderr, "error while templating '%s'\n\nunbalanced brace at position %zu\n", str, z);
+                guard_free(output);
                 return NULL;
             } else {
                 // Jump past closing brace
