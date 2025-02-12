@@ -92,9 +92,10 @@ inline char *stasis_testing_read_ascii(const char *filename) {
         return NULL;
     }
 
-    char *result;
+    char *result = NULL;
     result = calloc(st.st_size + 1, sizeof(*result));
     if (fread(result, sizeof(*result), st.st_size, fp) < 1) {
+        guard_free(result);
         perror(filename);
         fclose(fp);
         return NULL;
