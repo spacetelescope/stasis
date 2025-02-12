@@ -69,16 +69,54 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     if (!globals.always_update_base_environment) {
         globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", render_mode, &err);
     }
+    if (globals.conda_install_prefix) {
+        guard_free(globals.conda_install_prefix);
+    }
     globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", render_mode, &err);
+
+    if (globals.conda_packages) {
+        guard_strlist_free(&globals.conda_packages);
+    }
     globals.conda_packages = ini_getval_strlist(cfg, "default", "conda_packages", LINE_SEP, render_mode, &err);
+
+    if (globals.pip_packages) {
+        guard_strlist_free(&globals.pip_packages);
+    }
     globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, render_mode, &err);
 
+    if (globals.jfrog.jfrog_artifactory_base_url) {
+        guard_free(globals.jfrog.jfrog_artifactory_base_url);
+    }
     globals.jfrog.jfrog_artifactory_base_url = ini_getval_str(cfg, "jfrog_cli_download", "url", render_mode, &err);
+
+    if (globals.jfrog.jfrog_artifactory_product) {
+        guard_free(globals.jfrog.jfrog_artifactory_product);
+    }
     globals.jfrog.jfrog_artifactory_product = ini_getval_str(cfg, "jfrog_cli_download", "product", render_mode, &err);
+
+    if (globals.jfrog.cli_major_ver) {
+        guard_free(globals.jfrog.cli_major_ver);
+    }
     globals.jfrog.cli_major_ver = ini_getval_str(cfg, "jfrog_cli_download", "version_series", render_mode, &err);
+
+    if (globals.jfrog.version) {
+        guard_free(globals.jfrog.version);
+    }
     globals.jfrog.version = ini_getval_str(cfg, "jfrog_cli_download", "version", render_mode, &err);
+
+    if (globals.jfrog.remote_filename) {
+        guard_free(globals.jfrog.remote_filename);
+    }
     globals.jfrog.remote_filename = ini_getval_str(cfg, "jfrog_cli_download", "filename", render_mode, &err);
+
+    if (globals.jfrog.url) {
+        guard_free(globals.jfrog.url);
+    }
     globals.jfrog.url = ini_getval_str(cfg, "deploy:artifactory", "url", render_mode, &err);
+
+    if (globals.jfrog.repo) {
+        guard_free(globals.jfrog.repo);
+    }
     globals.jfrog.repo = ini_getval_str(cfg, "deploy:artifactory", "repo", render_mode, &err);
 
     return 0;
