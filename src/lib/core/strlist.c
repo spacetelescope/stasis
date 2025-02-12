@@ -130,6 +130,48 @@ fatal:
 }
 
 /**
+ * Is `value` present in `pStrList`?
+ * The caller should test for success before using the value `index_of`
+ *
+ * ```c
+ * const char *needle = "world!";
+ *
+ * struct StrList *haystack = strlist_init();
+ * strlist_append(&haystack, "hello");
+ * strlist_append(&haystack, "world!");
+ *
+ * size_t index_of_item;
+ * if (strlist_contains(haystack, needle, &index_of_item)) {
+ *     const char *item = strlist_item(haystack, index_of_item);
+ *     // index_of_item == 1
+ *     // item is "world!"
+ * } else {
+ *     fprintf(stderr, "%s not found\n", needle);
+ * }
+ * ```
+ *
+ * @param pStrList pointer to `StrList`
+ * @param index_of (result) index of string in `pStrList`, if found
+ * @param value string to search for in `pStrList`
+ * @return 1 found
+ * @return 0 not found
+ */
+int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_of) {
+    if (pStrList == NULL) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < strlist_count(pStrList); i++) {
+        const char *item = strlist_item(pStrList, i);
+        if (!strcmp(item, value)) {
+            *index_of = i;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
  * Append the contents of `pStrList2` to `pStrList1`
  * @param pStrList1 `StrList`
  * @param pStrList2 `StrList`
