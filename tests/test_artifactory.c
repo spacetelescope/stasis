@@ -2,9 +2,7 @@
 #include "artifactory.h"
 #include "delivery.h"
 
-// Import private functions from core
-extern int delivery_init_platform(struct Delivery *ctx);
-extern int populate_delivery_cfg(struct Delivery *ctx, int render_mode);
+
 
 struct JFRT_Auth gauth;
 struct JFRT_Auth gnoauth;
