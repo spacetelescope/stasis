@@ -47,9 +47,15 @@ void test_tpl_workflow() {
     tpl_reset();
     tpl_register("hello_message", &data);
 
-    STASIS_ASSERT(strcmp(tpl_render("I said, \"{{ hello_message }}\""), "I said, \"Hello world!\"") == 0, "stored value in key is incorrect");
+    char *result = NULL;
+    result = tpl_render("I said, \"{{ hello_message }}\"");
+    STASIS_ASSERT(strcmp(result, "I said, \"Hello world!\"") == 0, "stored value in key is incorrect");
+    guard_free(result);
+
     setenv("HELLO", "Hello environment!", 1);
-    STASIS_ASSERT(strcmp(tpl_render("{{ env:HELLO }}"), "Hello environment!") == 0, "environment variable content mismatch");
+    result = tpl_render("{{ env:HELLO }}");
+    STASIS_ASSERT(strcmp(result, "Hello environment!") == 0, "environment variable content mismatch");
+    guard_free(result);
     unsetenv("HELLO");
     guard_free(data);
 }
@@ -87,18 +93,25 @@ void test_tpl_register_func() {
     char *result = NULL;
     result = tpl_render("{{ func:add(0,3) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:add(1,2) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:sub(6,3) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:sub(4,1) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:mul(1,   3) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:div(6,2) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
     result = tpl_render("{{ func:div(3,1) }}");
     STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    guard_free(result);
 }
 
 int main(int argc, char *argv[]) {
