@@ -193,11 +193,41 @@ int delivery_series_sync(struct Delivery *ctx) {
         return -1;  // error
     }
 
-    char *remote_dir = NULL;
-    if (asprintf(&remote_dir, "%s/%s/%s/(*)", globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name) < 0) {
-        SYSERROR("%s", "Unable to allocate bytes for remote directory path");
+    char *r_fmt = strdup(ctx->rules.release_fmt);
+    if (!r_fmt) {
+        SYSERROR("%s", "Unable to allocate bytes for release format string");
         return -1;
     }
+
+    // Replace revision formatters with wildcards
+    const char *to_wild[] = {"%r", "%R"};
+    for (size_t i = 0; i < sizeof(to_wild) / sizeof(*to_wild); i++) {
+        const char *formatter = to_wild[i];
+        if (replace_text(r_fmt, formatter, "*", 0) < 0) {
+            SYSERROR("Failed to replace '%s' in delivery format string", formatter);
+            return -1;
+        }
+    }
+
+    char *release_pattern = NULL;
+    if (delivery_format_str(ctx, &release_pattern, r_fmt) < 0) {
+        SYSERROR("Unable to render delivery format string: %s", r_fmt);
+        guard_free(r_fmt);
+        return -1;
+    }
+    guard_free(r_fmt);
+
+    char *remote_dir = NULL;
+    if (asprintf(&remote_dir, "%s/%s/%s/(*/*%s*)",
+                 globals.jfrog.repo,
+                 ctx->meta.mission,
+                 ctx->info.build_name,
+                 release_pattern) < 0) {
+        SYSERROR("%s", "Unable to allocate bytes for remote directory path");
+        guard_free(release_pattern);
+        return -1;
+    }
+    guard_free(release_pattern);
 
     char *dest_dir = NULL;
     if (asprintf(&dest_dir, "%s/{1}", ctx->storage.output_dir) < 0) {
@@ -205,5 +235,8 @@ int delivery_series_sync(struct Delivery *ctx) {
         return -1;
     }
 
-    return jfrog_cli_rt_download(&ctx->deploy.jfrog_auth, &dl, remote_dir, dest_dir);
+    int status = jfrog_cli_rt_download(&ctx->deploy.jfrog_auth, &dl, remote_dir, dest_dir);
+    guard_free(dest_dir);
+    guard_free(remote_dir);
+    return status;
 }
