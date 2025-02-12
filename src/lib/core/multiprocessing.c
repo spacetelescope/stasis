@@ -261,6 +261,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         for (size_t i = lower_i; i < upper_i; i++) {
             struct MultiProcessingTask *slot = &pool->task[i];
             if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
+                slot->_startup = time(NULL);
                 if (mp_task_fork(pool, slot)) {
                     fprintf(stderr, "%s: mp_task_fork failed\n", slot->ident);
                     kill(0, SIGTERM);
@@ -331,7 +332,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
-                    fprintf(stderr, "%s Task failed\n", progress);
+                    fprintf(stderr, "%s Task failed after %lus\n", progress, slot->elapsed);
                     failures++;
 
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
@@ -339,7 +340,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                         return -2;
                     }
                 } else {
-                    printf("%s Task finished\n", progress);
+                    printf("%s Task finished after %lus\n", progress, slot->elapsed);
                 }
 
                 // Clean up logs and scripts left behind by the task
@@ -365,9 +366,10 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     slot->_seconds = 0;
                 }
                 if (slot->_seconds == 0) {
-                    printf("[%s:%s] Task is running (pid: %d)\n", pool->ident, slot->ident, slot->parent_pid);
+                    printf("[%s:%s] Task is running (pid: %d, elapsed: %lus)\n", pool->ident, slot->ident, slot->parent_pid, slot->elapsed);
                 }
             }
+            slot->elapsed = time(NULL) - slot->_startup;
         }
 
         if (tasks_complete == pool->num_used) {
