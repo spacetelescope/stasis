@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
     mkdir(ws, 0755);
     if (pushd(ws)) {
         SYSERROR("failed to change directory to %s", ws);
+        guard_free(basedir);
         STASIS_ASSERT_FATAL(true, "workspace creation failed");
     }
 
