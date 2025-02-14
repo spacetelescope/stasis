@@ -3,7 +3,7 @@
 //
 
 #include "core.h"
-#include "callbacks.h"
+#include "index_callbacks.h"
 
 // qsort callback to sort delivery contexts by compact python version
 int callback_sort_deliveries_cmpfn(const void *a, const void *b) {
