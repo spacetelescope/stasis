@@ -171,13 +171,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
 
     int err = 0;
     ctx->meta.mission = ini_getval_str(ini, "meta", "mission", render_mode, &err);
-
-    if (!strcasecmp(ctx->meta.mission, "hst")) {
-        ctx->meta.codename = ini_getval_str(ini, "meta", "codename", render_mode, &err);
-    } else {
-        ctx->meta.codename = NULL;
-    }
-
+    ctx->meta.codename = ini_getval_str(ini, "meta", "codename", render_mode, &err);
     ctx->meta.version = ini_getval_str(ini, "meta", "version", render_mode, &err);
     ctx->meta.name = ini_getval_str(ini, "meta", "name", render_mode, &err);
     ctx->meta.rc = ini_getval_int(ini, "meta", "rc", render_mode, &err);
@@ -213,6 +207,12 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
         guard_free(ctx->info.release_name);
         guard_free(ctx->info.build_name);
         guard_free(ctx->info.build_number);
+    }
+
+    // Fail if a mission requires a codename, but one is not defined
+    if (strstr(ctx->rules.release_fmt, "%c") && isempty(ctx->meta.codename)) {
+        SYSERROR("Mission type '%s' requires meta.codename to be defined", ctx->meta.mission);
+        return -1;
     }
 
     if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
