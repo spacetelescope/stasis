@@ -289,10 +289,18 @@ int bootstrap_build_info(struct Delivery *ctx) {
     struct Delivery local = {0};
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
-    delivery_init_platform(&local);
-    populate_delivery_cfg(&local, INI_READ_RENDER);
-    populate_delivery_ini(&local, INI_READ_RENDER);
-    populate_info(&local);
+    if (delivery_init_platform(&local)) {
+        return -1;
+    }
+    if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
+        return -1;
+    }
+    if (populate_delivery_ini(&local, INI_READ_RENDER)) {
+        return -1;
+    }
+    if (populate_info(&local)) {
+        return -1;
+    }
     ctx->info.build_name = strdup(local.info.build_name);
     ctx->info.build_number = strdup(local.info.build_number);
     ctx->info.release_name = strdup(local.info.release_name);
