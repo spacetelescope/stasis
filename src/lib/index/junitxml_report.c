@@ -3,7 +3,7 @@
 //
 
 #include "core.h"
-#include "callbacks.h"
+#include "index_callbacks.h"
 #include "junitxml.h"
 #include "junitxml_report.h"
 

@@ -40,6 +40,8 @@ message(CHECK_START "Compiler flags: ${nix_cflags}")
 
 set(core_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/core/include)
 set(delivery_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/delivery/include)
+set(entrypoint_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/entrypoint/include)
+set(index_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/index/include)
 set(SYSCONFDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_SYSCONFDIR}")
 configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/config.h @ONLY)
 include_directories(${PROJECT_BINARY_DIR}/include)
