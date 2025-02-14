@@ -2,7 +2,7 @@
 #define STASIS_SYSTEM_REQUIREMENTS_H
 
 #include "delivery.h"
-#include "callbacks.h"
+#include "entrypoint_callbacks.h"
 #include "envctl.h"
 
 void check_system_path();

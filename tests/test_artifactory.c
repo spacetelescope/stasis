@@ -71,13 +71,10 @@ int main(int argc, char *argv[]) {
     memset(&gnoauth, 0, sizeof(gnoauth));
     memset(&ctx, 0, sizeof(ctx));
 
-    char *basedir = realpath(".", NULL);
-    const char *ws = "workspace";
-    mkdir(ws, 0755);
-    if (pushd(ws)) {
-        SYSERROR("failed to change directory to %s", ws);
-        guard_free(basedir);
-        STASIS_ASSERT_FATAL(true, "workspace creation failed");
+    char basedir[PATH_MAX] = {0};
+    if (getcwd(basedir, PATH_MAX) == NULL) {
+        SYSERROR("%s", "Unable to get current working directory");
+        return 1;
     }
 
     // enable messages from the jf tool
@@ -97,7 +94,7 @@ int main(int argc, char *argv[]) {
     setenv("PATH", path, 1);
 
     // The default config contains the URL information to download jfrog-cli
-    char cfg_path[PATH_MAX] = {0};
+    char cfg_path[PATH_MAX*2] = {0};
     if (strstr(sysconfdir, "..")) {
         sprintf(cfg_path, "%s/%s/stasis.ini", basedir, sysconfdir);
     } else {
@@ -106,7 +103,6 @@ int main(int argc, char *argv[]) {
     ctx._stasis_ini_fp.cfg = ini_open(cfg_path);
     if (!ctx._stasis_ini_fp.cfg) {
         SYSERROR("%s: configuration is invalid", cfg_path);
-        guard_free(basedir);
         return STASIS_TEST_SUITE_SKIP;
     }
     delivery_init_platform(&ctx);
@@ -118,7 +114,6 @@ int main(int argc, char *argv[]) {
         SYSERROR("%s", "Not configured to test Artifactory. Skipping.");
         return STASIS_TEST_SUITE_SKIP;
     }
-    guard_free(basedir);
 
     STASIS_TEST_FUNC *tests[] = {
         test_jfrog_cli_rt_ping,
