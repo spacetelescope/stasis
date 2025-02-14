@@ -63,10 +63,10 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                         && strlist_count(docker_images)
                         && !strcmp(latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
                         fprintf(indexfp, "[Archive](../packages/docker/%s)\n", path_basename(strlist_item(docker_images, 0)));
-                        guard_free(docker_images);
                     } else {
                         fprintf(indexfp, "N/A\n");
                     }
+                    guard_free(docker_images);
                 }
             }
             fprintf(indexfp, "\n");
@@ -95,10 +95,10 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                 && strlist_count(docker_images)
                 && !strcmp(current->system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
             fprintf(indexfp, "[Archive](../packages/docker/%s)\n", path_basename(strlist_item(docker_images, 0)));
-            guard_free(docker_images);
         } else {
             fprintf(indexfp, "N/A\n");
         }
+        guard_free(docker_images);
         guard_free(pattern);
     }
     fprintf(indexfp, "\n");
