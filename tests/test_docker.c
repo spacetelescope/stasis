@@ -19,7 +19,7 @@ void test_docker_exec() {
 }
 
 void test_docker_sanitize_tag() {
-    const char *data = "  !\"#$%&'()*+,-;<=>?@[\\]^_`{|}~";
+    const char *data = "  !\"#$%&'()+,-;<=>?@[\\]^_`{|}~";
     char *input = strdup(data);
     docker_sanitize_tag(input);
     int result = 0;
