@@ -57,8 +57,9 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DBUILD_TESTING=ON
-        -DBUILD_TESTING_RT=ON
+        -DTESTS=ON
+        -DTESTS_RT=ON
+        -DDEBUG_MESSAGES=ON
         -S ${{ github.workspace }}
 
     - name: Build
