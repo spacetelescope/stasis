@@ -84,7 +84,9 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
         fprintf(indexfp, "- Docker: \n");
 
         char *pattern = NULL;
-        asprintf(&pattern, "*%s*", current->info.build_number);
+        asprintf(&pattern, "*%s*%s*",
+                 current->info.build_number,
+                 strstr(ctx->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
         if (!pattern) {
             SYSERROR("%s", "Unable to allocate bytes for pattern");
             return -1;
