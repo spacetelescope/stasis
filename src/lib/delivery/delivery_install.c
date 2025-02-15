@@ -12,6 +12,7 @@ static struct Test *requirement_from_test(struct Delivery *ctx, const char *name
 
             if (ctx->tests[i].name && !strcmp(package_name, ctx->tests[i].name)) {
                 result = &ctx->tests[i];
+                guard_free(package_name);
                 break;
             }
             guard_free(package_name);

@@ -269,7 +269,7 @@ struct StrList *get_docker_images(struct Delivery *ctx, char *pattern) {
         return NULL;
     }
     tolower_s(tarball);
-    replace_text(tarball, "+", "-", 0);
+    docker_sanitize_tag(tarball);
 
     struct StrList *files = NULL;
     get_files(&files, ctx->storage.docker_artifact_dir, tarball);
