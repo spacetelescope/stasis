@@ -23,6 +23,9 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
 
     fprintf(indexfp, "# %s-%s\n\n", ctx->meta.name, ctx->meta.version);
     fprintf(indexfp, "## Current Release\n\n");
+    strlist_sort(platforms, STASIS_SORT_ALPHA);
+    strlist_sort(archs, STASIS_SORT_ALPHA);
+    strlist_reverse(archs);
     for (size_t p = 0; p < strlist_count(platforms); p++) {
         char *platform = strlist_item(platforms, p);
         for (size_t a = 0; a < strlist_count(archs); a++) {
@@ -57,16 +60,24 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                     fprintf(indexfp, "  - Info: [README](%s)\n", readme_name);
                     fprintf(indexfp, "  - Release: [Conda Environment YAML](%s)\n", link_name);
                     fprintf(indexfp, "  - Receipt: [STASIS input file](%s)\n", conf_name_relative);
-                    fprintf(indexfp, "  - Docker: ");
-                    struct StrList *docker_images = get_docker_images(&latest_deliveries[i], "");
+
+                    char *pattern = NULL;
+                    asprintf(&pattern, "*%s*%s*",
+                             latest_deliveries[i].info.build_number,
+                             strstr(ctx->rules.release_fmt, "%p") ? latest_deliveries[i].meta.python_compact : "" );
+                    if (!pattern) {
+                        SYSERROR("%s", "Unable to allocate bytes for pattern");
+                        return -1;
+                    }
+                    struct StrList *docker_images = get_docker_images(&latest_deliveries[i], pattern);
                     if (docker_images
                         && strlist_count(docker_images)
                         && !strcmp(latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
+                        fprintf(indexfp, "  - Docker: ");
                         fprintf(indexfp, "[Archive](../packages/docker/%s)\n", path_basename(strlist_item(docker_images, 0)));
-                    } else {
-                        fprintf(indexfp, "N/A\n");
                     }
-                    guard_free(docker_images);
+                    guard_strlist_free(&docker_images);
+                    guard_free(pattern);
                 }
             }
             fprintf(indexfp, "\n");
@@ -75,13 +86,17 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
     }
 
     fprintf(indexfp, "## Releases\n");
+    int current_rc = ctx->meta.rc;
     for (size_t i = 0; ctx[i].meta.name != NULL; i++) {
         struct Delivery *current = &ctx[i];
+        if (current_rc > current->meta.rc) {
+            current_rc = current->meta.rc;
+            fprintf(indexfp, "\n\n---\n\n");
+        }
         fprintf(indexfp, "### %s\n", current->info.release_name);
-        fprintf(indexfp, "- Info: [README](README-%s.html)\n", current->info.release_name);
+        fprintf(indexfp, "- Info: [README](README-%s.md)\n", current->info.release_name);
         fprintf(indexfp, "- Release: [Conda Environment YAML](%s.yml)\n", current->info.release_name);
         fprintf(indexfp, "- Receipt: [STASIS input file](../config/%s.ini)\n", current->info.release_name);
-        fprintf(indexfp, "- Docker: \n");
 
         char *pattern = NULL;
         asprintf(&pattern, "*%s*%s*",
@@ -96,11 +111,10 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
         if (docker_images
                 && strlist_count(docker_images)
                 && !strcmp(current->system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
+            fprintf(indexfp, "- Docker: \n");
             fprintf(indexfp, "[Archive](../packages/docker/%s)\n", path_basename(strlist_item(docker_images, 0)));
-        } else {
-            fprintf(indexfp, "N/A\n");
         }
-        guard_free(docker_images);
+        guard_strlist_free(&docker_images);
         guard_free(pattern);
     }
     fprintf(indexfp, "\n");
