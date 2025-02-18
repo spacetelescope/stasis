@@ -44,7 +44,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         replace_text(short_name, "results-", "", 0);
         guard_free(short_name_pattern);
 
-        fprintf(destfp, "|%s ([html](%s.html)) ([xml](%s.xml))|%0.4f|%d|%d|%d|%d|%d|\n",
+        fprintf(destfp, "|%s ([log](%s.md)) ([xml](%s.xml))|%0.4f|%d|%d|%d|%d|%d|\n",
                 short_name,
                 bname,
                 bname,
@@ -82,7 +82,11 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
             fprintf(resultfp, "### %s %s :: %s\n", type_str,
                     testsuite->testcase[i]->classname, testsuite->testcase[i]->name);
             fprintf(resultfp, "\nDuration: %0.04fs\n", testsuite->testcase[i]->time);
-            fprintf(resultfp, "\n```\n%s\n```\n\n", message);
+            if (message && strlen(message)) {
+                fprintf(resultfp, "\n```\n%s\n```\n\n", message);
+            } else {
+                fprintf(resultfp, "\n");
+            }
         }
         junitxml_testsuite_free(&testsuite);
         fclose(resultfp);
@@ -122,7 +126,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
             }
             if (current_rc > ctx[d].meta.rc) {
                 current_rc = ctx[d].meta.rc;
-                fprintf(indexfp, "\n---\n");
+                fprintf(indexfp, "\n\n---\n\n");
             }
             fprintf(indexfp, "### %s\n", ctx[d].info.release_name);
             fprintf(indexfp, "\n|Suite|Duration|Total|Pass|Fail|Skip|Error|\n");

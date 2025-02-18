@@ -91,10 +91,10 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
         struct Delivery *current = &ctx[i];
         if (current_rc > current->meta.rc) {
             current_rc = current->meta.rc;
-            fprintf(indexfp, "\n---\n");
+            fprintf(indexfp, "\n\n---\n\n");
         }
         fprintf(indexfp, "### %s\n", current->info.release_name);
-        fprintf(indexfp, "- Info: [README](README-%s.html)\n", current->info.release_name);
+        fprintf(indexfp, "- Info: [README](README-%s.md)\n", current->info.release_name);
         fprintf(indexfp, "- Release: [Conda Environment YAML](%s.yml)\n", current->info.release_name);
         fprintf(indexfp, "- Receipt: [STASIS input file](../config/%s.ini)\n", current->info.release_name);
 
