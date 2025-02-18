@@ -192,11 +192,26 @@ int sort_by_latest_rc(const void *a, const void *b) {
     const struct Delivery *bb = b;
     if (aa->meta.rc > bb->meta.rc) {
         return -1;
-    }
-    if (aa->meta.rc < bb->meta.rc) {
+    } else if (aa->meta.rc < bb->meta.rc) {
         return 1;
     }
-    return 0;
+
+    if (strcmp(aa->system.platform[DELIVERY_PLATFORM_RELEASE], bb->system.platform[DELIVERY_PLATFORM_RELEASE]) > 0) {
+        return 1;
+    } else if (strcmp(aa->system.platform[DELIVERY_PLATFORM_RELEASE], bb->system.platform[DELIVERY_PLATFORM_RELEASE]) < 0) {
+        return -1;
+    }
+
+    char *err = NULL;
+    unsigned pyc_a = strtoul(aa->meta.python_compact, &err, 10);
+    unsigned pyc_b = strtoul(bb->meta.python_compact, &err, 10);
+    if (pyc_a > pyc_b) {
+        return -1;
+    } else if (pyc_b < pyc_a) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
