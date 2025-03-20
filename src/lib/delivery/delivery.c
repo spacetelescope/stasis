@@ -210,15 +210,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         } else {
             strncpy(package_name, name, sizeof(package_name) - 1);
         }
-
-        char *extra_begin = strchr(package_name, '[');
-        char *extra_end = NULL;
-        if (extra_begin) {
-            extra_end = strchr(extra_begin, ']');
-            if (extra_end) {
-                *extra_begin = '\0';
-            }
-        }
+        remove_extras(package_name);
 
         msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
