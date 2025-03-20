@@ -9,6 +9,7 @@ static struct Test *requirement_from_test(struct Delivery *ctx, const char *name
             if (spec) {
                 *spec = '\0';
             }
+            remove_extras(package_name);
 
             if (ctx->tests[i].name && !strcmp(package_name, ctx->tests[i].name)) {
                 result = &ctx->tests[i];
@@ -39,25 +40,6 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
         }
     }
     return NULL;
-}
-
-static char *remove_extras(char *s) {
-    char *extra_stop = NULL;
-    char *extra_start = strchr(s, '[');
-    size_t len = strlen(s);
-    if (extra_start) {
-        extra_stop = strchr(extra_start, ']');
-        if (extra_stop) {
-            size_t last = strlen(s);
-            if (last) {
-                extra_stop++;
-                last = strlen(extra_stop);
-            }
-            memmove(extra_start, extra_stop, last);
-            s[len - (extra_stop - extra_start)] = 0;
-        }
-    }
-    return s;
 }
 
 int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name) {
@@ -99,7 +81,6 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         } else {
             strncpy(spec_name, spec, sizeof(spec_name) - 1);
         }
-        remove_extras(spec_name);
 
         struct Test *test_block = requirement_from_test(ctx, spec_name);
         if (!test_block) {
@@ -293,9 +274,21 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         }
                         wheel_free(&whl);
                     }
+
+                    char req[255] = {0};
+                    if (!strcmp(name, info->name)) {
+                        strcpy(req, info->name);
+                    } else {
+                        strcpy(req, name);
+                        char *spec = find_version_spec(req);
+                        if (spec) {
+                            *spec = 0;
+                        }
+                    }
+
                     snprintf(cmd + strlen(cmd),
                              sizeof(cmd) - strlen(cmd) - strlen(info->name) - strlen(info->version) + 5,
-                             " '%s==%s'", info->name, info->version);
+                             " '%s==%s'", req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     return -1;

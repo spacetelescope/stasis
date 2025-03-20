@@ -413,4 +413,8 @@ int env_manipulate_pathstr(const char *key, char *path, int mode);
 */
 int gen_file_extension_str(char *filename, const char *extension);
 
+/**
+ * Remove [extra]s from a spec string
+ */
+char *remove_extras(char *s);
 #endif //STASIS_UTILS_H

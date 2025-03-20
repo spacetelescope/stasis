@@ -672,3 +672,24 @@ void unindent(char *s) {
         }
     }
 }
+
+char *remove_extras(char *s) {
+    // an "extra" is a string encapsulated by square brackets "text[toremove]"
+    char *extra_stop = NULL;
+    char *extra_start = strchr(s, '[');
+    size_t len = strlen(s);
+    if (extra_start) {
+        extra_stop = strchr(extra_start, ']');
+        if (extra_stop) {
+            size_t last = strlen(s);
+            if (last) {
+                extra_stop++;
+                last = strlen(extra_stop);
+            }
+            memmove(extra_start, extra_stop, last);
+            s[len - (extra_stop - extra_start)] = 0;
+        }
+    }
+    return s;
+}
+
