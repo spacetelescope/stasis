@@ -465,7 +465,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                         guard_free(render);
                     }
                 }
-                GENERIC_ARRAY_FREE(parts);
+                guard_array_free(parts);
                 strip(outvalue);
                 strcat(outvalue, LINE_SEP);
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);

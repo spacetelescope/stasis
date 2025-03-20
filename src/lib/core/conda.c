@@ -265,7 +265,7 @@ static int env0_to_runtime(const char *logfile) {
         } else {
             setenv(part[0], part[1], 1);
         }
-        GENERIC_ARRAY_FREE(part);
+        guard_array_free(part);
     }
     fclose(fp);
     return 0;

@@ -275,7 +275,7 @@ char *tpl_render(char *str) {
                     SYSDEBUG("Returned from function: %s (status: %d)\nData OUT\n--------\n'%s'", k, func_status, value);
                     guard_free(func_result);
                 }
-                GENERIC_ARRAY_FREE(params);
+                guard_array_free(params);
             } else {
                 // Read replacement value
                 value = strdup(tpl_getval(key) ? tpl_getval(key) : "");

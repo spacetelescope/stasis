@@ -9,6 +9,7 @@ static struct Test *requirement_from_test(struct Delivery *ctx, const char *name
             if (spec) {
                 *spec = '\0';
             }
+            remove_extras(package_name);
 
             if (ctx->tests[i].name && !strcmp(package_name, ctx->tests[i].name)) {
                 result = &ctx->tests[i];
@@ -80,6 +81,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         } else {
             strncpy(spec_name, spec, sizeof(spec_name) - 1);
         }
+
         struct Test *test_block = requirement_from_test(ctx, spec_name);
         if (!test_block) {
             msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "from config without test: %s\n", spec);
@@ -272,9 +274,21 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         }
                         wheel_free(&whl);
                     }
+
+                    char req[255] = {0};
+                    if (!strcmp(name, info->name)) {
+                        strcpy(req, info->name);
+                    } else {
+                        strcpy(req, name);
+                        char *spec = find_version_spec(req);
+                        if (spec) {
+                            *spec = 0;
+                        }
+                    }
+
                     snprintf(cmd + strlen(cmd),
                              sizeof(cmd) - strlen(cmd) - strlen(info->name) - strlen(info->version) + 5,
-                             " '%s==%s'", info->name, info->version);
+                             " '%s==%s'", req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     return -1;

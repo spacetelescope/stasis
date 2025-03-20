@@ -117,7 +117,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             puts(output);
         }
         guard_free(value);
-        GENERIC_ARRAY_FREE(pair);
+        guard_array_free(pair);
     }
 }
 
@@ -210,10 +210,10 @@ ssize_t runtime_contains(RuntimeEnv *env, const char *key) {
         }
         if (strcmp(pair[0], key) == 0) {
             result = i;
-            GENERIC_ARRAY_FREE(pair);
+            guard_array_free(pair);
             break;
         }
-        GENERIC_ARRAY_FREE(pair);
+        guard_array_free(pair);
     }
     return result;
 }
@@ -246,7 +246,7 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
     if (key_offset != -1) {
         char **pair = split(strlist_item(env, key_offset), "=", 0);
         result = join(&pair[1], "=");
-        GENERIC_ARRAY_FREE(pair);
+        guard_array_free(pair);
     }
     return result;
 }
@@ -425,7 +425,7 @@ void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 1);
         setenv(pair[0], pair[1], 1);
-        GENERIC_ARRAY_FREE(pair);
+        guard_array_free(pair);
     }
 }
 

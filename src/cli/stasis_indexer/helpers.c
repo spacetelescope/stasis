@@ -74,7 +74,7 @@ int get_pandoc_version(size_t *result) {
             // pack version element into result
             *result = *result << 8 | tmp;
         }
-        GENERIC_ARRAY_FREE(parts);
+        guard_array_free(parts);
     } else {
         // invalid version string
         guard_free(version_str);
@@ -350,7 +350,7 @@ int load_metadata(struct Delivery *ctx, const char *filename) {
         } else if (!strcmp(name, "conda_installer_arch")) {
             ctx->conda.installer_arch = strdup(value);
         }
-        GENERIC_ARRAY_FREE(parts);
+        guard_array_free(parts);
     }
     fclose(fp);
 

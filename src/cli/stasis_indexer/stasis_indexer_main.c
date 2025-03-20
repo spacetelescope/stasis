@@ -389,7 +389,7 @@ int main(const int argc, char *argv[]) {
     }
 
     guard_free(destdir);
-    GENERIC_ARRAY_FREE(rootdirs);
+    guard_array_free(rootdirs);
     guard_strlist_free(&metafiles);
     guard_free(m.micromamba_prefix);
     delivery_free(&ctx);

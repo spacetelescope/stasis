@@ -99,12 +99,12 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
         } else {
             SYSERROR("Unknown wheel name format: %s. Expected 5 or 6 strings "
                      "separated by '-', but got %zu instead", filename, parts_total);
-            GENERIC_ARRAY_FREE(parts);
+            guard_array_free(parts);
             wheel_free(&result);
             closedir(dp);
             return NULL;
         }
-        GENERIC_ARRAY_FREE(parts);
+        guard_array_free(parts);
         break;
     }
     closedir(dp);

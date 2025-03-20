@@ -191,6 +191,6 @@ int docker_validate_compression_program(char *prog) {
     result = find_program(parts[0]) ? 0 : -1;
 
     invalid:
-    GENERIC_ARRAY_FREE(parts);
+    guard_array_free(parts);
     return result;
 }

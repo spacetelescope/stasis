@@ -120,7 +120,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             }
             fprintf(tp, "%s", contents[i]);
         }
-        GENERIC_ARRAY_FREE(contents);
+        guard_array_free(contents);
         guard_free(header);
         fflush(tp);
         fclose(tp);

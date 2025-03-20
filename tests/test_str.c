@@ -79,7 +79,7 @@ void test_strdup_array_and_strcmp_array() {
     for (size_t outer = 0; outer < sizeof(tc) / sizeof(*tc); outer++) {
         char **result = strdup_array((char **) tc[outer].data);
         STASIS_ASSERT(strcmp_array((const char **) result, tc[outer].expected) == 0, "array members were different");
-        GENERIC_ARRAY_FREE(result);
+        guard_array_free(result);
     }
 
     const struct testcase tc_bad[] = {
@@ -95,7 +95,7 @@ void test_strdup_array_and_strcmp_array() {
     for (size_t outer = 0; outer < sizeof(tc_bad) / sizeof(*tc_bad); outer++) {
         char **result = strdup_array((char **) tc_bad[outer].data);
         STASIS_ASSERT(strcmp_array((const char **) result, tc_bad[outer].expected) != 0, "array members were identical");
-        GENERIC_ARRAY_FREE(result);
+        guard_array_free(result);
     }
 }
 
@@ -206,7 +206,7 @@ void test_split() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result = split((char *) tc[i].data, tc[i].delim, tc[i].max_split);
         STASIS_ASSERT(strcmp_array((const char **) result, tc[i].expected) == 0, "Split failed");
-        GENERIC_ARRAY_FREE(result);
+        guard_array_free(result);
     }
 }
 
@@ -289,7 +289,7 @@ void test_strdeldup() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result = strdeldup(tc[i].data);
         STASIS_ASSERT(strcmp_array((const char **) result, tc[i].expected) == 0, "incorrect number of duplicates removed");
-        GENERIC_ARRAY_FREE(result);
+        guard_array_free(result);
     }
 }
 

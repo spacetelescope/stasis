@@ -141,6 +141,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
         char name[100] = {0};
         char *fullspec = strlist_item(ctx->conda.pip_packages_defer, p);
         strncpy(name, fullspec, sizeof(name) - 1);
+        remove_extras(name);
         char *spec = find_version_spec(name);
         if (spec) {
             *spec = '\0';
