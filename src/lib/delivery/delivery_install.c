@@ -35,6 +35,7 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
         } else {
             strncpy(package, config_spec, sizeof(package) - 1);
         }
+        remove_extras(package);
         if (strncmp(package, name, strlen(package)) == 0) {
             return config_spec;
         }
@@ -63,7 +64,9 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     guard_free(current_env);
 
     struct StrList *frozen_list = strlist_init();
-    strlist_append_tokenize(frozen_list, freeze_output, LINE_SEP);
+    if (!isempty(freeze_output)) {
+        strlist_append_tokenize(frozen_list, freeze_output, LINE_SEP);
+    }
     guard_free(freeze_output);
 
     struct StrList *new_list = strlist_init();
@@ -221,8 +224,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (!ctx->meta.based_on) {
             strcat(cmd, " --upgrade");
         }
-        sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
+
+    sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
 
     for (size_t x = 0; manifest[x] != NULL; x++) {
         char *name = NULL;

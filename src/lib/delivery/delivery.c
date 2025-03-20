@@ -210,15 +210,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         } else {
             strncpy(package_name, name, sizeof(package_name) - 1);
         }
-
-        char *extra_begin = strchr(package_name, '[');
-        char *extra_end = NULL;
-        if (extra_begin) {
-            extra_end = strchr(extra_begin, ']');
-            if (extra_end) {
-                *extra_begin = '\0';
-            }
-        }
+        remove_extras(package_name);
 
         msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
@@ -294,10 +286,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
     } else {
         if (DEFER_CONDA == type) {
-            strlist_free(&ctx->conda.conda_packages);
+            guard_strlist_free(&ctx->conda.conda_packages);
             ctx->conda.conda_packages = strlist_copy(filtered);
         } else if (DEFER_PIP == type) {
-            strlist_free(&ctx->conda.pip_packages);
+            guard_strlist_free(&ctx->conda.pip_packages);
             ctx->conda.pip_packages = strlist_copy(filtered);
         }
     }
