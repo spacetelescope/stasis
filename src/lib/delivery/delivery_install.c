@@ -64,7 +64,9 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     guard_free(current_env);
 
     struct StrList *frozen_list = strlist_init();
-    strlist_append_tokenize(frozen_list, freeze_output, LINE_SEP);
+    if (!isempty(freeze_output)) {
+        strlist_append_tokenize(frozen_list, freeze_output, LINE_SEP);
+    }
     guard_free(freeze_output);
 
     struct StrList *new_list = strlist_init();
