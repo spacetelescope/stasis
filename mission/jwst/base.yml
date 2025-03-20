@@ -4,3 +4,5 @@ dependencies:
   - pip
   - python
   - setuptools
+  - pip:
+    - jwst
