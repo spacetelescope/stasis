@@ -224,8 +224,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (!ctx->meta.based_on) {
             strcat(cmd, " --upgrade");
         }
-        sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
+
+    sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
 
     for (size_t x = 0; manifest[x] != NULL; x++) {
         char *name = NULL;
