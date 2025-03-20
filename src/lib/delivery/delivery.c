@@ -2,7 +2,7 @@
 
 void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->system.arch);
-    GENERIC_ARRAY_FREE(ctx->system.platform);
+    guard_array_free(ctx->system.platform);
     guard_free(ctx->meta.name);
     guard_free(ctx->meta.version);
     guard_free(ctx->meta.codename);

@@ -222,7 +222,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
              lstrip(token[i]);
              strlist_append(&pStrList, token[i]);
          }
-         GENERIC_ARRAY_FREE(token);
+         guard_array_free(token);
      }
     guard_free(tmp);
  }

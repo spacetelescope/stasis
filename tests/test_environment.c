@@ -20,7 +20,7 @@ void test_runtime_copy_empty() {
     char **empty_env = calloc(1, sizeof(empty_env));
     RuntimeEnv *env = runtime_copy(empty_env);
     STASIS_ASSERT(env->num_inuse == 0, "copied array isn't empty");
-    GENERIC_ARRAY_FREE(empty_env);
+    guard_array_free(empty_env);
     runtime_free(env);
 }
 

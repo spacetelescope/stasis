@@ -72,7 +72,7 @@ void test_fix_tox_conf() {
 
     char **lines = file_readlines(result, 0, 0, NULL);
     STASIS_ASSERT(strstr_array(lines, expected) != NULL, "{posargs} not found in result");
-    GENERIC_ARRAY_FREE(lines);
+    guard_array_free(lines);
 
     remove(result);
     guard_free(result);
@@ -283,15 +283,15 @@ void test_file_readlines() {
     for (i = 0; result[i] != NULL; i++);
     STASIS_ASSERT(num_chars(data, '\n') == i, "incorrect number of lines in data");
     STASIS_ASSERT(strcmp(result[3], "see?\n") == 0, "last line in data is incorrect'");
-    GENERIC_ARRAY_FREE(result);
+    guard_array_free(result);
 
     result = file_readlines(filename, 0, 0, file_readlines_callback_modify);
     STASIS_ASSERT(strcmp(result[3], "xxx?\n") == 0, "last line should be: 'xxx?\\n'");
-    GENERIC_ARRAY_FREE(result);
+    guard_array_free(result);
 
     result = file_readlines(filename, 0, 0, file_readlines_callback_get_specific_line);
     STASIS_ASSERT(strcmp(result[0], "see?\n") == 0, "the first record of the result is not the last line of the file 'see?\\n'");
-    GENERIC_ARRAY_FREE(result);
+    guard_array_free(result);
     remove(filename);
 }
 
