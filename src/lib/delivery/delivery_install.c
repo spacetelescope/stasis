@@ -41,6 +41,25 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
     return NULL;
 }
 
+static char *remove_extras(char *s) {
+    char *extra_stop = NULL;
+    char *extra_start = strchr(s, '[');
+    size_t len = strlen(s);
+    if (extra_start) {
+        extra_stop = strchr(extra_start, ']');
+        if (extra_stop) {
+            size_t last = strlen(s);
+            if (last) {
+                extra_stop++;
+                last = strlen(extra_stop);
+            }
+            memmove(extra_start, extra_stop, last);
+            s[len - (extra_stop - extra_start)] = 0;
+        }
+    }
+    return s;
+}
+
 int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name) {
     char *current_env = conda_get_active_environment();
     int need_restore = current_env && strcmp(env_name, current_env) != 0;
@@ -80,6 +99,8 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         } else {
             strncpy(spec_name, spec, sizeof(spec_name) - 1);
         }
+        remove_extras(spec_name);
+
         struct Test *test_block = requirement_from_test(ctx, spec_name);
         if (!test_block) {
             msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "from config without test: %s\n", spec);
