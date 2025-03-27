@@ -368,6 +368,28 @@ int main(const int argc, char *argv[]) {
         }
     }
 
+    const char *manifestfile = "TREE";
+    msg(STASIS_MSG_L1, "Writing manifest: %s\n", manifestfile);
+    if (!pushd(workdir)) {
+        FILE *manifestfp = fopen(manifestfile, "w+");
+        if (!manifestfp) {
+            SYSERROR("Unable to open manifest for writing: %s", manifestfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        if (write_manifest(".", (char *[]) {"tools", "build", "tmp", NULL}, manifestfp)) {
+            SYSERROR("Unable to write records to manifest: %s", manifestfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        fclose(manifestfp);
+        popd();
+    } else {
+        SYSERROR("%s", workdir);
+        rmtree(workdir);
+        exit(1);
+    }
+
     msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX] = {0};
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
