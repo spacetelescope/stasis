@@ -368,6 +368,24 @@ int main(const int argc, char *argv[]) {
         }
     }
 
+    const char *revisionfile = "REVISION";
+    msg(STASIS_MSG_L1, "Writing revision file: %s\n", revisionfile);
+    if (!pushd(workdir)) {
+        FILE *revisionfp = fopen(revisionfile, "w+");
+        if (!revisionfp) {
+            SYSERROR("Unable to open revision file for writing: %s", revisionfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        fprintf(revisionfp, "%d\n", get_latest_rc(local, strlist_count(metafiles)));
+        fclose(revisionfp);
+        popd();
+    } else {
+        SYSERROR("%s", workdir);
+        rmtree(workdir);
+        exit(1);
+    }
+
     const char *manifestfile = "TREE";
     msg(STASIS_MSG_L1, "Writing manifest: %s\n", manifestfile);
     if (!pushd(workdir)) {
