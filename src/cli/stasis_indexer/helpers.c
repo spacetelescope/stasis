@@ -356,3 +356,37 @@ int load_metadata(struct Delivery *ctx, const char *filename) {
 
     return 0;
 }
+
+int write_manifest(const char *path, char **exclude_path, FILE *fp) {
+    struct dirent *rec = NULL;
+    DIR *dp = opendir(path);
+    if (!dp) {
+        perror(path);
+        return -1;
+    }
+    while ((rec = readdir(dp)) != NULL) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        }
+        if (strstr_array(exclude_path, rec->d_name)) {
+            continue;
+        }
+        char filepath[PATH_MAX] = {0};
+        strncpy(filepath, path, PATH_MAX - 1);
+        strcat(filepath, "/");
+        strcat(filepath, rec->d_name);
+        if (rec->d_type == DT_DIR) {
+            write_manifest(filepath, exclude_path, fp);
+            continue;
+        }
+
+        char *output = filepath;
+        if (!strncmp(output, "./", 2)) {
+            output += 2;
+        }
+        printf("%s\n", output);
+        fprintf(fp, "%s\n", output);
+    }
+    closedir(dp);
+    return 0;
+}

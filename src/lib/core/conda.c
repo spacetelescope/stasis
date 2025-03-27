@@ -500,7 +500,18 @@ int conda_setup_headless() {
 
 int conda_env_create_from_uri(char *name, char *uri) {
     char env_command[PATH_MAX];
-    sprintf(env_command, "env create -n %s -f %s", name, uri);
+    char *uri_fs = NULL;
+
+    // Convert a bare system path to a file:// path
+    if (!strstr(uri, "://")) {
+        uri_fs = calloc(strlen(uri) + strlen("file://") + 1, sizeof(*uri_fs));
+        if (!uri_fs) {
+            return -1;
+        }
+        snprintf(uri_fs, strlen(uri) + strlen("file://") + 1, "%s%s", "file://", uri);
+    }
+    sprintf(env_command, "env create -n '%s' --file='%s'", name, uri_fs ? uri_fs : uri);
+    guard_free(uri_fs);
     return conda_exec(env_command);
 }
 
