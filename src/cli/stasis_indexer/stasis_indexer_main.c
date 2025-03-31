@@ -368,6 +368,46 @@ int main(const int argc, char *argv[]) {
         }
     }
 
+    const char *revisionfile = "REVISION";
+    msg(STASIS_MSG_L1, "Writing revision file: %s\n", revisionfile);
+    if (!pushd(workdir)) {
+        FILE *revisionfp = fopen(revisionfile, "w+");
+        if (!revisionfp) {
+            SYSERROR("Unable to open revision file for writing: %s", revisionfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        fprintf(revisionfp, "%d\n", get_latest_rc(local, strlist_count(metafiles)));
+        fclose(revisionfp);
+        popd();
+    } else {
+        SYSERROR("%s", workdir);
+        rmtree(workdir);
+        exit(1);
+    }
+
+    const char *manifestfile = "TREE";
+    msg(STASIS_MSG_L1, "Writing manifest: %s\n", manifestfile);
+    if (!pushd(workdir)) {
+        FILE *manifestfp = fopen(manifestfile, "w+");
+        if (!manifestfp) {
+            SYSERROR("Unable to open manifest for writing: %s", manifestfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        if (write_manifest(".", (char *[]) {"tools", "build", "tmp", NULL}, manifestfp)) {
+            SYSERROR("Unable to write records to manifest: %s", manifestfile);
+            rmtree(workdir);
+            exit(1);
+        }
+        fclose(manifestfp);
+        popd();
+    } else {
+        SYSERROR("%s", workdir);
+        rmtree(workdir);
+        exit(1);
+    }
+
     msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX] = {0};
     sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);

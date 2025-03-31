@@ -23,5 +23,6 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...);
 struct StrList *get_docker_images(struct Delivery *ctx, char *pattern);
 int load_metadata(struct Delivery *ctx, const char *filename);
 int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m);
+int write_manifest(const char *path, char **exclude_path, FILE *fp);
 
 #endif //HELPERS_H
