@@ -17,6 +17,7 @@
 #define OPT_FAIL_FAST 1009
 #define OPT_NO_PARALLEL 1010
 #define OPT_POOL_STATUS_INTERVAL 1011
+#define OPT_NO_EXPORT 1012
 
 extern struct option long_options[];
 void usage(char *progname);
