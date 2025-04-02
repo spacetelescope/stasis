@@ -498,9 +498,10 @@ int conda_setup_headless() {
     return 0;
 }
 
-int conda_env_create_from_uri(char *name, char *uri) {
+int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     char env_command[PATH_MAX];
     char *uri_fs = NULL;
+
 
     // Convert a bare system path to a file:// path
     if (!strstr(uri, "://")) {
@@ -510,9 +511,31 @@ int conda_env_create_from_uri(char *name, char *uri) {
         }
         snprintf(uri_fs, strlen(uri) + strlen("file://") + 1, "%s%s", "file://", uri);
     }
-    sprintf(env_command, "env create -n '%s' --file='%s'", name, uri_fs ? uri_fs : uri);
+
+    char tempfile[PATH_MAX] = {0};
+    sprintf(tempfile, "%s/remote_XXXXXX", globals.tmpdir);
+
+    // Touch a temporary file
+    int fd = mkstemp(tempfile);
+    close(fd);
+    unlink(tempfile);
+
+    // We'll create a new file with the same random bits, ending with .yml
+    strcat(tempfile, ".yml");
+    char *errmsg = NULL;
+    download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
     guard_free(uri_fs);
-    return conda_exec(env_command);
+
+    // Rewrite python version
+    char spec[255] = {0};
+    snprintf(spec, sizeof(spec) - 1, "- python=%s\n", python_version);
+    file_replace_text(tempfile, "- python\n", spec, 0);
+
+    sprintf(env_command, "env create -n '%s' --file='%s'", name, tempfile);
+    int status = conda_exec(env_command);
+    unlink(tempfile);
+
+    return status;
 }
 
 int conda_env_create(char *name, char *python_version, char *packages) {
