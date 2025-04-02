@@ -127,7 +127,7 @@ int conda_setup_headless();
  * @param uri ftp://myserver.tld/environment.yml
  * @return exit code from "conda"
  */
-int conda_env_create_from_uri(char *name, char *uri);
+int conda_env_create_from_uri(char *name, char *uri, char *python_version);
 
 /**
  * Create a Conda environment using generic package specs

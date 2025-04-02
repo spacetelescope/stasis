@@ -325,9 +325,6 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
             copy2(mission_base_orig, mission_base, CT_OWNER | CT_PERM);
-            char spec[255] = {0};
-            snprintf(spec, sizeof(spec) - 1, "- python=%s\n", ctx.meta.python);
-            file_replace_text(mission_base, "- python\n", spec, 0);
             ctx.meta.based_on = mission_base;
         }
         guard_free(mission_base_orig);
@@ -340,7 +337,7 @@ int main(int argc, char *argv[]) {
         }
 
         msg(STASIS_MSG_L2, "Based on: %s\n", ctx.meta.based_on);
-        if (conda_env_create_from_uri(env_name, ctx.meta.based_on)) {
+        if (conda_env_create_from_uri(env_name, ctx.meta.based_on, ctx.meta.python)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install release environment using configuration file\n");
             exit(1);
         }
@@ -349,7 +346,7 @@ int main(int argc, char *argv[]) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove testing environment %s\n", env_name_testing);
             exit(1);
         }
-        if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on)) {
+        if (conda_env_create_from_uri(env_name_testing, ctx.meta.based_on, ctx.meta.python)) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install testing environment using configuration file\n");
             exit(1);
         }

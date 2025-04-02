@@ -111,7 +111,7 @@ void test_conda_setup_headless() {
 void test_conda_env_create_from_uri() {
     const char *url = "https://ssb.stsci.edu/jhunk/stasis_test/test_conda_env_create_from_uri.yml";
     char *name = strdup(__FUNCTION__);
-    STASIS_ASSERT(conda_env_create_from_uri(name, (char *) url) == 0, "creating an environment from a remote source failed");
+    STASIS_ASSERT(conda_env_create_from_uri(name, (char *) url, "3.11") == 0, "creating an environment from a remote source failed");
     free(name);
 }
 
