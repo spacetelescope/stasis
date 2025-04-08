@@ -941,5 +941,5 @@ void debug_hexdump(char *data, int len) {
         strcat(bytes, "   ");
     }
     sprintf(output, "%s | %s | %s", addr, bytes, ascii);
-   puts(output);
+    puts(output);
 }
