@@ -454,6 +454,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strlist_count(ctx.conda.pip_packages_defer)) {
+        msg(STASIS_MSG_L2, "Building Python wheels(s)\n");
         if (!((ctx.conda.wheels_packages = delivery_build_wheels(&ctx)))) {
             exit(1);
         }

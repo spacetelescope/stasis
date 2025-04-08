@@ -892,3 +892,54 @@ int gen_file_extension_str(char *filename, const char *extension) {
     return replace_text(ext_orig, ext_orig, extension, 0);
 }
 
+#define DEBUG_HEXDUMP_ADDR_MAXLEN 20
+#define DEBUG_HEXDUMP_BYTES_MAXLEN (16 * 3 + 2)
+#define DEBUG_HEXDUMP_ASCII_MAXLEN (16 + 1)
+#define DEBUG_HEXDUMP_OUTPUT_MAXLEN (DEBUG_HEXDUMP_ADDR_MAXLEN + DEBUG_HEXDUMP_BYTES_MAXLEN + DEBUG_HEXDUMP_ASCII_MAXLEN + 1)
+
+void debug_hexdump(char *data, int len) {
+    int count = 0;
+    char addr[DEBUG_HEXDUMP_ADDR_MAXLEN] = {0};
+    char bytes[DEBUG_HEXDUMP_BYTES_MAXLEN] = {0};
+    char ascii[DEBUG_HEXDUMP_ASCII_MAXLEN] = {0};
+    char output[DEBUG_HEXDUMP_OUTPUT_MAXLEN] = {0};
+    char *start = data;
+    char *end = data + len;
+
+    char *pos = start;
+    while (pos != end) {
+        if (count == 0) {
+            sprintf(addr + strlen(addr), "%p", pos);
+        }
+        if (count == 8) {
+            strcat(bytes, " ");
+        }
+        if (count > 15) {
+            sprintf(output, "%s | %s | %s", addr, bytes, ascii);
+            puts(output);
+            memset(output, 0, sizeof(output));
+            memset(addr, 0, sizeof(addr));
+            memset(bytes, 0, sizeof(bytes));
+            memset(ascii, 0, sizeof(ascii));
+            count = 0;
+            continue;
+        }
+
+        sprintf(bytes + strlen(bytes), "%02X ", (unsigned char) *pos);
+        sprintf(ascii + strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
+
+        pos++;
+        count++;
+    }
+
+    if (count <= 8) {
+        // Add group padding
+        strcat(bytes, " ");
+    }
+    int padding = 16 - count;
+    for (int i = 0; i < padding; i++) {
+        strcat(bytes, "   ");
+    }
+    sprintf(output, "%s | %s | %s", addr, bytes, ascii);
+    puts(output);
+}

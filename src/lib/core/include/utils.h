@@ -417,4 +417,6 @@ int gen_file_extension_str(char *filename, const char *extension);
  * Remove [extra]s from a spec string
  */
 char *remove_extras(char *s);
+
+void debug_hexdump(char *data, int len);
 #endif //STASIS_UTILS_H
