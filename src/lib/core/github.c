@@ -109,9 +109,12 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
             if (last_char == ',') {
                 trim++;
             }
-            data_offset[strlen(data_offset) - trim] = 0;
+            // Truncate the trimmed bytes
+            memset(&data_offset[strlen(data_offset) - trim], 0, trim);
             // Extract release notes
-            *output = strdup(data_offset);
+            *output = calloc(strlen(data_offset) + 1, sizeof(**output));
+            // Copy output (including terminator)
+            strncpy(*output, data_offset, strlen(data_offset) + 1);
         } else if ((data_offset = strstr(line, field_message))) {
             // Skip past the message field
             data_offset += strlen(field_message);
