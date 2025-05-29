@@ -36,7 +36,7 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
             strncpy(package, config_spec, sizeof(package) - 1);
         }
         remove_extras(package);
-        if (strncmp(package, name, strlen(package)) == 0) {
+        if (strncmp(package, name, strlen(name)) == 0) {
             return config_spec;
         }
     }
