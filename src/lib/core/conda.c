@@ -62,10 +62,21 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
 }
 
 int python_exec(const char *args) {
-    char command[PATH_MAX] = {0};
-    snprintf(command, sizeof(command) - 1, "python %s", args);
+    int result = -1;
+    const char *command_base = "python ";
+    const size_t required_len = strlen(command_base) + strlen(args) + 1;
+
+    char *command = calloc(required_len, sizeof(*command));
+    if (!command) {
+        SYSERROR("Unable to allocate %zu bytes for command string", required_len);
+        return result;
+    }
+    snprintf(command, required_len, "%s%s", command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
-    return system(command);
+
+    result = system(command);
+    guard_free(command);
+    return result;
 }
 
 int pip_exec(const char *args) {
