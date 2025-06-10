@@ -189,7 +189,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
 }
 
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
-    char cmd[PATH_MAX];
+    char command_base[PATH_MAX];
     char pkgs[STASIS_BUFSIZ];
     const char *env_current = getenv("CONDA_DEFAULT_ENV");
 
@@ -203,9 +203,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         }
     }
 
-    memset(cmd, 0, sizeof(cmd));
+    memset(command_base, 0, sizeof(command_base));
     memset(pkgs, 0, sizeof(pkgs));
-    strcat(cmd, "install");
+    strcat(command_base, "install");
 
     typedef int (*Runner)(const char *);
     Runner runner = NULL;
@@ -216,17 +216,23 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
-        strcat(cmd, " --use-local");
+        strcat(command_base, " --use-local");
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
         // as possible between releases.
         if (!ctx->meta.based_on) {
-            strcat(cmd, " --upgrade");
+            strcat(command_base, " --upgrade");
         }
     }
 
-    sprintf(cmd + strlen(cmd), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
+    sprintf(command_base + strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
+    size_t args_alloc_len = STASIS_BUFSIZ + 1;
+    char *args = calloc(args_alloc_len, sizeof(*args));
+    if (!args) {
+        SYSERROR("%s", "Unable to allocate bytes for command arguments");
+        return -1;
+    }
 
     for (size_t x = 0; manifest[x] != NULL; x++) {
         char *name = NULL;
@@ -243,6 +249,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         struct StrList *tag_data = strlist_init();
                         if (!tag_data) {
                             SYSERROR("%s", "Unable to allocate memory for tag data\n");
+                            guard_free(args);
                             return -1;
                         }
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
@@ -290,26 +297,47 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         }
                     }
 
-                    snprintf(cmd + strlen(cmd),
-                             sizeof(cmd) - strlen(cmd) - strlen(info->name) - strlen(info->version) + 5,
+                    const size_t required_len = strlen(args) - strlen(info->name) - strlen(info->version) + 5 + 1;
+                    if (required_len + args_alloc_len > args_alloc_len) {
+                        char *tmp = realloc(args, args_alloc_len * sizeof(*args));
+                        if (!tmp) {
+                            guard_free(args);
+                            SYSERROR("%s", "Unable to reallocate memory for args");
+                            return -1;
+                        }
+                        args = tmp;
+                    }
+                    snprintf(args + strlen(args),
+                             required_len,
                              " '%s==%s'", req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
+                    guard_free(args);
                     return -1;
                 }
             } else {
                 if (startswith(name, "--") || startswith(name, "-")) {
-                    sprintf(cmd + strlen(cmd), " %s", name);
+                    sprintf(args + strlen(args), " %s", name);
                 } else {
-                    sprintf(cmd + strlen(cmd), " '%s'", name);
+                    sprintf(args + strlen(args), " '%s'", name);
                 }
             }
         }
-        int status = runner(cmd);
+        char *command = NULL;
+        if (asprintf(&command, "%s %s", command_base, args) < 0) {
+            SYSERROR("%s", "Unable to allocate bytes for command\n");
+            guard_free(args);
+            return -1;
+        }
+
+        int status = runner(command);
         if (status) {
+            guard_free(args);
+            guard_free(command);
             return status;
         }
     }
+    guard_free(args);
     return 0;
 }
 
