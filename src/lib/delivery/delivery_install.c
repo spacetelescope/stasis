@@ -299,6 +299,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
 
                     const size_t required_len = strlen(args) - strlen(info->name) - strlen(info->version) + 5 + 1;
                     if (required_len + args_alloc_len > args_alloc_len) {
+                        args_alloc_len += required_len;
                         char *tmp = realloc(args, args_alloc_len * sizeof(*args));
                         if (!tmp) {
                             guard_free(args);
