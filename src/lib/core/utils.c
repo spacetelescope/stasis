@@ -892,10 +892,11 @@ int gen_file_extension_str(char *filename, const char *extension) {
     return replace_text(ext_orig, ext_orig, extension, 0);
 }
 
+#define DEBUG_HEXDUMP_FMT_BYTES 6
 #define DEBUG_HEXDUMP_ADDR_MAXLEN 20
 #define DEBUG_HEXDUMP_BYTES_MAXLEN (16 * 3 + 2)
 #define DEBUG_HEXDUMP_ASCII_MAXLEN (16 + 1)
-#define DEBUG_HEXDUMP_OUTPUT_MAXLEN (DEBUG_HEXDUMP_ADDR_MAXLEN + DEBUG_HEXDUMP_BYTES_MAXLEN + DEBUG_HEXDUMP_ASCII_MAXLEN + 1)
+#define DEBUG_HEXDUMP_OUTPUT_MAXLEN (DEBUG_HEXDUMP_FMT_BYTES + DEBUG_HEXDUMP_ADDR_MAXLEN + DEBUG_HEXDUMP_BYTES_MAXLEN + DEBUG_HEXDUMP_ASCII_MAXLEN + 1)
 
 void debug_hexdump(char *data, int len) {
     int count = 0;
@@ -936,10 +937,32 @@ void debug_hexdump(char *data, int len) {
         // Add group padding
         strcat(bytes, " ");
     }
-    int padding = 16 - count;
+    const int padding = 16 - count;
     for (int i = 0; i < padding; i++) {
         strcat(bytes, "   ");
     }
-    sprintf(output, "%s | %s | %s", addr, bytes, ascii);
+    snprintf(output, 6 + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
 }
+
+int grow(const size_t size_new, size_t *size_orig, char **data) {
+    if (!*data) {
+        return 0;
+    }
+    if (size_new >= *size_orig) {
+        const size_t new_size = *size_orig + size_new + 1;
+        SYSDEBUG("template data buffer new size: %zu\n", new_size);
+
+        char *tmp = realloc(*data, new_size);
+        if (!tmp) {
+            perror("realloc failed");
+            return -1;
+        }
+        if (tmp != *data) {
+            *data = tmp;
+        }
+        *size_orig = new_size;
+    }
+    return 0;
+}
+

@@ -137,23 +137,6 @@ struct tplfunc_frame *tpl_getfunc(char *key) {
     return result;
 }
 
-static int grow(size_t z, size_t *output_bytes, char **output) {
-    if (z >= *output_bytes) {
-        size_t new_size = *output_bytes + z + 1;
-        SYSDEBUG("template output buffer new size: %zu\n", new_size);
-
-        char *tmp = realloc(*output, new_size);
-        if (!tmp) {
-            perror("realloc failed");
-            return -1;
-        } else if (tmp != *output) {
-            *output = tmp;
-        }
-        *output_bytes = new_size;
-    }
-    return 0;
-}
-
 char *tpl_render(char *str) {
     if (!str) {
         return NULL;
