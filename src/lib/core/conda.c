@@ -62,37 +62,38 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
 }
 
 int python_exec(const char *args) {
-    int result = -1;
     const char *command_base = "python ";
-    const size_t required_len = strlen(command_base) + strlen(args) + 1;
+    const char *command_fmt = "%s%s";
 
-    char *command = calloc(required_len, sizeof(*command));
+    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
+    char *command = calloc(len + 1, sizeof(*command));
     if (!command) {
-        SYSERROR("Unable to allocate %zu bytes for command string", required_len);
-        return result;
+        SYSERROR("Unable to allocate %d bytes for command string", len);
+        return -1;
     }
-    snprintf(command, required_len, "%s%s", command_base, args);
+
+    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
-    result = system(command);
+    const int result = system(command);
     guard_free(command);
     return result;
 }
 
 int pip_exec(const char *args) {
-    int result = -1;
     const char *command_base = "python -m pip ";
-    const size_t required_len = strlen(command_base) + strlen(args) + 1;
+    const char *command_fmt = "%s%s";
 
-    char *command = calloc(required_len, sizeof(*command));
+    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
+    char *command = calloc(len + 1, sizeof(*command));
     if (!command) {
-        SYSERROR("Unable to allocate %zu bytes for command string", required_len);
-        return result;
+        SYSERROR("Unable to allocate %d bytes for command string", len);
+        return -1;
     }
-    snprintf(command, required_len, "%s%s", command_base, args);
+    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
-    result = system(command);
+    const int result = system(command);
     guard_free(command);
     return result;
 }
@@ -199,7 +200,6 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
 }
 
 int conda_exec(const char *args) {
-    char command[PATH_MAX];
     const char *mamba_commands[] = {
             "build",
             "install",
@@ -224,9 +224,18 @@ int conda_exec(const char *args) {
         }
     }
 
-    snprintf(command, sizeof(command) - 1, "%s %s", conda_as, args);
+    const char *command_fmt = "%s %s";
+    const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
+    char *command = calloc(len + 1, sizeof(*command));
+    if (!command) {
+        return -1;
+    }
+
+    snprintf(command, len + 1, command_fmt, conda_as, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
-    return system(command);
+    const int result = system(command);
+    guard_free(command);
+    return result;
 }
 
 static int conda_prepend_bin(const char *root) {
@@ -521,9 +530,7 @@ int conda_setup_headless() {
 }
 
 int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
-    char env_command[PATH_MAX];
     char *uri_fs = NULL;
-
 
     // Convert a bare system path to a file:// path
     if (!strstr(uri, "://")) {
@@ -553,17 +560,34 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     snprintf(spec, sizeof(spec) - 1, "- python=%s\n", python_version);
     file_replace_text(tempfile, "- python\n", spec, 0);
 
-    sprintf(env_command, "env create -n '%s' --file='%s'", name, tempfile);
-    int status = conda_exec(env_command);
+    const char *fmt = "env create -n '%s' --file='%s'";
+    int len = snprintf(NULL, 0, fmt, name, tempfile);
+    char *env_command = calloc(len + 1, sizeof(*env_command));
+    if (!env_command) {
+        return -1;
+    }
+
+    snprintf(env_command, len + 1, fmt, name, tempfile);
+    const int status = conda_exec(env_command);
     unlink(tempfile);
+    guard_free(env_command);
 
     return status;
 }
 
 int conda_env_create(char *name, char *python_version, char *packages) {
-    char env_command[PATH_MAX];
-    sprintf(env_command, "create -n %s python=%s %s", name, python_version, packages ? packages : "");
-    return conda_exec(env_command);
+    const char *fmt = "create -n %s python=%s %s";
+    const int len = snprintf(NULL, 0, fmt, name, python_version, packages ? packages : "");
+    char *env_command = calloc(len + 1, sizeof(*env_command));
+    if (!env_command) {
+        return -1;
+    }
+
+    snprintf(env_command, len + 1, fmt, name, python_version, packages ? packages : "");
+    const int result = conda_exec(env_command);
+    guard_free(env_command);
+
+    return result;
 }
 
 int conda_env_remove(char *name) {
