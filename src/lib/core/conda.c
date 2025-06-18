@@ -24,7 +24,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     sprintf(installer_path, "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
 
     if (access(installer_path, F_OK)) {
-        download(url, installer_path, NULL);
+        char *errmsg = NULL;
+        const long http_code = download(url, installer_path, &errmsg);
+        if (HTTP_ERROR(http_code)) {
+            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            return -1;
+        }
     }
 
     char mmbin[PATH_MAX];
@@ -552,7 +557,15 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     // We'll create a new file with the same random bits, ending with .yml
     strcat(tempfile, ".yml");
     char *errmsg = NULL;
-    download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
+    const long http_code = download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
+    if (HTTP_ERROR(http_code)) {
+        if (errmsg) {
+            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            guard_free(errmsg);
+        }
+        guard_free(uri_fs);
+        return -1;
+    }
     guard_free(uri_fs);
 
     // Rewrite python version
