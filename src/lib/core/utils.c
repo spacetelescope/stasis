@@ -960,7 +960,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
         }
         if (tmp != *data) {
             *data = tmp;
-        Dynamic commands}
+        }
         *size_orig = new_size;
     }
     return 0;
