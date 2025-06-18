@@ -4,7 +4,7 @@
 
 #include "conda.h"
 
-int micromamba(struct MicromambaInfo *info, char *command, ...) {
+int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     struct utsname sys;
     uname(&sys);
 
