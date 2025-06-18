@@ -241,7 +241,7 @@ int conda_exec(const char *args) {
 static int conda_prepend_bin(const char *root) {
     char conda_bin[PATH_MAX] = {0};
 
-    snprintf(conda_bin, sizeof(conda_bin) - 1, "%s/bin", root);
+    snprintf(conda_bin, sizeof(conda_bin), "%s/bin", root);
     if (env_manipulate_pathstr("PATH", conda_bin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
@@ -251,7 +251,7 @@ static int conda_prepend_bin(const char *root) {
 static int conda_prepend_condabin(const char *root) {
     char conda_condabin[PATH_MAX] = {0};
 
-    snprintf(conda_condabin, sizeof(conda_condabin) - 1, "%s/condabin", root);
+    snprintf(conda_condabin, sizeof(conda_condabin), "%s/condabin", root);
     if (env_manipulate_pathstr("PATH", conda_condabin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
@@ -360,7 +360,7 @@ int conda_activate(const char *root, const char *env_name) {
         return -1;
     }
 
-    snprintf(command, sizeof(command) - 1,
+    snprintf(command, sizeof(command),
         "set -a\n"
         "source %s\n"
         "__conda_exe() (\n"
@@ -557,7 +557,7 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
 
     // Rewrite python version
     char spec[255] = {0};
-    snprintf(spec, sizeof(spec) - 1, "- python=%s\n", python_version);
+    snprintf(spec, sizeof(spec), "- python=%s\n", python_version);
     file_replace_text(tempfile, "- python\n", spec, 0);
 
     const char *fmt = "env create -n '%s' --file='%s'";
