@@ -941,7 +941,7 @@ void debug_hexdump(char *data, int len) {
     for (int i = 0; i < padding; i++) {
         strcat(bytes, "   ");
     }
-    snprintf(output, 6 + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
+    snprintf(output, DEBUG_HEXDUMP_FMT_BYTES + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
 }
 
@@ -960,7 +960,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
         }
         if (tmp != *data) {
             *data = tmp;
-        }
+        Dynamic commands}
         *size_orig = new_size;
     }
     return 0;
