@@ -38,7 +38,7 @@ struct MicromambaInfo {
  * @param ... variadic arguments
  * @return exit code
  */
-int micromamba(struct MicromambaInfo *info, char *command, ...);
+int micromamba(const struct MicromambaInfo *info, char *command, ...);
 
 /**
  * Execute Python

@@ -4,7 +4,7 @@
 
 #include "conda.h"
 
-int micromamba(struct MicromambaInfo *info, char *command, ...) {
+int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     struct utsname sys;
     uname(&sys);
 
@@ -24,7 +24,12 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
     sprintf(installer_path, "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
 
     if (access(installer_path, F_OK)) {
-        download(url, installer_path, NULL);
+        char *errmsg = NULL;
+        const long http_code = download(url, installer_path, &errmsg);
+        if (HTTP_ERROR(http_code)) {
+            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            return -1;
+        }
     }
 
     char mmbin[PATH_MAX];
@@ -62,37 +67,38 @@ int micromamba(struct MicromambaInfo *info, char *command, ...) {
 }
 
 int python_exec(const char *args) {
-    int result = -1;
     const char *command_base = "python ";
-    const size_t required_len = strlen(command_base) + strlen(args) + 1;
+    const char *command_fmt = "%s%s";
 
-    char *command = calloc(required_len, sizeof(*command));
+    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
+    char *command = calloc(len + 1, sizeof(*command));
     if (!command) {
-        SYSERROR("Unable to allocate %zu bytes for command string", required_len);
-        return result;
+        SYSERROR("Unable to allocate %d bytes for command string", len);
+        return -1;
     }
-    snprintf(command, required_len, "%s%s", command_base, args);
+
+    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
-    result = system(command);
+    const int result = system(command);
     guard_free(command);
     return result;
 }
 
 int pip_exec(const char *args) {
-    int result = -1;
     const char *command_base = "python -m pip ";
-    const size_t required_len = strlen(command_base) + strlen(args) + 1;
+    const char *command_fmt = "%s%s";
 
-    char *command = calloc(required_len, sizeof(*command));
+    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
+    char *command = calloc(len + 1, sizeof(*command));
     if (!command) {
-        SYSERROR("Unable to allocate %zu bytes for command string", required_len);
-        return result;
+        SYSERROR("Unable to allocate %d bytes for command string", len);
+        return -1;
     }
-    snprintf(command, required_len, "%s%s", command_base, args);
+    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
-    result = system(command);
+    const int result = system(command);
     guard_free(command);
     return result;
 }
@@ -199,7 +205,6 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
 }
 
 int conda_exec(const char *args) {
-    char command[PATH_MAX];
     const char *mamba_commands[] = {
             "build",
             "install",
@@ -224,15 +229,24 @@ int conda_exec(const char *args) {
         }
     }
 
-    snprintf(command, sizeof(command) - 1, "%s %s", conda_as, args);
+    const char *command_fmt = "%s %s";
+    const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
+    char *command = calloc(len + 1, sizeof(*command));
+    if (!command) {
+        return -1;
+    }
+
+    snprintf(command, len + 1, command_fmt, conda_as, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
-    return system(command);
+    const int result = system(command);
+    guard_free(command);
+    return result;
 }
 
 static int conda_prepend_bin(const char *root) {
     char conda_bin[PATH_MAX] = {0};
 
-    snprintf(conda_bin, sizeof(conda_bin) - 1, "%s/bin", root);
+    snprintf(conda_bin, sizeof(conda_bin), "%s/bin", root);
     if (env_manipulate_pathstr("PATH", conda_bin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
@@ -242,7 +256,7 @@ static int conda_prepend_bin(const char *root) {
 static int conda_prepend_condabin(const char *root) {
     char conda_condabin[PATH_MAX] = {0};
 
-    snprintf(conda_condabin, sizeof(conda_condabin) - 1, "%s/condabin", root);
+    snprintf(conda_condabin, sizeof(conda_condabin), "%s/condabin", root);
     if (env_manipulate_pathstr("PATH", conda_condabin, PM_PREPEND | PM_ONCE)) {
         return -1;
     }
@@ -351,7 +365,7 @@ int conda_activate(const char *root, const char *env_name) {
         return -1;
     }
 
-    snprintf(command, sizeof(command) - 1,
+    snprintf(command, sizeof(command),
         "set -a\n"
         "source %s\n"
         "__conda_exe() (\n"
@@ -521,9 +535,7 @@ int conda_setup_headless() {
 }
 
 int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
-    char env_command[PATH_MAX];
     char *uri_fs = NULL;
-
 
     // Convert a bare system path to a file:// path
     if (!strstr(uri, "://")) {
@@ -545,25 +557,50 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     // We'll create a new file with the same random bits, ending with .yml
     strcat(tempfile, ".yml");
     char *errmsg = NULL;
-    download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
+    const long http_code = download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
+    if (HTTP_ERROR(http_code)) {
+        if (errmsg) {
+            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            guard_free(errmsg);
+        }
+        guard_free(uri_fs);
+        return -1;
+    }
     guard_free(uri_fs);
 
     // Rewrite python version
     char spec[255] = {0};
-    snprintf(spec, sizeof(spec) - 1, "- python=%s\n", python_version);
+    snprintf(spec, sizeof(spec), "- python=%s\n", python_version);
     file_replace_text(tempfile, "- python\n", spec, 0);
 
-    sprintf(env_command, "env create -n '%s' --file='%s'", name, tempfile);
-    int status = conda_exec(env_command);
+    const char *fmt = "env create -n '%s' --file='%s'";
+    int len = snprintf(NULL, 0, fmt, name, tempfile);
+    char *env_command = calloc(len + 1, sizeof(*env_command));
+    if (!env_command) {
+        return -1;
+    }
+
+    snprintf(env_command, len + 1, fmt, name, tempfile);
+    const int status = conda_exec(env_command);
     unlink(tempfile);
+    guard_free(env_command);
 
     return status;
 }
 
 int conda_env_create(char *name, char *python_version, char *packages) {
-    char env_command[PATH_MAX];
-    sprintf(env_command, "create -n %s python=%s %s", name, python_version, packages ? packages : "");
-    return conda_exec(env_command);
+    const char *fmt = "create -n %s python=%s %s";
+    const int len = snprintf(NULL, 0, fmt, name, python_version, packages ? packages : "");
+    char *env_command = calloc(len + 1, sizeof(*env_command));
+    if (!env_command) {
+        return -1;
+    }
+
+    snprintf(env_command, len + 1, fmt, name, python_version, packages ? packages : "");
+    const int result = conda_exec(env_command);
+    guard_free(env_command);
+
+    return result;
 }
 
 int conda_env_remove(char *name) {

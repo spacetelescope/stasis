@@ -419,4 +419,41 @@ int gen_file_extension_str(char *filename, const char *extension);
 char *remove_extras(char *s);
 
 void debug_hexdump(char *data, int len);
+
+/**
+ * Realloc helper
+ *
+ * @code{.c}
+ * #include <stdio.h>
+ * #include <stdlib.h>
+ * #include <string.h>
+ * #include "utils.h"
+ *
+ * int main(int argc, char *argv[]) {
+ *     size_t sz = 10;
+ *     char *data = calloc(sz, sizeof(*data));
+ *
+ *     // populate data
+ *     strncat(data, "/path/to/", sz - 1);
+ *
+ *     // Double the allocation size for data
+ *     if (grow(sz * 2, &sz, &data)) {
+ *         // memory error
+ *     }
+ *
+ *     // sz is now 20
+ *     strncat(data, "filename", sz - 1 - strlen(data));
+ *
+ *     puts(data);
+ *     // output: "/path/to/filename"
+ * }
+ * @endcode
+ *
+ * @param size_new increase by `size_new` bytes
+ * @param size_orig address of variable containing the original allocation size (modified)
+ * @param data address to write data
+ * @return 0 on success
+ * @return -1 on error
+ */
+int grow(size_t size_new, size_t *size_orig, char **data);
 #endif //STASIS_UTILS_H

@@ -190,7 +190,6 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
 
 int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, char *env_name, int type, struct StrList **manifest) {
     char command_base[PATH_MAX];
-    char pkgs[STASIS_BUFSIZ];
     const char *env_current = getenv("CONDA_DEFAULT_ENV");
 
     if (env_current) {
@@ -204,7 +203,6 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     memset(command_base, 0, sizeof(command_base));
-    memset(pkgs, 0, sizeof(pkgs));
     strcat(command_base, "install");
 
     typedef int (*Runner)(const char *);
@@ -227,8 +225,8 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     sprintf(command_base + strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
-    size_t args_alloc_len = STASIS_BUFSIZ + 1;
-    char *args = calloc(args_alloc_len, sizeof(*args));
+    size_t args_alloc_len = STASIS_BUFSIZ;
+    char *args = calloc(args_alloc_len + 1, sizeof(*args));
     if (!args) {
         SYSERROR("%s", "Unable to allocate bytes for command arguments");
         return -1;
@@ -280,9 +278,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             fprintf(stderr, "No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found
-                            guard_strlist_free(&tag_data);
                             info->version = strdup(whl->version);
                         }
+                        guard_strlist_free(&tag_data);
                         wheel_free(&whl);
                     }
 
@@ -297,20 +295,17 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         }
                     }
 
-                    const size_t required_len = strlen(args) - strlen(info->name) - strlen(info->version) + 5 + 1;
-                    if (required_len + args_alloc_len > args_alloc_len) {
-                        args_alloc_len += required_len;
-                        char *tmp = realloc(args, args_alloc_len * sizeof(*args));
-                        if (!tmp) {
+                    const char *fmt_append = "%s '%s==%s'";
+                    const char *fmt = " '%s==%s'";
+                    const int required_len = snprintf(NULL, 0, fmt_append, args, req, info->version);
+                    if (required_len > (int) args_alloc_len) {
+                        if (grow(required_len, &args_alloc_len, &args)) {
+                            SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
                             guard_free(args);
-                            SYSERROR("%s", "Unable to reallocate memory for args");
                             return -1;
                         }
-                        args = tmp;
                     }
-                    snprintf(args + strlen(args),
-                             required_len,
-                             " '%s==%s'", req, info->version);
+                    snprintf(args + strlen(args), required_len, fmt, req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     guard_free(args);
@@ -318,9 +313,29 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 }
             } else {
                 if (startswith(name, "--") || startswith(name, "-")) {
-                    sprintf(args + strlen(args), " %s", name);
+                    const char *fmt_append = "%s %s";
+                    const char *fmt = " %s";
+                    const int required_len = snprintf(NULL, 0, fmt_append, args, name);
+                    if (required_len > (int) args_alloc_len) {
+                        if (grow(required_len, &args_alloc_len, &args)) {
+                            SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
+                            guard_free(args);
+                            return -1;
+                        }
+                    }
+                    sprintf(args + strlen(args), fmt, name);
                 } else {
-                    sprintf(args + strlen(args), " '%s'", name);
+                    const char *fmt_append = "%s '%s'";
+                    const char *fmt = " '%s'";
+                    const int required_len = snprintf(NULL, 0, fmt_append, args, name);
+                    if (required_len > (int) args_alloc_len) {
+                        if (grow(required_len, &args_alloc_len, &args)) {
+                            SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
+                            guard_free(args);
+                            return -1;
+                        }
+                    }
+                    sprintf(args + strlen(args), fmt, name);
                 }
             }
         }
@@ -332,9 +347,10 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         }
 
         int status = runner(command);
+        guard_free(args);
+        guard_free(command);
         if (status) {
-            guard_free(args);
-            guard_free(command);
+            // fail quickly
             return status;
         }
     }
