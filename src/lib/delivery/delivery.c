@@ -225,7 +225,15 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
                 guard_free(test->version);
                 if (spec_begin && spec_end) {
-                    test->version = strdup(spec_end);
+                    char *version_at = strrchr(spec_end, '@');
+                    if (version_at) {
+                        if (strlen(version_at)) {
+                            version_at++;
+                        }
+                        test->version = strdup(version_at);
+                    } else {
+                        test->version = strdup(spec_end);
+                    }
                 } else {
                     // There are too many possible default branches nowadays: master, main, develop, xyz, etc.
                     // HEAD is a safe bet.
@@ -233,6 +241,9 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 }
 
                 // Is the list item a git+schema:// URL?
+                // TODO: nametmp is just the name so this will never work. but do we want it to? this looks like
+                // TODO:     an unsafe feature. We shouldn't be able to change what's in the config. we should
+                // TODO:     be getting what we asked for, or exit the program with an error.
                 if (strstr(nametmp, "git+") && strstr(nametmp, "://")) {
                     char *xrepo = strstr(nametmp, "+");
                     if (xrepo) {
