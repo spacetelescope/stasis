@@ -456,4 +456,9 @@ void debug_hexdump(char *data, int len);
  * @return -1 on error
  */
 int grow(size_t size_new, size_t *size_orig, char **data);
+
+int in_ascii_range(char c, char lower, char upper);
+
+#define GIT_HASH_LEN 40
+int is_git_sha(char const *hash);
 #endif //STASIS_UTILS_H
