@@ -243,7 +243,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
             if (INSTALL_PKG_PIP_DEFERRED & type) {
                 struct Test *info = requirement_from_test(ctx, name);
                 if (info) {
-                    if (!strcmp(info->version, "HEAD")) {
+                    if (!strcmp(info->version, "HEAD") || is_git_sha(info->version)) {
                         struct StrList *tag_data = strlist_init();
                         if (!tag_data) {
                             SYSERROR("%s", "Unable to allocate memory for tag data\n");

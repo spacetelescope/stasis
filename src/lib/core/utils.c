@@ -966,3 +966,31 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
     return 0;
 }
 
+int in_ascii_range(const char c, char lower, char upper) {
+    if (!(c >= lower && c <= upper)) {
+        return 0;
+    }
+    return 1;
+}
+
+int is_git_sha(char const *hash) {
+    size_t result = 0;
+    size_t len = strlen(hash);
+
+    if (len > GIT_HASH_LEN) {
+        // too long to be a git commit hash
+        return 0;
+    }
+    for (size_t i = 0; i < len; i++) {
+        if (in_ascii_range(hash[i], 'a', 'f')
+            || in_ascii_range(hash[i], 'A', 'F')
+            || in_ascii_range(hash[i], '0', '9')) {
+            result++;
+        }
+    }
+    if (result < len) {
+        return 0;
+    }
+    return 1;
+}
+
