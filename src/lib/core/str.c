@@ -640,12 +640,35 @@ char *tolower_s(char *s) {
 }
 
 char *to_short_version(const char *s) {
-    char *result = strdup(s);
-    if (!result) {
-        return NULL;
+    char *result = NULL;
+    if (num_chars(s, '.') > 1) {
+        char **version_data = split((char *) s, ".", 1);
+        if (!version_data) {
+            goto to_short_version_failed;
+        }
+        if (version_data[1]) {
+            char *dot = strchr(version_data[1], '.');
+            if (dot) {
+                *dot = '\0';
+            }
+        }
+        result = join(version_data, "");
+        if (!result) {
+            guard_array_free(version_data);
+            goto to_short_version_failed;
+        }
+        guard_array_free(version_data);
+    } else {
+        result = strdup(s);
+        if (!result) {
+            goto to_short_version_failed;
+        }
+        strchrdel(result, ".");
     }
-    strchrdel(result, ".");
+
     return result;
+    to_short_version_failed:
+    return NULL;
 }
 
 void unindent(char *s) {
