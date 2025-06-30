@@ -293,18 +293,27 @@ int isdigit_s(const char *s);
 char *tolower_s(char *s);
 
 /**
- * Return a copy of the input string with "." characters removed
+ * Reduce a version string to the major[minor] format used by Python
  *
- * ~~~{.c}
- * char *version = strdup("1.2.3");
- * char *version_short = to_short_version(str);
- * // version_short is "123"
- * free(version_short);
+ * @code{.c}
+ * #include <stdio.h>
+ * #include "str.h"
  *
- * ~~~
+ * int main(int argc, char *argv[]) {
+ *     char python_version[] = "3.13.3"
+ *     char *python_short_version = to_short_version(python_version);  // "313"
+ *     if (!python_short_version) {
+ *         perror("unable to allocate memory for shortened python version");
+ *         return 1;
+ *     }
+ *     free(python_short_version);
+ *     return 0;
+ * }
+ * @endcode
  *
- * @param s input string
- * @return pointer to new string
+ * @param s python version string
+ * @return the shortened version string
+ * @return NULL on error
  */
 char *to_short_version(const char *s);
 
