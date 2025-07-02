@@ -461,4 +461,7 @@ int in_ascii_range(char c, char lower, char upper);
 
 #define GIT_HASH_LEN 40
 int is_git_sha(char const *hash);
+
+int check_python_package_dependencies(const char *srcdir);
+
 #endif //STASIS_UTILS_H

@@ -173,6 +173,18 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     memset(outdir, 0, sizeof(outdir));
                     memset(cmd, 0, sizeof(outdir));
 
+                    const int dep_status = check_python_package_dependencies(".");
+                    if (dep_status) {
+                        fprintf(stderr, "\nPlease replace all occurrences above with standard package specs:\n"
+                                        "\n"
+                                        "    package==x.y.z\n"
+                                        "    package>=x.y.z\n"
+                                        "    package<=x.y.z\n"
+                                        "    ...\n"
+                                        "\n");
+                        COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
+                    }
+
                     strcpy(dname, ctx->tests[i].name);
                     tolower_s(dname);
                     sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);

@@ -97,6 +97,18 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
             } else {
+                int dep_status = check_python_package_dependencies(".");
+                if (dep_status) {
+                    fprintf(stderr, "\nPlease replace all occurrences above with standard package specs:\n"
+                                    "\n"
+                                    "    package==x.y.z\n"
+                                    "    package>=x.y.z\n"
+                                    "    package<=x.y.z\n"
+                                    "    ...\n"
+                                    "\n");
+                    COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
+                }
+
                 char *cmd = calloc(strlen(test->script) + STASIS_BUFSIZ, sizeof(*cmd));
                 if (!cmd) {
                     SYSERROR("Unable to allocate test script buffer: %s", strerror(errno));

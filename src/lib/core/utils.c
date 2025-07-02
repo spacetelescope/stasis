@@ -994,3 +994,87 @@ int is_git_sha(char const *hash) {
     return 1;
 }
 
+static int read_vcs_records(const size_t line, char **data) {
+    (void) line;  // unused
+    const char *vcs_name[] = {
+        "git",
+        "svn",
+        "hg",
+        "bzr",
+    };
+    for (size_t i = 0; i < sizeof(vcs_name) / sizeof(vcs_name[0]); i++) {
+        const char *vcs = vcs_name[i];
+        char *data_local = strdup(*data);
+        if (!data_local) {
+            fprintf(stderr, "Out of memory\n");
+            return -1;
+        }
+
+        // Remove leading/trailing blanks
+        lstrip(data_local);
+        strip(data_local);
+
+        // Ignore file comment(s)
+        if (startswith(data_local, "#") || startswith(data_local, ";")) {
+            // continue
+            return 1;
+        }
+
+        // Begin matching VCS package syntax
+        const char *match_vcs = strstr(data_local,vcs);
+        if (match_vcs) {
+            const char *match_protocol_sep = strstr(match_vcs, "+");
+            if (match_protocol_sep) {
+                const char *match_protocol = strstr(match_protocol_sep, "://");
+                if (match_protocol) {
+                    guard_free(data_local);
+                    // match found
+                    return 0;
+                }
+            }
+        }
+        guard_free(data_local);
+    }
+
+    // no match, continue
+    return 1;
+}
+int check_python_package_dependencies(const char *srcdir) {
+    const char *configs[] = {
+        "pyproject.toml",
+        "setup.cfg",
+        "setup.py"
+    };
+
+    for (size_t i = 0; i < sizeof(configs) / sizeof(configs[0]); i++) {
+        char path[PATH_MAX] = {0};
+        const char *configfile = configs[i];
+
+        snprintf(path, sizeof(path), "%s/%s", srcdir, configfile);
+        if (access(path, F_OK) < 0) {
+            continue;
+        }
+
+        //char **data = file_readlines(path, 0, 0, NULL);
+        struct StrList *data = strlist_init();
+        int err = 0;
+        if ((err = strlist_append_file(data, path, read_vcs_records))) {
+            guard_strlist_free(&data);
+            return -1;
+        }
+        const size_t count = strlist_count(data);
+        if (count) {
+            printf("\nERROR: VCS requirement(s) detected in %s:\n", configfile);
+            for (size_t j = 0; j < count; j++) {
+                char *record = strlist_item(data, j);
+                lstrip(record);
+                strip(record);
+                printf("[%zu] %s\n", j, record);
+            }
+            guard_strlist_free(&data);
+            return 1;
+        }
+        guard_strlist_free(&data);
+    }
+    return 0;
+}
