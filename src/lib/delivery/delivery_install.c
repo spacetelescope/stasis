@@ -222,9 +222,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (!ctx->meta.based_on) {
             strcat(command_base, " --upgrade");
         }
+        sprintf(command_base + strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
 
-    sprintf(command_base + strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     size_t args_alloc_len = STASIS_BUFSIZ;
     char *args = calloc(args_alloc_len + 1, sizeof(*args));
     if (!args) {
