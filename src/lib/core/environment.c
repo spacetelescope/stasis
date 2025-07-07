@@ -177,7 +177,7 @@ int runtime_replace(RuntimeEnv **dest, char **src) {
 }
 
 /**
- * Determine whether or not a key exists in the runtime environment
+ * Determine whether a key exists in the runtime environment
  *
  * Example:
  *
