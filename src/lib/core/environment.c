@@ -106,14 +106,13 @@ void runtime_export(RuntimeEnv *env, char **keys) {
         if (keys != NULL) {
             for (size_t j = 0; keys[j] != NULL; j++) {
                 if (strcmp(keys[j], key) == 0) {
-                    //sprintf(output, "%s=\"%s\"\n%s %s", key, value ? value : "", export_command, key);
-                    sprintf(output, "%s %s=\"%s\"", export_command, key, value ? value : "");
+                    snprintf(output, sizeof(output), "%s %s=\"%s\"", export_command, key, value ? value : "");
                     puts(output);
                 }
             }
         }
         else {
-            sprintf(output, "%s %s=\"%s\"", export_command, key, value ? value : "");
+            snprintf(output, sizeof(output), "%s %s=\"%s\"", export_command, key, value ? value : "");
             puts(output);
         }
         guard_free(value);
