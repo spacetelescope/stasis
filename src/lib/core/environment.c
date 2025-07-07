@@ -404,6 +404,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
  * @param _value New environment variable value
  */
 void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
+    const char *sep = "=";
     if (_key == NULL) {
         return;
     }
