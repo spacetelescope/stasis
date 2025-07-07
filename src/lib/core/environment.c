@@ -436,6 +436,7 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     }
     guard_free(now);
     guard_free(key);
+    guard_free(value);
 }
 
 /**
