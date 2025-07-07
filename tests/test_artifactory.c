@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
     // Skip this suite if we're not configured to use it
     if (jfrt_auth_init(&gauth)) {
         SYSERROR("%s", "Not configured to test Artifactory. Skipping.");
+        guard_free(basedir);
         return STASIS_TEST_SUITE_SKIP;
     }
     guard_free(basedir);
