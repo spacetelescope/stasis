@@ -162,8 +162,6 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     // keys in the configuration
     RuntimeEnv *rt = runtime_copy(__environ);
     while ((rtdata = ini_getall(ini, "runtime")) != NULL) {
-        char rec[STASIS_BUFSIZ];
-        sprintf(rec, "%s=%s", lstrip(strip(rtdata->key)), lstrip(strip(rtdata->value)));
         runtime_set(rt, rtdata->key, rtdata->value);
     }
     runtime_apply(rt);
