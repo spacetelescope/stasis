@@ -411,8 +411,8 @@ static void release_install_pip_packages(struct Delivery *ctx, char *env_name) {
     }
 }
 
-static void build_docker(struct Delivery *ctx, int disabled) {
-    int want_docker = ini_section_search(&ctx->_stasis_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:docker") ? true : false;
+static void build_docker(struct Delivery *ctx, const int disabled) {
+    const int want_docker = ini_section_search(&ctx->_stasis_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:docker") ? true : false;
 
     if (want_docker) {
         if (disabled) {
@@ -464,7 +464,7 @@ static void generate_release(struct Delivery *ctx, char *env_name, char *env_nam
 }
 
 static void transfer_artifacts(struct Delivery *ctx) {
-    int want_artifactory = ini_section_search(&ctx->_stasis_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:artifactory") ? true : false;
+    const int want_artifactory = ini_section_search(&ctx->_stasis_ini_fp.delivery, INI_SEARCH_BEGINS, "deploy:artifactory") ? true : false;
     if (want_artifactory) {
         if (globals.enable_artifactory && globals.enable_artifactory_upload) {
             msg(STASIS_MSG_L1, "Uploading artifacts\n");
