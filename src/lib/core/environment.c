@@ -244,7 +244,14 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
     ssize_t key_offset = runtime_contains(env, key);
     if (key_offset != -1) {
         char **pair = split(strlist_item(env, key_offset), "=", 0);
+        if (!pair) {
+            return NULL;
+        }
         result = join(&pair[1], "=");
+        if (!result) {
+            guard_array_free(pair);
+            return NULL;
+        }
         guard_array_free(pair);
     }
     return result;
@@ -347,9 +354,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
             }
             // Append expanded environment variable to output
             strncat(expanded, tmp, STASIS_BUFSIZ - 1);
-            if (env) {
-                guard_free(tmp);
-            }
+            guard_free(tmp);
         }
 
         // Nothing to do so append input to output
@@ -403,9 +408,22 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
         return;
     }
     char *key = strdup(_key);
-    ssize_t key_offset = runtime_contains(env, key);
+    if (!key) {
+        SYSERROR("%s", "unable to allocate memory for key");
+        exit(1);
+    }
     char *value = runtime_expand_var(env, _value);
-    char *now = join((char *[]) {key, value, NULL}, "=");
+    if (!value) {
+        SYSERROR("%s", "unable to allocate memory for value");
+        exit(1);
+    }
+
+    lstrip(value);
+    char *now = join((char *[]) {key, value, NULL}, sep);
+    if (!now) {
+        SYSERROR("%s", "unable to allocate memory for join");
+        exit(1);
+    }
 
     if (key_offset < 0) {
         strlist_append(&env, now);
@@ -423,6 +441,10 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
 void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 1);
+        if (!pair) {
+            SYSERROR("%s", "unable to allocate memory for runtime_apply");
+            return;
+        }
         setenv(pair[0], pair[1], 1);
         guard_array_free(pair);
     }
