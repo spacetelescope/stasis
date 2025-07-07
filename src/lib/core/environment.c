@@ -410,6 +410,7 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     if (_key == NULL) {
         return;
     }
+    const ssize_t key_offset = runtime_contains(env, _key);
     char *key = strdup(_key);
     if (!key) {
         SYSERROR("%s", "unable to allocate memory for key");
