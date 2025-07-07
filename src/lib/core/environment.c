@@ -291,8 +291,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
 
     // If there's no environment variables to process return the input string
     if (strchr(input, delim) == NULL) {
-        //return strdup(input);
-        return input;
+        return strdup(input);
     }
 
     expanded = calloc(STASIS_BUFSIZ, sizeof(char));
