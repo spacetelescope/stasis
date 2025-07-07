@@ -341,7 +341,10 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
             if (env) {
                 tmp = runtime_get(env, var);
             } else {
-                tmp = getenv(var);
+                const char *v = getenv(var);
+                if (v) {
+                    tmp = strdup(v);
+                }
             }
             if (tmp == NULL) {
                 // This mimics shell behavior in general.
