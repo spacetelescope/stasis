@@ -195,6 +195,23 @@ void test_ini_getval_wrappers() {
     ini_free(&ini);
 }
 
+void test_ini_getall() {
+    const char *filename = "ini_open.ini";
+    struct INIFILE *ini = NULL;
+    const char *data = "[default]\nhello=world!\nthis=is a test\nx=1\ny=0\n";
+
+    stasis_testing_write_ascii(filename, data);
+    ini = ini_open(filename);
+    STASIS_ASSERT_FATAL(ini != NULL, "failed to open ini file");
+
+    const struct INIData *d = NULL;
+    for (size_t i = 0; (d = ini_getall(ini, "default")) != NULL; i++) {
+        STASIS_ASSERT(d->key != NULL, "INIData key should not be NULL");
+        STASIS_ASSERT(d->value != NULL, "INIData key should not be NULL");
+    }
+    ini_free(&ini);
+}
+
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
@@ -204,6 +221,7 @@ int main(int argc, char *argv[]) {
         test_ini_has_key,
         test_ini_setval_getval,
         test_ini_getval_wrappers,
+        test_ini_getall,
     };
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();
