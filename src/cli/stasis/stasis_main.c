@@ -43,24 +43,29 @@ static void setup_python_version_override(struct Delivery *ctx, const char *vers
 
 static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
     if (!*config_input) {
-        // no configuration passed by argument. use basic config.
+        SYSDEBUG("%s", "No configuration passed by argument. Using basic config.");
         char cfgfile[PATH_MAX * 2];
         sprintf(cfgfile, "%s/%s", globals.sysconfdir, "stasis.ini");
+        SYSDEBUG("cfgfile: %s", cfgfile);
         if (!access(cfgfile, F_OK | R_OK)) {
             *config_input = strdup(cfgfile);
         } else {
             msg(STASIS_MSG_WARN, "STASIS global configuration is not readable, or does not exist: %s", cfgfile);
         }
-    } else {
-        msg(STASIS_MSG_L2, "Reading STASIS global configuration: %s\n", *config_input);
-        ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
-        if (!ctx->_stasis_ini_fp.cfg) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read config file: %s, %s\n", *config_input, strerror(errno));
-            exit(1);
-        }
-        ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
-        guard_free(*config_input);
     }
+
+    msg(STASIS_MSG_L2, "Reading STASIS global configuration: %s\n", *config_input);
+    ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
+    if (!ctx->_stasis_ini_fp.cfg) {
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read config file: %s, %s\n", *config_input, strerror(errno));
+        exit(1);
+    }
+    ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
+    if (!ctx->_stasis_ini_fp.cfg_path) {
+        SYSERROR("Failed to allocate memory for config file name");
+        exit(1);
+    }
+    guard_free(*config_input);
 }
 
 static void configure_delivery_ini(struct Delivery *ctx, char **delivery_input) {
