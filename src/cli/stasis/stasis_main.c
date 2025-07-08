@@ -626,7 +626,8 @@ int main(int argc, char *argv[]) {
     strcat(env_name_testing, "-test");
     char *envs[] = {
         "release", env_name,
-        "testing", env_name_testing
+        "testing", env_name_testing,
+        NULL, NULL,
     };
 
     check_release_history(&ctx);
