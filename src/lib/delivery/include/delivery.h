@@ -459,4 +459,28 @@ int delivery_series_sync(struct Delivery *ctx);
  */
 int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_pkg_manager);
 
+/**
+ * Export delivery environments
+ *
+ * @param ctx Delivery context
+ * @param envs array of conda environment names
+ */
+void delivery_export(const struct Delivery *ctx, char *envs[]);
+
+/**
+ * STAGE 1: Rewrite delivery-related strings in specfile
+ *
+ * @param ctx Delivery context
+ * @param specfile path to YAML spec file
+ */
+void delivery_rewrite_stage1(struct Delivery *ctx, char *specfile);
+
+/**
+ * STAGE 2: Rewrite delivery-related strings in specfile
+ *
+ * @param ctx Delivery context
+ * @param specfile path to YAML spec file
+ */
+void delivery_rewrite_stage2(struct Delivery *ctx, char *specfile);
+
 #endif //STASIS_DELIVERY_H

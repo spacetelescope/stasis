@@ -55,6 +55,7 @@ int populate_info(struct Delivery *ctx) {
 int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
+        SYSDEBUG("%s", "cfg is NULL");
         return -1;
     }
     int err = 0;
@@ -162,8 +163,6 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     // keys in the configuration
     RuntimeEnv *rt = runtime_copy(__environ);
     while ((rtdata = ini_getall(ini, "runtime")) != NULL) {
-        char rec[STASIS_BUFSIZ];
-        sprintf(rec, "%s=%s", lstrip(strip(rtdata->key)), lstrip(strip(rtdata->value)));
         runtime_set(rt, rtdata->key, rtdata->value);
     }
     runtime_apply(rt);

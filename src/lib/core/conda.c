@@ -28,6 +28,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         const long http_code = download(url, installer_path, &errmsg);
         if (HTTP_ERROR(http_code)) {
             fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            guard_free(errmsg);
             return -1;
         }
     }

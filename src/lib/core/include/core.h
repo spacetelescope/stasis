@@ -15,7 +15,7 @@
 #define STASIS_NAME_MAX 255
 #define STASIS_DIRSTACK_MAX 1024
 #define STASIS_TIME_STR_MAX 128
-#define HTTP_ERROR(X) X >= 400
+#define HTTP_ERROR(X) (X >= 400 || X < 0)
 
 #include "config.h"
 #include "core_mem.h"

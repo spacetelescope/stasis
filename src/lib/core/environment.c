@@ -106,14 +106,13 @@ void runtime_export(RuntimeEnv *env, char **keys) {
         if (keys != NULL) {
             for (size_t j = 0; keys[j] != NULL; j++) {
                 if (strcmp(keys[j], key) == 0) {
-                    //sprintf(output, "%s=\"%s\"\n%s %s", key, value ? value : "", export_command, key);
-                    sprintf(output, "%s %s=\"%s\"", export_command, key, value ? value : "");
+                    snprintf(output, sizeof(output), "%s %s=\"%s\"", export_command, key, value ? value : "");
                     puts(output);
                 }
             }
         }
         else {
-            sprintf(output, "%s %s=\"%s\"", export_command, key, value ? value : "");
+            snprintf(output, sizeof(output), "%s %s=\"%s\"", export_command, key, value ? value : "");
             puts(output);
         }
         guard_free(value);
@@ -178,7 +177,7 @@ int runtime_replace(RuntimeEnv **dest, char **src) {
 }
 
 /**
- * Determine whether or not a key exists in the runtime environment
+ * Determine whether a key exists in the runtime environment
  *
  * Example:
  *
@@ -245,7 +244,14 @@ char *runtime_get(RuntimeEnv *env, const char *key) {
     ssize_t key_offset = runtime_contains(env, key);
     if (key_offset != -1) {
         char **pair = split(strlist_item(env, key_offset), "=", 0);
+        if (!pair) {
+            return NULL;
+        }
         result = join(&pair[1], "=");
+        if (!result) {
+            guard_array_free(pair);
+            return NULL;
+        }
         guard_array_free(pair);
     }
     return result;
@@ -285,8 +291,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
 
     // If there's no environment variables to process return the input string
     if (strchr(input, delim) == NULL) {
-        //return strdup(input);
-        return input;
+        return strdup(input);
     }
 
     expanded = calloc(STASIS_BUFSIZ, sizeof(char));
@@ -336,7 +341,10 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
             if (env) {
                 tmp = runtime_get(env, var);
             } else {
-                tmp = getenv(var);
+                const char *v = getenv(var);
+                if (v) {
+                    tmp = strdup(v);
+                }
             }
             if (tmp == NULL) {
                 // This mimics shell behavior in general.
@@ -348,9 +356,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
             }
             // Append expanded environment variable to output
             strncat(expanded, tmp, STASIS_BUFSIZ - 1);
-            if (env) {
-                guard_free(tmp);
-            }
+            guard_free(tmp);
         }
 
         // Nothing to do so append input to output
@@ -400,13 +406,28 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
  * @param _value New environment variable value
  */
 void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
+    const char *sep = "=";
     if (_key == NULL) {
         return;
     }
+    const ssize_t key_offset = runtime_contains(env, _key);
     char *key = strdup(_key);
-    ssize_t key_offset = runtime_contains(env, key);
+    if (!key) {
+        SYSERROR("%s", "unable to allocate memory for key");
+        exit(1);
+    }
     char *value = runtime_expand_var(env, _value);
-    char *now = join((char *[]) {key, value, NULL}, "=");
+    if (!value) {
+        SYSERROR("%s", "unable to allocate memory for value");
+        exit(1);
+    }
+
+    lstrip(value);
+    char *now = join((char *[]) {key, value, NULL}, sep);
+    if (!now) {
+        SYSERROR("%s", "unable to allocate memory for join");
+        exit(1);
+    }
 
     if (key_offset < 0) {
         strlist_append(&env, now);
@@ -415,6 +436,7 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     }
     guard_free(now);
     guard_free(key);
+    guard_free(value);
 }
 
 /**
@@ -424,6 +446,10 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
 void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 1);
+        if (!pair) {
+            SYSERROR("%s", "unable to allocate memory for runtime_apply");
+            return;
+        }
         setenv(pair[0], pair[1], 1);
         guard_array_free(pair);
     }

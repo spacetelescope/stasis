@@ -280,8 +280,8 @@ char *tpl_render(char *str) {
         output[z] = pos[off];
         z++;
     }
-    SYSDEBUG("template output length: %zu", strlen(output));
-    SYSDEBUG("template output bytes: %zu", output_bytes);
+    //SYSDEBUG("template output length: %zu", strlen(output));
+    //SYSDEBUG("template output bytes: %zu", output_bytes);
     return output;
 }
 

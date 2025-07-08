@@ -41,10 +41,10 @@ long download(char *url, const char *filename, char **errmsg) {
     CURLcode curl_code = curl_easy_perform(c);
     SYSDEBUG("curl status code: %d", curl_code);
     if (curl_code != CURLE_OK) {
-        if (errmsg) {
-            strcpy(*errmsg, curl_easy_strerror(curl_code));
+        if (!*errmsg) {
+            *errmsg = strdup(curl_easy_strerror(curl_code));
         } else {
-            fprintf(stderr, "\nCURL ERROR: %s\n", curl_easy_strerror(curl_code));
+            strncpy(*errmsg, curl_easy_strerror(curl_code), strlen(curl_easy_strerror(curl_code) + 1));
         }
         goto failed;
     }

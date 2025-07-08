@@ -1,4 +1,5 @@
 add_library(stasis_delivery STATIC
+        delivery_export.c
         delivery_postprocess.c
         delivery_conda.c
         delivery_docker.c
