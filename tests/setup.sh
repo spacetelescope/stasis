@@ -109,7 +109,7 @@ STASIS_TEST_RESULT_SKIP=0
 run_command() {
     local logfile="$(mktemp).log"
     local cmd="${@}"
-    local lines_on_error=100
+    local lines_on_error=1000
     /bin/echo "Testing: $cmd "
 
     $cmd &>"$logfile"

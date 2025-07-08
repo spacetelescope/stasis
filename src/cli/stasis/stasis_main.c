@@ -62,7 +62,7 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
     }
     ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
     if (!ctx->_stasis_ini_fp.cfg_path) {
-        SYSERROR("Failed to allocate memory for config file name");
+        SYSERROR("%s", "Failed to allocate memory for config file name");
         exit(1);
     }
     guard_free(*config_input);
