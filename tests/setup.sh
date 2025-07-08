@@ -78,7 +78,7 @@ teardown_workspace() {
 
 install_stasis() {
     pushd "$BUILD_DIR"
-    if ! cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" -DCMAKE_BUILD_TYPE=Debug "${TOPDIR}"/../..; then
+    if ! cmake -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" -DCMAKE_BUILD_TYPE=Debug -DDEBUG_MESSAGES=ON "${TOPDIR}"/../..; then
         echo "cmake failed" >&2
         return 1
     fi
