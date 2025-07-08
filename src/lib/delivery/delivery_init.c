@@ -287,18 +287,25 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
 
 int bootstrap_build_info(struct Delivery *ctx) {
     struct Delivery local = {0};
+    SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
+    SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.delivery_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
+
     if (delivery_init_platform(&local)) {
+        SYSDEBUG("%s", "delivery_init_platform failed");
         return -1;
     }
     if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
+        SYSDEBUG("%s", "populate_delivery_cfg failed");
         return -1;
     }
     if (populate_delivery_ini(&local, INI_READ_RENDER)) {
+        SYSDEBUG("%s", "populate_delivery_ini failed");
         return -1;
     }
     if (populate_info(&local)) {
+        SYSDEBUG("%s", "populate_info failed");
         return -1;
     }
     ctx->info.build_name = strdup(local.info.build_name);
@@ -314,6 +321,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
     memcpy(ctx->info.time_info, local.info.time_info, sizeof(*local.info.time_info));
     ctx->info.time_now = local.info.time_now;
     ctx->info.time_str_epoch = strdup(local.info.time_str_epoch);
+    SYSDEBUG("%s", "delivery_free local resources");
     delivery_free(&local);
     return 0;
 }

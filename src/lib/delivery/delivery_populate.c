@@ -55,6 +55,7 @@ int populate_info(struct Delivery *ctx) {
 int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
+        SYSDEBUG("%s", "cfg is NULL");
         return -1;
     }
     int err = 0;
