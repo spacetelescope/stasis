@@ -79,14 +79,20 @@ int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, p
 
 static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     SYSDEBUG("Preparing to fork() child task %s:%s", pool->ident, task->ident);
+    semaphore_wait(&pool->semaphore);
     pid_t pid = fork();
+    int parent_status = 0;
     int child_status = 0;
     if (pid == -1) {
         return -1;
-    } else if (pid == 0) {
-        child(pool, task);
     }
-    return parent(pool, task, pid, &child_status);
+    if (pid == 0) {
+        child(pool, task);
+    } else {
+        parent_status = parent(pool, task, pid, &child_status);
+    }
+    semaphore_post(&pool->semaphore);
+    return parent_status;
 }
 
 struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *working_dir, char *cmd) {
@@ -397,6 +403,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
     pool_deadlocked:
     puts("");
+
     return failures;
 }
 
@@ -440,12 +447,20 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
         return NULL;
     }
 
+    if (semaphore_init(&pool->semaphore, "stasis_pool_lock", 2) != 0) {
+        fprintf(stderr, "unable to initialize semaphore\n");
+        mp_pool_free(&pool);
+        return NULL;
+    }
+
     return pool;
 }
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
     for (size_t i = 0; i < (*pool)->num_alloc; i++) {
     }
+    semaphore_destroy(&(*pool)->semaphore);
+
     // Unmap all pool tasks
     if ((*pool)->task) {
         if ((*pool)->task->cmd) {
