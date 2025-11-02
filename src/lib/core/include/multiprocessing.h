@@ -3,9 +3,9 @@
 #define STASIS_MULTIPROCESSING_H
 
 #include "core.h"
+#include "sem.h"
 #include <signal.h>
 #include <sys/wait.h>
-#include <semaphore.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -38,6 +38,7 @@ struct MultiProcessingPool {
     char ident[255]; ///< Identity of task pool
     char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
     int status_interval; ///< Report a pooled task is "running" every n seconds
+    struct Semaphore semaphore;
 };
 
 /// A multiprocessing task's initial state (i.e. "FAIL")
