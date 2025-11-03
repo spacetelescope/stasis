@@ -447,7 +447,9 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
         return NULL;
     }
 
-    if (semaphore_init(&pool->semaphore, "stasis_pool_lock", 2) != 0) {
+    char semaphore_name[255] = {0};
+    snprintf(semaphore_name, sizeof(semaphore_name), "stasis_mp_semaphore_%s", ident);
+    if (semaphore_init(&pool->semaphore, semaphore_name, 2) != 0) {
         fprintf(stderr, "unable to initialize semaphore\n");
         mp_pool_free(&pool);
         return NULL;
