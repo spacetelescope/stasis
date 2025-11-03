@@ -91,6 +91,8 @@ static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessing
         child(pool, task);
     } else {
         parent_status = parent(pool, task, pid, &child_status);
+        fflush(stdout);
+        fflush(stderr);
     }
     semaphore_post(&pool->semaphore);
     return parent_status;
@@ -215,6 +217,7 @@ static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
         memset(buf, 0, sizeof(buf));
     }
     fprintf(stream, "\n");
+    fflush(stream);
     fclose(fp);
     return 0;
 }
