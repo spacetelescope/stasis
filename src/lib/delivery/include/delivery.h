@@ -64,10 +64,8 @@ struct Delivery {
      * \brief System information
     */
     struct System {
-        char *arch;
-        ///< System CPU architecture ident
-        char **platform;
-        ///< System platform name
+        char *arch;                     ///< System CPU architecture ident
+        char **platform;                ///< System platform name
     } system;
     /*! \struct Storage
      * \brief Storage paths
