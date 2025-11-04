@@ -25,7 +25,7 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         destdir = destdir_with_output;
     }
 
-    sprintf(cmd, "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
+    snprintf(cmd, sizeof(cmd), "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
     for (size_t i = 0; i < rootdirs_total; i++) {
         char srcdir_bare[PATH_MAX] = {0};
         char srcdir_with_output[PATH_MAX] = {0};
@@ -42,9 +42,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         if (!access(srcdir_with_output, F_OK)) {
             srcdir = srcdir_with_output;
         }
-        snprintf(cmd + strlen(cmd), sizeof(srcdir) - strlen(srcdir) + 4, "'%s'/ ", srcdir);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(srcdir) + 4, "'%s'/ ", srcdir);
     }
-    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(destdir) + 1, " %s/", destdir);
+    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(destdir) + 2, " %s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
