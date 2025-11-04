@@ -99,7 +99,49 @@ struct Delivery *delivery_duplicate(struct Delivery *ctx) {
     result->storage.docker_artifact_dir = strdup_maybe(ctx->storage.docker_artifact_dir);
     result->storage.wheel_artifact_dir = strdup_maybe(ctx->storage.wheel_artifact_dir);
     result->storage.wheel_staging_url = strdup_maybe(ctx->storage.wheel_staging_url);
-    
+
+    result->system.arch = strdup_maybe(ctx->system.arch);
+    if (ctx->system.platform) {
+        result->system.platform = malloc(DELIVERY_PLATFORM_MAX * sizeof(*result->system.platform));
+        for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
+            result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
+        }
+    }
+
+    // Jfrog
+    // TODO: break out into a separate a function
+    for (size_t i = 0; i < sizeof(ctx->deploy.jfrog) / sizeof(ctx->deploy.jfrog[0]); i++) {
+        result->deploy.jfrog[i].dest = strdup_maybe(ctx->deploy.jfrog[i].dest);
+        result->deploy.jfrog[i].files = strlist_copy(ctx->deploy.jfrog[i].files);
+        result->deploy.jfrog[i].repo = strdup_maybe(ctx->deploy.jfrog[i].repo);
+        result->deploy.jfrog[i].upload_ctx.ant = ctx->deploy.jfrog[i].upload_ctx.ant;
+        result->deploy.jfrog[i].upload_ctx.archive = ctx->deploy.jfrog[i].upload_ctx.archive;
+        result->deploy.jfrog[i].upload_ctx.build_name = ctx->deploy.jfrog[i].upload_ctx.build_name;
+        result->deploy.jfrog[i].upload_ctx.build_number = ctx->deploy.jfrog[i].upload_ctx.build_number;
+        result->deploy.jfrog[i].upload_ctx.deb = ctx->deploy.jfrog[i].upload_ctx.deb;
+        result->deploy.jfrog[i].upload_ctx.detailed_summary = ctx->deploy.jfrog[i].upload_ctx.detailed_summary;
+        result->deploy.jfrog[i].upload_ctx.dry_run = ctx->deploy.jfrog[i].upload_ctx.dry_run;
+        result->deploy.jfrog[i].upload_ctx.exclusions = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.exclusions);
+        result->deploy.jfrog[i].upload_ctx.explode = ctx->deploy.jfrog[i].upload_ctx.explode;
+        result->deploy.jfrog[i].upload_ctx.fail_no_op = ctx->deploy.jfrog[i].upload_ctx.fail_no_op;
+        result->deploy.jfrog[i].upload_ctx.flat = ctx->deploy.jfrog[i].upload_ctx.flat;
+        result->deploy.jfrog[i].upload_ctx.include_dirs = ctx->deploy.jfrog[i].upload_ctx.include_dirs;
+        result->deploy.jfrog[i].upload_ctx.module = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.module);
+        result->deploy.jfrog[i].upload_ctx.project = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.project);
+        result->deploy.jfrog[i].upload_ctx.quiet = ctx->deploy.jfrog[i].upload_ctx.quiet;
+        result->deploy.jfrog[i].upload_ctx.recursive = ctx->deploy.jfrog[i].upload_ctx.recursive;
+        result->deploy.jfrog[i].upload_ctx.regexp = ctx->deploy.jfrog[i].upload_ctx.regexp;
+        result->deploy.jfrog[i].upload_ctx.retries = ctx->deploy.jfrog[i].upload_ctx.retries;
+        result->deploy.jfrog[i].upload_ctx.retry_wait_time = ctx->deploy.jfrog[i].upload_ctx.retry_wait_time;
+        result->deploy.jfrog[i].upload_ctx.spec = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.spec);
+        result->deploy.jfrog[i].upload_ctx.spec_vars = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.spec_vars);
+        result->deploy.jfrog[i].upload_ctx.symlinks = ctx->deploy.jfrog[i].upload_ctx.symlinks;
+        result->deploy.jfrog[i].upload_ctx.sync_deletes = ctx->deploy.jfrog[i].upload_ctx.sync_deletes;
+        result->deploy.jfrog[i].upload_ctx.target_props = strdup_maybe(ctx->deploy.jfrog[i].upload_ctx.target_props);
+        result->deploy.jfrog[i].upload_ctx.threads = ctx->deploy.jfrog[i].upload_ctx.threads;
+        result->deploy.jfrog[i].upload_ctx.workaround_parent_only = ctx->deploy.jfrog[i].upload_ctx.workaround_parent_only;
+    }
+
     return result;
 }
 
