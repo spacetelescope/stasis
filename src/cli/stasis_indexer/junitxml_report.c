@@ -96,17 +96,17 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
     return 0;
 }
 
-int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
+int indexer_junitxml_report(struct Delivery **ctx, const size_t nelem) {
     char indexfile[PATH_MAX] = {0};
-    sprintf(indexfile, "%s/README.md", ctx->storage.results_dir);
+    sprintf(indexfile, "%s/README.md", (*ctx)->storage.results_dir);
 
-    struct StrList *file_listing = listdir(ctx->storage.results_dir);
+    struct StrList *file_listing = listdir((*ctx)->storage.results_dir);
     if (!file_listing) {
         // no test results to process
         return 0;
     }
 
-    if (!pushd(ctx->storage.results_dir)) {
+    if (!pushd((*ctx)->storage.results_dir)) {
         FILE *indexfp = fopen(indexfile, "w+");
         if (!indexfp) {
             fprintf(stderr, "Unable to open %s for writing\n", indexfile);
@@ -114,21 +114,21 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         }
         printf("Index %s opened for writing\n", indexfile);
 
-        int current_rc = ctx->meta.rc;
+        int current_rc = (*ctx)->meta.rc;
         for (size_t d = 0; d < nelem; d++) {
             char pattern[PATH_MAX] = {0};
-            snprintf(pattern, sizeof(pattern) - 1, "*%s*", ctx[d].info.release_name);
+            snprintf(pattern, sizeof(pattern) - 1, "*%s*", ctx[d]->info.release_name);
 
             // if the result directory contains tests for this release name, print them
             if (!is_file_in_listing(file_listing, pattern)) {
                 // no test results
                 continue;
             }
-            if (current_rc > ctx[d].meta.rc) {
-                current_rc = ctx[d].meta.rc;
+            if (current_rc > ctx[d]->meta.rc) {
+                current_rc = ctx[d]->meta.rc;
                 fprintf(indexfp, "\n\n---\n\n");
             }
-            fprintf(indexfp, "### %s\n", ctx[d].info.release_name);
+            fprintf(indexfp, "### %s\n", ctx[d]->info.release_name);
             fprintf(indexfp, "\n|Suite|Duration|Total|Pass|Fail|Skip|Error|\n");
             fprintf(indexfp, "|:----|:------:|:---:|:--:|:--:|:--:|:---:|\n");
 
@@ -139,7 +139,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
                     continue;
                 }
                 if (!fnmatch(pattern, filename, 0)) {
-                    if (write_report_output(&ctx[d], indexfp, filename)) {
+                    if (write_report_output(ctx[d], indexfp, filename)) {
                         // warn only
                         SYSERROR("Unable to write xml report file using %s", filename);
                     }
@@ -150,7 +150,7 @@ int indexer_junitxml_report(struct Delivery ctx[], const size_t nelem) {
         fclose(indexfp);
         popd();
     } else {
-        fprintf(stderr, "Unable to enter delivery directory: %s\n", ctx->storage.delivery_dir);
+        fprintf(stderr, "Unable to enter delivery directory: %s\n", (*ctx)->storage.delivery_dir);
         guard_strlist_free(&file_listing);
         return -1;
     }

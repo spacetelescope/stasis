@@ -1,7 +1,7 @@
 #include "core.h"
 #include "website.h"
 
-int indexer_make_website(const struct Delivery *ctx) {
+int indexer_make_website(struct Delivery **ctx) {
     char *css_filename = calloc(PATH_MAX, sizeof(*css_filename));
     if (!css_filename) {
         SYSERROR("unable to allocate string for CSS file path: %s", strerror(errno));
@@ -12,8 +12,8 @@ int indexer_make_website(const struct Delivery *ctx) {
     const int have_css = access(css_filename, F_OK | R_OK) == 0;
 
     struct StrList *dirs = strlist_init();
-    strlist_append(&dirs, ctx->storage.delivery_dir);
-    strlist_append(&dirs, ctx->storage.results_dir);
+    strlist_append(&dirs, (*ctx)->storage.delivery_dir);
+    strlist_append(&dirs, (*ctx)->storage.results_dir);
 
     struct StrList *inputs = NULL;
     for (size_t i = 0; i < strlist_count(dirs); i++) {
