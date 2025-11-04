@@ -337,7 +337,7 @@ int main(const int argc, char *argv[]) {
         // Copy the pre-filled contents of the main delivery context
         local[i] = delivery_duplicate(&ctx);
         if (!local[i]) {
-            SYSERROR("%s", "Unable to duplicate delivery context %zu", i);
+            SYSERROR("Unable to duplicate delivery context %zu", i);
             exit(1);
         }
         if (globals.verbose) {
