@@ -1,5 +1,108 @@
 #include "delivery.h"
 
+static char *strdup_maybe(const char * restrict s) {
+    if (s != NULL) {
+        return strdup(s);
+    }
+    return NULL;
+}
+struct Delivery *delivery_duplicate(struct Delivery *ctx) {
+    struct Delivery *result = calloc(1, sizeof(*result));
+    if (!result) {
+        return NULL;
+    }
+    // Conda
+    result->conda.conda_packages = strlist_copy(ctx->conda.conda_packages);
+    result->conda.conda_packages_defer = strlist_copy(ctx->conda.conda_packages_defer);
+    result->conda.conda_packages_purge = strlist_copy(ctx->conda.conda_packages_purge);
+    result->conda.pip_packages = strlist_copy(ctx->conda.pip_packages);
+    result->conda.pip_packages_defer = strlist_copy(ctx->conda.pip_packages_defer);
+    result->conda.pip_packages_purge = strlist_copy(ctx->conda.pip_packages_purge);
+    result->conda.wheels_packages = strlist_copy(ctx->conda.wheels_packages);
+    result->conda.installer_arch = strdup_maybe(ctx->conda.installer_arch);
+    result->conda.installer_baseurl = strdup_maybe(ctx->conda.installer_baseurl);
+    result->conda.installer_name = strdup_maybe(ctx->conda.installer_name);
+    result->conda.installer_path = strdup_maybe(ctx->conda.installer_path);
+    result->conda.installer_platform = strdup_maybe(ctx->conda.installer_platform);
+    result->conda.installer_version = strdup_maybe(ctx->conda.installer_version);
+    result->conda.tool_build_version = strdup_maybe(ctx->conda.tool_build_version);
+    result->conda.tool_version = strdup_maybe(ctx->conda.tool_version);
+
+    // Docker
+    result->deploy.docker.build_args = strlist_copy(ctx->deploy.docker.build_args);
+    result->deploy.docker.tags = strlist_copy(ctx->deploy.docker.tags);
+    result->deploy.docker.capabilities = ctx->deploy.docker.capabilities;
+    result->deploy.docker.dockerfile = strdup_maybe(ctx->deploy.docker.dockerfile);
+    result->deploy.docker.image_compression = strdup_maybe(ctx->deploy.docker.image_compression);
+    result->deploy.docker.registry = strdup_maybe(ctx->deploy.docker.registry);
+    result->deploy.docker.test_script = strdup_maybe(ctx->deploy.docker.test_script);
+
+    // Info
+    result->info.build_name = strdup_maybe(ctx->info.build_name);
+    result->info.build_number = strdup_maybe(ctx->info.build_number);
+    result->info.release_name = strdup_maybe(ctx->info.release_name);
+    result->info.time_info = ctx->info.time_info;
+    result->info.time_now = ctx->info.time_now;
+    result->info.time_str_epoch = strdup_maybe(ctx->info.time_str_epoch);
+
+    // Meta
+    result->meta.name = strdup_maybe(ctx->meta.name);
+    result->meta.based_on = strdup_maybe(ctx->meta.based_on);
+    result->meta.codename = strdup_maybe(ctx->meta.codename);
+    result->meta.mission = strdup_maybe(ctx->meta.mission);
+    result->meta.final = ctx->meta.final;
+    result->meta.python = strdup_maybe(ctx->meta.python);
+    result->meta.python_compact = strdup_maybe(ctx->meta.python_compact);
+    result->meta.rc = ctx->meta.rc;
+    result->meta.version = strdup_maybe(ctx->meta.version);
+
+    // Rules
+    result->rules.build_name_fmt = strdup_maybe(ctx->rules.build_name_fmt);
+    result->rules.build_number_fmt = strdup_maybe(ctx->rules.build_number_fmt);
+    // Unused member?
+    result->rules.enable_final = ctx->rules.enable_final;
+    result->rules.release_fmt = ctx->rules.release_fmt;
+    // TODO: need content duplication function
+    memcpy(&result->rules.content, &ctx->rules.content, sizeof(ctx->rules.content));
+
+    if (ctx->rules._handle) {
+        result->rules._handle = malloc(sizeof(*result->rules._handle));
+        result->rules._handle->section = malloc(result->rules._handle->section_count * sizeof(*result->rules._handle->section));
+        memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
+    }
+
+    // Runtime
+    if (ctx->runtime.environ) {
+        result->runtime.environ = runtime_copy(ctx->runtime.environ->data);
+    }
+
+    // Storage
+    result->storage.tools_dir = strdup_maybe(ctx->storage.tools_dir);
+    result->storage.package_dir = strdup_maybe(ctx->storage.package_dir);
+    result->storage.results_dir = strdup_maybe(ctx->storage.results_dir);
+    result->storage.output_dir = strdup_maybe(ctx->storage.output_dir);
+    result->storage.cfgdump_dir = strdup_maybe(ctx->storage.cfgdump_dir);
+    result->storage.delivery_dir = strdup_maybe(ctx->storage.delivery_dir);
+    result->storage.meta_dir = strdup_maybe(ctx->storage.meta_dir);
+    result->storage.mission_dir = strdup_maybe(ctx->storage.mission_dir);
+    result->storage.root = strdup_maybe(ctx->storage.root);
+    result->storage.tmpdir = strdup_maybe(ctx->storage.tmpdir);
+    result->storage.build_dir = strdup_maybe(ctx->storage.build_dir);
+    result->storage.build_docker_dir = strdup_maybe(ctx->storage.build_docker_dir);
+    result->storage.build_recipes_dir = strdup_maybe(ctx->storage.build_recipes_dir);
+    result->storage.build_sources_dir = strdup_maybe(ctx->storage.build_sources_dir);
+    result->storage.build_testing_dir = strdup_maybe(ctx->storage.build_testing_dir);
+    result->storage.conda_artifact_dir = strdup_maybe(ctx->storage.conda_artifact_dir);
+    result->storage.conda_install_prefix = strdup_maybe(ctx->storage.conda_install_prefix);
+    result->storage.conda_staging_dir = strdup_maybe(ctx->storage.conda_staging_dir);
+    result->storage.conda_staging_url = strdup_maybe(ctx->storage.conda_staging_url);
+    result->storage.docker_artifact_dir = strdup_maybe(ctx->storage.docker_artifact_dir);
+    result->storage.wheel_artifact_dir = strdup_maybe(ctx->storage.wheel_artifact_dir);
+    result->storage.wheel_staging_url = strdup_maybe(ctx->storage.wheel_staging_url);
+    
+    return result;
+}
+
 void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->system.arch);
     guard_array_free(ctx->system.platform);

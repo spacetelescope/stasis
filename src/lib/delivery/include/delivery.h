@@ -483,4 +483,11 @@ void delivery_rewrite_stage1(struct Delivery *ctx, char *specfile);
  */
 void delivery_rewrite_stage2(struct Delivery *ctx, char *specfile);
 
+/**
+ * Return a copy of a delivery context
+ * @param ctx Delivery context
+ * @return a copy
+ */
+struct Delivery *delivery_duplicate(struct Delivery *ctx);
+
 #endif //STASIS_DELIVERY_H
