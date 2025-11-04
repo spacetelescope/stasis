@@ -8,14 +8,10 @@
 #include "delivery.h"
 
 int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t rootdirs_total) {
-    char cmd[PATH_MAX];
-    char destdir_bare[PATH_MAX];
-    char destdir_with_output[PATH_MAX];
+    char cmd[PATH_MAX] = {0};
+    char destdir_bare[PATH_MAX] = {0};
+    char destdir_with_output[PATH_MAX] = {0};
     char *destdir = destdir_bare;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(destdir_bare, 0, sizeof(destdir_bare));
-    memset(destdir_with_output, 0, sizeof(destdir_bare));
 
     strcpy(destdir_bare, dest);
     strcpy(destdir_with_output, dest);
