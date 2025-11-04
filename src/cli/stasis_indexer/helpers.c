@@ -214,11 +214,11 @@ int sort_by_latest_rc(const void *a, const void *b) {
     }
 }
 
-struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
+struct Delivery **get_latest_deliveries(struct Delivery **ctx, size_t nelem, size_t *result_nelem) {
     int latest = 0;
     size_t n = 0;
 
-    struct Delivery *result = calloc(nelem + 1, sizeof(*result));
+    struct Delivery **result = calloc(nelem + 1, sizeof(*result));
     if (!result) {
         fprintf(stderr, "Unable to allocate %zu bytes for result delivery array: %s\n", nelem * sizeof(*result), strerror(errno));
         return NULL;
@@ -227,10 +227,14 @@ struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     latest = get_latest_rc(ctx, nelem);
     qsort(ctx, nelem, sizeof(*ctx), sort_by_latest_rc);
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].meta.rc == latest) {
+        if (ctx[i]->meta.rc == latest) {
             result[n] = ctx[i];
             n++;
         }
+    }
+
+    if (result_nelem) {
+        *result_nelem = n;
     }
     return result;
 }
