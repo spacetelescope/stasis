@@ -153,6 +153,23 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->deploy.jfrog_auth.url = strdup_maybe(ctx->deploy.jfrog_auth.url);
     result->deploy.jfrog_auth.user = strdup_maybe(ctx->deploy.jfrog_auth.user);
 
+    for (size_t i = 0; i < sizeof(result->tests) / sizeof(result->tests[0]); i++) {
+        result->tests[i].disable = ctx->tests[i].disable;
+        result->tests[i].parallel = ctx->tests[i].parallel;
+        result->tests[i].build_recipe = strdup_maybe(ctx->tests[i].build_recipe);
+        result->tests[i].name = strdup_maybe(ctx->tests[i].name);
+        result->tests[i].version = strdup_maybe(ctx->tests[i].version);
+        result->tests[i].repository = strdup_maybe(ctx->tests[i].repository);
+        result->tests[i].repository_info_ref = strdup_maybe(ctx->tests[i].repository_info_ref);
+        result->tests[i].repository_info_tag = strdup_maybe(ctx->tests[i].repository_info_tag);
+        result->tests[i].repository_remove_tags = strlist_copy(ctx->tests[i].repository_remove_tags);
+        if (ctx->tests[i].runtime.environ) {
+            result->tests[i].runtime.environ = runtime_copy(ctx->tests[i].runtime.environ->data);
+        }
+        result->tests[i].script = strdup_maybe(ctx->tests[i].script);
+        result->tests[i].script_setup = strdup_maybe(ctx->tests[i].script_setup);
+    }
+
     return result;
 }
 
