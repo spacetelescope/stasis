@@ -6,7 +6,7 @@ static char *strdup_maybe(const char * restrict s) {
     }
     return NULL;
 }
-struct Delivery *delivery_duplicate(struct Delivery *ctx) {
+struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     struct Delivery *result = calloc(1, sizeof(*result));
     if (!result) {
         return NULL;
