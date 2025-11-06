@@ -28,15 +28,6 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->conda.tool_build_version = strdup_maybe(ctx->conda.tool_build_version);
     result->conda.tool_version = strdup_maybe(ctx->conda.tool_version);
 
-    // Docker
-    result->deploy.docker.build_args = strlist_copy(ctx->deploy.docker.build_args);
-    result->deploy.docker.tags = strlist_copy(ctx->deploy.docker.tags);
-    result->deploy.docker.capabilities = ctx->deploy.docker.capabilities;
-    result->deploy.docker.dockerfile = strdup_maybe(ctx->deploy.docker.dockerfile);
-    result->deploy.docker.image_compression = strdup_maybe(ctx->deploy.docker.image_compression);
-    result->deploy.docker.registry = strdup_maybe(ctx->deploy.docker.registry);
-    result->deploy.docker.test_script = strdup_maybe(ctx->deploy.docker.test_script);
-
     // Info
     result->info.build_name = strdup_maybe(ctx->info.build_name);
     result->info.build_number = strdup_maybe(ctx->info.build_number);
@@ -107,6 +98,15 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
             result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
         }
     }
+
+    // Docker
+    result->deploy.docker.build_args = strlist_copy(ctx->deploy.docker.build_args);
+    result->deploy.docker.tags = strlist_copy(ctx->deploy.docker.tags);
+    result->deploy.docker.capabilities = ctx->deploy.docker.capabilities;
+    result->deploy.docker.dockerfile = strdup_maybe(ctx->deploy.docker.dockerfile);
+    result->deploy.docker.image_compression = strdup_maybe(ctx->deploy.docker.image_compression);
+    result->deploy.docker.registry = strdup_maybe(ctx->deploy.docker.registry);
+    result->deploy.docker.test_script = strdup_maybe(ctx->deploy.docker.test_script);
 
     // Jfrog
     // TODO: break out into a separate a function
