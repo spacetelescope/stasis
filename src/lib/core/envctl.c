@@ -17,6 +17,8 @@ struct EnvCtl *envctl_init() {
 }
 
 static int callback_builtin_nop(const void *a, const void *b) {
+    (void) a;  // Unused
+    (void) b;  // Unused
     return STASIS_ENVCTL_RET_SUCCESS;
 }
 
@@ -58,6 +60,7 @@ size_t envctl_get_index(const struct EnvCtl *envctl, const char *name) {
 }
 
 void envctl_decode_index(size_t in_i, size_t *state, size_t *out_i, size_t *name_i) {
+    (void) name_i;
     *state = ((in_i >> 63L) & 1);
     *out_i = in_i & 0xffffffffL;
 }

@@ -9,6 +9,7 @@ static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessing
 }
 
 int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
+    (void) pool;
     FILE *fp_log = NULL;
 
     // The task starts inside the requested working directory
