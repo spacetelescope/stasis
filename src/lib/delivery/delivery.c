@@ -142,6 +142,17 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
         result->deploy.jfrog[i].upload_ctx.workaround_parent_only = ctx->deploy.jfrog[i].upload_ctx.workaround_parent_only;
     }
 
+    result->deploy.jfrog_auth.access_token = strdup_maybe(ctx->deploy.jfrog_auth.access_token);
+    result->deploy.jfrog_auth.client_cert_key_path = strdup_maybe(ctx->deploy.jfrog_auth.client_cert_key_path);
+    result->deploy.jfrog_auth.client_cert_path = strdup_maybe(ctx->deploy.jfrog_auth.client_cert_path);
+    result->deploy.jfrog_auth.insecure_tls = ctx->deploy.jfrog_auth.insecure_tls;
+    result->deploy.jfrog_auth.password = strdup_maybe(ctx->deploy.jfrog_auth.password);
+    result->deploy.jfrog_auth.server_id = strdup_maybe(ctx->deploy.jfrog_auth.server_id);
+    result->deploy.jfrog_auth.ssh_key_path = strdup_maybe(ctx->deploy.jfrog_auth.ssh_key_path);
+    result->deploy.jfrog_auth.ssh_passphrase = strdup_maybe(ctx->deploy.jfrog_auth.ssh_passphrase);
+    result->deploy.jfrog_auth.url = strdup_maybe(ctx->deploy.jfrog_auth.url);
+    result->deploy.jfrog_auth.user = strdup_maybe(ctx->deploy.jfrog_auth.user);
+
     return result;
 }
 
