@@ -3,6 +3,6 @@
 
 #include "helpers.h"
 
-int indexer_make_website(const struct Delivery *ctx);
+int indexer_make_website(struct Delivery **ctx);
 
 #endif //WEBSITE_H

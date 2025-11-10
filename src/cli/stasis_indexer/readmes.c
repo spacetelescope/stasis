@@ -1,8 +1,9 @@
 #include "core.h"
 #include "readmes.h"
 
-int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
-    struct Delivery *latest_deliveries = get_latest_deliveries(ctx, nelem);
+int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
+    size_t nelem_real = 0;
+    struct Delivery **latest_deliveries = get_latest_deliveries(ctx, nelem, &nelem_real);
     if (!latest_deliveries) {
         if (errno) {
             return -1;
@@ -11,17 +12,17 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
     }
 
     char indexfile[PATH_MAX] = {0};
-    sprintf(indexfile, "%s/README.md", ctx->storage.delivery_dir);
+    sprintf(indexfile, "%s/README.md", (*ctx)->storage.delivery_dir);
 
     FILE *indexfp = fopen(indexfile, "w+");
     if (!indexfp) {
         fprintf(stderr, "Unable to open %s for writing\n", indexfile);
         return -1;
     }
-    struct StrList *archs = get_architectures(latest_deliveries, nelem);
-    struct StrList *platforms = get_platforms(latest_deliveries, nelem);
+    struct StrList *archs = get_architectures(latest_deliveries, nelem_real);
+    struct StrList *platforms = get_platforms(latest_deliveries, nelem_real);
 
-    fprintf(indexfp, "# %s-%s\n\n", ctx->meta.name, ctx->meta.version);
+    fprintf(indexfp, "# %s-%s\n\n", (*ctx)->meta.name, (*ctx)->meta.version);
     fprintf(indexfp, "## Current Release\n\n");
     strlist_sort(platforms, STASIS_SORT_ALPHA);
     strlist_sort(archs, STASIS_SORT_ALPHA);
@@ -31,10 +32,10 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
         for (size_t a = 0; a < strlist_count(archs); a++) {
             char *arch = strlist_item(archs, a);
             int have_combo = 0;
-            for (size_t i = 0; i < nelem; i++) {
-                if (latest_deliveries[i].system.platform) {
-                    if (strstr(latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
-                        strstr(latest_deliveries[i].system.arch, arch)) {
+            for (size_t i = 0; i < nelem_real; i++) {
+                if (latest_deliveries[i]->system.platform) {
+                    if (strstr(latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], platform) &&
+                        strstr(latest_deliveries[i]->system.arch, arch)) {
                         have_combo = 1;
                     }
                 }
@@ -43,36 +44,36 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
                 continue;
             }
             fprintf(indexfp, "### %s-%s\n\n", platform, arch);
-            for (size_t i = 0; i < nelem; i++) {
+            for (size_t i = 0; i < nelem_real; i++) {
                 char link_name[PATH_MAX] = {0};
                 char readme_name[PATH_MAX] = {0};
                 char conf_name[PATH_MAX] = {0};
                 char conf_name_relative[PATH_MAX] = {0};
-                if (!latest_deliveries[i].meta.name) {
+                if (!latest_deliveries[i]->meta.name) {
                     continue;
                 }
-                sprintf(link_name, "latest-py%s-%s-%s.yml", latest_deliveries[i].meta.python_compact, latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i].system.arch);
-                sprintf(readme_name, "README-py%s-%s-%s.md", latest_deliveries[i].meta.python_compact, latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i].system.arch);
-                sprintf(conf_name, "%s.ini", latest_deliveries[i].info.release_name);
-                sprintf(conf_name_relative, "../config/%s.ini", latest_deliveries[i].info.release_name);
+                sprintf(link_name, "latest-py%s-%s-%s.yml", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
+                sprintf(readme_name, "README-py%s-%s-%s.md", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
+                sprintf(conf_name, "%s.ini", latest_deliveries[i]->info.release_name);
+                sprintf(conf_name_relative, "../config/%s.ini", latest_deliveries[i]->info.release_name);
                 if (strstr(link_name, platform) && strstr(link_name, arch)) {
-                    fprintf(indexfp, "- Python %s\n", latest_deliveries[i].meta.python);
+                    fprintf(indexfp, "- Python %s\n", latest_deliveries[i]->meta.python);
                     fprintf(indexfp, "  - Info: [README](%s)\n", readme_name);
                     fprintf(indexfp, "  - Release: [Conda Environment YAML](%s)\n", link_name);
                     fprintf(indexfp, "  - Receipt: [STASIS input file](%s)\n", conf_name_relative);
 
                     char *pattern = NULL;
                     asprintf(&pattern, "*%s*%s*",
-                             latest_deliveries[i].info.build_number,
-                             strstr(ctx->rules.release_fmt, "%p") ? latest_deliveries[i].meta.python_compact : "" );
+                             latest_deliveries[i]->info.build_number,
+                             strstr((*ctx)->rules.release_fmt, "%p") ? latest_deliveries[i]->meta.python_compact : "" );
                     if (!pattern) {
                         SYSERROR("%s", "Unable to allocate bytes for pattern");
                         return -1;
                     }
-                    struct StrList *docker_images = get_docker_images(&latest_deliveries[i], pattern);
+                    struct StrList *docker_images = get_docker_images(latest_deliveries[i], pattern);
                     if (docker_images
                         && strlist_count(docker_images)
-                        && !strcmp(latest_deliveries[i].system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
+                        && !strcmp(latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], "linux")) {
                         fprintf(indexfp, "  - Docker: ");
                         fprintf(indexfp, "[Archive](../packages/docker/%s)\n", path_basename(strlist_item(docker_images, 0)));
                     }
@@ -86,9 +87,9 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
     }
 
     fprintf(indexfp, "## Releases\n");
-    int current_rc = ctx->meta.rc;
-    for (size_t i = 0; ctx[i].meta.name != NULL; i++) {
-        struct Delivery *current = &ctx[i];
+    int current_rc = (*ctx)->meta.rc;
+    for (size_t i = 0; i < nelem; i++) {
+        struct Delivery *current = ctx[i];
         if (current_rc > current->meta.rc) {
             current_rc = current->meta.rc;
             fprintf(indexfp, "\n\n---\n\n");
@@ -101,7 +102,7 @@ int indexer_readmes(struct Delivery ctx[], const size_t nelem) {
         char *pattern = NULL;
         asprintf(&pattern, "*%s*%s*",
                  current->info.build_number,
-                 strstr(ctx->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
+                 strstr((*ctx)->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
         if (!pattern) {
             SYSERROR("%s", "Unable to allocate bytes for pattern");
             return -1;

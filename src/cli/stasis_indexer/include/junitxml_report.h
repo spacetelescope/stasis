@@ -3,6 +3,6 @@
 
 #include "helpers.h"
 
-int indexer_junitxml_report(struct Delivery ctx[], size_t nelem);
+int indexer_junitxml_report(struct Delivery **ctx, size_t nelem);
 
 #endif //JUNITXML_REPORT_H

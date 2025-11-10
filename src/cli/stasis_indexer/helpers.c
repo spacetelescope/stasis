@@ -5,24 +5,24 @@
 #include "core.h"
 #include "helpers.h"
 
-struct StrList *get_architectures(struct Delivery ctx[], const size_t nelem) {
+struct StrList *get_architectures(struct Delivery **ctx, const size_t nelem) {
     struct StrList *architectures = strlist_init();
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].system.arch) {
-            if (!strstr_array(architectures->data, ctx[i].system.arch)) {
-                strlist_append(&architectures, ctx[i].system.arch);
+        if (ctx[i]->system.arch) {
+            if (!strstr_array(architectures->data, ctx[i]->system.arch)) {
+                strlist_append(&architectures, ctx[i]->system.arch);
             }
         }
     }
     return architectures;
 }
 
-struct StrList *get_platforms(struct Delivery ctx[], const size_t nelem) {
+struct StrList *get_platforms(struct Delivery **ctx, const size_t nelem) {
     struct StrList *platforms = strlist_init();
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].system.platform) {
-            if (!strstr_array(platforms->data, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE])) {
-                strlist_append(&platforms, ctx[i].system.platform[DELIVERY_PLATFORM_RELEASE]);
+        if (ctx[i]->system.platform) {
+            if (!strstr_array(platforms->data, ctx[i]->system.platform[DELIVERY_PLATFORM_RELEASE])) {
+                strlist_append(&platforms, ctx[i]->system.platform[DELIVERY_PLATFORM_RELEASE]);
             }
         }
     }
@@ -177,19 +177,19 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     return status;
 }
 
-int get_latest_rc(struct Delivery ctx[], const size_t nelem) {
+int get_latest_rc(struct Delivery **ctx, const size_t nelem) {
     int result = 0;
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].meta.rc > result) {
-            result = ctx[i].meta.rc;
+        if (ctx[i]->meta.rc > result) {
+            result = ctx[i]->meta.rc;
         }
     }
     return result;
 }
 
 int sort_by_latest_rc(const void *a, const void *b) {
-    const struct Delivery *aa = a;
-    const struct Delivery *bb = b;
+    const struct Delivery *aa = *(struct Delivery **) a;
+    const struct Delivery *bb = *(struct Delivery **) b;
     if (aa->meta.rc > bb->meta.rc) {
         return -1;
     } else if (aa->meta.rc < bb->meta.rc) {
@@ -214,11 +214,11 @@ int sort_by_latest_rc(const void *a, const void *b) {
     }
 }
 
-struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
+struct Delivery **get_latest_deliveries(struct Delivery **ctx, size_t nelem, size_t *result_nelem) {
     int latest = 0;
     size_t n = 0;
 
-    struct Delivery *result = calloc(nelem + 1, sizeof(*result));
+    struct Delivery **result = calloc(nelem + 1, sizeof(*result));
     if (!result) {
         fprintf(stderr, "Unable to allocate %zu bytes for result delivery array: %s\n", nelem * sizeof(*result), strerror(errno));
         return NULL;
@@ -227,10 +227,14 @@ struct Delivery *get_latest_deliveries(struct Delivery ctx[], size_t nelem) {
     latest = get_latest_rc(ctx, nelem);
     qsort(ctx, nelem, sizeof(*ctx), sort_by_latest_rc);
     for (size_t i = 0; i < nelem; i++) {
-        if (ctx[i].meta.rc == latest) {
+        if (ctx[i]->meta.rc == latest) {
             result[n] = ctx[i];
             n++;
         }
+    }
+
+    if (result_nelem) {
+        *result_nelem = n;
     }
     return result;
 }

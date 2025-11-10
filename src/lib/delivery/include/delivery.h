@@ -64,10 +64,8 @@ struct Delivery {
      * \brief System information
     */
     struct System {
-        char *arch;
-        ///< System CPU architecture ident
-        char **platform;
-        ///< System platform name
+        char *arch;                     ///< System CPU architecture ident
+        char **platform;                ///< System platform name
     } system;
     /*! \struct Storage
      * \brief Storage paths
@@ -482,5 +480,12 @@ void delivery_rewrite_stage1(struct Delivery *ctx, char *specfile);
  * @param specfile path to YAML spec file
  */
 void delivery_rewrite_stage2(struct Delivery *ctx, char *specfile);
+
+/**
+ * Return a copy of a delivery context
+ * @param ctx Delivery context
+ * @return a copy
+ */
+struct Delivery *delivery_duplicate(const struct Delivery *ctx);
 
 #endif //STASIS_DELIVERY_H

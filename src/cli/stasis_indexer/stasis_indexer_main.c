@@ -8,14 +8,10 @@
 #include "delivery.h"
 
 int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t rootdirs_total) {
-    char cmd[PATH_MAX];
-    char destdir_bare[PATH_MAX];
-    char destdir_with_output[PATH_MAX];
+    char cmd[PATH_MAX] = {0};
+    char destdir_bare[PATH_MAX] = {0};
+    char destdir_with_output[PATH_MAX] = {0};
     char *destdir = destdir_bare;
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(destdir_bare, 0, sizeof(destdir_bare));
-    memset(destdir_with_output, 0, sizeof(destdir_bare));
 
     strcpy(destdir_bare, dest);
     strcpy(destdir_with_output, dest);
@@ -25,7 +21,7 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         destdir = destdir_with_output;
     }
 
-    sprintf(cmd, "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
+    snprintf(cmd, sizeof(cmd), "rsync -ah%s --delete --exclude 'tools/' --exclude 'tmp/' --exclude 'build/' ", globals.verbose ? "v" : "q");
     for (size_t i = 0; i < rootdirs_total; i++) {
         char srcdir_bare[PATH_MAX] = {0};
         char srcdir_with_output[PATH_MAX] = {0};
@@ -42,9 +38,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         if (!access(srcdir_with_output, F_OK)) {
             srcdir = srcdir_with_output;
         }
-        snprintf(cmd + strlen(cmd), sizeof(srcdir) - strlen(srcdir) + 4, "'%s'/ ", srcdir);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s'/ ", srcdir);
     }
-    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(destdir) + 1, " %s/", destdir);
+    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), " %s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
@@ -67,27 +63,28 @@ int indexer_conda(const struct Delivery *ctx, struct MicromambaInfo m) {
     return status;
 }
 
-int indexer_symlinks(struct Delivery *ctx, const size_t nelem) {
-    struct Delivery *data = NULL;
-    data = get_latest_deliveries(ctx, nelem);
+int indexer_symlinks(struct Delivery **ctx, const size_t nelem) {
+    struct Delivery **data = NULL;
+    size_t nelem_real = 0;
+    data = get_latest_deliveries(ctx, nelem, &nelem_real);
     //int latest = get_latest_rc(ctx, nelem);
 
-    if (!pushd(ctx->storage.delivery_dir)) {
-        for (size_t i = 0; i < nelem; i++) {
+    if (!pushd((*ctx)->storage.delivery_dir)) {
+        for (size_t i = 0; i < nelem_real; i++) {
             char link_name_spec[PATH_MAX];
             char link_name_readme[PATH_MAX];
 
             char file_name_spec[PATH_MAX];
             char file_name_readme[PATH_MAX];
 
-            if (!data[i].meta.name) {
+            if (!data[i]->meta.name) {
                 continue;
             }
-            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i].meta.python_compact, data[i].system.platform[DELIVERY_PLATFORM_RELEASE], data[i].system.arch);
-            sprintf(file_name_spec, "%s.yml", data[i].info.release_name);
+            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            sprintf(file_name_spec, "%s.yml", data[i]->info.release_name);
 
-            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i].meta.python_compact, data[i].system.platform[DELIVERY_PLATFORM_RELEASE], data[i].system.arch);
-            sprintf(file_name_readme, "README-%s.md", data[i].info.release_name);
+            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            sprintf(file_name_readme, "README-%s.md", data[i]->info.release_name);
 
             if (!access(link_name_spec, F_OK)) {
                 if (unlink(link_name_spec)) {
@@ -116,7 +113,7 @@ int indexer_symlinks(struct Delivery *ctx, const size_t nelem) {
         }
         popd();
     } else {
-        fprintf(stderr, "Unable to enter delivery directory: %s\n", ctx->storage.delivery_dir);
+        fprintf(stderr, "Unable to enter delivery directory: %s\n", (*ctx)->storage.delivery_dir);
         guard_free(data);
         return -1;
     }
@@ -325,7 +322,7 @@ int main(const int argc, char *argv[]) {
     get_files(&metafiles, ctx.storage.meta_dir, "*.stasis");
     strlist_sort(metafiles, STASIS_SORT_LEN_ASCENDING);
 
-    struct Delivery *local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
+    struct Delivery **local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
     if (!local) {
         SYSERROR("%s", "Unable to allocate bytes for local delivery context array");
         exit(1);
@@ -334,11 +331,15 @@ int main(const int argc, char *argv[]) {
     for (size_t i = 0; i < strlist_count(metafiles); i++) {
         char *item = strlist_item(metafiles, i);
         // Copy the pre-filled contents of the main delivery context
-        memcpy(&local[i], &ctx, sizeof(ctx));
+        local[i] = delivery_duplicate(&ctx);
+        if (!local[i]) {
+            SYSERROR("Unable to duplicate delivery context %zu", i);
+            exit(1);
+        }
         if (globals.verbose) {
             puts(item);
         }
-        load_metadata(&local[i], item);
+        load_metadata(local[i], item);
     }
     qsort(local, strlist_count(metafiles), sizeof(*local), callback_sort_deliveries_cmpfn);
 
@@ -430,10 +431,14 @@ int main(const int argc, char *argv[]) {
 
     guard_free(destdir);
     guard_array_free(rootdirs);
-    guard_strlist_free(&metafiles);
     guard_free(m.micromamba_prefix);
     delivery_free(&ctx);
+    for (size_t i = 0; i < strlist_count(metafiles); i++) {
+        delivery_free(local[i]);
+        guard_free(local[i]);
+    }
     guard_free(local);
+    guard_strlist_free(&metafiles);
     globals_free();
 
     msg(STASIS_MSG_L1, "Done!\n");

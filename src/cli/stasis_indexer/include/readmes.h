@@ -3,6 +3,6 @@
 
 #include "helpers.h"
 
-int indexer_readmes(struct Delivery ctx[], size_t nelem);
+int indexer_readmes(struct Delivery **ctx, size_t nelem);
 
 #endif //READMES_H
