@@ -88,7 +88,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
 
     fprintf(indexfp, "## Releases\n");
     int current_rc = (*ctx)->meta.rc;
-    for (size_t i = 0; i < nelem_real; i++) {
+    for (size_t i = 0; i < nelem; i++) {
         struct Delivery *current = ctx[i];
         if (current_rc > current->meta.rc) {
             current_rc = current->meta.rc;
