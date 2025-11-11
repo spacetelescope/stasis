@@ -27,8 +27,11 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     // Redirect stdout and stderr to the log file
     fflush(stdout);
     fflush(stderr);
+
     // Set log file name
-    sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+    if (globals.enable_task_logging) {
+        sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+    }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
@@ -118,8 +121,12 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
-    strcat(slot->log_file, pool->log_root);
-    strcat(slot->log_file, "/");
+    if (globals.enable_task_logging) {
+        strcat(slot->log_file, pool->log_root);
+        strcat(slot->log_file, "/");
+    } else {
+        strcpy(slot->log_file, "/dev/stdout");
+    }
 
     // Set working directory
     if (isempty(working_dir)) {
@@ -251,9 +258,11 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
                 }
             }
         }
-        if (!access(slot->log_file, F_OK)) {
-            SYSDEBUG("Removing log file: %s", slot->log_file);
-            remove(slot->log_file);
+        if (globals.enable_task_logging) {
+            if (!access(slot->log_file, F_OK)) {
+                SYSDEBUG("Removing log file: %s", slot->log_file);
+                remove(slot->log_file);
+            }
         }
         if (!access(slot->parent_script, F_OK)) {
             SYSDEBUG("Removing runner script: %s", slot->parent_script);
@@ -340,9 +349,11 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     fprintf(stderr, "%s Task state is unknown (0x%04X)\n", progress, status);
                 }
 
-                // Show the log (always)
-                if (show_log_contents(stdout, slot)) {
-                    perror(slot->log_file);
+                if (globals.enable_task_logging) {
+                    // Show the log (always)
+                    if (show_log_contents(stdout, slot)) {
+                        perror(slot->log_file);
+                    }
                 }
 
                 // Record the task stop time
@@ -364,8 +375,10 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 // Clean up logs and scripts left behind by the task
-                if (remove(slot->log_file)) {
-                    fprintf(stderr, "%s Unable to remove log file: '%s': %s\n", progress, slot->parent_script, strerror(errno));
+                if (globals.enable_task_logging) {
+                    if (remove(slot->log_file)) {
+                        fprintf(stderr, "%s Unable to remove log file: '%s': %s\n", progress, slot->parent_script, strerror(errno));
+                    }
                 }
                 if (remove(slot->parent_script)) {
                     fprintf(stderr, "%s Unable to remove temporary script '%s': %s\n", progress, slot->parent_script, strerror(errno));
