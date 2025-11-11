@@ -41,6 +41,7 @@ struct STASIS_GLOBAL globals = {
         .enable_testing = true, ///< Toggle [test] block "script" execution. "script_setup" always executes.
         .enable_rewrite_spec_stage_2 = true, ///< Leave template stings in output files
         .enable_parallel = true, ///< Toggle testing in parallel
+        .enable_task_logging = true, ///< Toggle logging for multiprocess tasks
         .parallel_fail_fast = false, ///< Kill ALL multiprocessing tasks immediately on error
         .pool_status_interval = 30, ///< Report "Task is running"
 };
