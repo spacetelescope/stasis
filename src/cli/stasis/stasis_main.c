@@ -586,6 +586,9 @@ int main(int argc, char *argv[]) {
             case OPT_NO_PARALLEL:
                 globals.enable_parallel = false;
                 break;
+            case OPT_NO_TASK_LOGGING:
+                globals.enable_task_logging = false;
+                break;
             case '?':
             default:
                 exit(1);

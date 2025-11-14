@@ -21,6 +21,7 @@ add_library(stasis_core STATIC
         template_func_proto.c
         envctl.c
         multiprocessing.c
+        semaphore.c
 )
 target_include_directories(stasis_core PRIVATE
         ${core_INCLUDE}

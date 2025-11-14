@@ -20,6 +20,7 @@ struct option long_options[] = {
     {"no-artifactory-upload", no_argument, 0, OPT_NO_ARTIFACTORY_UPLOAD},
     {"no-testing", no_argument, 0, OPT_NO_TESTING},
     {"no-parallel", no_argument, 0, OPT_NO_PARALLEL},
+    {"no-task-logging", no_argument, 0, OPT_NO_TASK_LOGGING},
     {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
     {0, 0, 0, 0},
 };
@@ -43,6 +44,7 @@ const char *long_options_help[] = {
     "Do not upload artifacts to Artifactory (dry-run)",
     "Do not execute test scripts",
     "Do not execute tests in parallel",
+    "Do not log task output (write to stdout)",
     "Do not rewrite paths and URLs in output files",
     NULL,
 };
