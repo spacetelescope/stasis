@@ -9,7 +9,14 @@
 #include "utils.h"
 
 int semaphore_init(struct Semaphore *s, const char *name, const int value) {
-    snprintf(s->name, sizeof(s->name), "/%s", name);
+#if defined(STASIS_OS_DARWIN)
+    // see: sem_open(2)
+    const size_t max_namelen = PSEMNAMLEN;
+#else
+    // see: sem_open(3)
+    const size_t max_namelen = STASIS_NAME_MAX;
+#endif
+    snprintf(s->name, max_namelen, "/%s", name);
     s->sem = sem_open(s->name, O_CREAT, 0644, value);
     if (s->sem == SEM_FAILED) {
         return -1;
