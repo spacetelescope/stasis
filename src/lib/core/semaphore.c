@@ -19,15 +19,11 @@ int semaphore_init(struct Semaphore *s, const char *name, const int value) {
 }
 
 int semaphore_wait(struct Semaphore *s) {
-    int state = 0;
-    sem_getvalue(s->sem, &state);
     SYSDEBUG("%s", s->name);
     return sem_wait(s->sem);
 }
 
 int semaphore_post(struct Semaphore *s) {
-    int state = 0;
-    sem_getvalue(s->sem, &state);
     SYSDEBUG("%s", s->name);
     return sem_post(s->sem);
 }
