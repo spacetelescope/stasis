@@ -12,7 +12,6 @@ int semaphore_init(struct Semaphore *s, const char *name, const int value) {
     snprintf(s->name, sizeof(s->name), "/%s", name);
     s->sem = sem_open(s->name, O_CREAT, 0644, value);
     if (s->sem == SEM_FAILED) {
-        perror("sem_open");
         return -1;
     }
     SYSDEBUG("%s", s->name);
