@@ -52,7 +52,6 @@ struct Semaphore {
 int semaphore_init(struct Semaphore *s, const char *name, int value);
 int semaphore_wait(struct Semaphore *s);
 int semaphore_post(struct Semaphore *s);
-
 void semaphore_destroy(struct Semaphore *s);
 
 #endif //STASIS_SEMAPHORE_H
