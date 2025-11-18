@@ -27,8 +27,11 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     // Redirect stdout and stderr to the log file
     fflush(stdout);
     fflush(stderr);
+
     // Set log file name
-    sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+    if (globals.enable_task_logging) {
+        sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+    }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
@@ -80,14 +83,22 @@ int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, p
 
 static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     SYSDEBUG("Preparing to fork() child task %s:%s", pool->ident, task->ident);
+    semaphore_wait(&pool->semaphore);
     pid_t pid = fork();
+    int parent_status = 0;
     int child_status = 0;
     if (pid == -1) {
         return -1;
-    } else if (pid == 0) {
-        child(pool, task);
     }
-    return parent(pool, task, pid, &child_status);
+    if (pid == 0) {
+        child(pool, task);
+    } else {
+        parent_status = parent(pool, task, pid, &child_status);
+        fflush(stdout);
+        fflush(stderr);
+    }
+    semaphore_post(&pool->semaphore);
+    return parent_status;
 }
 
 struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *working_dir, char *cmd) {
@@ -110,8 +121,12 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
-    strcat(slot->log_file, pool->log_root);
-    strcat(slot->log_file, "/");
+    if (globals.enable_task_logging) {
+        strcat(slot->log_file, pool->log_root);
+        strcat(slot->log_file, "/");
+    } else {
+        strcpy(slot->log_file, "/dev/stdout");
+    }
 
     // Set working directory
     if (isempty(working_dir)) {
@@ -209,6 +224,7 @@ static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
         memset(buf, 0, sizeof(buf));
     }
     fprintf(stream, "\n");
+    fflush(stream);
     fclose(fp);
     return 0;
 }
@@ -242,9 +258,11 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
                 }
             }
         }
-        if (!access(slot->log_file, F_OK)) {
-            SYSDEBUG("Removing log file: %s", slot->log_file);
-            remove(slot->log_file);
+        if (globals.enable_task_logging) {
+            if (!access(slot->log_file, F_OK)) {
+                SYSDEBUG("Removing log file: %s", slot->log_file);
+                remove(slot->log_file);
+            }
         }
         if (!access(slot->parent_script, F_OK)) {
             SYSDEBUG("Removing runner script: %s", slot->parent_script);
@@ -331,9 +349,11 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     fprintf(stderr, "%s Task state is unknown (0x%04X)\n", progress, status);
                 }
 
-                // Show the log (always)
-                if (show_log_contents(stdout, slot)) {
-                    perror(slot->log_file);
+                if (globals.enable_task_logging) {
+                    // Show the log (always)
+                    if (show_log_contents(stdout, slot)) {
+                        perror(slot->log_file);
+                    }
                 }
 
                 // Record the task stop time
@@ -355,8 +375,10 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 // Clean up logs and scripts left behind by the task
-                if (remove(slot->log_file)) {
-                    fprintf(stderr, "%s Unable to remove log file: '%s': %s\n", progress, slot->parent_script, strerror(errno));
+                if (globals.enable_task_logging) {
+                    if (remove(slot->log_file)) {
+                        fprintf(stderr, "%s Unable to remove log file: '%s': %s\n", progress, slot->parent_script, strerror(errno));
+                    }
                 }
                 if (remove(slot->parent_script)) {
                     fprintf(stderr, "%s Unable to remove temporary script '%s': %s\n", progress, slot->parent_script, strerror(errno));
@@ -398,6 +420,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
     pool_deadlocked:
     puts("");
+
     return failures;
 }
 
@@ -441,12 +464,22 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
         return NULL;
     }
 
+    char semaphore_name[255] = {0};
+    snprintf(semaphore_name, sizeof(semaphore_name), "stasis_mp_%s", ident);
+    if (semaphore_init(&pool->semaphore, semaphore_name, 2) != 0) {
+        fprintf(stderr, "unable to initialize semaphore\n");
+        mp_pool_free(&pool);
+        return NULL;
+    }
+
     return pool;
 }
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
     for (size_t i = 0; i < (*pool)->num_alloc; i++) {
     }
+    semaphore_destroy(&(*pool)->semaphore);
+
     // Unmap all pool tasks
     if ((*pool)->task) {
         if ((*pool)->task->cmd) {
