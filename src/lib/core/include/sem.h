@@ -38,6 +38,8 @@ struct Semaphore {
  *         perror("semaphore_post failed");
  *         exit(1);
  *     }
+ *
+ *     semaphore_destroy(&s);
  * }
  * @endcode
  *
