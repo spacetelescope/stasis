@@ -6,6 +6,11 @@
 
 #include "core.h"
 #include <semaphore.h>
+#if defined(STASIS_OS_DARWIN)
+// Darwin's sem_open() limits the path length to PSEMNAMLEN
+// even though it isn't used directly.
+#include <sys/posix_sem.h>  // PSEMNAMLEN
+#endif
 
 struct Semaphore {
     sem_t *sem;
