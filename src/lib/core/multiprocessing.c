@@ -167,6 +167,9 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     memset(slot->cmd, 0, slot->cmd_len);
     strncpy(slot->cmd, cmd, slot->cmd_len);
 
+    // Set task timeout
+    slot->timeout = globals.task_timeout;
+
     return slot;
 }
 

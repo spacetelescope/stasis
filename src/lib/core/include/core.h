@@ -51,6 +51,7 @@ struct STASIS_GLOBAL {
     char *tmpdir; //!< Path to temporary storage directory
     char *conda_install_prefix; //!< Path to install conda
     char *sysconfdir; //!< Path where STASIS reads its configuration files (mission directory, etc)
+    int task_timeout; ///< Time in seconds before task is terminated
     struct {
         char *tox_posargs;
         char *conda_reactivate;

@@ -214,6 +214,7 @@ int main(int argc, char *argv[]) {
         test_mp_fail_fast,
         test_mp_stop_continue
     };
+    globals.task_timeout = 60;
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();
 }

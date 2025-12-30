@@ -44,6 +44,7 @@ struct STASIS_GLOBAL globals = {
         .enable_task_logging = true, ///< Toggle logging for multiprocess tasks
         .parallel_fail_fast = false, ///< Kill ALL multiprocessing tasks immediately on error
         .pool_status_interval = 30, ///< Report "Task is running"
+        .task_timeout = 0, ///< Time in seconds before task is terminated
 };
 
 void globals_free() {

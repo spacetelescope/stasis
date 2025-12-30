@@ -540,6 +540,18 @@ int main(int argc, char *argv[]) {
             case OPT_FAIL_FAST:
                 globals.parallel_fail_fast = true;
                 break;
+            case OPT_TASK_TIMEOUT:
+                globals.task_timeout = str_to_timeout(optarg);
+                if (globals.task_timeout < 0) {
+                    fprintf(stderr, "Invalid timeout: %s\n", optarg);
+                    if (globals.task_timeout == STR_TO_TIMEOUT_INVALID_TIME_SCALE) {
+                        fprintf(stderr, "Use format '#s' (seconds), '#m' (minutes), '#h' (hours)\n");
+                    } else if (globals.task_timeout == STR_TO_TIMEOUT_NEGATIVE) {
+                        fprintf(stderr, "Timeout cannot be negative\n");
+                    }
+                    exit(1);
+                }
+                break;
             case OPT_POOL_STATUS_INTERVAL:
                 globals.pool_status_interval = (int) strtol(optarg, NULL, 10);
                 if (globals.pool_status_interval < 1) {

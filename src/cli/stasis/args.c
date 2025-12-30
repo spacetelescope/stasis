@@ -13,6 +13,7 @@ struct option long_options[] = {
     {"unbuffered", no_argument, 0, 'U'},
     {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
     {"fail-fast", no_argument, 0, OPT_FAIL_FAST},
+    {"task-timeout", required_argument, 0, OPT_TASK_TIMEOUT},
     {"overwrite", no_argument, 0, OPT_OVERWRITE},
     {"no-docker", no_argument, 0, OPT_NO_DOCKER},
     {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
@@ -37,6 +38,7 @@ const char *long_options_help[] = {
     "Disable line buffering",
     "Update conda installation prior to STASIS environment creation",
     "On error, immediately terminate all tasks",
+    "Terminate task after timeout is reached (#s, #m, #h)",
     "Overwrite an existing release",
     "Do not build docker images",
     "Do not upload artifacts to Artifactory",
@@ -104,3 +106,29 @@ void usage(char *progname) {
         puts(output);
     }
 }
+
+int str_to_timeout(char *s) {
+    if (!s) {
+        return 0; // no timeout
+    }
+
+    char *scale = NULL;
+    int value = (int) strtol(s, &scale, 10);
+    if (scale) {
+        if (*scale == 's') {
+            value *= 1; // seconds, no-op
+        } else if (*scale == 'm') {
+            value *= 60; // minutes
+        } else if (*scale == 'h') {
+            value *= 3200; // hours
+        } else {
+            return STR_TO_TIMEOUT_INVALID_TIME_SCALE; // invalid time scale
+        }
+    }
+
+    if (value < 0) {
+        return STR_TO_TIMEOUT_NEGATIVE; // cannot be negative
+    }
+    return value;
+}
+
