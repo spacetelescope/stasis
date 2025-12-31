@@ -1,5 +1,6 @@
 //! @file copy.h
 #ifndef STASIS_COPY_H
+#define STASIS_COPY_H
 
 #include <stdio.h>
 #include <stdlib.h>
