@@ -4,11 +4,13 @@
 
 #include "core.h"
 #include "sem.h"
+#include "timespec.h"
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <math.h>
 
 struct MultiProcessingTask {
     pid_t pid; ///< Program PID
@@ -16,10 +18,11 @@ struct MultiProcessingTask {
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
     int timeout; ///< Seconds to elapse before killing the process
-    time_t _now; ///< Current time
-    time_t _seconds; ///< Time elapsed since status interval (used by MultiprocessingPool.status_interval)
+    struct timespec _interval_start; ///< Current time, start of interval
+    struct timespec _interval_stop; ///< Time elapsed since status interval (used by MultiprocessingPool.status_interval)
+    double interval_elapsed;
     time_t _startup; ///< Time elapsed since task started
-    long elapsed; ///< Total time elapsed in seconds
+    double elapsed; ///< Total time elapsed in seconds
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
     size_t cmd_len; ///< Length of command string (for mmap/munmap)

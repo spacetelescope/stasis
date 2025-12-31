@@ -4,6 +4,74 @@
 /// The sum of all tasks started by mp_task()
 size_t mp_global_task_count = 0;
 
+static char *seconds_to_human_readable(const int v) {
+    static char result[255] = {0};
+    const int hours = v / 3600;
+    const int minutes = (v % 3600) / 60;
+    const int seconds = v % 60;
+
+    memset(result, '\0', sizeof(result));
+    if (hours) {
+        snprintf(result + strlen(result), sizeof(result), "%dh ", hours);
+    }
+    if (minutes) {
+        snprintf(result + strlen(result), sizeof(result), "%dm ", minutes);
+    }
+    snprintf(result + strlen(result), sizeof(result), "%ds", seconds);
+
+    return result;
+}
+
+static double get_duration(const struct timespec stop, const struct timespec start) {
+    const struct timespec result = timespec_sub(stop, start);
+    return timespec_to_double(result);
+}
+
+static double get_task_duration(const struct MultiProcessingTask *task) {
+    const struct timespec *start = &task->time_data.t_start;
+    const struct timespec *stop = &task->time_data.t_stop;
+    return get_duration(*stop, *start);
+}
+
+static double get_task_interval_duration(const struct MultiProcessingTask *task) {
+    const struct timespec *start = &task->_interval_start;
+    const struct timespec *stop = &task->_interval_stop;
+    return get_duration(*stop, *start);
+}
+
+static void update_task_interval_start(struct MultiProcessingTask *task) {
+    // Record the task stop time
+    if (clock_gettime(CLOCK_REALTIME, &task->_interval_start) < 0) {
+        perror("clock_gettime");
+        exit(1);
+    }
+}
+
+static void update_task_interval_elapsed(struct MultiProcessingTask *task) {
+    // Record the interval stop time
+    if (clock_gettime(CLOCK_REALTIME, &task->_interval_stop) < 0) {
+        perror("clock_gettime");
+        exit(1);
+    }
+    task->interval_elapsed = get_task_interval_duration(task);
+}
+
+static void update_task_start(struct MultiProcessingTask *task) {
+    // Record the task start time
+    if (clock_gettime(CLOCK_REALTIME, &task->time_data.t_start) < 0) {
+        perror("clock_gettime");
+        exit(1);
+    }
+}
+static void update_task_elapsed(struct MultiProcessingTask *task) {
+    // Record the task stop time
+    if (clock_gettime(CLOCK_REALTIME, &task->time_data.t_stop) < 0) {
+        perror("clock_gettime");
+        exit(1);
+    }
+    task->elapsed = get_task_duration(task);
+}
+
 static struct MultiProcessingTask *mp_pool_next_available(struct MultiProcessingPool *pool) {
     return &pool->task[pool->num_used];
 }
@@ -15,12 +83,6 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     // The task starts inside the requested working directory
     if (chdir(task->working_dir)) {
         perror(task->working_dir);
-        exit(1);
-    }
-
-    // Record the task start time
-    if (clock_gettime(CLOCK_REALTIME, &task->time_data.t_start) < 0) {
-        perror("clock_gettime");
         exit(1);
     }
 
@@ -64,13 +126,18 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
 }
 
 int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {
+    // Record the task start time
+    update_task_start(task);
+
     printf("[%s:%s] Task started (pid: %d)\n", pool->ident, task->ident, pid);
 
     // Give the child process access to our PID value
     task->pid = pid;
     task->parent_pid = pid;
 
+    semaphore_wait(&pool->semaphore);
     mp_global_task_count++;
+    semaphore_post(&pool->semaphore);
 
     // Check child's status
     pid_t code = waitpid(pid, child_status, WUNTRACED | WCONTINUED | WNOHANG);
@@ -91,13 +158,13 @@ static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessing
         return -1;
     }
     if (pid == 0) {
+        semaphore_post(&pool->semaphore);
         child(pool, task);
     } else {
         parent_status = parent(pool, task, pid, &child_status);
         fflush(stdout);
         fflush(stderr);
     }
-    semaphore_post(&pool->semaphore);
     return parent_status;
 }
 
@@ -173,24 +240,11 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     return slot;
 }
 
-static void get_task_duration(struct MultiProcessingTask *task, struct timespec *result) {
-    // based on the timersub() macro in time.h
-    // This implementation uses timespec and increases the resolution from microseconds to nanoseconds.
-    struct timespec *start = &task->time_data.t_start;
-    struct timespec *stop = &task->time_data.t_stop;
-    result->tv_sec = (stop->tv_sec - start->tv_sec);
-    result->tv_nsec = (stop->tv_nsec - start->tv_nsec);
-    if (result->tv_nsec < 0) {
-        --result->tv_sec;
-        result->tv_nsec += 1000000000L;
-    }
-}
-
 void mp_pool_show_summary(struct MultiProcessingPool *pool) {
     print_banner("=", 79);
     printf("Pool execution summary for \"%s\"\n", pool->ident);
     print_banner("=", 79);
-    printf("STATUS     PID     DURATION     IDENT\n");
+    printf("STATUS      PID        DURATION     IDENT\n");
     for (size_t i = 0; i < pool->num_used; i++) {
         struct MultiProcessingTask *task = &pool->task[i];
         char status_str[10] = {0};
@@ -208,10 +262,8 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
             strcpy(status_str, "FAIL");
         }
 
-        struct timespec duration;
-        get_task_duration(task, &duration);
-        long diff = duration.tv_sec + duration.tv_nsec / 1000000000L;
-        printf("%-4s   %10d  %7lds     %-10s\n", status_str, task->parent_pid, diff, task->ident) ;
+        printf("%-4s   %10d    %10s     %-10s\n", status_str, task->parent_pid, seconds_to_human_readable(task->elapsed), task->ident) ;
+        //printf("%-4s   %10d  %7lds     %-10s\n", status_str, task->parent_pid, task->elapsed, task->ident) ;
     }
     puts("");
 }
@@ -243,18 +295,18 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
         if (slot->pid > 0) {
             int status;
             printf("Sending signal %d to task '%s' (pid: %d)\n", signum, slot->ident, slot->pid);
+            semaphore_wait(&pool->semaphore);
             status = kill(slot->pid, signum);
+            semaphore_post(&pool->semaphore);
             if (status && errno != ESRCH) {
                 fprintf(stderr, "Task '%s' (pid: %d) did not respond: %s\n", slot->ident, slot->pid, strerror(errno));
             } else {
                 // Wait for process to handle the signal, then set the status accordingly
                 if (waitpid(slot->pid, &status, 0) >= 0) {
                     slot->signaled_by = WTERMSIG(status);
-                    // Record the task stop time
-                    if (clock_gettime(CLOCK_REALTIME, &slot->time_data.t_stop) < 0) {
-                        perror("clock_gettime");
-                        exit(1);
-                    }
+                    semaphore_wait(&pool->semaphore);
+                    update_task_elapsed(slot);
+                    semaphore_post(&pool->semaphore);
                     // We are short-circuiting the normal flow, and the process is now dead, so mark it as such
                     SYSDEBUG("Marking slot %zu: UNUSED", i);
                     slot->pid = MP_POOL_PID_UNUSED;
@@ -262,15 +314,20 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
             }
         }
         if (globals.enable_task_logging) {
+            semaphore_wait(&pool->semaphore);
             if (!access(slot->log_file, F_OK)) {
                 SYSDEBUG("Removing log file: %s", slot->log_file);
                 remove(slot->log_file);
             }
+            semaphore_post(&pool->semaphore);
         }
+
+        semaphore_wait(&pool->semaphore);
         if (!access(slot->parent_script, F_OK)) {
             SYSDEBUG("Removing runner script: %s", slot->parent_script);
             remove(slot->parent_script);
         }
+        semaphore_post(&pool->semaphore);
     }
     return 0;
 }
@@ -317,32 +374,49 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
             // Is the process finished?
             pid_t pid = waitpid(slot->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
-            int task_ended = WIFEXITED(status);
-            int task_ended_by_signal = WIFSIGNALED(status);
-            int task_stopped = WIFSTOPPED(status);
-            int task_continued = WIFCONTINUED(status);
-            int status_exit = WEXITSTATUS(status);
-            int status_signal = WTERMSIG(status);
-            int status_stopped = WSTOPSIG(status);
+
+            char progress[1024] = {0};
+            const double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
+            snprintf(progress, sizeof(progress) - 1, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
+
+            int task_timed_out = false;
+            if (slot->timeout) {
+                task_timed_out = slot->elapsed >= (double) slot->timeout;
+                if (task_timed_out && pid == 0 && slot->pid != 0) {
+                    printf("%s Task timed out after %s (pid: %d)\n", progress, seconds_to_human_readable(slot->timeout), slot->pid);
+                    if (kill(slot->pid, SIGKILL) == 0) {
+                        status = SIGKILL;
+                    } else {
+                        SYSERROR("Timeout reached, however pid %d could not be killed.", slot->pid);
+                        return -1;
+                    }
+                }
+            }
+
+            const int task_ended = WIFEXITED(status);
+            const int task_ended_by_signal = WIFSIGNALED(status);
+            const int task_stopped = WIFSTOPPED(status);
+            const int task_continued = WIFCONTINUED(status);
+            const int status_exit = WEXITSTATUS(status);
+            const int status_signal = WTERMSIG(status);
+            const int status_stopped = WSTOPSIG(status);
 
             // Update status
             slot->status = status_exit;
             slot->signaled_by = status_signal;
 
-            char progress[1024] = {0};
             if (pid > 0) {
-                double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
-                snprintf(progress, sizeof(progress) - 1, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
-
                 // The process ended in one the following ways
                 // Note: SIGSTOP nor SIGCONT will not increment the tasks_complete counter
                 if (task_stopped) {
                     printf("%s Task was suspended (%d)\n", progress, status_stopped);
                     continue;
-                } else if (task_continued) {
+                }
+                if (task_continued) {
                     printf("%s Task was resumed\n", progress);
                     continue;
-                } else if (task_ended_by_signal) {
+                }
+                if (task_ended_by_signal) {
                     printf("%s Task ended by signal %d (%s)\n", progress, status_signal, strsignal(status_signal));
                     tasks_complete++;
                 } else if (task_ended) {
@@ -359,14 +433,11 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     }
                 }
 
-                // Record the task stop time
-                if (clock_gettime(CLOCK_REALTIME, &slot->time_data.t_stop) < 0) {
-                    perror("clock_gettime");
-                    exit(1);
-                }
-
                 if (status >> 8 != 0 || (status & 0xff) != 0) {
-                    fprintf(stderr, "%s Task failed after %lus\n", progress, slot->elapsed);
+                    semaphore_wait(&pool->semaphore);
+                    update_task_elapsed(slot);
+                    semaphore_post(&pool->semaphore);
+                    fprintf(stderr, "%s Task failed after %s\n", progress, seconds_to_human_readable(slot->elapsed));
                     failures++;
 
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
@@ -374,7 +445,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                         return -2;
                     }
                 } else {
-                    printf("%s Task finished after %lus\n", progress, slot->elapsed);
+                    printf("%s Task finished after %s\n", progress, seconds_to_human_readable(slot->elapsed));
                 }
 
                 // Clean up logs and scripts left behind by the task
@@ -395,17 +466,25 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             } else {
                 // Track the number of seconds elapsed for each task.
                 // When a task has executed for longer than status_intervals, print a status update
-                // _seconds represents the time between intervals, not the total runtime of the task
-                slot->_seconds = time(NULL) - slot->_now;
-                if (slot->_seconds >  pool->status_interval) {
-                    slot->_now = time(NULL);
-                    slot->_seconds = 0;
+                // interval_elapsed represents the time between intervals, not the total runtime of the task
+                semaphore_wait(&pool->semaphore);
+                if (fabs(slot->interval_elapsed) > pool->status_interval) {
+                    slot->interval_elapsed = 0.0;
                 }
-                if (slot->_seconds == 0) {
-                    printf("[%s:%s] Task is running (pid: %d, elapsed: %lus)\n", pool->ident, slot->ident, slot->parent_pid, slot->elapsed);
+                if (slot->interval_elapsed == 0.0) {
+                    printf("[%s:%s] Task is running (pid: %d, elapsed: %s)\n", pool->ident, slot->ident, slot->parent_pid, seconds_to_human_readable(slot->elapsed));
+                    update_task_interval_start(slot);
                 }
+
+                update_task_interval_elapsed(slot);
+                semaphore_post(&pool->semaphore);
             }
-            slot->elapsed = time(NULL) - slot->_startup;
+
+            if (!task_ended || !task_ended_by_signal) {
+                semaphore_wait(&pool->semaphore);
+                update_task_elapsed(slot);
+                semaphore_post(&pool->semaphore);
+            }
         }
 
         if (tasks_complete == pool->num_used) {
@@ -418,7 +497,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         }
 
         // Poll again after a short delay
-        sleep(1);
+        usleep(100000);
     } while (1);
 
     pool_deadlocked:
@@ -469,19 +548,21 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
     char semaphore_name[255] = {0};
     snprintf(semaphore_name, sizeof(semaphore_name), "stasis_mp_%s", ident);
-    if (semaphore_init(&pool->semaphore, semaphore_name, 2) != 0) {
+    if (semaphore_init(&pool->semaphore, semaphore_name, 1) != 0) {
         fprintf(stderr, "unable to initialize semaphore\n");
         mp_pool_free(&pool);
         return NULL;
     }
 
+    pool->status_interval = 3;
+
     return pool;
 }
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
-    for (size_t i = 0; i < (*pool)->num_alloc; i++) {
+    if (!isempty((*pool)->semaphore.name)) {
+        semaphore_destroy(&(*pool)->semaphore);
     }
-    semaphore_destroy(&(*pool)->semaphore);
 
     // Unmap all pool tasks
     if ((*pool)->task) {
