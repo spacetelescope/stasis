@@ -4,24 +4,6 @@
 /// The sum of all tasks started by mp_task()
 size_t mp_global_task_count = 0;
 
-static char *seconds_to_human_readable(const int v) {
-    static char result[255] = {0};
-    const int hours = v / 3600;
-    const int minutes = (v % 3600) / 60;
-    const int seconds = v % 60;
-
-    memset(result, '\0', sizeof(result));
-    if (hours) {
-        snprintf(result + strlen(result), sizeof(result), "%dh ", hours);
-    }
-    if (minutes) {
-        snprintf(result + strlen(result), sizeof(result), "%dm ", minutes);
-    }
-    snprintf(result + strlen(result), sizeof(result), "%ds", seconds);
-
-    return result;
-}
-
 static double get_duration(const struct timespec stop, const struct timespec start) {
     const struct timespec result = timespec_sub(stop, start);
     return timespec_to_double(result);

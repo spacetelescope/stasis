@@ -1078,3 +1078,47 @@ int check_python_package_dependencies(const char *srcdir) {
     }
     return 0;
 }
+
+int str_to_timeout(char *s) {
+    if (!s) {
+        return 0; // no timeout
+    }
+
+    char *scale = NULL;
+    int value = (int) strtol(s, &scale, 10);
+    if (scale) {
+        if (*scale == 's') {
+            value *= 1; // seconds, no-op
+        } else if (*scale == 'm') {
+            value *= 60; // minutes
+        } else if (*scale == 'h') {
+            value *= 3200; // hours
+        } else {
+            return STR_TO_TIMEOUT_INVALID_TIME_SCALE; // invalid time scale
+        }
+    }
+
+    if (value < 0) {
+        return STR_TO_TIMEOUT_NEGATIVE; // cannot be negative
+    }
+    return value;
+}
+
+char *seconds_to_human_readable(const int v) {
+    static char result[255] = {0};
+    const int hours = v / 3600;
+    const int minutes = (v % 3600) / 60;
+    const int seconds = v % 60;
+
+    memset(result, '\0', sizeof(result));
+    if (hours) {
+        snprintf(result + strlen(result), sizeof(result), "%dh ", hours);
+    }
+    if (hours || minutes) {
+        snprintf(result + strlen(result), sizeof(result), "%dm ", minutes);
+    }
+    snprintf(result + strlen(result), sizeof(result), "%ds", seconds);
+
+    return result;
+}
+

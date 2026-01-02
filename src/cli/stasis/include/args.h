@@ -23,8 +23,4 @@
 extern struct option long_options[];
 void usage(char *progname);
 
-#define STR_TO_TIMEOUT_NEGATIVE (-1)
-#define STR_TO_TIMEOUT_INVALID_TIME_SCALE (-2)
-int str_to_timeout(char *s);
-
 #endif //STASIS_ARGS_H

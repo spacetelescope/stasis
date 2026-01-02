@@ -106,29 +106,3 @@ void usage(char *progname) {
         puts(output);
     }
 }
-
-int str_to_timeout(char *s) {
-    if (!s) {
-        return 0; // no timeout
-    }
-
-    char *scale = NULL;
-    int value = (int) strtol(s, &scale, 10);
-    if (scale) {
-        if (*scale == 's') {
-            value *= 1; // seconds, no-op
-        } else if (*scale == 'm') {
-            value *= 60; // minutes
-        } else if (*scale == 'h') {
-            value *= 3200; // hours
-        } else {
-            return STR_TO_TIMEOUT_INVALID_TIME_SCALE; // invalid time scale
-        }
-    }
-
-    if (value < 0) {
-        return STR_TO_TIMEOUT_NEGATIVE; // cannot be negative
-    }
-    return value;
-}
-

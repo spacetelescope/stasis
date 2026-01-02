@@ -464,4 +464,10 @@ int is_git_sha(char const *hash);
 
 int check_python_package_dependencies(const char *srcdir);
 
+char *seconds_to_human_readable(int v);
+
+#define STR_TO_TIMEOUT_NEGATIVE (-1)
+#define STR_TO_TIMEOUT_INVALID_TIME_SCALE (-2)
+int str_to_timeout(char *s);
+
 #endif //STASIS_UTILS_H
