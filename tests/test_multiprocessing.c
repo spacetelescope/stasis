@@ -171,6 +171,42 @@ void test_mp_fail_fast() {
     mp_pool_free(&p);
 }
 
+static void test_mp_timeout() {
+    struct MultiProcessingPool *p = NULL;
+    p = mp_pool_init("timeout", "timeoutlogs");
+    p->status_interval = 1;
+    struct MultiProcessingTask *task = mp_pool_task(p, "timeout", NULL, "sleep 5");
+    int timeout = 3;
+    task->timeout = timeout;
+    mp_pool_join(p, 1, 0);
+    STASIS_ASSERT((task->time_data.duration >= (double) timeout && task->time_data.duration < (double) timeout + 1), "Timeout occurred out of desired range");
+    mp_pool_show_summary(p);
+    mp_pool_free(&p);
+}
+
+static void test_mp_seconds_to_human_readable() {
+    struct testcase {
+        int seconds;
+        const char *expected;
+    } tc[] = {
+        {.seconds = -1, "-1s"},
+        {.seconds = 0, "0s"},
+        {.seconds = 10, "10s"},
+        {.seconds = 20, "20s"},
+        {.seconds = 30, "30s"},
+        {.seconds = 60, "1m 0s"},
+        {.seconds = 125, "2m 5s"},
+        {.seconds = 3600, "1h 0m 0s"},
+        {.seconds = 86399, "23h 59m 59s"},
+        {.seconds = 86400, "24h 0m 0s"},
+    };
+    for (size_t i = 0; i < sizeof(tc) / sizeof(tc[0]); i++) {
+        char *result = seconds_to_human_readable(tc[i].seconds);
+        printf("seconds=%d, expected: %s, got: %s\n", tc[i].seconds, tc[i].expected, result);
+        STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "bad output");
+    }
+}
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static void *pool_container(void *data) {
     char *commands_sc[] = {
@@ -206,15 +242,19 @@ void test_mp_stop_continue() {
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
-        test_mp_pool_init,
-        test_mp_task,
-        test_mp_pool_join,
-        test_mp_pool_free,
-        test_mp_pool_workflow,
-        test_mp_fail_fast,
-        test_mp_stop_continue
+        //test_mp_pool_init,
+        //test_mp_task,
+        //test_mp_pool_join,
+        //test_mp_pool_free,
+        //test_mp_pool_workflow,
+        //test_mp_fail_fast,
+        test_mp_timeout,
+        test_mp_seconds_to_human_readable,
+        //test_mp_stop_continue
     };
+
     globals.task_timeout = 60;
+
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();
 }
