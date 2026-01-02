@@ -12,27 +12,27 @@
 #include <sys/stat.h>
 #include <math.h>
 
+struct MultiProcessingTimer {
+    struct timespec t_start;
+    struct timespec t_stop;
+    double duration;
+};
+
 struct MultiProcessingTask {
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
     int timeout; ///< Seconds to elapse before killing the process
-    struct timespec _interval_start; ///< Current time, start of interval
-    struct timespec _interval_stop; ///< Time elapsed since status interval (used by MultiprocessingPool.status_interval)
-    double interval_elapsed;
     time_t _startup; ///< Time elapsed since task started
-    double elapsed; ///< Total time elapsed in seconds
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
     size_t cmd_len; ///< Length of command string (for mmap/munmap)
     char working_dir[PATH_MAX]; ///< Path to directory `cmd` should be executed in
     char log_file[PATH_MAX]; ///< Full path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task
-    struct {
-        struct timespec t_start;
-        struct timespec t_stop;
-    } time_data; ///< Wall-time counters
+    struct MultiProcessingTimer time_data; ///< Wall-time counters
+    struct MultiProcessingTimer interval_data; ///< Progress report counters
 };
 
 struct MultiProcessingPool {
