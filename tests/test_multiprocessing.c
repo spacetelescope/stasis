@@ -243,15 +243,15 @@ void test_mp_stop_continue() {
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
-        //test_mp_pool_init,
-        //test_mp_task,
-        //test_mp_pool_join,
-        //test_mp_pool_free,
-        //test_mp_pool_workflow,
-        //test_mp_fail_fast,
+        test_mp_pool_init,
+        test_mp_task,
+        test_mp_pool_join,
+        test_mp_pool_free,
+        test_mp_pool_workflow,
+        test_mp_fail_fast,
         test_mp_timeout,
         test_mp_seconds_to_human_readable,
-        //test_mp_stop_continue
+        test_mp_stop_continue
     };
 
     globals.task_timeout = 60;
