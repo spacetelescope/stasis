@@ -185,7 +185,7 @@ static void test_mp_timeout() {
 }
 
 static void test_mp_seconds_to_human_readable() {
-    struct testcase {
+    const struct testcase {
         int seconds;
         const char *expected;
     } tc[] = {
@@ -201,7 +201,8 @@ static void test_mp_seconds_to_human_readable() {
         {.seconds = 86400, "24h 0m 0s"},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(tc[0]); i++) {
-        char *result = seconds_to_human_readable(tc[i].seconds);
+        char result[255] = {0};
+        seconds_to_human_readable(tc[i].seconds, result, sizeof(result));
         printf("seconds=%d, expected: %s, got: %s\n", tc[i].seconds, tc[i].expected, result);
         STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "bad output");
     }

@@ -244,7 +244,9 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
             strcpy(status_str, "FAIL");
         }
 
-        printf("%-4s   %10d    %10s     %-10s\n", status_str, task->parent_pid, seconds_to_human_readable(task->time_data.duration), task->ident) ;
+        char duration[255] = {0};
+        seconds_to_human_readable(task->time_data.duration, duration, sizeof(duration));
+        printf("%-4s   %10d    %10s     %-10s\n", status_str, task->parent_pid, duration, task->ident) ;
         //printf("%-4s   %10d  %7lds     %-10s\n", status_str, task->parent_pid, task->elapsed, task->ident) ;
     }
     puts("");
@@ -329,6 +331,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
         }
 
         for (size_t i = lower_i; i < upper_i; i++) {
+            char duration[255] = {0};
             struct MultiProcessingTask *slot = &pool->task[i];
             if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
                 slot->_startup = time(NULL);
@@ -365,7 +368,8 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             if (slot->timeout) {
                 task_timed_out = slot->time_data.duration >= (double) slot->timeout;
                 if (task_timed_out && pid == 0 && slot->pid != 0) {
-                    printf("%s Task timed out after %s (pid: %d)\n", progress, seconds_to_human_readable(slot->timeout), slot->pid);
+                    seconds_to_human_readable(slot->timeout, duration, sizeof(duration));
+                    printf("%s Task timed out after %s (pid: %d)\n", progress, duration, slot->pid);
                     if (kill(slot->pid, SIGKILL) == 0) {
                         status = SIGKILL;
                     } else {
@@ -419,7 +423,8 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     semaphore_wait(&pool->semaphore);
                     update_task_elapsed(slot);
                     semaphore_post(&pool->semaphore);
-                    fprintf(stderr, "%s Task failed after %s\n", progress, seconds_to_human_readable(slot->time_data.duration));
+                    seconds_to_human_readable(slot->time_data.duration, duration, sizeof(duration));
+                    fprintf(stderr, "%s Task failed after %s\n", progress, duration);
                     failures++;
 
                     if (flags & MP_POOL_FAIL_FAST && pool->num_used > 1) {
@@ -427,7 +432,8 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                         return -2;
                     }
                 } else {
-                    printf("%s Task finished after %s\n", progress, seconds_to_human_readable(slot->time_data.duration));
+                    seconds_to_human_readable(slot->time_data.duration, duration, sizeof(duration));
+                    printf("%s Task finished after %s\n", progress, duration);
                 }
 
                 // Clean up logs and scripts left behind by the task
@@ -454,8 +460,9 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     slot->interval_data.duration = 0.0;
                 }
                 if (slot->interval_data.duration == 0.0) {
+                    seconds_to_human_readable(slot->time_data.duration, duration, sizeof(duration));
                     printf("[%s:%s] Task is running (pid: %d, elapsed: %s)\n",
-                        pool->ident, slot->ident, slot->parent_pid, seconds_to_human_readable(slot->time_data.duration));
+                        pool->ident, slot->ident, slot->parent_pid, duration);
                     update_task_interval_start(slot);
                 }
 

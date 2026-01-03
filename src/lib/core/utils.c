@@ -1104,21 +1104,18 @@ int str_to_timeout(char *s) {
     return value;
 }
 
-char *seconds_to_human_readable(const int v) {
-    static char result[255] = {0};
+void seconds_to_human_readable(const int v, char *result, const size_t maxlen) {
     const int hours = v / 3600;
     const int minutes = (v % 3600) / 60;
     const int seconds = v % 60;
 
-    memset(result, '\0', sizeof(result));
+    memset(result, '\0', maxlen);
     if (hours) {
-        snprintf(result + strlen(result), sizeof(result), "%dh ", hours);
+        snprintf(result + strlen(result), maxlen, "%dh ", hours);
     }
     if (hours || minutes) {
-        snprintf(result + strlen(result), sizeof(result), "%dm ", minutes);
+        snprintf(result + strlen(result), maxlen, "%dm ", minutes);
     }
-    snprintf(result + strlen(result), sizeof(result), "%ds", seconds);
-
-    return result;
+    snprintf(result + strlen(result), maxlen, "%ds", seconds);
 }
 
