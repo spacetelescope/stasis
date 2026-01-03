@@ -161,7 +161,7 @@ void test_mp_fail_fast() {
         if (task->status == 0) result.total_status_success++;
         if (task->pid == MP_POOL_PID_UNUSED && task->status == MP_POOL_TASK_STATUS_INITIAL) result.total_unused++;
     }
-    fprintf(stderr, "total_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d\n",
+    STASIS_TEST_MSG("\ntotal_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d",
             result.total_status_fail, result.total_status_success, result.total_signaled, result.total_unused);
     STASIS_ASSERT(result.total_status_fail, "Should have failures");
     STASIS_ASSERT(result.total_status_success, "Should have successes");
@@ -203,7 +203,7 @@ static void test_mp_seconds_to_human_readable() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(tc[0]); i++) {
         char result[255] = {0};
         seconds_to_human_readable(tc[i].seconds, result, sizeof(result));
-        printf("seconds=%d, expected: %s, got: %s\n", tc[i].seconds, tc[i].expected, result);
+        STASIS_TEST_MSG("seconds=%d, expected: %s, got: %s", tc[i].seconds, tc[i].expected, result);
         STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "bad output");
     }
 }
