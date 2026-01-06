@@ -30,6 +30,9 @@ foreach(source_file ${source_files})
     elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${test_executable} PRIVATE ${win_cflags} ${win_msvc_cflags})
     endif()
+    if (TESTS_VERBOSE)
+        target_compile_definitions(${test_executable} PRIVATE STASIS_TEST_VERBOSE=1)
+    endif ()
     target_include_directories(${test_executable} PRIVATE
             ${core_INCLUDE}
             ${delivery_INCLUDE}

@@ -58,6 +58,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DTESTS=ON
+        -DTESTS_VERBOSE=ON
         -DTESTS_RT=ON
         -DDEBUG_MESSAGES=ON
         -S ${{ github.workspace }}

@@ -42,6 +42,7 @@ struct STASIS_GLOBAL {
     bool enable_overwrite; //!< Enable release file clobbering
     bool enable_rewrite_spec_stage_2; //!< Enable automatic @STR@ replacement in output files
     bool enable_parallel; //!< Enable testing in parallel
+    bool enable_task_logging; //!< Enable logging task output to a file
     long cpu_limit; //!< Limit parallel processing to n cores (default: max - 1)
     long parallel_fail_fast; //!< Fail immediately on error
     int pool_status_interval; //!< Report "Task is running" every n seconds
@@ -50,6 +51,7 @@ struct STASIS_GLOBAL {
     char *tmpdir; //!< Path to temporary storage directory
     char *conda_install_prefix; //!< Path to install conda
     char *sysconfdir; //!< Path where STASIS reads its configuration files (mission directory, etc)
+    int task_timeout; ///< Time in seconds before task is terminated
     struct {
         char *tox_posargs;
         char *conda_reactivate;

@@ -161,7 +161,7 @@ void test_mp_fail_fast() {
         if (task->status == 0) result.total_status_success++;
         if (task->pid == MP_POOL_PID_UNUSED && task->status == MP_POOL_TASK_STATUS_INITIAL) result.total_unused++;
     }
-    fprintf(stderr, "total_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d\n",
+    STASIS_TEST_MSG("\ntotal_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d",
             result.total_status_fail, result.total_status_success, result.total_signaled, result.total_unused);
     STASIS_ASSERT(result.total_status_fail, "Should have failures");
     STASIS_ASSERT(result.total_status_success, "Should have successes");
@@ -169,6 +169,43 @@ void test_mp_fail_fast() {
     STASIS_ASSERT(result.total_unused, "Should have PIDs marked UNUSED.");
     mp_pool_show_summary(p);
     mp_pool_free(&p);
+}
+
+static void test_mp_timeout() {
+    struct MultiProcessingPool *p = NULL;
+    p = mp_pool_init("timeout", "timeoutlogs");
+    p->status_interval = 1;
+    struct MultiProcessingTask *task = mp_pool_task(p, "timeout", NULL, "sleep 5");
+    int timeout = 3;
+    task->timeout = timeout;
+    mp_pool_join(p, 1, 0);
+    STASIS_ASSERT((task->time_data.duration >= (double) timeout && task->time_data.duration < (double) timeout + 1), "Timeout occurred out of desired range");
+    mp_pool_show_summary(p);
+    mp_pool_free(&p);
+}
+
+static void test_mp_seconds_to_human_readable() {
+    const struct testcase {
+        int seconds;
+        const char *expected;
+    } tc[] = {
+        {.seconds = -1, "-1s"},
+        {.seconds = 0, "0s"},
+        {.seconds = 10, "10s"},
+        {.seconds = 20, "20s"},
+        {.seconds = 30, "30s"},
+        {.seconds = 60, "1m 0s"},
+        {.seconds = 125, "2m 5s"},
+        {.seconds = 3600, "1h 0m 0s"},
+        {.seconds = 86399, "23h 59m 59s"},
+        {.seconds = 86400, "24h 0m 0s"},
+    };
+    for (size_t i = 0; i < sizeof(tc) / sizeof(tc[0]); i++) {
+        char result[255] = {0};
+        seconds_to_human_readable(tc[i].seconds, result, sizeof(result));
+        STASIS_TEST_MSG("seconds=%d, expected: %s, got: %s", tc[i].seconds, tc[i].expected, result);
+        STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "bad output");
+    }
 }
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -212,8 +249,13 @@ int main(int argc, char *argv[]) {
         test_mp_pool_free,
         test_mp_pool_workflow,
         test_mp_fail_fast,
+        test_mp_timeout,
+        test_mp_seconds_to_human_readable,
         test_mp_stop_continue
     };
+
+    globals.task_timeout = 60;
+
     STASIS_TEST_RUN(tests);
     STASIS_TEST_END_MAIN();
 }

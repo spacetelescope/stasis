@@ -147,28 +147,30 @@ stasis mydelivery.ini
 
 ## Command Line Options
 
-| Long Option                | Short Option | Purpose                                                        |
-|:---------------------------|:------------:|:---------------------------------------------------------------|
-| --help                     |      -h      | Display usage statement                                        |
-| --version                  |      -V      | Display program version                                        |
-| --continue-on-error        |      -C      | Allow tests to fail                                            |
-| --config ARG               |    -c ARG    | Read STASIS configuration file                                 |
-| --cpu-limit ARG            |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |
-| --pool-status-interval ARG |     n/a      | Report task status every n seconds (default: 30)               |
-| --python ARG               |    -p ARG    | Override version of Python in configuration                    |
-| --verbose                  |      -v      | Increase output verbosity                                      |
-| --unbuffered               |      -U      | Disable line buffering                                         |
-| --update-base              |     n/a      | Update conda installation prior to STATIS environment creation |
-| --fail-fast                |     n/a      | On test error, terminate all tasks                             |
-| --overwrite                |     n/a      | Overwrite an existing release                                  |
-| --no-docker                |     n/a      | Do not build docker images                                     |
-| --no-artifactory           |     n/a      | Do not upload artifacts to Artifactory                         |
-| --no-artifactory-build-info|     n/a      | Do not upload build info objects to Artifactory                |
-| --no-artifactory-upload    |     n/a      | Do not upload artifacts to Artifactory (dry-run)               |
-| --no-testing               |     n/a      | Do not execute test scripts                                    |
-| --no-parallel              |     n/a      | Do not execute tests in parallel                               |
-| --no-rewrite               |     n/a      | Do not rewrite paths and URLs in output files                  |
-| DELIVERY_FILE              |     n/a      | STASIS delivery file                                           |
+| Long Option                 | Short Option | Purpose                                                        |
+|:----------------------------|:------------:|:---------------------------------------------------------------|
+| --help                      |      -h      | Display usage statement                                        |
+| --version                   |      -V      | Display program version                                        |
+| --continue-on-error         |      -C      | Allow tests to fail                                            |
+| --config ARG                |    -c ARG    | Read STASIS configuration file                                 |
+| --cpu-limit ARG             |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |
+| --pool-status-interval ARG  |     n/a      | Report task status every n seconds (default: 30)               |
+| --python ARG                |    -p ARG    | Override version of Python in configuration                    |
+| --verbose                   |      -v      | Increase output verbosity                                      |
+| --unbuffered                |      -U      | Disable line buffering                                         |
+| --update-base               |     n/a      | Update conda installation prior to STATIS environment creation |
+| --fail-fast                 |     n/a      | On test error, terminate all tasks                             |
+| --task-timeout ARG          |     n/a      | Terminate task after timeout is reached (#s, #m, #h)           |
+| --overwrite                 |     n/a      | Overwrite an existing release                                  |
+| --no-docker                 |     n/a      | Do not build docker images                                     |
+| --no-artifactory            |     n/a      | Do not upload artifacts to Artifactory                         |
+| --no-artifactory-build-info |     n/a      | Do not upload build info objects to Artifactory                |
+| --no-artifactory-upload     |     n/a      | Do not upload artifacts to Artifactory (dry-run)               |
+| --no-testing                |     n/a      | Do not execute test scripts                                    |
+| --no-parallel               |     n/a      | Do not execute tests in parallel                               |
+| --no-task-logging           |     n/a      | Do not log task output (write to stdout)                       |
+| --no-rewrite                |     n/a      | Do not rewrite paths and URLs in output files                  |
+| DELIVERY_FILE               |     n/a      | STASIS delivery file                                           |
 
 ## Indexer Command Line Options
 

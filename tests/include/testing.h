@@ -9,6 +9,15 @@
 #define __FILE_NAME__ __FILE__
 #endif
 
+#ifdef STASIS_TEST_VERBOSE
+#define STASIS_TEST_MSG(MSG, ...) do { \
+fprintf(stderr, "%s:%d:%s(): ", path_basename(__FILE__), __LINE__, __FUNCTION__); \
+fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
+} while (0)
+#else
+#define STASIS_TEST_MSG(MSG, ...) do {} while (0)
+#endif
+
 typedef void(STASIS_TEST_FUNC)();
 struct stasis_test_result_t {
     const char *filename;

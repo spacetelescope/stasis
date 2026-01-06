@@ -3,32 +3,36 @@
 #define STASIS_MULTIPROCESSING_H
 
 #include "core.h"
+#include "sem.h"
+#include "timespec.h"
 #include <signal.h>
 #include <sys/wait.h>
-#include <semaphore.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <math.h>
+
+struct MultiProcessingTimer {
+    struct timespec t_start;
+    struct timespec t_stop;
+    double duration;
+};
 
 struct MultiProcessingTask {
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
-    time_t _now; ///< Current time
-    time_t _seconds; ///< Time elapsed since status interval (used by MultiprocessingPool.status_interval)
+    int timeout; ///< Seconds to elapse before killing the process
     time_t _startup; ///< Time elapsed since task started
-    long elapsed; ///< Total time elapsed in seconds
     char ident[255]; ///< Identity of the pool task
     char *cmd; ///< Shell command(s) to be executed
     size_t cmd_len; ///< Length of command string (for mmap/munmap)
     char working_dir[PATH_MAX]; ///< Path to directory `cmd` should be executed in
     char log_file[PATH_MAX]; ///< Full path to stdout/stderr log file
     char parent_script[PATH_MAX]; ///< Path to temporary script executing the task
-    struct {
-        struct timespec t_start;
-        struct timespec t_stop;
-    } time_data; ///< Wall-time counters
+    struct MultiProcessingTimer time_data; ///< Wall-time counters
+    struct MultiProcessingTimer interval_data; ///< Progress report counters
 };
 
 struct MultiProcessingPool {
@@ -38,6 +42,7 @@ struct MultiProcessingPool {
     char ident[255]; ///< Identity of task pool
     char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
     int status_interval; ///< Report a pooled task is "running" every n seconds
+    struct Semaphore semaphore;
 };
 
 /// A multiprocessing task's initial state (i.e. "FAIL")

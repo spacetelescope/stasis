@@ -13,6 +13,7 @@ struct option long_options[] = {
     {"unbuffered", no_argument, 0, 'U'},
     {"update-base", no_argument, 0, OPT_ALWAYS_UPDATE_BASE},
     {"fail-fast", no_argument, 0, OPT_FAIL_FAST},
+    {"task-timeout", required_argument, 0, OPT_TASK_TIMEOUT},
     {"overwrite", no_argument, 0, OPT_OVERWRITE},
     {"no-docker", no_argument, 0, OPT_NO_DOCKER},
     {"no-artifactory", no_argument, 0, OPT_NO_ARTIFACTORY},
@@ -20,6 +21,7 @@ struct option long_options[] = {
     {"no-artifactory-upload", no_argument, 0, OPT_NO_ARTIFACTORY_UPLOAD},
     {"no-testing", no_argument, 0, OPT_NO_TESTING},
     {"no-parallel", no_argument, 0, OPT_NO_PARALLEL},
+    {"no-task-logging", no_argument, 0, OPT_NO_TASK_LOGGING},
     {"no-rewrite", no_argument, 0, OPT_NO_REWRITE_SPEC_STAGE_2},
     {0, 0, 0, 0},
 };
@@ -36,6 +38,7 @@ const char *long_options_help[] = {
     "Disable line buffering",
     "Update conda installation prior to STASIS environment creation",
     "On error, immediately terminate all tasks",
+    "Terminate task after timeout is reached (#s, #m, #h)",
     "Overwrite an existing release",
     "Do not build docker images",
     "Do not upload artifacts to Artifactory",
@@ -43,6 +46,7 @@ const char *long_options_help[] = {
     "Do not upload artifacts to Artifactory (dry-run)",
     "Do not execute test scripts",
     "Do not execute tests in parallel",
+    "Do not log task output (write to stdout)",
     "Do not rewrite paths and URLs in output files",
     NULL,
 };
