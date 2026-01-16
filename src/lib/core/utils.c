@@ -1092,7 +1092,7 @@ int str_to_timeout(char *s) {
         } else if (*scale == 'm') {
             value *= 60; // minutes
         } else if (*scale == 'h') {
-            value *= 3200; // hours
+            value *= 3600; // hours
         } else {
             return STR_TO_TIMEOUT_INVALID_TIME_SCALE; // invalid time scale
         }
