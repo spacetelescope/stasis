@@ -169,6 +169,7 @@ struct Delivery {
         char *repository_info_tag;      ///< Git tag (first parent)
         struct StrList *repository_remove_tags;   ///< Git tags to remove (to fix duplicate commit tags)
         struct Runtime runtime;         ///< Environment variables specific to the test context
+        int timeout;                    ///< Timeout in seconds
     } tests[1000]; ///< An array of tests
 
     struct Deploy {
