@@ -259,6 +259,18 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
             test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
             test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
+            const char *timeout_str = ini_getval_str(ini, section_name, "timeout", render_mode, &err);
+            if (timeout_str) {
+                test->timeout = str_to_timeout((char *) timeout_str);
+                if (test->timeout == STR_TO_TIMEOUT_INVALID_TIME_SCALE) {
+                    SYSERROR("In 'test:%s', invalid time scale format: %s. Use n[hms].", test->name, timeout_str);
+                    return 1;
+                }
+                if (test->timeout == STR_TO_TIMEOUT_NEGATIVE) {
+                    SYSERROR("In 'test:%s', timeout cannot be negative: %s", test->name, timeout_str);
+                    return 1;
+                }
+            }
             z++;
         }
     }

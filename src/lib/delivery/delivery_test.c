@@ -166,6 +166,12 @@ void delivery_tests_run(struct Delivery *ctx) {
                     }
                     exit(1);
                 }
+
+                // Apply timeout from test block
+                if (test->timeout) {
+                    task->timeout = test->timeout;
+                }
+
                 guard_free(runner_cmd);
                 guard_free(cmd);
                 popd();
