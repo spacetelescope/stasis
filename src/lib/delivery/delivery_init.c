@@ -119,7 +119,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
     }
 
     if (access(ctx->storage.mission_dir, F_OK)) {
-        msg(STASIS_MSG_L1, "%s: %s\n", ctx->storage.mission_dir, strerror(errno));
+        msg(STASIS_MSG_L1, "%s: %s: mission directory does not exist\n", ctx->storage.mission_dir, strerror(errno));
         exit(1);
     }
 
