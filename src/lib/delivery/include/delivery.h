@@ -18,7 +18,7 @@
 #include "ini.h"
 #include "multiprocessing.h"
 #include "recipe.h"
-#include "wheel.h"
+#include "wheelinfo.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65

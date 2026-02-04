@@ -252,7 +252,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         }
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
-                        struct Wheel *whl = NULL;
+                        struct WheelInfo *whl = NULL;
                         char *post_commit = NULL;
                         char *hash = NULL;
                         if (strlist_count(tag_data) > 1) {
@@ -264,7 +264,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         // equal to the tag; setuptools_scm auto-increments the value, the user can change it manually,
                         // etc.
                         errno = 0;
-                        whl = get_wheel_info(ctx->storage.wheel_artifact_dir, info->name,
+                        whl = wheelinfo_get(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
                                                          post_commit, hash,
@@ -281,7 +281,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             info->version = strdup(whl->version);
                         }
                         guard_strlist_free(&tag_data);
-                        wheel_free(&whl);
+                        wheelinfo_free(&whl);
                     }
 
                     char req[255] = {0};

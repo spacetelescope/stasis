@@ -1,10 +1,10 @@
 #include "testing.h"
-#include "wheel.h"
+#include "wheelinfo.h"
 
-void test_get_wheel_file() {
+void test_wheelinfo_get() {
     struct testcase {
         const char *filename;
-        struct Wheel expected;
+        struct WheelInfo expected;
     };
     struct testcase tc[] = {
         {
@@ -51,12 +51,12 @@ void test_get_wheel_file() {
         },
     };
 
-    struct Wheel *doesnotexist = get_wheel_info("doesnotexist", "doesnotexist-0.0.1-py2.py3-none-any.whl", (char *[]) {"not", NULL}, WHEEL_MATCH_ANY);
+    struct WheelInfo *doesnotexist = wheelinfo_get("doesnotexist", "doesnotexist-0.0.1-py2.py3-none-any.whl", (char *[]) {"not", NULL}, WHEEL_MATCH_ANY);
     STASIS_ASSERT(doesnotexist == NULL, "returned non-NULL on error");
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        struct Wheel *wheel = get_wheel_info(".", test->expected.distribution, (char *[]) {(char *) test->expected.version, NULL}, WHEEL_MATCH_ANY);
+        struct WheelInfo *wheel = wheelinfo_get(".", test->expected.distribution, (char *[]) {(char *) test->expected.version, NULL}, WHEEL_MATCH_ANY);
         STASIS_ASSERT(wheel != NULL, "result should not be NULL!");
         STASIS_ASSERT(wheel->file_name && strcmp(wheel->file_name, test->expected.file_name) == 0, "mismatched file name");
         STASIS_ASSERT(wheel->version && strcmp(wheel->version, test->expected.version) == 0, "mismatched version");
@@ -68,14 +68,14 @@ void test_get_wheel_file() {
             STASIS_ASSERT(strcmp(wheel->build_tag, test->expected.build_tag) == 0,
                           "mismatched build tag (optional arbitrary string)");
         }
-        wheel_free(&wheel);
+        wheelinfo_free(&wheel);
     }
 }
 
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
-        test_get_wheel_file,
+        test_wheelinfo_get,
     };
 
     // Create mock package directories, and files

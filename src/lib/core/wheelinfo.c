@@ -1,8 +1,8 @@
-#include "wheel.h"
+#include "wheelinfo.h"
 
-struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_match[], unsigned match_mode) {
+struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to_match[], unsigned match_mode) {
     struct dirent *rec;
-    struct Wheel *result = NULL;
+    struct WheelInfo *result = NULL;
     char package_path[PATH_MAX];
     char package_name[NAME_MAX];
 
@@ -55,14 +55,14 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
         result->path_name = realpath(package_path, NULL);
         if (!result->path_name) {
             SYSERROR("Unable to resolve absolute path to %s: %s", filename, strerror(errno));
-            wheel_free(&result);
+            wheelinfo_free(&result);
             closedir(dp);
             return NULL;
         }
         result->file_name = strdup(rec->d_name);
         if (!result->file_name) {
             SYSERROR("Unable to allocate bytes for %s: %s", rec->d_name, strerror(errno));
-            wheel_free(&result);
+            wheelinfo_free(&result);
             closedir(dp);
             return NULL;
         }
@@ -74,7 +74,7 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
             // directory with a malformed file name, or we've managed to
             // exhaust the system's memory
             SYSERROR("%s has no '-' separators! (Delete this file and try again)", filename);
-            wheel_free(&result);
+            wheelinfo_free(&result);
             closedir(dp);
             return NULL;
         }
@@ -100,7 +100,7 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
             SYSERROR("Unknown wheel name format: %s. Expected 5 or 6 strings "
                      "separated by '-', but got %zu instead", filename, parts_total);
             guard_array_free(parts);
-            wheel_free(&result);
+            wheelinfo_free(&result);
             closedir(dp);
             return NULL;
         }
@@ -111,8 +111,8 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
     return result;
 }
 
-void wheel_free(struct Wheel **wheel) {
-    struct Wheel *w = (*wheel);
+void wheelinfo_free(struct WheelInfo **wheel) {
+    struct WheelInfo *w = (*wheel);
     guard_free(w->path_name);
     guard_free(w->file_name);
     guard_free(w->distribution);
