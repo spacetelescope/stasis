@@ -12,6 +12,7 @@ add_library(stasis_core STATIC
         recipe.c
         relocation.c
         wheelinfo.c
+        wheel.c
         copy.c
         artifactory.c
         template.c
@@ -29,3 +30,5 @@ target_include_directories(stasis_core PRIVATE
         ${delivery_INCLUDE}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+target_link_libraries(stasis_core PRIVATE
+        ${ZIP_LIBRARIES})
