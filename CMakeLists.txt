@@ -14,6 +14,11 @@ if (ASAN)
 	add_link_options(-fsanitize=address)
 endif()
 
+pkg_check_modules(ZIP libzip)
+if (NOT ZIP_FOUND)
+	message(FATAL_ERROR "libzip is required")
+endif ()
+
 link_libraries(CURL::libcurl)
 link_libraries(LibXml2::LibXml2)
 include_directories(${LIBXML2_INCLUDE_DIR})
