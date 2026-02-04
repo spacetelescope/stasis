@@ -11,7 +11,7 @@ add_library(stasis_core STATIC
         download.c
         recipe.c
         relocation.c
-        wheel.c
+        wheelinfo.c
         copy.c
         artifactory.c
         template.c

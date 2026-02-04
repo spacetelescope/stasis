@@ -9,7 +9,7 @@
 #define WHEEL_MATCH_EXACT 0 ///< Match when all patterns are present
 #define WHEEL_MATCH_ANY 1 ///< Match when any patterns are present
 
-struct Wheel {
+struct WheelInfo {
     char *distribution; ///< Package name
     char *version; ///< Package version
     char *build_tag; ///< Package build tag (optional)
@@ -31,6 +31,6 @@ struct Wheel {
  * @return pointer to populated Wheel on success
  * @return NULL on error
  */
-struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
-void wheel_free(struct Wheel **wheel);
+struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
+void wheelinfo_free(struct WheelInfo **wheel);
 #endif //STASIS_WHEEL_H
