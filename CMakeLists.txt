@@ -19,9 +19,12 @@ if (NOT ZIP_FOUND)
 	message(FATAL_ERROR "libzip is required")
 endif ()
 
+include_directories(${ZIP_INCLUDE_DIR})
+link_directories(${ZIP_LIBRARY_DIRS})
+include_directories(${CURL_INCLUDE_DIR})
 link_libraries(CURL::libcurl)
-link_libraries(LibXml2::LibXml2)
 include_directories(${LIBXML2_INCLUDE_DIR})
+link_libraries(LibXml2::LibXml2)
 
 option(FORTIFY_SOURCE OFF)
 if (FORTIFY_SOURCE)
