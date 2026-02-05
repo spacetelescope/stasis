@@ -19,7 +19,7 @@ if (NOT ZIP_FOUND)
 	message(FATAL_ERROR "libzip is required")
 endif ()
 
-include_directories(${ZIP_INCLUDE_DIR})
+include_directories(${ZIP_INCLUDEDIR})
 link_directories(${ZIP_LIBRARY_DIRS})
 include_directories(${CURL_INCLUDE_DIR})
 link_libraries(CURL::libcurl)
