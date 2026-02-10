@@ -15,7 +15,6 @@ dependencies:
     - fitsblender
     - gwcs
     - hasp
-    - nictools
     - spherical_geometry
     - stistools
     - stregion
