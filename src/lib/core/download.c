@@ -14,44 +14,70 @@ long download(char *url, const char *filename, char **errmsg) {
     long http_code = -1;
     char user_agent[20];
     sprintf(user_agent, "stasis/%s", VERSION);
+
     long timeout = 30L;
-    char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
+    const char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
+    if (timeout_str) {
+        timeout = strtol(timeout_str, NULL, 10);
+        if (timeout <= 0L) {
+            timeout = 1L;
+        }
+    }
+
+    size_t max_retries = 5;
+    const char *max_retries_str = getenv("STASIS_DOWNLOAD_RETRIES");
+    if (max_retries_str) {
+        max_retries = strtol(timeout_str, NULL, 10);
+        if (max_retries <= 0) {
+            max_retries = 1;
+        }
+    }
 
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *c = curl_easy_init();
-    curl_easy_setopt(c, CURLOPT_URL, url);
-    curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        return -1;
-    }
-
-    curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
-    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(c, CURLOPT_USERAGENT, user_agent);
-    curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(c, CURLOPT_WRITEDATA, fp);
-
-    if (timeout_str) {
-        timeout = strtol(timeout_str, NULL, 10);
-    }
-    curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
-
-    SYSDEBUG("curl_easy_perform(): \n\turl=%s\n\tfilename=%s\n\tuser agent=%s\n\ttimeout=%zu", url, filename, user_agent, timeout);
-    CURLcode curl_code = curl_easy_perform(c);
-    SYSDEBUG("curl status code: %d", curl_code);
-    if (curl_code != CURLE_OK) {
-        if (!*errmsg) {
-            *errmsg = strdup(curl_easy_strerror(curl_code));
-        } else {
-            strncpy(*errmsg, curl_easy_strerror(curl_code), strlen(curl_easy_strerror(curl_code) + 1));
+    for (size_t retry = 0; retry < max_retries; retry++) {
+        if (retry) {
+            fprintf(stderr, "\n[ATTEMPT %zu/%zu]\n", retry + 1, max_retries);
         }
-        goto failed;
+        curl_easy_setopt(c, CURLOPT_URL, url);
+        curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
+        FILE *fp = fopen(filename, "wb");
+        if (!fp) {
+            return -1;
+        }
+
+        curl_easy_setopt(c, CURLOPT_VERBOSE, 0L);
+        curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(c, CURLOPT_USERAGENT, user_agent);
+        curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(c, CURLOPT_WRITEDATA, fp);
+        curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
+
+        SYSDEBUG("curl_easy_perform(): \n\turl=%s\n\tfilename=%s\n\tuser agent=%s\n\ttimeout=%zu", url, filename, user_agent, timeout);
+        CURLcode curl_code = curl_easy_perform(c);
+        SYSDEBUG("curl status code: %d", curl_code);
+
+        curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
+        SYSDEBUG("HTTP code: %li", http_code);
+
+        if (curl_code != CURLE_OK) {
+            const size_t errmsg_maxlen = 256;
+            if (!*errmsg) {
+                *errmsg = calloc(errmsg_maxlen, sizeof(char));
+            }
+            snprintf(*errmsg, errmsg_maxlen, "%s", curl_easy_strerror(curl_code));
+            curl_easy_reset(c);
+            fclose(fp);
+            continue;
+        }
+
+        fclose(fp);
+        if (CURLE_OK && *errmsg) {
+            // Retry loop succeeded, no error
+            *errmsg[0] = '\0';
+        }
+        break;
     }
-    curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
-    failed:
-    SYSDEBUG("HTTP code: %li", http_code);
-    fclose(fp);
     curl_easy_cleanup(c);
     curl_global_cleanup();
     return http_code;

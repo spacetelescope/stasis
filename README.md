@@ -200,6 +200,8 @@ stasis mydelivery.ini
 | STASIS_JF_CLIENT_CERT_CERT_PATH | Path to OpenSSL cert files                                              | 
 | STASIS_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                                         | 
 | STASIS_JF_REPO                  | Artifactory "generic" repository to write to                            | 
+| STASIS_DOWNLOAD_TIMEOUT         | Number of seconds before timing out a remote file download              |
+| STASIS_DOWNLOAD_RETRIES         | Number of retries before giving up on a remote file download            |
 
 ## Main configuration (stasis.ini)
 
