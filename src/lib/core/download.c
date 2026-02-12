@@ -13,7 +13,7 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
 long download(char *url, const char *filename, char **errmsg) {
     long http_code = -1;
     char user_agent[20];
-    sprintf(user_agent, "stasis/%s", VERSION);
+    snprintf(user_agent, sizeof(user_agent), "stasis/%s", VERSION);
 
     long timeout = 30L;
     const char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
