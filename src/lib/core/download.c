@@ -27,7 +27,7 @@ long download(char *url, const char *filename, char **errmsg) {
     size_t max_retries = 5;
     const char *max_retries_str = getenv("STASIS_DOWNLOAD_RETRY_MAX");
     if (max_retries_str) {
-        max_retries = strtol(timeout_str, NULL, 10);
+        max_retries = strtol(max_retries_str, NULL, 10);
         if (max_retries <= 0) {
             max_retries = 1;
         }
