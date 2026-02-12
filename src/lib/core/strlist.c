@@ -92,8 +92,11 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
         }
         close(fd);
         filename = strdup(tempfile);
-        long http_code = download(path, filename, NULL);
+        char *errmsg = NULL;
+        long http_code = download(path, filename, &errmsg);
         if (HTTP_ERROR(http_code)) {
+            SYSERROR("%s: %s", errmsg, filename);
+            guard_free(errmsg);
             retval = -1;
             goto fatal;
         }
