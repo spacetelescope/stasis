@@ -201,7 +201,8 @@ stasis mydelivery.ini
 | STASIS_JF_CLIENT_CERT_KEY_PATH  | OpenSSL key file (in cert path)                                         | 
 | STASIS_JF_REPO                  | Artifactory "generic" repository to write to                            | 
 | STASIS_DOWNLOAD_TIMEOUT         | Number of seconds before timing out a remote file download              |
-| STASIS_DOWNLOAD_RETRIES         | Number of retries before giving up on a remote file download            |
+| STASIS_DOWNLOAD_RETRY_MAX       | Number of retries before giving up on a remote file download            |
+| STASIS_DOWNLOAD_RETRY_SECONDS   | Number of seconds to wait before retrying a remote file download        |
 
 ## Main configuration (stasis.ini)
 
@@ -288,14 +289,14 @@ Sections starting with `test:` will be used during the testing phase of the stas
 | Key          | Type    | Purpose                                                  | Required |
 |--------------|---------|----------------------------------------------------------|----------|
 | disable      | Boolean | Disable `script` execution (`script_setup` always executes) | N        |
-| parallel     | Boolean | Execute test block in parallel (default) or sequentially | N        |
-| timeout      | String  | Kill test script after `n[hms]`                          | N        |
-| build_recipe | String  | Git repository path to package's conda recipe            | N        |
-| repository   | String  | Git repository path or URL to clone                      | Y        |
-| version      | String  | Git commit or tag to check out                           | Y        |
-| runtime      | List    | Export environment variables specific to test context    | Y        |
-| script_setup | List    | Body of a shell script that will install dependencies    | N        |
-| script       | List    | Body of a shell script that will execute the tests       | Y        |
+| parallel     | Boolean | Execute test block in parallel (default) or sequentially    | N        |
+| timeout      | String  | Kill test script after `n[hms]`                             | N        |
+| build_recipe | String  | Git repository path to package's conda recipe               | N        |
+| repository   | String  | Git repository path or URL to clone                         | Y        |
+| version      | String  | Git commit or tag to check out                              | Y        |
+| runtime      | List    | Export environment variables specific to test context       | Y        |
+| script_setup | List    | Body of a shell script that will install dependencies       | N        |
+| script       | List    | Body of a shell script that will execute the tests          | Y        |
 
 ### deploy:artifactory:_name_
 
