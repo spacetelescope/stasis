@@ -33,6 +33,16 @@ long download(char *url, const char *filename, char **errmsg) {
         }
     }
 
+    size_t max_retry_seconds = 3;
+    const char *max_retry_seconds_str = getenv("STASIS_DOWNLOAD_RETRY_SECONDS");
+    if (max_retry_seconds_str) {
+        max_retry_seconds = strtol(max_retry_seconds_str, NULL, 10);
+        if (max_retry_seconds < 0) {
+            max_retry_seconds = 0;
+        }
+    }
+
+
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *c = curl_easy_init();
     for (size_t retry = 0; retry < max_retries; retry++) {
@@ -65,6 +75,7 @@ long download(char *url, const char *filename, char **errmsg) {
             snprintf(*errmsg, errmsg_maxlen, "%s", curl_easy_strerror(curl_code));
             curl_easy_reset(c);
             fclose(fp);
+            sleep(max_retry_seconds);
             continue;
         }
 
