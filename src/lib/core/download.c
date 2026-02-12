@@ -57,9 +57,6 @@ long download(char *url, const char *filename, char **errmsg) {
         CURLcode curl_code = curl_easy_perform(c);
         SYSDEBUG("curl status code: %d", curl_code);
 
-        curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
-        SYSDEBUG("HTTP code: %li", http_code);
-
         if (curl_code != CURLE_OK) {
             const size_t errmsg_maxlen = 256;
             if (!*errmsg) {
@@ -76,6 +73,10 @@ long download(char *url, const char *filename, char **errmsg) {
             // Retry loop succeeded, no error
             *errmsg[0] = '\0';
         }
+
+        curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &http_code);
+        SYSDEBUG("HTTP code: %li", http_code);
+
         break;
     }
     curl_easy_cleanup(c);
