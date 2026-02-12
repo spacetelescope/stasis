@@ -79,7 +79,9 @@ long download(char *url, const char *filename, char **errmsg) {
             continue;
         }
 
+        // Data written. Clean up.
         fclose(fp);
+
         if (CURLE_OK && *errmsg) {
             // Retry loop succeeded, no error
             *errmsg[0] = '\0';
