@@ -33,7 +33,6 @@ void test_download() {
         }
         STASIS_ASSERT(http_code == tc[i].http_code, "expecting non-error HTTP code");
 
-        //char **data = file_readlines(filename, 0, 100, NULL);
         char *data = stasis_testing_read_ascii(filename);
         if (http_code >= 0) {
             STASIS_ASSERT(data != NULL, "data should not be null");
