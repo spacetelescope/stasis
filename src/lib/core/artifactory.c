@@ -61,9 +61,10 @@ int artifactory_download_cli(char *dest,
     }
 
     sprintf(path + strlen(path), "/%s", remote_filename);
-    long fetch_status = download(url, path, NULL);
-    if (HTTP_ERROR(fetch_status) || fetch_status < 0) {
-        fprintf(stderr, "%s: download failed: %s\n", __FUNCTION__, url);
+    char *errmsg = NULL;
+    long fetch_status = download(url, path, &errmsg);
+    if (HTTP_ERROR(fetch_status)) {
+        SYSERROR("download failed: %s: %s\n", errmsg, url);
         return -1;
     }
     chmod(path, 0755);
