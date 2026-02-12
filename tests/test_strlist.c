@@ -115,6 +115,7 @@ void test_strlist_append_file() {
     const char *local_filename = "test_strlist_append_file.txt";
 
     struct testcase tc[] = {
+            {.origin = "https://this-will-never-work.tld/remote.txt", .expected = (const char *[]){NULL}},
             {.origin = "https://ssb.stsci.edu/jhunk/stasis_test/test_strlist_append_file_from_remote.txt", .expected = expected},
             {.origin = local_filename, .expected = expected},
     };
@@ -141,10 +142,10 @@ void test_strlist_append_file() {
             const char *left;
             const char *right;
             left = strlist_item(list, z);
-            right = expected[z];
+            right = tc[i].expected[z];
             STASIS_ASSERT(strcmp(left, right) == 0, "file content is different than expected");
         }
-        STASIS_ASSERT(strcmp_array((const char **) list->data, expected) == 0, "file contents does not match expected values");
+        STASIS_ASSERT(strcmp_array((const char **) list->data, tc[i].expected) == 0, "file contents does not match expected values");
         guard_strlist_free(&list);
     }
 }
