@@ -26,9 +26,12 @@ int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url) {
     sprintf(script_path, "%s/%s", ctx->storage.tmpdir, installer);
     if (access(script_path, F_OK)) {
         // Script doesn't exist
-        long fetch_status = download(installer_url, script_path, NULL);
+        char *errmsg = NULL;
+        long fetch_status = download(installer_url, script_path, &errmsg);
         if (HTTP_ERROR(fetch_status) || fetch_status < 0) {
             // download failed
+            SYSERROR("download failed: %s: %s\n", errmsg, installer_url);
+            guard_free(errmsg);
             return -1;
         }
     } else {
