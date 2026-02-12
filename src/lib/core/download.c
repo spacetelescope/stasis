@@ -37,7 +37,7 @@ long download(char *url, const char *filename, char **errmsg) {
     CURL *c = curl_easy_init();
     for (size_t retry = 0; retry < max_retries; retry++) {
         if (retry) {
-            fprintf(stderr, "\n[ATTEMPT %zu/%zu]\n", retry + 1, max_retries);
+            fprintf(stderr, "[RETRY %zu/%zu] %s: %s\n", retry + 1, max_retries, *errmsg, url);
         }
         curl_easy_setopt(c, CURLOPT_URL, url);
         curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
