@@ -286,8 +286,8 @@ Environment variables exported are _global_ to all programs executed by stasis. 
 
 Sections starting with `test:` will be used during the testing phase of the stasis pipeline. Where the value of `name` following the colon is an arbitrary value, and only used for reporting which test-run is executing. Section names must be unique.
 
-| Key          | Type    | Purpose                                                  | Required |
-|--------------|---------|----------------------------------------------------------|----------|
+| Key          | Type    | Purpose                                                     | Required |
+|--------------|---------|-------------------------------------------------------------|----------|
 | disable      | Boolean | Disable `script` execution (`script_setup` always executes) | N        |
 | parallel     | Boolean | Execute test block in parallel (default) or sequentially    | N        |
 | timeout      | String  | Kill test script after `n[hms]`                             | N        |
