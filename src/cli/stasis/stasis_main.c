@@ -309,6 +309,10 @@ static void install_build_package() {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
         exit(1);
     }
+    if (pip_exec("install cibuildwheel")) {
+        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'cibuildwheel' tool installation failed\n");
+        exit(1);
+    }
 }
 
 static void configure_package_overlay(struct Delivery *ctx, const char *env_name) {
