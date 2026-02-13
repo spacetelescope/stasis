@@ -168,10 +168,9 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 if (!pushd(srcdir)) {
                     char dname[NAME_MAX];
                     char outdir[PATH_MAX];
-                    char cmd[PATH_MAX * 2];
+                    char *cmd = NULL;
                     memset(dname, 0, sizeof(dname));
                     memset(outdir, 0, sizeof(outdir));
-                    memset(cmd, 0, sizeof(outdir));
 
                     const int dep_status = check_python_package_dependencies(".");
                     if (dep_status) {
@@ -194,11 +193,18 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         return NULL;
                     }
 
-                    sprintf(cmd, "-m build -w -o %s", outdir);
+                    if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
+                        asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s", outdir, ctx->meta.python_compact, ctx->system.arch);
+                    } else {
+                        asprintf(&cmd, "-m cibuildwheel --output-dir %s", outdir);
+                    }
+
+                    //sprintf(cmd, "-m build -w -o %s", outdir);
                     if (python_exec(cmd)) {
                         fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name,
                                 ctx->tests[i].version);
                         guard_strlist_free(&result);
+                        guard_free(cmd);
                         return NULL;
                     }
                     popd();
