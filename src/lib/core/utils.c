@@ -1017,6 +1017,7 @@ static int read_vcs_records(const size_t line, char **data) {
         // Ignore file comment(s)
         if (startswith(data_local, "#") || startswith(data_local, ";")) {
             // continue
+            guard_free(data_local);
             return 1;
         }
 
