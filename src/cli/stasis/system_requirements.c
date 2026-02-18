@@ -38,18 +38,18 @@ void check_system_requirements(struct Delivery *ctx) {
         delivery_init_tmpdir(ctx);
     }
 
-    struct DockerCapabilities dcap;
-    if (!docker_capable(&dcap)) {
+    if (!docker_capable(&ctx->deploy.docker.capabilities)) {
+        struct DockerCapabilities *dcap = &ctx->deploy.docker.capabilities;
         msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
-        msg(STASIS_MSG_L3, "Available: %s\n", dcap.available ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Usable: %s\n", dcap.usable ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap.podman ? "Yes" : "No");
+        msg(STASIS_MSG_L3, "Available: %s\n", dcap->available ? "Yes" : "No");
+        msg(STASIS_MSG_L3, "Usable: %s\n", dcap->usable ? "Yes" : "No");
+        msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap->podman ? "Yes" : "No");
         msg(STASIS_MSG_L3, "Build plugin(s): ");
-        if (dcap.usable) {
-            if (dcap.build & STASIS_DOCKER_BUILD) {
+        if (dcap->usable) {
+            if (dcap->build & STASIS_DOCKER_BUILD) {
                 printf("build ");
             }
-            if (dcap.build & STASIS_DOCKER_BUILD_X) {
+            if (dcap->build & STASIS_DOCKER_BUILD_X) {
                 printf("buildx ");
             }
             puts("");

@@ -193,10 +193,19 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         return NULL;
                     }
 
-                    if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
-                        asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s", outdir, ctx->meta.python_compact, ctx->system.arch);
-                    } else {
-                        asprintf(&cmd, "-m build -w -o %s", outdir);
+                    if (asprintf(&cmd, "-m build -w -o %s", outdir) < 0) {
+                        SYSERROR("%s", "Unable to allocate memory for build command");
+                        return NULL;
+                    }
+                    if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")
+                        && globals.enable_docker
+                        && ctx->deploy.docker.capabilities.usable) {
+                        guard_free(cmd);
+                        if (asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s",
+                            outdir, ctx->meta.python_compact, ctx->system.arch) < 0) {
+                            SYSERROR("%s", "Unable to allocate memory for cibuildwheel command");
+                            return NULL;
+                        }
                     }
 
                     if (python_exec(cmd)) {
