@@ -231,6 +231,29 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  }
 
 /**
+ * Append the contents of a newline delimited string without
+ * modifying the input `str`
+ * @param pStrList `StrList`
+ * @param str
+ * @param delim
+ */
+void strlist_append_tokenize_raw(struct StrList *pStrList, char *str, char *delim) {
+    if (!str || !delim) {
+        return;
+    }
+
+    char *tmp = strdup(str);
+    char **token = split(tmp, delim, 0);
+    if (token) {
+        for (size_t i = 0; token[i] != NULL; i++) {
+            strlist_append(&pStrList, token[i]);
+        }
+        guard_array_free(token);
+    }
+    guard_free(tmp);
+}
+
+/**
  * Produce a new copy of a `StrList`
  * @param pStrList  `StrList`
  * @return `StrList` copy

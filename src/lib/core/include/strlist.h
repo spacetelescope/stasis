@@ -46,6 +46,7 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
 void strlist_append(struct StrList **pStrList, char *str);
 void strlist_append_array(struct StrList *pStrList, char **arr);
 void strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim);
+void strlist_append_tokenize_raw(struct StrList *pStrList, char *str, char *delim);
 struct StrList *strlist_copy(struct StrList *pStrList);
 int strlist_cmp(struct StrList *a, struct StrList *b);
 void strlist_free(struct StrList **pStrList);
