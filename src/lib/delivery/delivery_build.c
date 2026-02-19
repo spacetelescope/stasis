@@ -198,7 +198,6 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         return NULL;
                     }
                     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")
-                        && globals.enable_docker
                         && ctx->deploy.docker.capabilities.usable) {
                         guard_free(cmd);
                         if (asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s",
