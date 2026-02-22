@@ -1120,3 +1120,53 @@ void seconds_to_human_readable(const int v, char *result, const size_t maxlen) {
     snprintf(result + strlen(result), maxlen, "%ds", seconds);
 }
 
+const char *get_random_generator_file() {
+    return STASIS_RANDOM_GENERATOR_FILE;
+}
+
+#ifdef NEED_SRAND
+static char stasis_srand_initialized = 0;
+#endif
+
+int get_random_bytes(char *result, size_t maxlen) {
+#ifdef NEED_SRAND
+    if (!srand_initialized) {
+        srand(time(NULL));
+        srand_initialized = 1;
+    }
+#endif
+    size_t bytes = 0;
+    const char *filename = get_random_generator_file();
+    FILE *fp = NULL;
+    if (filename != NULL) {
+        fp = fopen(filename, "rb");
+        if (!fp) {
+            SYSERROR("%s", "unable to open random generator");
+            return -1;
+        }
+    }
+
+    do {
+        int ch = 0;
+        if (fp) {
+            ch = fgetc(fp);
+        } else {
+            ch = rand() % 255;
+        }
+        if (fp && ferror(fp)) {
+            SYSERROR("%s", "unable to read from random generator");
+            return -1;
+        }
+        if (isalnum(ch)) {
+            result[bytes] = (char) ch;
+            bytes++;
+        }
+    } while (bytes < maxlen);
+
+    if (fp) {
+        fclose(fp);
+    }
+    result[bytes ? bytes - 1 : 0] = '\0';
+    return 0;
+}
+
