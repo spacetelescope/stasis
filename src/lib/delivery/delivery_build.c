@@ -161,6 +161,12 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     return NULL;
                 }
 
+                if (!ctx->tests[i].repository_info_tag) {
+                    ctx->tests[i].repository_info_tag = strdup(git_describe(srcdir));
+                }
+                if (!ctx->tests[i].repository_info_ref) {
+                    ctx->tests[i].repository_info_ref = strdup(git_rev_parse(srcdir, ctx->tests[i].version));
+                }
                 if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
                     filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
                 }
