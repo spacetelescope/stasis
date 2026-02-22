@@ -19,11 +19,11 @@ int docker_exec(const char *args, unsigned flags) {
     return proc.returncode;
 }
 
-int docker_script(const char *image, char *data, unsigned flags) {
+int docker_script(const char *image, char *args, char *data, unsigned flags) {
     (void)flags;  // TODO: placeholder
     char cmd[PATH_MAX] = {0};
 
-    snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
+    snprintf(cmd, sizeof(cmd) - 1, "docker run -i %s \"%s\" /bin/sh -", args ? args : "", image);
 
     FILE *outfile = popen(cmd, "w");
     if (!outfile) {

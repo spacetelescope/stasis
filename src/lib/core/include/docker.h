@@ -83,7 +83,7 @@ int docker_exec(const char *args, unsigned flags);
  * @return
  */
 int docker_build(const char *dirpath, const char *args, int engine);
-int docker_script(const char *image, char *data, unsigned flags);
+int docker_script(const char *image, char *args, char *data, unsigned flags);
 int docker_save(const char *image, const char *destdir, const char *compression_program);
 void docker_sanitize_tag(char *str);
 int docker_validate_compression_program(char *prog);
