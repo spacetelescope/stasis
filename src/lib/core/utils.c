@@ -376,7 +376,7 @@ char *git_describe(const char *path) {
         return NULL;
     }
 
-    FILE *pp = popen("git describe --first-parent --always --tags", "r");
+    FILE *pp = popen("git describe --first-parent --long --always --tags", "r");
     if (!pp) {
         return NULL;
     }
