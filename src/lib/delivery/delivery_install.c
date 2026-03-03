@@ -277,7 +277,8 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             // not found
                             fprintf(stderr, "No wheel packages found that match the description of '%s'", info->name);
                         } else {
-                            // found
+                            // found, replace the original version with newly detected version
+                            guard_free(info->version);
                             info->version = strdup(whl->version);
                         }
                         guard_strlist_free(&tag_data);
