@@ -54,7 +54,7 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
         }
     }
 
-    msg(STASIS_MSG_L2, "Reading STASIS global configuration: %s\n", *config_input);
+    SYSDEBUG("Reading STASIS global configuration: %s\n", *config_input);
     ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
     if (!ctx->_stasis_ini_fp.cfg) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read config file: %s, %s\n", *config_input, strerror(errno));
