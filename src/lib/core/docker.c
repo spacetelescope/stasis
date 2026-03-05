@@ -32,7 +32,7 @@ int docker_exec(const char *args, const unsigned flags) {
     return proc.returncode;
 }
 
-int docker_script(const char *image, char *args, char *data, unsigned flags) {
+int docker_script(const char *image, char *args, char *data, const unsigned flags) {
     (void)flags;  // TODO: placeholder
     char cmd[PATH_MAX] = {0};
 
