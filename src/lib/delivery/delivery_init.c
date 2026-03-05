@@ -287,6 +287,8 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
 
 int bootstrap_build_info(struct Delivery *ctx) {
     struct Delivery local = {0};
+    memcpy(&local.deploy.docker.capabilities, &ctx->deploy.docker.capabilities, sizeof(local.deploy.docker.capabilities));
+
     SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.delivery_path);
