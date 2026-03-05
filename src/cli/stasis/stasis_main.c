@@ -57,12 +57,13 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
     SYSDEBUG("Reading STASIS global configuration: %s\n", *config_input);
     ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
     if (!ctx->_stasis_ini_fp.cfg) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read config file: %s, %s\n", *config_input, strerror(errno));
+        msg(STASIS_MSG_ERROR, "Failed to read global config file: %s, %s\n", *config_input, strerror(errno));
+        SYSERROR("Failed to read global config file: %s\n", *config_input);
         exit(1);
     }
     ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
     if (!ctx->_stasis_ini_fp.cfg_path) {
-        SYSERROR("%s", "Failed to allocate memory for config file name");
+        SYSERROR("%s", "Failed to allocate memory delivery context global config file name");
         exit(1);
     }
     guard_free(*config_input);
@@ -102,9 +103,9 @@ static void configure_jfrog_cli(struct Delivery *ctx) {
 
 static void check_release_history(struct Delivery *ctx) {
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
-    msg(STASIS_MSG_L1, "Checking release history\n");
+    msg(STASIS_MSG_L2, "Checking release history\n");
     if (!globals.enable_overwrite && delivery_exists(ctx) == DELIVERY_FOUND) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx->info.release_name);
+        msg(STASIS_MSG_ERROR, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx->info.release_name);
         exit(1);
     }
 
@@ -147,14 +148,14 @@ static void check_conda_prefix_length(const struct Delivery *ctx) {
     // 5 = /bin\n
     const size_t prefix_len = strlen(ctx->storage.conda_install_prefix) + 2 + 5;
     const size_t prefix_len_max = 127;
-    msg(STASIS_MSG_L1, "Checking length of conda installation prefix\n");
+    msg(STASIS_MSG_L2, "Checking length of conda installation prefix\n");
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux") && prefix_len > prefix_len_max) {
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "The shebang, '#!%s/bin/python\\n' is too long (%zu > %zu).\n",
             ctx->storage.conda_install_prefix, prefix_len, prefix_len_max);
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "Conda's workaround to handle long path names does not work consistently within STASIS.\n");
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "Please try again from a different, \"shorter\", directory.\n");
         exit(1);
     }
