@@ -356,6 +356,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     int err = 0;
 
     if ((*ctx)->_stasis_ini_fp.mission) {
+        // mission configurations are optional
         return 0;
     }
 
