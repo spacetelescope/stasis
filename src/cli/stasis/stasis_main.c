@@ -304,7 +304,8 @@ static void configure_tool_versions(struct Delivery *ctx) {
     }
 }
 
-static void install_build_package() {
+static void install_packaging_tools() {
+    msg(STASIS_MSG_L1, "Installing packaging tool(s)\n");
     if (pip_exec("install build")) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
         exit(1);
@@ -671,7 +672,7 @@ int main(int argc, char *argv[]) {
     setup_activate_test_env(&ctx, env_name_testing);
 
     configure_tool_versions(&ctx);
-    install_build_package();
+    install_packaging_tools();
     configure_package_overlay(&ctx, env_name);
     configure_deferred_packages(&ctx);
 
