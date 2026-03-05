@@ -332,8 +332,7 @@ static void configure_deferred_packages(struct Delivery *ctx) {
     delivery_defer_packages(ctx, DEFER_PIP);
 }
 
-static void show_overiew(struct Delivery *ctx) {
-
+static void show_overview(struct Delivery *ctx) {
     msg(STASIS_MSG_L1, "Overview\n");
     delivery_meta_show(ctx);
     delivery_conda_show(ctx);
@@ -676,7 +675,7 @@ int main(int argc, char *argv[]) {
     configure_package_overlay(&ctx, env_name);
     configure_deferred_packages(&ctx);
 
-    show_overiew(&ctx);
+    show_overview(&ctx);
     run_tests(&ctx);
     build_conda_recipes(&ctx);
     build_wheel_packages(&ctx);
