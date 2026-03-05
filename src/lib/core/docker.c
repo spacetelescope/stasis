@@ -1,17 +1,30 @@
 #include "docker.h"
 
 
-int docker_exec(const char *args, unsigned flags) {
+int docker_exec(const char *args, const unsigned flags) {
     struct Process proc;
     char cmd[PATH_MAX];
 
     memset(&proc, 0, sizeof(proc));
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker %s", args);
+
+    unsigned final_flags = 0;
     if (flags & STASIS_DOCKER_QUIET) {
-        strcpy(proc.f_stdout, "/dev/null");
-        strcpy(proc.f_stderr, "/dev/null");
+        final_flags |= STASIS_DOCKER_QUIET_STDOUT;
+        final_flags |= STASIS_DOCKER_QUIET_STDERR;
     } else {
+        final_flags = flags;
+    }
+
+    if (final_flags & STASIS_DOCKER_QUIET_STDOUT) {
+        strcpy(proc.f_stdout, "/dev/null");
+    }
+    if (final_flags & STASIS_DOCKER_QUIET_STDERR) {
+        strcpy(proc.f_stderr, "/dev/null");
+    }
+
+    if (!final_flags) {
         msg(STASIS_MSG_L2, "Executing: %s\n", cmd);
     }
 

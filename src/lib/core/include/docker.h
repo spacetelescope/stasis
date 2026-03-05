@@ -6,6 +6,8 @@
 
 //! Flag to squelch output from docker_exec()
 #define STASIS_DOCKER_QUIET 1 << 1
+#define STASIS_DOCKER_QUIET_STDOUT 1 << 2
+#define STASIS_DOCKER_QUIET_STDERR 1 << 3
 
 //! Flag for older style docker build
 #define STASIS_DOCKER_BUILD 1 << 1
