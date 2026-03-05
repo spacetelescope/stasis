@@ -605,6 +605,12 @@ int main(int argc, char *argv[]) {
             case OPT_NO_TASK_LOGGING:
                 globals.enable_task_logging = false;
                 break;
+            case OPT_WHEEL_BUILDER:
+                globals.wheel_builder = strdup(optarg);
+                break;
+            case OPT_WHEEL_BUILDER_MANYLINUX_IMAGE:
+                globals.wheel_builder_manylinux_image = strdup(optarg);
+                break;
             case '?':
             default:
                 exit(1);

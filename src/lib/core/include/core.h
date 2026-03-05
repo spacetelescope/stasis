@@ -51,7 +51,9 @@ struct STASIS_GLOBAL {
     char *tmpdir; //!< Path to temporary storage directory
     char *conda_install_prefix; //!< Path to install conda
     char *sysconfdir; //!< Path where STASIS reads its configuration files (mission directory, etc)
-    int task_timeout; ///< Time in seconds before task is terminated
+    int task_timeout; ///!< Time in seconds before task is terminated
+    char *wheel_builder; ///!< Backend to build wheels (build, cibuildwheel, manylinux)
+    char *wheel_builder_manylinux_image; ///!< Image to use for a Manylinux build
     struct {
         char *tox_posargs;
         char *conda_reactivate;
