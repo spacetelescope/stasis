@@ -370,7 +370,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
                 globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 
-    msg(STASIS_MSG_L2, "Reading mission configuration: %s\n", missionfile);
+    SYSDEBUG("Reading mission configuration: %s\n", missionfile);
     (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
     struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
