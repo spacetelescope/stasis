@@ -638,6 +638,7 @@ int main(int argc, char *argv[]) {
     setup_python_version_override(&ctx, python_override_version);
     configure_stasis_ini(&ctx, &config_input);
     check_system_path();
+    check_requirements(&ctx);
 
     msg(STASIS_MSG_L1, "Setup\n");
 
