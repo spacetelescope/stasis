@@ -516,7 +516,7 @@ int main(int argc, char *argv[]) {
 
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hVCc:p:vUl:", long_options, &option_index)) != -1) {
         switch (c) {
             case 'h':
                 usage(path_basename(argv[0]));
