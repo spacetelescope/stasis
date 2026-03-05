@@ -200,6 +200,20 @@ void test_strlist_append_tokenize() {
     guard_strlist_free(&list);
 }
 
+void test_strlist_appendf() {
+    const char *fmt = "%c %s %d";
+    struct StrList *list;
+    list = strlist_init();
+    const int len = strlist_appendf(NULL, fmt, 'a', "abc", strlen(fmt));
+    STASIS_ASSERT(strlist_appendf(&list, fmt, 'a', "abc", strlen(fmt)) == len, "length of formatted string should be 7");
+    const char *item = strlist_item(list, 0);
+    STASIS_ASSERT(item != NULL, "valid pointer expected, item should not be NULL");
+    STASIS_ASSERT(strncmp(item, "a", 1) == 0, "first character should be 'a'");
+    STASIS_ASSERT(strncmp(item + 2, "abc", 3) == 0, "string should be 'abc'");
+    STASIS_ASSERT(strncmp(item + 6, "8", 1) == 0, "length of the raw format should be 8");
+    guard_strlist_free(&list);
+}
+
 void test_strlist_copy() {
     struct StrList *list = strlist_init();
     struct StrList *list_copy;
@@ -628,6 +642,7 @@ void test_strlist_item_as_long_double() {
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
     STASIS_TEST_FUNC *tests[] = {
+        test_strlist_appendf,
         test_strlist_init,
         test_strlist_free,
         test_strlist_append,

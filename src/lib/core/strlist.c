@@ -230,6 +230,28 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  }
 
 /**
+ * Append a formatted string
+ * Behavior is identical to asprintf-family of functions
+ * @param pStrList `StrList`
+ * @param fmt printf format string
+ * @param ... format arguments
+ * @return same as vasnprintf
+ */
+int strlist_appendf(struct StrList **pStrList, const char *fmt, ...) {
+    char *s = NULL;
+    va_list ap;
+    va_start(ap, fmt);
+    const int len = vasprintf(&s, fmt, ap);
+    va_end(ap);
+
+    if (pStrList && *pStrList && len >= 0) {
+        strlist_append(pStrList, s);
+    }
+    guard_free(s);
+    return len;
+}
+
+/**
  * Produce a new copy of a `StrList`
  * @param pStrList  `StrList`
  * @return `StrList` copy
