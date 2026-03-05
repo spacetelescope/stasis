@@ -375,7 +375,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read mission configuration: %s, %s\n", missionfile, strerror(errno));
-        exit(1);
+        return -1;
     }
     (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);
 
