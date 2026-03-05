@@ -47,7 +47,6 @@ void strlist_append(struct StrList **pStrList, char *str) {
     (*pStrList)->data = tmp;
     (*pStrList)->data[(*pStrList)->num_inuse] = strdup(str);
     (*pStrList)->data[(*pStrList)->num_alloc] = NULL;
-    strcpy((*pStrList)->data[(*pStrList)->num_inuse], str);
     (*pStrList)->num_inuse++;
     (*pStrList)->num_alloc++;
 }
