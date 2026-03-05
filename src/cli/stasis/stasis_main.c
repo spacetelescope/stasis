@@ -512,6 +512,8 @@ int main(int argc, char *argv[]) {
     memset(&proc, 0, sizeof(proc));
     memset(&ctx, 0, sizeof(ctx));
 
+    setup_sysconfdir();
+
     int c;
     int option_index = 0;
     while ((c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index)) != -1) {
@@ -640,7 +642,6 @@ int main(int argc, char *argv[]) {
     tpl_setup_vars(&ctx);
     tpl_setup_funcs(&ctx);
 
-    setup_sysconfdir();
     setup_python_version_override(&ctx, python_override_version);
 
     configure_stasis_ini(&ctx, &config_input);

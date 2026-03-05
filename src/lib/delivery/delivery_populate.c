@@ -234,7 +234,9 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
 
     // Delivery metadata consumed
-    populate_mission_ini(&ctx, render_mode);
+    if (populate_mission_ini(&ctx, render_mode)) {
+        return -1;
+    }
 
     if (ctx->info.release_name) {
         guard_free(ctx->info.release_name);
