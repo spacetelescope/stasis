@@ -635,6 +635,8 @@ int main(int argc, char *argv[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
+    setup_python_version_override(&ctx, python_override_version);
+    configure_stasis_ini(&ctx, &config_input);
     check_system_path();
 
     msg(STASIS_MSG_L1, "Setup\n");
@@ -642,13 +644,9 @@ int main(int argc, char *argv[]) {
     tpl_setup_vars(&ctx);
     tpl_setup_funcs(&ctx);
 
-    setup_python_version_override(&ctx, python_override_version);
-
-    configure_stasis_ini(&ctx, &config_input);
     configure_delivery_ini(&ctx, &delivery_input);
     configure_delivery_context(&ctx);
 
-    check_requirements(&ctx);
     configure_jfrog_cli(&ctx);
 
     runtime_apply(ctx.runtime.environ);
