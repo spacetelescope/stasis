@@ -41,7 +41,7 @@ void test_docker_build_and_script_and_save() {
     if (!pushd("test_docker_build")) {
         stasis_testing_write_ascii("Dockerfile", dockerfile_contents);
         STASIS_ASSERT(docker_build(".", "-t test_docker_build", cap_suite.build) == 0, "docker build test failed");
-        STASIS_ASSERT(docker_script("test_docker_build", "uname -a", 0) == 0, "simple docker container script execution failed");
+        STASIS_ASSERT(docker_script("test_docker_build", "--rm", "uname -a", 0) == 0, "simple docker container script execution failed");
         STASIS_ASSERT(docker_save("test_docker_build", ".", STASIS_DOCKER_IMAGE_COMPRESSION) == 0, "saving a simple image failed");
         STASIS_ASSERT(docker_exec("load < test_docker_build.tar.*", 0) == 0, "loading a simple image failed");
         docker_exec("image rm -f test_docker_build", 0);

@@ -53,6 +53,8 @@ void globals_free() {
     guard_free(globals.conda_install_prefix);
     guard_strlist_free(&globals.conda_packages);
     guard_strlist_free(&globals.pip_packages);
+    guard_free(globals.wheel_builder);
+    guard_free(globals.wheel_builder_manylinux_image);
     guard_free(globals.jfrog.arch);
     guard_free(globals.jfrog.os);
     guard_free(globals.jfrog.url);

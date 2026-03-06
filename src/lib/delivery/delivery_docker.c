@@ -111,7 +111,7 @@ int delivery_docker(struct Delivery *ctx) {
             msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Image test script has no content\n");
         } else {
             int state;
-            if ((state = docker_script(tag, ctx->deploy.docker.test_script, 0))) {
+            if ((state = docker_script(tag, "--rm", ctx->deploy.docker.test_script, 0))) {
                 msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Non-zero exit (%d) from test script. %s image archive will not be generated.\n", state >> 8, tag);
                 // test failed -- don't save the image
                 return -1;

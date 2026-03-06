@@ -113,6 +113,9 @@ struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_ma
 
 void wheel_free(struct Wheel **wheel) {
     struct Wheel *w = (*wheel);
+    if (!w) {
+        return;
+    }
     guard_free(w->path_name);
     guard_free(w->file_name);
     guard_free(w->distribution);

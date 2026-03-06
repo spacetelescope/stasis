@@ -150,7 +150,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 }
 
 int delivery_init_platform(struct Delivery *ctx) {
-    msg(STASIS_MSG_L2, "Setting architecture\n");
+    SYSDEBUG("%s", "Setting architecture\n");
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
@@ -179,7 +179,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         strcpy(archsuffix, ctx->system.arch);
     }
 
-    msg(STASIS_MSG_L2, "Setting platform\n");
+    SYSDEBUG("%s", "Setting platform\n");
     strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
@@ -287,6 +287,8 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
 
 int bootstrap_build_info(struct Delivery *ctx) {
     struct Delivery local = {0};
+    memcpy(&local.deploy.docker.capabilities, &ctx->deploy.docker.capabilities, sizeof(local.deploy.docker.capabilities));
+
     SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.cfg_path);
     local._stasis_ini_fp.cfg = ini_open(ctx->_stasis_ini_fp.cfg_path);
     SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.delivery_path);
