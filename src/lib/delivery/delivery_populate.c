@@ -108,16 +108,21 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
         return -1;
     }
 
-    char *manifest_inspect_cmd = NULL;
-    if (asprintf(&manifest_inspect_cmd, "manifest inspect '%s'", globals.wheel_builder_manylinux_image) < 0) {
-        SYSERROR("%s", "unable to allocate memory for docker command");
-        return -1;
+    if (strcmp(globals.wheel_builder, "manylinux") == 0) {
+        char *manifest_inspect_cmd = NULL;
+        if (asprintf(&manifest_inspect_cmd, "manifest inspect '%s'", globals.wheel_builder_manylinux_image) < 0) {
+            SYSERROR("%s", "unable to allocate memory for docker command");
+            guard_free(manifest_inspect_cmd);
+            return -1;
+        }
+        if (ctx->deploy.docker.capabilities.usable && docker_exec(manifest_inspect_cmd, STASIS_DOCKER_QUIET_STDOUT)) {
+            SYSERROR("Image provided by default:wheel_builder_manylinux_image does not exist: %s", globals.wheel_builder_manylinux_image);
+            guard_free(manifest_inspect_cmd);
+            return -1;
+        }
+        guard_free(manifest_inspect_cmd);
     }
-    if (ctx->deploy.docker.capabilities.usable && docker_exec(manifest_inspect_cmd, STASIS_DOCKER_QUIET_STDOUT)) {
-        SYSERROR("Image provided by default:wheel_builder_manylinux_image does not exist: %s", globals.wheel_builder_manylinux_image);
-        return -1;
-    }
-    guard_free(manifest_inspect_cmd);
+
 
     if (globals.jfrog.jfrog_artifactory_base_url) {
         guard_free(globals.jfrog.jfrog_artifactory_base_url);
