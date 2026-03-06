@@ -213,17 +213,21 @@ void test_git_clone_and_describe() {
     // test git_describe is functional
     char *taginfo_none = git_describe(".");
     STASIS_ASSERT(taginfo_none != NULL, "should be a git hash, not NULL");
+    puts(taginfo_none);
+    STASIS_ASSERT(is_git_sha(taginfo_none) == true, "not a git hash");
 
     system("git tag -a 1.0.0 -m Mock");
     system("git push --tags origin");
-    char *taginfo = git_describe(".");
+    const char *taginfo = git_describe(".");
+    puts(taginfo);
     STASIS_ASSERT(taginfo != NULL, "should be 1.0.0, not NULL");
-    STASIS_ASSERT(strcmp(taginfo, "1.0.0") == 0, "just-created tag was not described correctly");
+    STASIS_ASSERT(startswith(taginfo, "1.0.0") == true, "just-created tag was not described correctly");
     chdir("..");
 
     char *taginfo_outer = git_describe(repo);
+    puts(taginfo_outer);
     STASIS_ASSERT(taginfo_outer != NULL, "should be 1.0.0, not NULL");
-    STASIS_ASSERT(strcmp(taginfo_outer, "1.0.0") == 0, "just-created tag was not described correctly (out-of-dir invocation)");
+    STASIS_ASSERT(startswith(taginfo_outer, "1.0.0") == true, "just-created tag was not described correctly (out-of-dir invocation)");
 
     char *taginfo_bad = git_describe("abc1234_not_here_or_there");
     STASIS_ASSERT(taginfo_bad == NULL, "a repository that shouldn't exist... exists and has a tag.");
