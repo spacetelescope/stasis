@@ -25,11 +25,24 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 char recipe_git_url[PATH_MAX];
                 char recipe_git_rev[PATH_MAX];
 
+                char tag[100];
+                const int is_long_tag = num_chars(ctx->tests[i].repository_info_tag, '-') > 1;
+                if (ctx->tests[i].repository_info_tag) {
+                    if (is_long_tag) {
+                        const size_t len = strcspn(ctx->tests[i].repository_info_tag, "-");
+                        strncpy(tag, ctx->tests[i].repository_info_tag, len);
+                        tag[len] = '\0';
+                    } else {
+                        strcpy(tag, ctx->tests[i].repository_info_tag);
+                        tag[strlen(ctx->tests[i].repository_info_tag)] = '\0';
+                    }
+                }
+
                 //sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
                 //sprintf(recipe_git_url, "  git_url: %s", ctx->tests[i].repository);
                 //sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests[i].version);
                 // TODO: Conditionally download archives if github.com is the origin. Else, use raw git_* keys ^^^
-                sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].repository_info_tag ? ctx->tests[i].repository_info_tag : ctx->tests[i].version);
+                sprintf(recipe_version, "{%% set version = \"%s\" %%}", strlen(tag) ? tag : ctx->tests[i].version);
                 sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests[i].repository);
                 strcpy(recipe_git_rev, "");
                 sprintf(recipe_buildno, "  number: 0");
