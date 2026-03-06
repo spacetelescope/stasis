@@ -49,7 +49,7 @@ void check_system_requirements(struct Delivery *ctx) {
         msg(STASIS_MSG_L3, "Usable: %s%s%s\n", dcap->usable ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->usable ? "Yes" : "No", STASIS_COLOR_RESET);
         msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap->podman ? "Yes" : "No");
         msg(STASIS_MSG_L3, "Build plugin(s): ");
-        if (dcap->usable) {
+        if (dcap->build) {
             if (dcap->build & STASIS_DOCKER_BUILD) {
                 msg(STASIS_MSG_RESTRICT, "build ");
             }
@@ -61,10 +61,14 @@ void check_system_requirements(struct Delivery *ctx) {
             msg(STASIS_MSG_RESTRICT, "%sN/A%s\n", STASIS_COLOR_YELLOW, STASIS_COLOR_RESET);
         }
 
-        // disable docker builds
-        globals.enable_docker = false;
+        if (!dcap->usable) {
+            // disable docker builds
+            globals.enable_docker = false;
+        }
     } else {
         msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
+        // disable docker builds
+        globals.enable_docker = false;
     }
 }
 
