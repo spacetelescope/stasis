@@ -175,7 +175,7 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
 
 void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->system.arch);
-    guard_array_free(ctx->system.platform);
+    guard_array_n_free(ctx->system.platform, DELIVERY_PLATFORM_MAX);
     guard_free(ctx->meta.name);
     guard_free(ctx->meta.version);
     guard_free(ctx->meta.codename);
