@@ -153,7 +153,7 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->deploy.jfrog_auth.url = strdup_maybe(ctx->deploy.jfrog_auth.url);
     result->deploy.jfrog_auth.user = strdup_maybe(ctx->deploy.jfrog_auth.user);
 
-    for (size_t i = 0; i < result->tests->num_used; i++) {
+    for (size_t i = 0; result->tests && i < result->tests->num_used; i++) {
         result->tests->test[i]->disable = ctx->tests->test[i]->disable;
         result->tests->test[i]->parallel = ctx->tests->test[i]->parallel;
         result->tests->test[i]->build_recipe = strdup_maybe(ctx->tests->test[i]->build_recipe);
@@ -230,7 +230,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_strlist_free(&ctx->conda.pip_packages_purge);
     guard_strlist_free(&ctx->conda.wheels_packages);
 
-    for (size_t i = 0; i < ctx->tests->num_used; i++) {
+    for (size_t i = 0; ctx->tests && i < ctx->tests->num_used; i++) {
         guard_free(ctx->tests->test[i]->name);
         guard_free(ctx->tests->test[i]->version);
         guard_free(ctx->tests->test[i]->repository);
@@ -245,8 +245,10 @@ void delivery_free(struct Delivery *ctx) {
         guard_free(ctx->tests->test[i]->runtime);
         guard_free(ctx->tests->test[i]);
     }
-    guard_free(ctx->tests->test);
-    guard_free(ctx->tests);
+    if (ctx->tests) {
+        guard_free(ctx->tests->test);
+        guard_free(ctx->tests);
+    }
 
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);
