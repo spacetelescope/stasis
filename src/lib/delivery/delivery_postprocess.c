@@ -28,7 +28,7 @@ int delivery_dump_metadata(struct Delivery *ctx) {
         return -1;
     }
     if (globals.verbose) {
-        printf("%s\n", filename);
+        msg(STASIS_MSG_L2, "%s\n", filename);
     }
     fprintf(fp, "name %s\n", ctx->meta.name);
     fprintf(fp, "version %s\n", ctx->meta.version);
