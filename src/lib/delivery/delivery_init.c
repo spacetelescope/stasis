@@ -296,18 +296,22 @@ int bootstrap_build_info(struct Delivery *ctx) {
 
     if (delivery_init_platform(&local)) {
         SYSDEBUG("%s", "delivery_init_platform failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
         SYSDEBUG("%s", "populate_delivery_cfg failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_delivery_ini(&local, INI_READ_RENDER)) {
         SYSDEBUG("%s", "populate_delivery_ini failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_info(&local)) {
         SYSDEBUG("%s", "populate_info failed");
+        delivery_free(&local);
         return -1;
     }
     ctx->info.build_name = strdup(local.info.build_name);
@@ -317,6 +321,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
         ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
         if (!ctx->info.time_info) {
             SYSERROR("Unable to allocate %zu bytes for tm struct: %s", sizeof(*local.info.time_info), strerror(errno));
+            delivery_free(&local);
             return -1;
         }
     }
