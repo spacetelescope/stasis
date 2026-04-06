@@ -27,6 +27,15 @@
 #define LINE_SEP "\n"
 #endif
 
+#if defined(STASIS_OS_LINUX)
+#define STASIS_RANDOM_GENERATOR_FILE "/dev/urandom"
+#elif defined(STASIS_OS_DARWIN)
+#define STASIS_RANDOM_GENERATOR_FILE "/dev/random"
+#else
+#define STASIS_RANDOM_GENERATOR_FILE NULL
+#define NEED_SRAND 1
+#endif
+
 #define STASIS_XML_PRETTY_PRINT_PROG "xmllint"
 #define STASIS_XML_PRETTY_PRINT_ARGS "--format"
 
@@ -469,5 +478,8 @@ void seconds_to_human_readable(int v, char *result, size_t maxlen);
 #define STR_TO_TIMEOUT_NEGATIVE (-1)
 #define STR_TO_TIMEOUT_INVALID_TIME_SCALE (-2)
 int str_to_timeout(char *s);
+
+const char *get_random_generator_file();
+int get_random_bytes(char *result, size_t maxlen);
 
 #endif //STASIS_UTILS_H

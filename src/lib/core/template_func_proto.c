@@ -55,8 +55,8 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
                     strlist_append(&notes_list, note);
                     guard_free(note);
                 }
-                guard_free(repository);
             }
+            guard_free(repository);
         }
     }
     // Return all notes as a single string

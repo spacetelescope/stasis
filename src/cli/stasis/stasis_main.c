@@ -54,15 +54,16 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
         }
     }
 
-    msg(STASIS_MSG_L2, "Reading STASIS global configuration: %s\n", *config_input);
+    SYSDEBUG("Reading STASIS global configuration: %s\n", *config_input);
     ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
     if (!ctx->_stasis_ini_fp.cfg) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read config file: %s, %s\n", *config_input, strerror(errno));
+        msg(STASIS_MSG_ERROR, "Failed to read global config file: %s, %s\n", *config_input, strerror(errno));
+        SYSERROR("Failed to read global config file: %s\n", *config_input);
         exit(1);
     }
     ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
     if (!ctx->_stasis_ini_fp.cfg_path) {
-        SYSERROR("%s", "Failed to allocate memory for config file name");
+        SYSERROR("%s", "Failed to allocate memory delivery context global config file name");
         exit(1);
     }
     guard_free(*config_input);
@@ -102,9 +103,9 @@ static void configure_jfrog_cli(struct Delivery *ctx) {
 
 static void check_release_history(struct Delivery *ctx) {
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
-    msg(STASIS_MSG_L1, "Checking release history\n");
+    msg(STASIS_MSG_L2, "Checking release history\n");
     if (!globals.enable_overwrite && delivery_exists(ctx) == DELIVERY_FOUND) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx->info.release_name);
+        msg(STASIS_MSG_ERROR, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx->info.release_name);
         exit(1);
     }
 
@@ -147,14 +148,14 @@ static void check_conda_prefix_length(const struct Delivery *ctx) {
     // 5 = /bin\n
     const size_t prefix_len = strlen(ctx->storage.conda_install_prefix) + 2 + 5;
     const size_t prefix_len_max = 127;
-    msg(STASIS_MSG_L1, "Checking length of conda installation prefix\n");
+    msg(STASIS_MSG_L2, "Checking length of conda installation prefix\n");
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux") && prefix_len > prefix_len_max) {
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "The shebang, '#!%s/bin/python\\n' is too long (%zu > %zu).\n",
             ctx->storage.conda_install_prefix, prefix_len, prefix_len_max);
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "Conda's workaround to handle long path names does not work consistently within STASIS.\n");
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR,
+        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
             "Please try again from a different, \"shorter\", directory.\n");
         exit(1);
     }
@@ -304,7 +305,8 @@ static void configure_tool_versions(struct Delivery *ctx) {
     }
 }
 
-static void install_build_package() {
+static void install_packaging_tools() {
+    msg(STASIS_MSG_L1, "Installing packaging tool(s)\n");
     if (pip_exec("install build")) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
         exit(1);
@@ -331,8 +333,7 @@ static void configure_deferred_packages(struct Delivery *ctx) {
     delivery_defer_packages(ctx, DEFER_PIP);
 }
 
-static void show_overiew(struct Delivery *ctx) {
-
+static void show_overview(struct Delivery *ctx) {
     msg(STASIS_MSG_L1, "Overview\n");
     delivery_meta_show(ctx);
     delivery_conda_show(ctx);
@@ -512,9 +513,11 @@ int main(int argc, char *argv[]) {
     memset(&proc, 0, sizeof(proc));
     memset(&ctx, 0, sizeof(ctx));
 
+    setup_sysconfdir();
+
     int c;
     int option_index = 0;
-    while ((c = getopt_long(argc, argv, "hVCc:p:vU", long_options, &option_index)) != -1) {
+    while ((c = getopt_long(argc, argv, "hVCc:p:vUl:", long_options, &option_index)) != -1) {
         switch (c) {
             case 'h':
                 usage(path_basename(argv[0]));
@@ -605,6 +608,12 @@ int main(int argc, char *argv[]) {
             case OPT_NO_TASK_LOGGING:
                 globals.enable_task_logging = false;
                 break;
+            case OPT_WHEEL_BUILDER:
+                globals.wheel_builder = strdup(optarg);
+                break;
+            case OPT_WHEEL_BUILDER_MANYLINUX_IMAGE:
+                globals.wheel_builder_manylinux_image = strdup(optarg);
+                break;
             case '?':
             default:
                 exit(1);
@@ -627,21 +636,19 @@ int main(int argc, char *argv[]) {
 
     printf(BANNER, VERSION, AUTHOR);
 
+    setup_python_version_override(&ctx, python_override_version);
+    configure_stasis_ini(&ctx, &config_input);
     check_system_path();
+    check_requirements(&ctx);
 
     msg(STASIS_MSG_L1, "Setup\n");
 
     tpl_setup_vars(&ctx);
     tpl_setup_funcs(&ctx);
 
-    setup_sysconfdir();
-    setup_python_version_override(&ctx, python_override_version);
-
-    configure_stasis_ini(&ctx, &config_input);
     configure_delivery_ini(&ctx, &delivery_input);
     configure_delivery_context(&ctx);
 
-    check_requirements(&ctx);
     configure_jfrog_cli(&ctx);
 
     runtime_apply(ctx.runtime.environ);
@@ -665,11 +672,11 @@ int main(int argc, char *argv[]) {
     setup_activate_test_env(&ctx, env_name_testing);
 
     configure_tool_versions(&ctx);
-    install_build_package();
+    install_packaging_tools();
     configure_package_overlay(&ctx, env_name);
     configure_deferred_packages(&ctx);
 
-    show_overiew(&ctx);
+    show_overview(&ctx);
     run_tests(&ctx);
     build_conda_recipes(&ctx);
     build_wheel_packages(&ctx);

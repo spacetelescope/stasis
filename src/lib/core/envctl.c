@@ -92,23 +92,28 @@ unsigned envctl_get_flags(const struct EnvCtl *envctl, const char *name) {
 }
 
 void envctl_do_required(const struct EnvCtl *envctl, int verbose) {
+    int failed = 0;
     for (size_t i = 0; i < envctl->num_used; i++) {
-        struct EnvCtl_Item *item = envctl->item[i];
+        const struct EnvCtl_Item *item = envctl->item[i];
         const char *name = item->name;
         envctl_except_fn *callback = item->callback;
 
         if (verbose) {
-            msg(STASIS_MSG_L2, "Verifying %s\n", name);
+            msg(STASIS_MSG_L2, "Verifying %s [%s]\n", name, item->flags & STASIS_ENVCTL_REQUIRED ? "required" : "optional");
         }
-        int code = callback((const void *) item, (const void *) name);
+        const int code = callback((const void *) item, (const void *) name);
         if (code == STASIS_ENVCTL_RET_IGNORE || code == STASIS_ENVCTL_RET_SUCCESS) {
             continue;
         }
         if (code == STASIS_ENVCTL_RET_FAIL) {
-            fprintf(stderr, "\n%s must be set. Exiting.\n", name);
-            exit(1);
+            msg(STASIS_MSG_ERROR, "\n%s%s must be defined.\n", name, STASIS_COLOR_RESET);
+            failed++;
         }
-        fprintf(stderr, "\nan unknown envctl callback code occurred: %d\n", code);
+        msg(STASIS_MSG_ERROR, "\nan unknown envctl callback code occurred: %d\n", code);
+    }
+
+    if (failed) {
+        msg(STASIS_MSG_ERROR, "Environment check failed with %d error(s)\n", failed);
         exit(1);
     }
 }

@@ -27,36 +27,46 @@ void check_system_requirements(struct Delivery *ctx) {
     };
 
     msg(STASIS_MSG_L1, "Checking system requirements\n");
+
+    msg(STASIS_MSG_L2, "Tools\n");
     for (size_t i = 0; tools_required[i] != NULL; i++) {
+        msg(STASIS_MSG_L3, "%s: ", tools_required[i]);
         if (!find_program(tools_required[i])) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
+            msg(STASIS_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
             exit(1);
         }
+        msg(STASIS_MSG_RESTRICT, "found\n");
     }
 
     if (!globals.tmpdir && !ctx->storage.tmpdir) {
         delivery_init_tmpdir(ctx);
     }
 
-    if (!docker_capable(&ctx->deploy.docker.capabilities)) {
+    msg(STASIS_MSG_L2, "Docker\n");
+    if (docker_capable(&ctx->deploy.docker.capabilities)) {
         struct DockerCapabilities *dcap = &ctx->deploy.docker.capabilities;
-        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
-        msg(STASIS_MSG_L3, "Available: %s\n", dcap->available ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Usable: %s\n", dcap->usable ? "Yes" : "No");
+        msg(STASIS_MSG_L3, "Available: %s%s%s\n", dcap->available ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->available ? "Yes" : "No", STASIS_COLOR_RESET);
+        msg(STASIS_MSG_L3, "Usable: %s%s%s\n", dcap->usable ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->usable ? "Yes" : "No", STASIS_COLOR_RESET);
         msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap->podman ? "Yes" : "No");
         msg(STASIS_MSG_L3, "Build plugin(s): ");
-        if (dcap->usable) {
+        if (dcap->build) {
             if (dcap->build & STASIS_DOCKER_BUILD) {
-                printf("build ");
+                msg(STASIS_MSG_RESTRICT, "build ");
             }
             if (dcap->build & STASIS_DOCKER_BUILD_X) {
-                printf("buildx ");
+                msg(STASIS_MSG_RESTRICT, "buildx ");
             }
-            puts("");
+            msg(STASIS_MSG_RESTRICT,"\n");
         } else {
-            printf("N/A\n");
+            msg(STASIS_MSG_RESTRICT, "%sN/A%s\n", STASIS_COLOR_YELLOW, STASIS_COLOR_RESET);
         }
 
+        if (!dcap->usable) {
+            // disable docker builds
+            globals.enable_docker = false;
+        }
+    } else {
+        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
         // disable docker builds
         globals.enable_docker = false;
     }

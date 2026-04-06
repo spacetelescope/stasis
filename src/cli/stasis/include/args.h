@@ -19,6 +19,8 @@
 #define OPT_POOL_STATUS_INTERVAL 1011
 #define OPT_NO_TASK_LOGGING 1012
 #define OPT_TASK_TIMEOUT 1013
+#define OPT_WHEEL_BUILDER 1014
+#define OPT_WHEEL_BUILDER_MANYLINUX_IMAGE 1015
 
 extern struct option long_options[];
 void usage(char *progname);

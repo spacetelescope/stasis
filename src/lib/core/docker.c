@@ -1,17 +1,30 @@
 #include "docker.h"
 
 
-int docker_exec(const char *args, unsigned flags) {
+int docker_exec(const char *args, const unsigned flags) {
     struct Process proc;
     char cmd[PATH_MAX];
 
     memset(&proc, 0, sizeof(proc));
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, sizeof(cmd) - 1, "docker %s", args);
+
+    unsigned final_flags = 0;
     if (flags & STASIS_DOCKER_QUIET) {
-        strcpy(proc.f_stdout, "/dev/null");
-        strcpy(proc.f_stderr, "/dev/null");
+        final_flags |= STASIS_DOCKER_QUIET_STDOUT;
+        final_flags |= STASIS_DOCKER_QUIET_STDERR;
     } else {
+        final_flags = flags;
+    }
+
+    if (final_flags & STASIS_DOCKER_QUIET_STDOUT) {
+        strcpy(proc.f_stdout, "/dev/null");
+    }
+    if (final_flags & STASIS_DOCKER_QUIET_STDERR) {
+        strcpy(proc.f_stderr, "/dev/null");
+    }
+
+    if (!final_flags) {
         msg(STASIS_MSG_L2, "Executing: %s\n", cmd);
     }
 
@@ -19,11 +32,11 @@ int docker_exec(const char *args, unsigned flags) {
     return proc.returncode;
 }
 
-int docker_script(const char *image, char *data, unsigned flags) {
+int docker_script(const char *image, char *args, char *data, const unsigned flags) {
     (void)flags;  // TODO: placeholder
     char cmd[PATH_MAX] = {0};
 
-    snprintf(cmd, sizeof(cmd) - 1, "docker run --rm -i %s /bin/sh -", image);
+    snprintf(cmd, sizeof(cmd) - 1, "docker run -i %s \"%s\" /bin/sh -", args ? args : "", image);
 
     FILE *outfile = popen(cmd, "w");
     if (!outfile) {

@@ -85,6 +85,45 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     }
     globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, render_mode, &err);
 
+    err = 0;
+    if (!globals.wheel_builder) {
+        globals.wheel_builder = ini_getval_str(cfg, "default", "wheel_builder", render_mode, &err);
+        if (err) {
+            msg(STASIS_MSG_WARN, "wheel_builder is undefined. Falling back to system toolchain: 'build'.\n");
+            globals.wheel_builder = strdup("build");
+            if (!globals.wheel_builder) {
+                SYSERROR("%s", "unable to allocate memory for default wheel_builder value");
+                return -1;
+            }
+        }
+    }
+
+    err = 0;
+    if (!globals.wheel_builder_manylinux_image) {
+        globals.wheel_builder_manylinux_image = ini_getval_str(cfg, "default", "wheel_builder_manylinux_image", render_mode, &err);
+    }
+
+    if (err && globals.wheel_builder && strcmp(globals.wheel_builder, "manylinux") == 0) {
+        SYSERROR("%s", "default:wheel_builder is set to 'manylinux', however default:wheel_builder_manylinux_image is not configured");
+        return -1;
+    }
+
+    if (strcmp(globals.wheel_builder, "manylinux") == 0) {
+        char *manifest_inspect_cmd = NULL;
+        if (asprintf(&manifest_inspect_cmd, "manifest inspect '%s'", globals.wheel_builder_manylinux_image) < 0) {
+            SYSERROR("%s", "unable to allocate memory for docker command");
+            guard_free(manifest_inspect_cmd);
+            return -1;
+        }
+        if (ctx->deploy.docker.capabilities.usable && docker_exec(manifest_inspect_cmd, STASIS_DOCKER_QUIET_STDOUT)) {
+            SYSERROR("Image provided by default:wheel_builder_manylinux_image does not exist: %s", globals.wheel_builder_manylinux_image);
+            guard_free(manifest_inspect_cmd);
+            return -1;
+        }
+        guard_free(manifest_inspect_cmd);
+    }
+
+
     if (globals.jfrog.jfrog_artifactory_base_url) {
         guard_free(globals.jfrog.jfrog_artifactory_base_url);
     }
@@ -200,7 +239,9 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
 
     // Delivery metadata consumed
-    populate_mission_ini(&ctx, render_mode);
+    if (populate_mission_ini(&ctx, render_mode)) {
+        return -1;
+    }
 
     if (ctx->info.release_name) {
         guard_free(ctx->info.release_name);
@@ -320,6 +361,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     int err = 0;
 
     if ((*ctx)->_stasis_ini_fp.mission) {
+        // mission configurations are optional
         return 0;
     }
 
@@ -333,12 +375,12 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
                 globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 
-    msg(STASIS_MSG_L2, "Reading mission configuration: %s\n", missionfile);
+    SYSDEBUG("Reading mission configuration: %s\n", missionfile);
     (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
     struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
         msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read mission configuration: %s, %s\n", missionfile, strerror(errno));
-        exit(1);
+        return -1;
     }
     (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);
 
