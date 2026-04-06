@@ -1,11 +1,11 @@
 #include "delivery.h"
 
 int delivery_build_recipes(struct Delivery *ctx) {
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
+    for (size_t i = 0; i < ctx->tests->num_used; i++) {
         char *recipe_dir = NULL;
-        if (ctx->tests[i].build_recipe) { // build a conda recipe
-            if (recipe_clone(ctx->storage.build_recipes_dir, ctx->tests[i].build_recipe, NULL, &recipe_dir)) {
-                fprintf(stderr, "Encountered an issue while cloning recipe for: %s\n", ctx->tests[i].name);
+        if (ctx->tests->test[i]->build_recipe) { // build a conda recipe
+            if (recipe_clone(ctx->storage.build_recipes_dir, ctx->tests->test[i]->build_recipe, NULL, &recipe_dir)) {
+                fprintf(stderr, "Encountered an issue while cloning recipe for: %s\n", ctx->tests->test[i]->name);
                 return -1;
             }
             if (!recipe_dir) {
@@ -15,44 +15,48 @@ int delivery_build_recipes(struct Delivery *ctx) {
             int recipe_type = recipe_get_type(recipe_dir);
             if(!pushd(recipe_dir)) {
                 if (RECIPE_TYPE_ASTROCONDA == recipe_type) {
-                    pushd(path_basename(ctx->tests[i].repository));
+                    pushd(path_basename(ctx->tests->test[i]->repository));
                 } else if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
                     pushd("recipe");
                 }
 
-                char recipe_version[100];
-                char recipe_buildno[100];
+                char recipe_version[200];
+                char recipe_buildno[200];
                 char recipe_git_url[PATH_MAX];
                 char recipe_git_rev[PATH_MAX];
 
-                char tag[100];
-                if (ctx->tests[i].repository_info_tag) {
-                    const int is_long_tag = num_chars(ctx->tests[i].repository_info_tag, '-') > 1;
+                char tag[100] = {0};
+                if (ctx->tests->test[i]->repository_info_tag) {
+                    const int is_long_tag = num_chars(ctx->tests->test[i]->repository_info_tag, '-') > 1;
                     if (is_long_tag) {
-                        const size_t len = strcspn(ctx->tests[i].repository_info_tag, "-");
-                        strncpy(tag, ctx->tests[i].repository_info_tag, len);
+                        const size_t len = strcspn(ctx->tests->test[i]->repository_info_tag, "-");
+                        strncpy(tag, ctx->tests->test[i]->repository_info_tag, len);
                         tag[len] = '\0';
                     } else {
-                        strcpy(tag, ctx->tests[i].repository_info_tag);
-                        tag[strlen(ctx->tests[i].repository_info_tag)] = '\0';
+                        strncpy(tag, ctx->tests->test[i]->repository_info_tag, sizeof(tag) - 1);
+                        tag[strlen(ctx->tests->test[i]->repository_info_tag)] = '\0';
                     }
                 } else {
-                    strcpy(tag, ctx->tests[i].version);
-		}
+                    strcpy(tag, ctx->tests->test[i]->version);
+                }
 
                 //sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
-                //sprintf(recipe_git_url, "  git_url: %s", ctx->tests[i].repository);
-                //sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests[i].version);
+                //sprintf(recipe_git_url, "  git_url: %s", ctx->tests->test[i]->repository);
+                //sprintf(recipe_git_rev, "  git_rev: %s", ctx->tests->test[i]->version);
                 // TODO: Conditionally download archives if github.com is the origin. Else, use raw git_* keys ^^^
+                //       03/2026 - How can we know if the repository URL supports archive downloads?
+                //                 Perhaps we can key it to the recipe type, because the archive is a requirement imposed
+                //                 by conda-forge. Hmm.
+
                 sprintf(recipe_version, "{%% set version = \"%s\" %%}", tag);
-                sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests[i].repository);
+                sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests->test[i]->repository);
                 strcpy(recipe_git_rev, "");
                 sprintf(recipe_buildno, "  number: 0");
 
                 unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
                 //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
                 if (ctx->meta.final) { // remove this. i.e. statis cannot deploy a release to conda-forge
-                    sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests[i].version);
+                    sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests->test[i]->version);
                     // TODO: replace sha256 of tagged archive
                     // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
                     // For now, remove the sha256 requirement
@@ -206,7 +210,7 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
         goto manylinux_fail;
     }
 
-    if (asprintf(&wheel_paths_filename, "wheel_paths_%s.txt", container_name) < 0) {
+    if (asprintf(&wheel_paths_filename, "%s/wheel_paths_%s.txt", globals.tmpdir, container_name) < 0) {
         SYSERROR("%s", "unable to allocate memory for wheel paths file name");
         goto manylinux_fail;
     }
@@ -387,28 +391,28 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
             *spec = '\0';
         }
 
-        for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-            if ((ctx->tests[i].name && !strcmp(name, ctx->tests[i].name)) && (!ctx->tests[i].build_recipe && ctx->tests[i].repository)) { // build from source
+        for (size_t i = 0; i < ctx->tests->num_used; i++) {
+            if ((ctx->tests->test[i]->name && !strcmp(name, ctx->tests->test[i]->name)) && (!ctx->tests->test[i]->build_recipe && ctx->tests->test[i]->repository)) { // build from source
                 char srcdir[PATH_MAX];
                 char wheeldir[PATH_MAX];
                 memset(srcdir, 0, sizeof(srcdir));
                 memset(wheeldir, 0, sizeof(wheeldir));
 
-                sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests[i].name);
-                if (git_clone(&proc, ctx->tests[i].repository, srcdir, ctx->tests[i].version)) {
+                sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
+                if (git_clone(&proc, ctx->tests->test[i]->repository, srcdir, ctx->tests->test[i]->version)) {
                     SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'\n",
-                    ctx->tests[i].version, ctx->tests[i].name, ctx->tests[i].repository);
+                    ctx->tests->test[i]->version, ctx->tests->test[i]->name, ctx->tests->test[i]->repository);
                     return NULL;
                 }
 
-                if (!ctx->tests[i].repository_info_tag) {
-                    ctx->tests[i].repository_info_tag = strdup(git_describe(srcdir));
+                if (!ctx->tests->test[i]->repository_info_tag) {
+                    ctx->tests->test[i]->repository_info_tag = strdup(git_describe(srcdir));
                 }
-                if (!ctx->tests[i].repository_info_ref) {
-                    ctx->tests[i].repository_info_ref = strdup(git_rev_parse(srcdir, ctx->tests[i].version));
+                if (!ctx->tests->test[i]->repository_info_ref) {
+                    ctx->tests->test[i]->repository_info_ref = strdup(git_rev_parse(srcdir, ctx->tests->test[i]->version));
                 }
-                if (ctx->tests[i].repository_remove_tags && strlist_count(ctx->tests[i].repository_remove_tags)) {
-                    filter_repo_tags(srcdir, ctx->tests[i].repository_remove_tags);
+                if (ctx->tests->test[i]->repository_remove_tags && strlist_count(ctx->tests->test[i]->repository_remove_tags)) {
+                    filter_repo_tags(srcdir, ctx->tests->test[i]->repository_remove_tags);
                 }
 
                 if (!pushd(srcdir)) {
@@ -430,7 +434,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
                     }
 
-                    strcpy(dname, ctx->tests[i].name);
+                    strcpy(dname, ctx->tests->test[i]->name);
                     tolower_s(dname);
                     sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                     if (mkdirs(outdir, 0755)) {
@@ -440,8 +444,8 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     }
                     if (use_builder_manylinux) {
                         if (delivery_build_wheels_manylinux(ctx, outdir)) {
-                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name,
-                                    ctx->tests[i].version);
+                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests->test[i]->name,
+                                    ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
                             return NULL;
@@ -461,8 +465,8 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         }
 
                         if (python_exec(cmd)) {
-                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests[i].name,
-                                    ctx->tests[i].version);
+                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests->test[i]->name,
+                                    ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
                             return NULL;

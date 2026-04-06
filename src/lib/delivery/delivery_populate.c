@@ -193,6 +193,7 @@ static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, ch
     (*inip) = ini;
     (*listp) = list;
 }
+
 int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
@@ -277,11 +278,17 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
         ctx->conda.pip_packages_defer = strlist_init();
     }
 
-    for (size_t z = 0, i = 0; i < ini->section_count; i++) {
+    ctx->tests = tests_init(TEST_NUM_ALLOC_INITIAL);
+    for (size_t i = 0; i < ini->section_count; i++) {
         char *section_name = ini->section[i]->key;
         if (startswith(section_name, "test:")) {
             union INIVal val;
-            struct Test *test = &ctx->tests[z];
+            struct Test *test = test_init();
+            if (!test) {
+                SYSERROR("%s", "unable to allocate memory for test structure");
+                return -1;
+            }
+
             val.as_char_p = strchr(ini->section[i]->key, ':') + 1;
             if (val.as_char_p && isempty(val.as_char_p)) {
                 return 1;
@@ -299,7 +306,8 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             }
             test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
             test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
-            test->runtime.environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
+
+            test->runtime->environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
             const char *timeout_str = ini_getval_str(ini, section_name, "timeout", render_mode, &err);
             if (timeout_str) {
                 test->timeout = str_to_timeout((char *) timeout_str);
@@ -312,7 +320,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
                     return 1;
                 }
             }
-            z++;
+            tests_add(ctx->tests, test);
         }
     }
 

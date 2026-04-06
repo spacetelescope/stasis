@@ -153,21 +153,21 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->deploy.jfrog_auth.url = strdup_maybe(ctx->deploy.jfrog_auth.url);
     result->deploy.jfrog_auth.user = strdup_maybe(ctx->deploy.jfrog_auth.user);
 
-    for (size_t i = 0; i < sizeof(result->tests) / sizeof(result->tests[0]); i++) {
-        result->tests[i].disable = ctx->tests[i].disable;
-        result->tests[i].parallel = ctx->tests[i].parallel;
-        result->tests[i].build_recipe = strdup_maybe(ctx->tests[i].build_recipe);
-        result->tests[i].name = strdup_maybe(ctx->tests[i].name);
-        result->tests[i].version = strdup_maybe(ctx->tests[i].version);
-        result->tests[i].repository = strdup_maybe(ctx->tests[i].repository);
-        result->tests[i].repository_info_ref = strdup_maybe(ctx->tests[i].repository_info_ref);
-        result->tests[i].repository_info_tag = strdup_maybe(ctx->tests[i].repository_info_tag);
-        result->tests[i].repository_remove_tags = strlist_copy(ctx->tests[i].repository_remove_tags);
-        if (ctx->tests[i].runtime.environ) {
-            result->tests[i].runtime.environ = runtime_copy(ctx->tests[i].runtime.environ->data);
+    for (size_t i = 0; i < result->tests->num_used; i++) {
+        result->tests->test[i]->disable = ctx->tests->test[i]->disable;
+        result->tests->test[i]->parallel = ctx->tests->test[i]->parallel;
+        result->tests->test[i]->build_recipe = strdup_maybe(ctx->tests->test[i]->build_recipe);
+        result->tests->test[i]->name = strdup_maybe(ctx->tests->test[i]->name);
+        result->tests->test[i]->version = strdup_maybe(ctx->tests->test[i]->version);
+        result->tests->test[i]->repository = strdup_maybe(ctx->tests->test[i]->repository);
+        result->tests->test[i]->repository_info_ref = strdup_maybe(ctx->tests->test[i]->repository_info_ref);
+        result->tests->test[i]->repository_info_tag = strdup_maybe(ctx->tests->test[i]->repository_info_tag);
+        result->tests->test[i]->repository_remove_tags = strlist_copy(ctx->tests->test[i]->repository_remove_tags);
+        if (ctx->tests->test[i]->runtime->environ) {
+            result->tests->test[i]->runtime->environ = runtime_copy(ctx->tests->test[i]->runtime->environ->data);
         }
-        result->tests[i].script = strdup_maybe(ctx->tests[i].script);
-        result->tests[i].script_setup = strdup_maybe(ctx->tests[i].script_setup);
+        result->tests->test[i]->script = strdup_maybe(ctx->tests->test[i]->script);
+        result->tests->test[i]->script_setup = strdup_maybe(ctx->tests->test[i]->script_setup);
     }
 
     return result;
@@ -230,19 +230,23 @@ void delivery_free(struct Delivery *ctx) {
     guard_strlist_free(&ctx->conda.pip_packages_purge);
     guard_strlist_free(&ctx->conda.wheels_packages);
 
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        guard_free(ctx->tests[i].name);
-        guard_free(ctx->tests[i].version);
-        guard_free(ctx->tests[i].repository);
-        guard_free(ctx->tests[i].repository_info_ref);
-        guard_free(ctx->tests[i].repository_info_tag);
-        guard_strlist_free(&ctx->tests[i].repository_remove_tags);
-        guard_free(ctx->tests[i].script);
-        guard_free(ctx->tests[i].script_setup);
-        guard_free(ctx->tests[i].build_recipe);
+    for (size_t i = 0; i < ctx->tests->num_used; i++) {
+        guard_free(ctx->tests->test[i]->name);
+        guard_free(ctx->tests->test[i]->version);
+        guard_free(ctx->tests->test[i]->repository);
+        guard_free(ctx->tests->test[i]->repository_info_ref);
+        guard_free(ctx->tests->test[i]->repository_info_tag);
+        guard_strlist_free(&ctx->tests->test[i]->repository_remove_tags);
+        guard_free(ctx->tests->test[i]->script);
+        guard_free(ctx->tests->test[i]->script_setup);
+        guard_free(ctx->tests->test[i]->build_recipe);
         // test-specific runtime variables
-        guard_runtime_free(ctx->tests[i].runtime.environ);
+        guard_runtime_free(ctx->tests->test[i]->runtime->environ);
+        guard_free(ctx->tests->test[i]->runtime);
+        guard_free(ctx->tests->test[i]);
     }
+    guard_free(ctx->tests->test);
+    guard_free(ctx->tests);
 
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);
@@ -388,8 +392,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         msg(STASIS_MSG_L3, "package '%s': ", package_name);
 
         // When spec is present in name, set tests->version to the version detected in the name
-        for (size_t x = 0; x < sizeof(ctx->tests) / sizeof(ctx->tests[0]) && ctx->tests[x].name != NULL; x++) {
-            struct Test *test = &ctx->tests[x];
+        for (size_t x = 0; x < ctx->tests->num_used; x++) {
+            struct Test *test = ctx->tests->test[x];
             char nametmp[1024] = {0};
 
             strncpy(nametmp, package_name, sizeof(nametmp) - 1);

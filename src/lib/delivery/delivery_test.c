@@ -1,5 +1,59 @@
 #include "delivery.h"
 
+struct Tests *tests_init(const size_t num_tests) {
+    struct Tests *tests = calloc(1, sizeof(*tests));
+    if (!tests) {
+        return NULL;
+    }
+
+    tests->test = calloc(num_tests, sizeof(*tests->test));
+    if (!tests->test) {
+        return NULL;
+    }
+    tests->num_used = 0;
+    tests->num_alloc = num_tests;
+
+    return tests;
+}
+
+int tests_add(struct Tests *tests, struct Test *x) {
+    if (tests->num_used >= tests->num_alloc) {
+#ifdef DEBUG
+        const size_t old_alloc = tests->num_alloc;
+#endif
+        struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(*tests->test));
+        SYSDEBUG("Increasing size of test array: %zu -> %zu", old_alloc, tests->num_alloc);
+        if (!tmp) {
+            SYSDEBUG("Failed to allocate %zu bytes for test array", tests->num_alloc * sizeof(*tests->test));
+            return -1;
+        }
+        tests->test = tmp;
+    }
+
+    SYSDEBUG("Adding test: '%s'", x->name);
+    tests->test[tests->num_used++] = x;
+    return 0;
+}
+
+struct Test *test_init() {
+    struct Test *result = calloc(1, sizeof(*result));
+    result->runtime = calloc(1, sizeof(*result->runtime));
+
+    return result;
+}
+
+void test_free(struct Test **x) {
+    struct Test *test = *x;
+    guard_free(test);
+}
+
+void tests_free(struct Tests **x) {
+    for (size_t i = 0; i < (*x)->num_alloc; i++) {
+        test_free(&(*x)->test[i]);
+    }
+    guard_free((*x)->test);
+}
+
 void delivery_tests_run(struct Delivery *ctx) {
     static const int SETUP = 0;
     static const int PARALLEL = 1;
@@ -16,7 +70,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     // amount of debug information.
     snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x; mamba activate ${CONDA_DEFAULT_ENV}; set -x\n");
 
-    if (!ctx->tests[0].name) {
+    if (!ctx->tests || !ctx->tests->num_used) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
     } else {
         pool[PARALLEL] = mp_pool_init("parallel", ctx->storage.tmpdir);
@@ -60,8 +114,8 @@ void delivery_tests_run(struct Delivery *ctx) {
 
         // Iterate over our test records, retrieving the source code for each package, and assigning its scripted tasks
         // to the appropriate processing pool
-        for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-            struct Test *test = &ctx->tests[i];
+        for (size_t i = 0; i < ctx->tests->num_used; i++) {
+            struct Test *test = ctx->tests->test[i];
             if (!test->name && !test->repository && !test->script) {
                 // skip unused test records
                 continue;
@@ -181,8 +235,8 @@ void delivery_tests_run(struct Delivery *ctx) {
 
         // Configure "script_setup" tasks
         // Directories should exist now, so no need to go through initializing everything all over again.
-        for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-            struct Test *test = &ctx->tests[i];
+        for (size_t i = 0; i < ctx->tests->num_used; i++) {
+            const struct Test *test = ctx->tests->test[i];
             if (test->script_setup) {
                 char destdir[PATH_MAX];
                 sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
