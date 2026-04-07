@@ -33,7 +33,22 @@ static void test_wheel_package() {
     STASIS_ASSERT(wheel->metadata->name != NULL, "Metadata::name cannot be NULL");
     STASIS_ASSERT(wheel->metadata->version != NULL, "Metadata::version cannot be NULL");
     STASIS_ASSERT(wheel->metadata->metadata_version != NULL, "Metadata::version (of metadata) cannot be NULL");
+
+    // Implied test against key/id getters. If wheel_show_info segfaults, that functionality is broken.
     STASIS_ASSERT(wheel_show_info(wheel) == 0, "wheel_show_info should never fail. Enum(s) might be out of sync with META_*_KEYS array(s)");
+
+    // Get data from DIST
+    const struct WheelValue dist_version = wheel_get_value_by_name(wheel, WHEEL_FROM_DIST, "Wheel-Version");
+    STASIS_ASSERT(dist_version.type == WHEELVAL_STR, "Wheel dist version value must be a string");
+    STASIS_ASSERT_FATAL(dist_version.data != NULL, "Wheel dist version value must not be NULL");
+    STASIS_ASSERT(dist_version.count, "Wheel value must be populated");
+
+    // Get data from METADATA
+    const struct WheelValue meta_name = wheel_get_value_by_name(wheel, WHEEL_FROM_METADATA, "Metadata-Version");
+    STASIS_ASSERT(meta_name.type == WHEELVAL_STR, "Wheel metadata version value must be a string");
+    STASIS_ASSERT_FATAL(meta_name.data != NULL, "Wheel metadata version value must not be NULL");
+    STASIS_ASSERT(meta_name.count, "Wheel metadata version value must be populated");
+
     wheel_package_free(&wheel);
     STASIS_ASSERT(wheel == NULL, "wheel struct should be NULL after free");
 }
