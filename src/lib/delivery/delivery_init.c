@@ -150,7 +150,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 }
 
 int delivery_init_platform(struct Delivery *ctx) {
-    SYSDEBUG("%s", "Setting architecture\n");
+    SYSDEBUG("%s", "Setting architecture");
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
@@ -179,7 +179,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         strcpy(archsuffix, ctx->system.arch);
     }
 
-    SYSDEBUG("%s", "Setting platform\n");
+    SYSDEBUG("%s", "Setting platform");
     strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
