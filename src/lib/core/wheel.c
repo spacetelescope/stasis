@@ -698,12 +698,10 @@ static struct WheelValue wheel_data_dump(const struct Wheel *pkg, const ssize_t 
         case WHEEL_DIST_TOP_LEVEL:
             result.type = WHEELVAL_STRLIST;
             result.data = pkg->top_level;
-            result.count = strlist_count(pkg->top_level);
             break;
         case WHEEL_DIST_TAG:
             result.type = WHEELVAL_STRLIST;
             result.data = pkg->tag;
-            result.count = strlist_count(pkg->tag);
             break;
         case WHEEL_DIST_RECORD:
             result.type = WHEELVAL_OBJ_RECORD;
@@ -718,6 +716,17 @@ static struct WheelValue wheel_data_dump(const struct Wheel *pkg, const ssize_t 
         default:
             result.data = NULL;
             result.type = WHEEL_KEY_UNKNOWN;
+            break;
+    }
+
+    switch (result.type) {
+        case WHEELVAL_STR:
+            result.count = result.data != NULL ? strlen(result.data) : 0;
+            break;
+        case WHEELVAL_STRLIST:
+            result.count = result.data != NULL ? strlist_count(result.data) : 0;
+            break;
+        default:
             break;
     }
 
@@ -770,17 +779,14 @@ static struct WheelValue wheel_metadata_dump(const struct Wheel *pkg, const ssiz
         case WHEEL_META_PROJECT_URL:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->project_url;
-            result.count = strlist_count(meta->project_url);
             break;
         case WHEEL_META_CLASSIFIER:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->classifier;
-            result.count = strlist_count(meta->classifier);
             break;
         case WHEEL_META_REQUIRES_PYTHON:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->requires_python;
-            result.count = strlist_count(meta->requires_python);
             break;
         case WHEEL_META_DESCRIPTION_CONTENT_TYPE:
             result.data = meta->description_content_type;
@@ -788,7 +794,6 @@ static struct WheelValue wheel_metadata_dump(const struct Wheel *pkg, const ssiz
         case WHEEL_META_LICENSE_FILE:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->license_file;
-            result.count = strlist_count(meta->license_file);
             break;
         case WHEEL_META_LICENSE_EXPRESSION:
             result.data = meta->license_expression;
@@ -796,36 +801,31 @@ static struct WheelValue wheel_metadata_dump(const struct Wheel *pkg, const ssiz
         case WHEEL_META_IMPORT_NAME:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->import_name;
-            result.count = strlist_count(meta->import_name);
             break;
         case WHEEL_META_IMPORT_NAMESPACE:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->import_namespace;
-            result.count = strlist_count(meta->import_namespace);
             break;
         case WHEEL_META_REQUIRES_DIST:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->requires_dist;
-            result.count = strlist_count(meta->requires_dist);
             break;
         case WHEEL_META_PROVIDES_DIST:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->provides_dist;
-            result.count = strlist_count(meta->provides_dist);
             break;
         case WHEEL_META_PROVIDES_EXTRA:
             result.type = WHEELVAL_OBJ_EXTRA;
-            result.data = (void *) meta->provides_extra;
+            result.data = (struct WheelMetadata_ProvidesExtra *) meta->provides_extra;
+            result.count = result.data != NULL ? (size_t) ((struct WheelMetadata_ProvidesExtra *) result.data)->count : 0;
             break;
         case WHEEL_META_OBSOLETES:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->obsoletes;
-            result.count = strlist_count(meta->obsoletes);
             break;
         case WHEEL_META_OBSOLETES_DIST:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->obsoletes_dist;
-            result.count = strlist_count(meta->obsoletes_dist);
             break;
         case WHEEL_META_DESCRIPTION:
             result.type = WHEELVAL_STR;
@@ -834,28 +834,36 @@ static struct WheelValue wheel_metadata_dump(const struct Wheel *pkg, const ssiz
         case WHEEL_META_PLATFORM:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->platform;
-            result.count = strlist_count(meta->platform);
             break;
         case WHEEL_META_SUPPORTED_PLATFORM:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->supported_platform;
-            result.count = strlist_count(meta->supported_platform);
             break;
         case WHEEL_META_KEYWORDS:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->keywords;
-            result.count = strlist_count(meta->keywords);
             break;
         case WHEEL_META_DYNAMIC:
             result.type = WHEELVAL_STRLIST;
             result.data = meta->dynamic;
-            result.count = strlist_count(meta->dynamic);
             break;
         case WHEEL_KEY_UNKNOWN:
         default:
             result.data = NULL;
             break;
     }
+
+    switch (result.type) {
+        case WHEELVAL_STR:
+            result.count = result.data != NULL ? strlen(result.data) : 0;
+            break;
+        case WHEELVAL_STRLIST:
+            result.count = result.data != NULL ? strlist_count(result.data) : 0;
+            break;
+        default:
+            break;
+    }
+
     return result;
 }
 
