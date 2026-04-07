@@ -8,6 +8,7 @@ STASIS consolidates the steps required to build, test, and deploy calibration pi
 - cmake
 - libcurl
 - libxml2
+- libzip
 - rsync
 
 # Installation

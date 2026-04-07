@@ -16,7 +16,7 @@ endif()
 
 pkg_check_modules(ZIP libzip)
 if (NOT ZIP_FOUND)
-	message(FATAL_ERROR "libzip is required")
+	message(FATAL_ERROR "libzip is required (https://libzip.org)")
 endif ()
 
 include_directories(${ZIP_INCLUDEDIR})
