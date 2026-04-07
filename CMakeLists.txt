@@ -11,7 +11,7 @@ find_package(CURL)
 option(ASAN "Address Analyzer" OFF)
 set(ASAN_OPTIONS "-fsanitize=address,leak,null,undefined")
 if (ASAN)
-	add_compile_options(${ASAN_OPTIONS} -g -O0)
+	add_compile_options(${ASAN_OPTIONS} -fno-omit-frame-pointer -g -O0)
 	add_link_options(${ASAN_OPTIONS})
 endif()
 
