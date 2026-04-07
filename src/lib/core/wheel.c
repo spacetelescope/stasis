@@ -37,6 +37,7 @@ const char *WHEEL_META_KEY[] = {
     "Dynamic",
     "Description-Content-Type",
     "Description",
+    NULL,
 };
 
 const char *WHEEL_DIST_KEY[] = {
@@ -48,6 +49,7 @@ const char *WHEEL_DIST_KEY[] = {
     "Top-Level",
     "Entry-points",
     "Record",
+    NULL,
 };
 
 static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
