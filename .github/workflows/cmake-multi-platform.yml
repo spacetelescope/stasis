@@ -49,8 +49,15 @@ jobs:
         libcurl4-openssl-dev
         libxml2-dev
         libxml2-utils
+        libzip-dev
         pandoc
         rsync
+
+    - name: Install macOS dependencies
+      if: matrix.os == 'macos-latest'
+      run: >
+        brew install
+        libzip
 
     - name: Configure CMake
       run: >
@@ -64,6 +71,8 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
+      env:
+        PKG_CONFIG_PATH: /opt/homebrew/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Test

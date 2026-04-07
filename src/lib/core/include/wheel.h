@@ -1,36 +1,257 @@
-//! @file wheel.h
-#ifndef STASIS_WHEEL_H
-#define STASIS_WHEEL_H
+#ifndef WHEEL_H
+#define WHEEL_H
 
-#include <dirent.h>
-#include <string.h>
 #include <stdio.h>
-#include "str.h"
-#define WHEEL_MATCH_EXACT 0 ///< Match when all patterns are present
-#define WHEEL_MATCH_ANY 1 ///< Match when any patterns are present
+#include <stdlib.h>
+#include <string.h>
+#include <fnmatch.h>
+#include <zip.h>
+
+#define WHEEL_MAXELEM 255
+
+#define WHEEL_FROM_DIST 0
+#define WHEEL_FROM_METADATA 1
+
+enum {
+    WHEEL_META_METADATA_VERSION=0,
+    WHEEL_META_NAME,
+    WHEEL_META_VERSION,
+    WHEEL_META_AUTHOR,
+    WHEEL_META_AUTHOR_EMAIL,
+    WHEEL_META_MAINTAINER,
+    WHEEL_META_MAINTAINER_EMAIL,
+    WHEEL_META_SUMMARY,
+    WHEEL_META_LICENSE,
+    WHEEL_META_LICENSE_EXPRESSION,
+    WHEEL_META_LICENSE_FILE,
+    WHEEL_META_HOME_PAGE,
+    WHEEL_META_DOWNLOAD_URL,
+    WHEEL_META_PROJECT_URL,
+    WHEEL_META_CLASSIFIER,
+    WHEEL_META_REQUIRES_PYTHON,
+    WHEEL_META_REQUIRES_EXTERNAL,
+    WHEEL_META_IMPORT_NAME,
+    WHEEL_META_IMPORT_NAMESPACE,
+    WHEEL_META_REQUIRES_DIST,
+    WHEEL_META_PROVIDES,
+    WHEEL_META_PROVIDES_DIST,
+    WHEEL_META_PROVIDES_EXTRA,
+    WHEEL_META_OBSOLETES,
+    WHEEL_META_OBSOLETES_DIST,
+    WHEEL_META_PLATFORM,
+    WHEEL_META_SUPPORTED_PLATFORM,
+    WHEEL_META_KEYWORDS,
+    WHEEL_META_DYNAMIC,
+    WHEEL_META_DESCRIPTION_CONTENT_TYPE,
+    WHEEL_META_DESCRIPTION,
+    WHEEL_META_END_ENUM, // NOP
+};
+
+
+enum {
+    WHEEL_DIST_VERSION=0,
+    WHEEL_DIST_GENERATOR,
+    WHEEL_DIST_ROOT_IS_PURELIB,
+    WHEEL_DIST_TAG,
+    WHEEL_DIST_ZIP_SAFE,
+    WHEEL_DIST_TOP_LEVEL,
+    WHEEL_DIST_ENTRY_POINT,
+    WHEEL_DIST_RECORD,
+    WHEEL_DIST_END_ENUM, // NOP
+};
+
+struct WheelMetadata_ProvidesExtra {
+    char *target;
+    struct StrList *requires_dist;
+    int count;
+};
+
+struct WheelMetadata {
+    char *metadata_version;
+    char *name;
+    char *version;
+    char *summary;
+    struct StrList *author;
+    struct StrList *author_email;
+    struct StrList *maintainer;
+    struct StrList *maintainer_email;
+    char *license;
+    char *license_expression;
+    char *home_page;
+    char * download_url;
+    struct StrList *project_url;
+    struct StrList *classifier;
+    struct StrList *requires_python;
+    struct StrList *requires_external;
+    char *description_content_type;
+    struct StrList *license_file;
+    struct StrList *import_name;
+    struct StrList *import_namespace;
+    struct StrList *requires_dist;
+    struct StrList *provides;
+    struct StrList *provides_dist;
+    struct StrList *obsoletes;
+    struct StrList *obsoletes_dist;
+    char *description;
+    struct StrList *platform;
+    struct StrList *supported_platform;
+    struct StrList *keywords;
+    struct StrList *dynamic;
+
+    struct WheelMetadata_ProvidesExtra **provides_extra;
+};
+
+struct WheelRecord {
+    char *filename;
+    char *checksum;
+    size_t size;
+};
+
+struct WheelEntryPoint {
+    char *name;
+    char *function;
+    char *type;
+};
+
+/*
+Wheel-Version: 1.0
+Generator: setuptools (75.8.0)
+Root-Is-Purelib: false
+Tag: cp313-cp313-manylinux_2_17_x86_64
+Tag: cp313-cp313-manylinux2014_x86_64
+*/
 
 struct Wheel {
-    char *distribution; ///< Package name
-    char *version; ///< Package version
-    char *build_tag; ///< Package build tag (optional)
-    char *python_tag; ///< Package Python tag (pyXY)
-    char *abi_tag; ///< Package ABI tag (cpXY, abiX, none)
-    char *platform_tag; ///< Package platform tag (linux_x86_64, any)
-    char *path_name; ///< Path to package on-disk
-    char *file_name; ///< Name of package on-disk
+    char *wheel_version;
+    char *generator;
+    char *root_is_pure_lib;
+    struct StrList *tag;
+    struct StrList *top_level;
+    int zip_safe;
+    struct WheelMetadata *metadata;
+    struct WheelRecord **record;
+    size_t num_record;
+    struct WheelEntryPoint **entry_point;
+    size_t num_entry_point;
+};
+
+#define METADATA_MULTILINE_PREFIX "        "
+
+
+static inline int consume_append(char **dest, const char *src, const char *accept) {
+    const char *start = src;
+    if (!strncmp(src, METADATA_MULTILINE_PREFIX, strlen(METADATA_MULTILINE_PREFIX))) {
+        start += strlen(METADATA_MULTILINE_PREFIX);
+    }
+
+    const char *end = strpbrk(start, accept);
+    size_t cut_len = end ? (size_t)(end - start) : strlen(start);
+    size_t dest_len = strlen(*dest);
+
+    char *tmp = realloc(*dest, strlen(*dest) + cut_len + 2);
+    if (!tmp) {
+        return -1;
+    }
+    *dest = tmp;
+    memcpy(*dest + dest_len, start, cut_len);
+
+    dest_len += cut_len;
+    (*dest)[dest_len ? dest_len : 0] = '\n';
+    (*dest)[dest_len + 1] = '\0';
+    return 0;
+}
+
+#define WHEEL_KEY_UNKNOWN (-1)
+enum {
+    WHEELVAL_STR = 0,
+    WHEELVAL_STRLIST,
+    WHEELVAL_OBJ_EXTRA,
+    WHEELVAL_OBJ_RECORD,
+    WHEELVAL_OBJ_ENTRY_POINT,
+};
+
+struct WheelValue {
+    int type;
+    size_t count;
+    void *data;
+};
+
+enum {
+    WHEEL_PACKAGE_E_SUCCESS=0,
+    WHEEL_PACKAGE_E_FILENAME=-1,
+    WHEEL_PACKAGE_E_ALLOC=-2,
+    WHEEL_PACKAGE_E_GET=-3,
+    WHEEL_PACKAGE_E_GET_METADATA=-4,
+    WHEEL_PACKAGE_E_GET_TOP_LEVEL=-5,
+    WHEEL_PACKAGE_E_GET_RECORDS=-6,
+    WHEEL_PACKAGE_E_GET_ENTRY_POINT=-7,
 };
 
 /**
- * Extract metadata from a Python Wheel file name
+ * Populate a `Wheel` structure using a Python wheel file as input.
  *
- * @param basepath directory containing a wheel file
- * @param name of wheel file
- * @param to_match a NULL terminated array of patterns (i.e. platform, arch, version, etc)
- * @param match_mode WHEEL_MATCH_EXACT
- * @param match_mode WHEEL_MATCH ANY
- * @return pointer to populated Wheel on success
- * @return NULL on error
+ * @param pkg pointer to a `Wheel` (may be initialized to `NULL`)
+ * @param filename path to a Python wheel file
+ * @return a WHEEL_PACKAGE_E_ error code
  */
-struct Wheel *get_wheel_info(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
-void wheel_free(struct Wheel **wheel);
-#endif //STASIS_WHEEL_H
+int wheel_package(struct Wheel **pkg, const char *filename);
+
+/**
+ * Frees a `Wheel` structure
+ * @param pkg pointer to an initialized `Wheel`
+ */
+void wheel_package_free(struct Wheel **pkg);
+
+
+/**
+ * Get wheel data by name
+ * @param pkg pointer to an initialized `Wheel`
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param key name of key in DIST or META data
+ * @return a populated `WheelValue` (stack)
+ */
+struct WheelValue wheel_get_value_by_name(const struct Wheel *pkg, int from, const char *key);
+
+
+/**
+ * Get wheel data by internal identifier
+ * @param pkg pointer to an initialized `Wheel`
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param id `WHEEL_META_VERSION`, `WHEEL_DIST_VERSION` (see wheel.h)
+ * @return a populated `WheelValue` (stack)
+ */
+struct WheelValue wheel_get_value_by_id(const struct Wheel *pkg, int from, ssize_t id);
+
+/**
+ * Returns the error code assocated with the `WheelValue`, if possible
+ * @param val a populated `WheelValue`
+ * @return error code (see wheel.h)
+ */
+int wheel_value_error(struct WheelValue const *val);
+
+/**
+ * Retreive the key name string for a given id
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param id `WHEEL_META_VERSION`, `WHEEL_DIST_VERSION` (see wheel.h)
+ * @return the key name, or NULL
+ */
+const char *wheel_get_key_by_id(int from, ssize_t id);
+
+/**
+ * Get the contents of a file within a Python wheel
+ * @param wheelfile path to Python wheel file
+ * @param filename path to file inside of wheel file archive
+ * @param contents pointer to store file contents
+ * @return 0 on success, -1 on error
+ */
+int wheel_get_file_contents(const char *wheelfile, const char *filename, char **contents);
+
+/**
+ * Display the values of a `Wheel` structure in human readable format
+ *
+ * @param wheel
+ * @return 0 on success, -1 on error
+ */
+int wheel_show_info(const struct Wheel *wheel);
+
+#endif //WHEEL_H
