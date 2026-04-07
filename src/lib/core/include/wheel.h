@@ -176,8 +176,40 @@ struct WheelValue {
     void *data;
 };
 
+enum {
+    WHEEL_PACKAGE_E_SUCCESS=0,
+    WHEEL_PACKAGE_E_FILENAME=-1,
+    WHEEL_PACKAGE_E_ALLOC=-2,
+    WHEEL_PACKAGE_E_GET=-3,
+    WHEEL_PACKAGE_E_GET_METADATA=-4,
+    WHEEL_PACKAGE_E_GET_TOP_LEVEL=-5,
+    WHEEL_PACKAGE_E_GET_RECORDS=-6,
+    WHEEL_PACKAGE_E_GET_ENTRY_POINT=-7,
+};
+
+/**
+ * Populate a `Wheel` structure using a Python wheel file as input.
+ *
+ * @param pkg pointer to a `Wheel` (may be initialized to `NULL`)
+ * @param filename path to a Python wheel file
+ * @return a WHEEL_PACKAGE_E_ error code
+ */
 int wheel_package(struct Wheel **pkg, const char *filename);
+
+/**
+ * Frees a `Wheel` structure
+ * @param pkg pointer to an initialized `Wheel`
+ */
 void wheel_package_free(struct Wheel **pkg);
+
+
+/**
+ * Get wheel data by name
+ * @param pkg pointer to an initialized `Wheel`
+ * @param from
+ * @param key
+ * @return
+ */
 struct WheelValue wheel_get_value_by_name(const struct Wheel *pkg, int from, const char *key);
 struct WheelValue wheel_get_value_by_id(const struct Wheel *pkg, int from, ssize_t id);
 int wheel_value_error(struct WheelValue const *val);

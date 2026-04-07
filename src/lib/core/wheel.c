@@ -1314,42 +1314,43 @@ int wheel_show_info(const struct Wheel *wheel) {
     }
     return 0;
 }
+
 int wheel_package(struct Wheel **pkg, const char *filename) {
     if (!filename) {
-        return -1;
+        return WHEEL_PACKAGE_E_FILENAME;
     }
     if (!*pkg) {
         *pkg = calloc(1, sizeof(**pkg));
         if (!*pkg) {
-            return -1;
+            return WHEEL_PACKAGE_E_ALLOC;
         }
 
         (*pkg)->metadata = calloc(1, sizeof(*(*pkg)->metadata));
         if (!(*pkg)->metadata) {
             guard_free(*pkg);
-            return -1;
+            return WHEEL_PACKAGE_E_ALLOC;
         }
     }
     if (wheel_get(pkg, filename) < 0) {
-        return -1;
+        return WHEEL_PACKAGE_E_GET;
     }
     if (wheel_metadata_get(*pkg, filename) < 0) {
-        return -1;
+        return WHEEL_PACKAGE_E_GET_METADATA;
     }
     if (wheel_get_top_level(*pkg, filename) < 0) {
-        return -1;
+        return WHEEL_PACKAGE_E_GET_TOP_LEVEL;
     }
     if (wheel_get_records(*pkg, filename) < 0) {
-        return -1;
+        return WHEEL_PACKAGE_E_GET_RECORDS;
     }
     if (wheel_get_entry_point(*pkg, filename) < 0) {
-        return -1;
+        return WHEEL_PACKAGE_E_GET_ENTRY_POINT;
     }
 
     // Optional marker
     wheel_get_zip_safe(*pkg, filename);
 
-    return 0;
+    return WHEEL_PACKAGE_E_SUCCESS;
 }
 
 

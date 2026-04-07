@@ -14,7 +14,13 @@ static const char *testpkg_filename = "testpkg/dist/testpkg-1.0.0-py3-none-any.w
 static void test_wheel_package() {
     const char *filename = testpkg_filename;
     struct Wheel *wheel = NULL;
-    wheel_package(&wheel, filename);
+    int state = wheel_package(&wheel, filename);
+    STASIS_ASSERT(state != WHEEL_PACKAGE_E_ALLOC, "Cannot fail to allocate memory for package structure");
+    STASIS_ASSERT(state != WHEEL_PACKAGE_E_GET, "Cannot fail to parse wheel");
+    STASIS_ASSERT(state != WHEEL_PACKAGE_E_GET_METADATA, "Cannot fail to read wheel metadata");
+    STASIS_ASSERT(state != WHEEL_PACKAGE_E_GET_RECORDS, "Cannot fail reading wheel path records");
+    STASIS_ASSERT(state != WHEEL_PACKAGE_E_GET_ENTRY_POINT, "Cannot fail reading wheel entry points");
+    STASIS_ASSERT(state == WHEEL_PACKAGE_E_SUCCESS, "Wheel file should be usable");
     STASIS_ASSERT(wheel != NULL, "wheel cannot be NULL");
     STASIS_ASSERT(wheel != NULL, "wheel_package failed to initialize wheel struct");
     STASIS_ASSERT(wheel->record != NULL, "Record cannot be NULL");
