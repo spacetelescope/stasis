@@ -206,15 +206,52 @@ void wheel_package_free(struct Wheel **pkg);
 /**
  * Get wheel data by name
  * @param pkg pointer to an initialized `Wheel`
- * @param from
- * @param key
- * @return
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param key name of key in DIST or META data
+ * @return a populated `WheelValue` (stack)
  */
 struct WheelValue wheel_get_value_by_name(const struct Wheel *pkg, int from, const char *key);
+
+
+/**
+ * Get wheel data by internal identifier
+ * @param pkg pointer to an initialized `Wheel`
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param id `WHEEL_META_VERSION`, `WHEEL_DIST_VERSION` (see wheel.h)
+ * @return a populated `WheelValue` (stack)
+ */
 struct WheelValue wheel_get_value_by_id(const struct Wheel *pkg, int from, ssize_t id);
+
+/**
+ * Returns the error code assocated with the `WheelValue`, if possible
+ * @param val a populated `WheelValue`
+ * @return error code (see wheel.h)
+ */
 int wheel_value_error(struct WheelValue const *val);
+
+/**
+ * Retreive the key name string for a given id
+ * @param from `WHEEL_FROM_DIST`, `WHEEL_FROM_META`
+ * @param id `WHEEL_META_VERSION`, `WHEEL_DIST_VERSION` (see wheel.h)
+ * @return the key name, or NULL
+ */
 const char *wheel_get_key_by_id(int from, ssize_t id);
+
+/**
+ * Get the contents of a file within a Python wheel
+ * @param wheelfile path to Python wheel file
+ * @param filename path to file inside of wheel file archive
+ * @param contents pointer to store file contents
+ * @return 0 on success, -1 on error
+ */
 int wheel_get_file_contents(const char *wheelfile, const char *filename, char **contents);
+
+/**
+ * Display the values of a `Wheel` structure in human readable format
+ *
+ * @param wheel
+ * @return 0 on success, -1 on error
+ */
 int wheel_show_info(const struct Wheel *wheel);
 
 #endif //WHEEL_H
