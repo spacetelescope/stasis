@@ -37,7 +37,14 @@ int tests_add(struct Tests *tests, struct Test *x) {
 
 struct Test *test_init() {
     struct Test *result = calloc(1, sizeof(*result));
+    if (!result) {
+        return NULL;
+    }
+    
     result->runtime = calloc(1, sizeof(*result->runtime));
+    if (!result->runtime) {
+        return NULL;
+    }
 
     return result;
 }
