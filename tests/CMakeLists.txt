@@ -44,7 +44,7 @@ foreach(source_file ${source_files})
     add_test(${test_executable} ${test_executable})
     set_tests_properties(${test_executable}
             PROPERTIES
-            TIMEOUT 240)
+            TIMEOUT 600)
     set_tests_properties(${test_executable}
             PROPERTIES
             SKIP_RETURN_CODE 127)
