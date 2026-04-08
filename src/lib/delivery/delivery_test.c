@@ -51,14 +51,31 @@ struct Test *test_init() {
 
 void test_free(struct Test **x) {
     struct Test *test = *x;
+    if (!test) {
+        return;
+    }
+    guard_free(test->name);
+    guard_free(test->version);
+    guard_free(test->repository);
+    guard_free(test->repository_info_ref);
+    guard_free(test->repository_info_tag);
+    guard_strlist_free(&test->repository_remove_tags);
+    guard_free(test->script);
+    guard_free(test->script_setup);
+    guard_free(test->build_recipe);
+    // test-specific runtime variables
+    guard_runtime_free(test->runtime->environ);
+    guard_free(test->runtime);
     guard_free(test);
 }
 
 void tests_free(struct Tests **x) {
-    for (size_t i = 0; i < (*x)->num_alloc; i++) {
-        test_free(&(*x)->test[i]);
+    struct Tests *tests = *x;
+    for (size_t i = 0; i < tests->num_alloc; i++) {
+        test_free(&tests->test[i]);
     }
-    guard_free((*x)->test);
+    guard_free(tests->test);
+    guard_free(tests);
 }
 
 void delivery_tests_run(struct Delivery *ctx) {
