@@ -150,7 +150,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 }
 
 int delivery_init_platform(struct Delivery *ctx) {
-    SYSDEBUG("%s", "Setting architecture\n");
+    SYSDEBUG("%s", "Setting architecture");
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
@@ -179,7 +179,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         strcpy(archsuffix, ctx->system.arch);
     }
 
-    SYSDEBUG("%s", "Setting platform\n");
+    SYSDEBUG("%s", "Setting platform");
     strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
@@ -296,18 +296,22 @@ int bootstrap_build_info(struct Delivery *ctx) {
 
     if (delivery_init_platform(&local)) {
         SYSDEBUG("%s", "delivery_init_platform failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
         SYSDEBUG("%s", "populate_delivery_cfg failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_delivery_ini(&local, INI_READ_RENDER)) {
         SYSDEBUG("%s", "populate_delivery_ini failed");
+        delivery_free(&local);
         return -1;
     }
     if (populate_info(&local)) {
         SYSDEBUG("%s", "populate_info failed");
+        delivery_free(&local);
         return -1;
     }
     ctx->info.build_name = strdup(local.info.build_name);
@@ -317,6 +321,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
         ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
         if (!ctx->info.time_info) {
             SYSERROR("Unable to allocate %zu bytes for tm struct: %s", sizeof(*local.info.time_info), strerror(errno));
+            delivery_free(&local);
             return -1;
         }
     }

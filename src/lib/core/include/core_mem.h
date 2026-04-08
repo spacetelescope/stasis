@@ -22,4 +22,11 @@
     guard_free(ARR); \
 } while (0)
 
+#define guard_array_n_free(ARR, LEN) do { \
+    for (size_t ARR_I = 0; ARR && ARR_I < LEN ; ARR_I++) { \
+        guard_free(ARR[ARR_I]); \
+    } \
+    guard_free(ARR); \
+} while (0)
+
 #endif //STASIS_CORE_MEM_H

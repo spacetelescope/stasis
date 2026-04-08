@@ -28,9 +28,9 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
 
     const struct Delivery *ctx = (struct Delivery *) f->data_in;
     struct StrList *notes_list = strlist_init();
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(*ctx->tests); i++) {
+    for (size_t i = 0; i < ctx->tests->num_used; i++) {
         // Get test context
-        const struct Test *test = &ctx->tests[i];
+        const struct Test *test = ctx->tests->test[i];
         if (test->name && test->version && test->repository) {
             char *repository = strdup(test->repository);
             char *match = strstr(repository, "spacetelescope/");

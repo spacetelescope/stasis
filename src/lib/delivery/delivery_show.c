@@ -84,13 +84,13 @@ void delivery_conda_show(struct Delivery *ctx) {
 
 void delivery_tests_show(struct Delivery *ctx) {
     printf("\n====TESTS====\n");
-    for (size_t i = 0; i < sizeof(ctx->tests) / sizeof(ctx->tests[0]); i++) {
-        if (!ctx->tests[i].name) {
+    for (size_t i = 0; i < ctx->tests->num_used; i++) {
+        if (!ctx->tests->test[i]->name) {
             continue;
         }
-        printf("%-20s %-20s %s\n", ctx->tests[i].name,
-               ctx->tests[i].version,
-               ctx->tests[i].repository);
+        printf("%-20s %-20s %s\n", ctx->tests->test[i]->name,
+               ctx->tests->test[i]->version,
+               ctx->tests->test[i]->repository);
     }
 }
 

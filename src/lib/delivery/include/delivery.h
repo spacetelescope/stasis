@@ -18,7 +18,9 @@
 #include "ini.h"
 #include "multiprocessing.h"
 #include "recipe.h"
+#include "wheel.h"
 #include "wheelinfo.h"
+#include "environment.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65
@@ -43,6 +45,28 @@ struct Content {
     char *filename;
     char *data;
 };
+
+//! Number of test records to allocate (grows dynamically)
+#define TEST_NUM_ALLOC_INITIAL 10
+
+/*! \struct Test
+ * \brief Test information
+ */
+struct Test {
+    char *name;                     ///< Name of package
+    char *version;                  ///< Version of package
+    char *repository;               ///< Git repository of package
+    char *script_setup;             ///< Commands to execute before the main script
+    char *script;                   ///< Commands to execute
+    bool disable;                   ///< Toggle a test block
+    bool parallel;                  ///< Toggle parallel or serial execution
+    char *build_recipe;             ///< Conda recipe to build (optional)
+    char *repository_info_ref;      ///< Git commit hash
+    char *repository_info_tag;      ///< Git tag (first parent)
+    struct StrList *repository_remove_tags;   ///< Git tags to remove (to fix duplicate commit tags)
+    struct Runtime *runtime;         ///< Environment variables specific to the test context
+    int timeout;                    ///< Timeout in seconds
+}; ///< An array of tests
 
 /*! \struct Delivery
  *  \brief A structure describing a full delivery object
@@ -153,24 +177,11 @@ struct Delivery {
         RuntimeEnv *environ;        ///< Environment variables
     } runtime;
 
-    /*! \struct Test
-     * \brief Test information
-     */
-    struct Test {
-        char *name;                     ///< Name of package
-        char *version;                  ///< Version of package
-        char *repository;               ///< Git repository of package
-        char *script_setup;             ///< Commands to execute before the main script
-        char *script;                   ///< Commands to execute
-        bool disable;                   ///< Toggle a test block
-        bool parallel;                  ///< Toggle parallel or serial execution
-        char *build_recipe;             ///< Conda recipe to build (optional)
-        char *repository_info_ref;      ///< Git commit hash
-        char *repository_info_tag;      ///< Git tag (first parent)
-        struct StrList *repository_remove_tags;   ///< Git tags to remove (to fix duplicate commit tags)
-        struct Runtime runtime;         ///< Environment variables specific to the test context
-        int timeout;                    ///< Timeout in seconds
-    } tests[1000]; ///< An array of tests
+    struct Tests {
+        struct Test **test;
+        size_t num_used;
+        size_t num_alloc;
+    } *tests;
 
     struct Deploy {
         struct JFRT_Auth jfrog_auth;
@@ -488,5 +499,33 @@ void delivery_rewrite_stage2(struct Delivery *ctx, char *specfile);
  * @return a copy
  */
 struct Delivery *delivery_duplicate(const struct Delivery *ctx);
+
+/**
+ * Initialize a `Tests` structure
+ * @param num_tests number of test records
+ * @return a an initialized `Tests` structure
+ */
+struct Tests *tests_init(size_t num_tests);
+
+/**
+ * Add a `Test` structure to `Tests`
+ * @param tests list to add to
+ * @param x test to add to list
+ * @return 0=success, -1=error
+ */
+int tests_add(struct Tests *tests, struct Test *x);
+
+/**
+ * Free a `Test` structure
+ * @param x pointer to `Test`
+ */
+void test_free(struct Test **x);
+
+/**
+ * Initialize a `Test` structure
+ * @return an initialized `Test` structure
+ */
+struct Test *test_init();
+
 
 #endif //STASIS_DELIVERY_H
