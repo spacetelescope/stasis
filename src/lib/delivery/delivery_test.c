@@ -21,10 +21,10 @@ int tests_add(struct Tests *tests, struct Test *x) {
 #ifdef DEBUG
         const size_t old_alloc = tests->num_alloc;
 #endif
-        struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(*tests->test));
+        struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(**tests->test));
         SYSDEBUG("Increasing size of test array: %zu -> %zu", old_alloc, tests->num_alloc);
         if (!tmp) {
-            SYSDEBUG("Failed to allocate %zu bytes for test array", tests->num_alloc * sizeof(*tests->test));
+            SYSDEBUG("Failed to allocate %zu bytes for test array", tests->num_alloc * sizeof(**tests->test));
             return -1;
         }
         tests->test = tmp;
