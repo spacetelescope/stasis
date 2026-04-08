@@ -522,6 +522,12 @@ int tests_add(struct Tests *tests, struct Test *x);
 void test_free(struct Test **x);
 
 /**
+ * Free a `Tests` structure
+ * @param x pointer to `Tests`
+ */
+void tests_free(struct Tests **x);
+
+/**
  * Initialize a `Test` structure
  * @return an initialized `Test` structure
  */
