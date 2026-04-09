@@ -21,10 +21,10 @@ int tests_add(struct Tests *tests, struct Test *x) {
 #ifdef DEBUG
         const size_t old_alloc = tests->num_alloc;
 #endif
-        struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(*tests->test));
+        struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(**tests->test));
         SYSDEBUG("Increasing size of test array: %zu -> %zu", old_alloc, tests->num_alloc);
         if (!tmp) {
-            SYSDEBUG("Failed to allocate %zu bytes for test array", tests->num_alloc * sizeof(*tests->test));
+            SYSDEBUG("Failed to allocate %zu bytes for test array", tests->num_alloc * sizeof(**tests->test));
             return -1;
         }
         tests->test = tmp;
@@ -37,21 +37,49 @@ int tests_add(struct Tests *tests, struct Test *x) {
 
 struct Test *test_init() {
     struct Test *result = calloc(1, sizeof(*result));
+    if (!result) {
+        return NULL;
+    }
+    
     result->runtime = calloc(1, sizeof(*result->runtime));
+    if (!result->runtime) {
+        return NULL;
+    }
 
     return result;
 }
 
 void test_free(struct Test **x) {
     struct Test *test = *x;
+    if (!test) {
+        return;
+    }
+    guard_free(test->name);
+    guard_free(test->version);
+    guard_free(test->repository);
+    guard_free(test->repository_info_ref);
+    guard_free(test->repository_info_tag);
+    guard_strlist_free(&test->repository_remove_tags);
+    guard_free(test->script);
+    guard_free(test->script_setup);
+    guard_free(test->build_recipe);
+    // test-specific runtime variables
+    guard_runtime_free(test->runtime->environ);
+    guard_free(test->runtime);
     guard_free(test);
 }
 
 void tests_free(struct Tests **x) {
-    for (size_t i = 0; i < (*x)->num_alloc; i++) {
-        test_free(&(*x)->test[i]);
+    struct Tests *tests = *x;
+    if (!tests) {
+        return;
     }
-    guard_free((*x)->test);
+
+    for (size_t i = 0; i < tests->num_alloc; i++) {
+        test_free(&tests->test[i]);
+    }
+    guard_free(tests->test);
+    guard_free(tests);
 }
 
 void delivery_tests_run(struct Delivery *ctx) {

@@ -58,6 +58,9 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     char rcpath[PATH_MAX];
     sprintf(rcpath, "%s/.condarc", info->conda_prefix);
     touch(rcpath);
+    if (errno == ENOENT) {
+        errno = 0;
+    }
 
     setenv("CONDARC", rcpath, 1);
     setenv("MAMBA_ROOT_PREFIX", info->conda_prefix, 1);

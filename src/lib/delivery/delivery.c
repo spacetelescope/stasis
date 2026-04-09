@@ -230,25 +230,7 @@ void delivery_free(struct Delivery *ctx) {
     guard_strlist_free(&ctx->conda.pip_packages_purge);
     guard_strlist_free(&ctx->conda.wheels_packages);
 
-    for (size_t i = 0; ctx->tests && i < ctx->tests->num_used; i++) {
-        guard_free(ctx->tests->test[i]->name);
-        guard_free(ctx->tests->test[i]->version);
-        guard_free(ctx->tests->test[i]->repository);
-        guard_free(ctx->tests->test[i]->repository_info_ref);
-        guard_free(ctx->tests->test[i]->repository_info_tag);
-        guard_strlist_free(&ctx->tests->test[i]->repository_remove_tags);
-        guard_free(ctx->tests->test[i]->script);
-        guard_free(ctx->tests->test[i]->script_setup);
-        guard_free(ctx->tests->test[i]->build_recipe);
-        // test-specific runtime variables
-        guard_runtime_free(ctx->tests->test[i]->runtime->environ);
-        guard_free(ctx->tests->test[i]->runtime);
-        guard_free(ctx->tests->test[i]);
-    }
-    if (ctx->tests) {
-        guard_free(ctx->tests->test);
-        guard_free(ctx->tests);
-    }
+    tests_free(&ctx->tests);
 
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);

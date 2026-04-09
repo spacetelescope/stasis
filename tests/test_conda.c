@@ -20,7 +20,7 @@ void test_micromamba() {
     struct testcase tc[] = {
             {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "info", .result = 0},
             {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "env list", .result = 0},
-            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python -V", .result = 0},
+            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python3 -V", .result = 0},
             {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "no_such_option", .result = 109},
     };
 
