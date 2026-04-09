@@ -71,6 +71,10 @@ void test_free(struct Test **x) {
 
 void tests_free(struct Tests **x) {
     struct Tests *tests = *x;
+    if (!tests) {
+        return;
+    }
+
     for (size_t i = 0; i < tests->num_alloc; i++) {
         test_free(&tests->test[i]);
     }
