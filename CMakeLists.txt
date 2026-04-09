@@ -9,7 +9,7 @@ find_package(LibXml2)
 find_package(CURL)
 
 option(ASAN "Address Analyzer" OFF)
-set(ASAN_OPTIONS "-fsanitize=address,leak,null,undefined")
+set(ASAN_OPTIONS "-fsanitize=address,null,undefined")
 if (ASAN)
 	add_compile_options(${ASAN_OPTIONS} -fno-omit-frame-pointer -g -O0)
 	add_link_options(${ASAN_OPTIONS})
