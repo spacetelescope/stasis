@@ -367,7 +367,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     const int use_builder_manylinux = strcmp(globals.wheel_builder, "manylinux") == 0 && on_linux && docker_usable;
 
     if (!use_builder_build && !use_builder_cibuildwheel && !use_builder_manylinux) {
-        msg(STASIS_MSG_WARN, "Cannot build wheel for platform using: %\n", globals.wheel_builder);
+        msg(STASIS_MSG_WARN, "Cannot build wheel for platform using: %s\n", globals.wheel_builder);
         msg(STASIS_MSG_WARN, "Falling back to native toolchain.\n", globals.wheel_builder);
         use_builder_build = 1;
     }
