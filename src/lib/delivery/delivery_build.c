@@ -335,7 +335,7 @@ int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
         "git config --global --add safe.directory /build\n"
         "python%s -m pip install auditwheel build\n"
         "python%s -m build -w .\n"
-        "auditwheel show dist/*.whl\n"
+        "auditwheel show --allow-pure-python-wheel dist/*.whl\n"
         "auditwheel repair --allow-pure-python-wheel dist/*.whl\n";
     char *script = NULL;
     if (asprintf(&script, script_fmt,
