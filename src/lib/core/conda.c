@@ -151,7 +151,8 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
 
     if (mode == PKG_USE_PIP) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
-        strncpy(cmd, "python -m pip install --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
+        // The --force argument ignores local installation and cache, and actually polls the remote index(es)
+        strncpy(cmd, "python -m pip install --force --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
         if (index) {
             snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "--index-url='%s' ", index);
         }
