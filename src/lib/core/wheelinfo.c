@@ -8,7 +8,7 @@ struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to
 
     strcpy(package_name, name);
     tolower_s(package_name);
-    sprintf(package_path, "%s/%s", basepath, package_name);
+    snprintf(package_path, sizeof(package_path), "%s/%s", basepath, package_name);
 
     DIR *dp = opendir(package_path);
     if (!dp) {

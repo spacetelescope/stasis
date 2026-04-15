@@ -98,7 +98,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
 int indexer_junitxml_report(struct Delivery **ctx, const size_t nelem) {
     char indexfile[PATH_MAX] = {0};
-    sprintf(indexfile, "%s/README.md", (*ctx)->storage.results_dir);
+    snprintf(indexfile, sizeof(indexfile), "%s/README.md", (*ctx)->storage.results_dir);
 
     struct StrList *file_listing = listdir((*ctx)->storage.results_dir);
     if (!file_listing) {
@@ -117,7 +117,7 @@ int indexer_junitxml_report(struct Delivery **ctx, const size_t nelem) {
         int current_rc = (*ctx)->meta.rc;
         for (size_t d = 0; d < nelem; d++) {
             char pattern[PATH_MAX] = {0};
-            snprintf(pattern, sizeof(pattern) - 1, "*%s*", ctx[d]->info.release_name);
+            snprintf(pattern, sizeof(pattern), "*%s*", ctx[d]->info.release_name);
 
             // if the result directory contains tests for this release name, print them
             if (!is_file_in_listing(file_listing, pattern)) {

@@ -60,7 +60,7 @@ void test_jfrog_cli_rt_download() {
 
     char *filename = "empty_file_upload.txt";
     char path[PATH_MAX] = {0};
-    sprintf(path, "%s/%s", getenv("STASIS_JF_REPO"), filename);
+    snprintf(path, sizeof(path), "%s/%s", getenv("STASIS_JF_REPO"), filename);
     STASIS_ASSERT(jfrog_cli_rt_download(&gauth, &dl, filename, ".") == 0, "jf download failed");
     STASIS_ASSERT(jfrog_cli_rt_delete(&gauth, path) == 0, "jf delete test artifact failed");
 }
@@ -93,15 +93,15 @@ int main(int argc, char *argv[]) {
     }
 
     char path[PATH_MAX] = {0};
-    sprintf(path, "%s/bin:%s", ctx.storage.tools_dir, getenv("PATH"));
+    snprintf(path, sizeof(path), "%s/bin:%s", ctx.storage.tools_dir, getenv("PATH"));
     setenv("PATH", path, 1);
 
     // The default config contains the URL information to download jfrog-cli
     char cfg_path[PATH_MAX] = {0};
     if (strstr(sysconfdir, "..")) {
-        sprintf(cfg_path, "%s/%s/stasis.ini", basedir, sysconfdir);
+        snprintf(cfg_path, sizeof(cfg_path), "%s/%s/stasis.ini", basedir, sysconfdir);
     } else {
-        sprintf(cfg_path, "%s/stasis.ini", sysconfdir);
+        snprintf(cfg_path, sizeof(cfg_path), "%s/stasis.ini", sysconfdir);
     }
     ctx._stasis_ini_fp.cfg = ini_open(cfg_path);
     if (!ctx._stasis_ini_fp.cfg) {

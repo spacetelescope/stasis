@@ -30,7 +30,7 @@ void usage(char *name) {
 
     for (int i = 0; i < maxopts - 1; i++) {
         char line[255] = {0};
-        sprintf(line, "  --%s  -%c  %-20s", long_options[i].name, long_options[i].val, long_options_help[i]);
+        snprintf(line, sizeof(line), "  --%s  -%c  %-20s", long_options[i].name, long_options[i].val, long_options_help[i]);
         puts(line);
     }
 

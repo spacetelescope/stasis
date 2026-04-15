@@ -156,7 +156,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
 
             char destdir[PATH_MAX];
-            sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
+            snprintf(destdir, sizeof(destdir), "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
 
             if (!access(destdir, F_OK)) {
                 msg(STASIS_MSG_L3, "Purging repository %s\n", destdir);
@@ -267,7 +267,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             const struct Test *test = ctx->tests->test[i];
             if (test->script_setup) {
                 char destdir[PATH_MAX];
-                sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
+                snprintf(destdir, sizeof(destdir), "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
                 if (access(destdir, F_OK)) {
                     SYSERROR("%s: %s", destdir, strerror(errno));
                     exit(1);
@@ -382,7 +382,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
             continue;
         }
 
-        sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
+        snprintf(path, sizeof(path), "%s/%s", ctx->storage.results_dir, rec->d_name);
         msg(STASIS_MSG_L3, "%s\n", rec->d_name);
         if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
             msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);

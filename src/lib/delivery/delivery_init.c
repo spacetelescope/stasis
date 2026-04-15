@@ -182,18 +182,18 @@ int delivery_init_platform(struct Delivery *ctx) {
     SYSDEBUG("%s", "Setting platform");
     strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
-        sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "osx-%s", archsuffix);
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX");
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos");
+        snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN - 1);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos", DELIVERY_PLATFORM_MAXLEN - 1);
     } else if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
-        sprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], "linux-%s", archsuffix);
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux");
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux");
+        snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "linux-%s", archsuffix);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux", DELIVERY_PLATFORM_MAXLEN - 1);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux", DELIVERY_PLATFORM_MAXLEN - 1);
     } else {
         // Not explicitly supported systems
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM]);
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM]);
-        strcpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM]);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
+        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
         tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
     }
 
@@ -203,7 +203,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         cpu_count = 1;
     }
     char ncpus[100] = {0};
-    sprintf(ncpus, "%ld", cpu_count);
+    snprintf(ncpus, sizeof(ncpus), "%ld", cpu_count);
 
     // Declare some important bits as environment variables
     setenv("CPU_COUNT", ncpus, 1);
@@ -252,16 +252,16 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
     delivery_init_dirs_stage1(ctx);
 
     char config_local[PATH_MAX];
-    sprintf(config_local, "%s/%s", ctx->storage.tmpdir, "config");
+    snprintf(config_local, sizeof(config_local), "%s/%s", ctx->storage.tmpdir, "config");
     setenv("XDG_CONFIG_HOME", config_local, 1);
 
     char cache_local[PATH_MAX];
-    sprintf(cache_local, "%s/%s", ctx->storage.tmpdir, "cache");
+    snprintf(cache_local, sizeof(cache_local), "%s/%s", ctx->storage.tmpdir, "cache");
     setenv("XDG_CACHE_HOME", cache_local, 1);
 
     // add tools to PATH
     char pathvar_tmp[STASIS_BUFSIZ];
-    sprintf(pathvar_tmp, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+    snprintf(pathvar_tmp, sizeof(pathvar_tmp), "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
     setenv("PATH", pathvar_tmp, 1);
 
     // Prevent git from paginating output
@@ -336,7 +336,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
 int delivery_exists(struct Delivery *ctx) {
     int release_exists = DELIVERY_NOT_FOUND;
     char release_pattern[PATH_MAX] = {0};
-    sprintf(release_pattern, "*%s*", ctx->info.release_name);
+    snprintf(release_pattern, sizeof(release_pattern), "*%s*", ctx->info.release_name);
 
     if (globals.enable_artifactory) {
         if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {

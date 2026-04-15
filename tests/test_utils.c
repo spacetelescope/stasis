@@ -129,7 +129,7 @@ void test_isempty_dir() {
     STASIS_ASSERT(isempty_dir(dname) > 0, "empty directory went undetected");
 
     char path[PATH_MAX];
-    sprintf(path, "%s/file.txt", dname);
+    snprintf(path, sizeof(path), "%s/file.txt", dname);
     touch(path);
 
     STASIS_ASSERT(isempty_dir(dname) == 0, "populated directory went undetected");
@@ -193,7 +193,7 @@ void test_git_clone_and_describe() {
 
     // initialize a bare repo so we can clone it
     char init_cmd[PATH_MAX];
-    sprintf(init_cmd, "git init --bare %s", repo_git);
+    snprintf(init_cmd, sizeof(init_cmd), "git init --bare %s", repo_git);
     system(init_cmd);
 
     // clone the bare repo
@@ -366,8 +366,8 @@ void test_rmtree() {
     for (size_t i = 0; i < sizeof(tree) / sizeof(*tree); i++) {
         char path[PATH_MAX];
         char mockfile[PATH_MAX + 10];
-        sprintf(path, "%s/%s", root, tree[i]);
-        sprintf(mockfile, "%s/%zu.txt", path, i);
+        snprintf(path, sizeof(path), "%s/%s", root, tree[i]);
+        snprintf(mockfile, sizeof(mockfile), "%s/%zu.txt", path, i);
         if (mkdir(path, 0755)) {
             perror(path);
             STASIS_ASSERT(false, NULL);

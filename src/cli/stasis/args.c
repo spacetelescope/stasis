@@ -85,7 +85,7 @@ void usage(char *progname) {
     int width = get_option_max_width(long_options);
     for (int x = 0; long_options[x].name != 0; x++) {
         char tmp[STASIS_NAME_MAX] = {0};
-        char output[sizeof(tmp)] = {0};
+        char output[STASIS_NAME_MAX] = {0};
         char opt_long[50] = {0};        // --? [ARG]?
         char opt_short[50] = {0};        // -? [ARG]?
 
@@ -105,8 +105,10 @@ void usage(char *progname) {
             strcat(opt_short, "  ");
         }
 
-        sprintf(tmp, "  %%-%ds\t%%s\t\t%%s", width + 4);
-        sprintf(output, tmp, opt_long, opt_short, long_options_help[x]);
+        const char *opt_fmt = "  %%-%ds\t%%s\t\t%%s";
+        size_t opt_fmt_len = snprintf(NULL, 0, opt_fmt, width);
+        snprintf(tmp, sizeof(tmp) - opt_fmt_len, opt_fmt, width + 4);
+        snprintf(output, sizeof(output), tmp, opt_long, opt_short, long_options_help[x]);
         puts(output);
     }
 }

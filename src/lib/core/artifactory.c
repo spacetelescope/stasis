@@ -60,7 +60,9 @@ int artifactory_download_cli(char *dest,
         return -1;
     }
 
-    sprintf(path + strlen(path), "/%s", remote_filename);
+    const char *remote_filename_fmt = "/%s";
+    int remote_filename_fmt_len = snprintf(NULL, 0, remote_filename_fmt, remote_filename);
+    snprintf(path + strlen(path), sizeof(path) - remote_filename_fmt_len, remote_filename_fmt, remote_filename);
     char *errmsg = NULL;
     long fetch_status = download(url, path, &errmsg);
     if (HTTP_ERROR(fetch_status)) {
@@ -78,7 +80,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
         // no data
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=\"%s\"", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=\"%s\"", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -89,7 +91,7 @@ void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList 
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s", opt_name);
+    snprintf(data, sizeof(data), "--%s", opt_name);
     strlist_append(&*opt_map, data);
 }
 

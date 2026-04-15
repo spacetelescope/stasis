@@ -12,7 +12,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
     }
 
     char indexfile[PATH_MAX] = {0};
-    sprintf(indexfile, "%s/README.md", (*ctx)->storage.delivery_dir);
+    snprintf(indexfile, sizeof(indexfile), "%s/README.md", (*ctx)->storage.delivery_dir);
 
     FILE *indexfp = fopen(indexfile, "w+");
     if (!indexfp) {
@@ -52,10 +52,10 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                 if (!latest_deliveries[i]->meta.name) {
                     continue;
                 }
-                sprintf(link_name, "latest-py%s-%s-%s.yml", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
-                sprintf(readme_name, "README-py%s-%s-%s.md", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
-                sprintf(conf_name, "%s.ini", latest_deliveries[i]->info.release_name);
-                sprintf(conf_name_relative, "../config/%s.ini", latest_deliveries[i]->info.release_name);
+                snprintf(link_name, sizeof(link_name), "latest-py%s-%s-%s.yml", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
+                snprintf(readme_name, sizeof(readme_name), "README-py%s-%s-%s.md", latest_deliveries[i]->meta.python_compact, latest_deliveries[i]->system.platform[DELIVERY_PLATFORM_RELEASE], latest_deliveries[i]->system.arch);
+                snprintf(conf_name, sizeof(conf_name), "%s.ini", latest_deliveries[i]->info.release_name);
+                snprintf(conf_name_relative, sizeof(conf_name_relative), "../config/%s.ini", latest_deliveries[i]->info.release_name);
                 if (strstr(link_name, platform) && strstr(link_name, arch)) {
                     fprintf(indexfp, "- Python %s\n", latest_deliveries[i]->meta.python);
                     fprintf(indexfp, "  - Info: [README](%s)\n", readme_name);

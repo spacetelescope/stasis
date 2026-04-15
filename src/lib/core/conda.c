@@ -18,10 +18,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     char url[PATH_MAX];
-    sprintf(url, "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
+    const char *url_fmt = "https://micro.mamba.pm/api/micromamba/%s-%s/latest";
+    const int url_fmt_len = snprintf(NULL, 0, url_fmt, sys.sysname, sys.machine);
+    snprintf(url, sizeof(url) - url_fmt_len, url_fmt, sys.sysname, sys.machine);
 
     char installer_path[PATH_MAX];
-    sprintf(installer_path, "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+    snprintf(installer_path, sizeof(installer_path), "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
 
     if (access(installer_path, F_OK)) {
         char *errmsg = NULL;
@@ -34,12 +36,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     char mmbin[PATH_MAX];
-    sprintf(mmbin, "%s/micromamba", info->micromamba_prefix);
+    snprintf(mmbin, sizeof(mmbin), "%s/micromamba", info->micromamba_prefix);
 
     if (access(mmbin, F_OK)) {
         char untarcmd[PATH_MAX * 2];
         mkdirs(info->micromamba_prefix, 0755);
-        sprintf(untarcmd, "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
+        snprintf(untarcmd, sizeof(untarcmd), "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
         int untarcmd_status = system(untarcmd);
         if (untarcmd_status) {
             return -1;
@@ -47,7 +49,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     char cmd[STASIS_BUFSIZ] = {0};
-    sprintf(cmd, "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
+    snprintf(cmd, sizeof(cmd), "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
     va_list args;
     va_start(args, command);
     vsprintf(cmd + strlen(cmd), command, args);
@@ -56,7 +58,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     mkdirs(info->conda_prefix, 0755);
 
     char rcpath[PATH_MAX];
-    sprintf(rcpath, "%s/.condarc", info->conda_prefix);
+    snprintf(rcpath, sizeof(rcpath), "%s/.condarc", info->conda_prefix);
     touch(rcpath);
     if (errno == ENOENT) {
         errno = 0;
@@ -321,13 +323,13 @@ int conda_activate(const char *root, const char *env_name) {
     struct Process proc = {0};
 
     // Where to find conda's init scripts
-    sprintf(path_conda, "%s%s", root, init_script_conda);
-    sprintf(path_mamba, "%s%s", root, init_script_mamba);
+    snprintf(path_conda, sizeof(path_conda), "%s%s", root, init_script_conda);
+    snprintf(path_mamba, sizeof(path_mamba), "%s%s", root, init_script_mamba);
 
     // Set the path to our stdout log
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
     // the file handle at all. We'll open it as a FILE stream soon enough.
-    sprintf(logfile, "%s/%s", globals.tmpdir, "shell_XXXXXX");
+    snprintf(logfile, sizeof(logfile), "%s/%s", globals.tmpdir, "shell_XXXXXX");
 
     int fd = mkstemp(logfile);
     if (fd < 0) {
@@ -337,7 +339,7 @@ int conda_activate(const char *root, const char *env_name) {
     close(fd);
 
     // Configure our process for output to a log file
-    strcpy(proc.f_stdout, logfile);
+    strncpy(proc.f_stdout, logfile, PATH_MAX - 1);
 
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
@@ -478,6 +480,7 @@ int conda_setup_headless() {
 
     char cmd[PATH_MAX];
     size_t total = 0;
+    const char *cmd_fmt = "'%s'";
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
         memset(cmd, 0, sizeof(cmd));
         strcpy(cmd, "install ");
@@ -488,9 +491,10 @@ int conda_setup_headless() {
             if (isempty(item)) {
                 continue;
             }
-            sprintf(cmd + strlen(cmd), "'%s'", item);
+            const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_fmt_len, cmd_fmt, item);
             if (i < total - 1) {
-                strcat(cmd, " ");
+                strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
         }
 
@@ -510,9 +514,10 @@ int conda_setup_headless() {
             if (isempty(item)) {
                 continue;
             }
-            sprintf(cmd + strlen(cmd), "'%s'", item);
+            const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_fmt_len, cmd_fmt, item);
             if (i < total - 1) {
-                strcat(cmd, " ");
+                strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
         }
 
@@ -552,7 +557,7 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     }
 
     char tempfile[PATH_MAX] = {0};
-    sprintf(tempfile, "%s/remote_XXXXXX", globals.tmpdir);
+    snprintf(tempfile, sizeof(tempfile), "%s/remote_XXXXXX", globals.tmpdir);
 
     // Touch a temporary file
     int fd = mkstemp(tempfile);
@@ -610,13 +615,13 @@ int conda_env_create(char *name, char *python_version, char *packages) {
 
 int conda_env_remove(char *name) {
     char env_command[PATH_MAX];
-    sprintf(env_command, "env remove -n %s", name);
+    snprintf(env_command, sizeof(env_command), "env remove -n %s", name);
     return conda_exec(env_command);
 }
 
 int conda_env_export(char *name, char *output_dir, char *output_filename) {
     char env_command[PATH_MAX];
-    sprintf(env_command, "env export -n %s -f %s/%s.yml", name, output_dir, output_filename);
+    snprintf(env_command, sizeof(env_command), "env export -n %s -f %s/%s.yml", name, output_dir, output_filename);
     return conda_exec(env_command);
 }
 
@@ -637,12 +642,13 @@ char *conda_get_active_environment() {
 
 int conda_index(const char *path) {
     char command[PATH_MAX];
-    sprintf(command, "index %s", path);
+    snprintf(command, sizeof(command), "index %s", path);
     return conda_exec(command);
 }
 
 int conda_env_exists(const char *root, const char *name) {
     char path[PATH_MAX] = {0};
-    snprintf(path, sizeof(path) - 1 - 6, "%s/envs/%s", root, name);
+    const int len = snprintf(NULL, 0, "%s/%s", root, name);
+    snprintf(path, sizeof(path) - len, "%s/envs/%s", root, name);
     return access(path, F_OK) == 0;
 }

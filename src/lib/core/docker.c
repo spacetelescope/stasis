@@ -93,9 +93,9 @@ int docker_save(const char *image, const char *destdir, const char *compression_
         } else {
             strncpy(ext, compression_program, sizeof(ext) - 1);
         }
-        sprintf(cmd, "save \"%s\" | %s > \"%s/%s.tar.%s\"", image, compression_program, destdir, image, ext);
+        snprintf(cmd, sizeof(cmd), "save \"%s\" | %s > \"%s/%s.tar.%s\"", image, compression_program, destdir, image, ext);
     } else {
-        sprintf(cmd, "save \"%s\" -o \"%s/%s.tar\"", image, destdir, image);
+        snprintf(cmd, sizeof(cmd), "save \"%s\" -o \"%s/%s.tar\"", image, destdir, image);
 
     }
     return docker_exec(cmd, 0);

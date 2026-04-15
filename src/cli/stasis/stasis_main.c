@@ -45,7 +45,7 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
     if (!*config_input) {
         SYSDEBUG("%s", "No configuration passed by argument. Using basic config.");
         char cfgfile[PATH_MAX * 2];
-        sprintf(cfgfile, "%s/%s", globals.sysconfdir, "stasis.ini");
+        snprintf(cfgfile, sizeof(cfgfile), "%s/%s", globals.sysconfdir, "stasis.ini");
         SYSDEBUG("cfgfile: %s", cfgfile);
         if (!access(cfgfile, F_OK | R_OK)) {
             *config_input = strdup(cfgfile);
@@ -161,9 +161,9 @@ static void check_conda_prefix_length(const struct Delivery *ctx) {
     }
 }
 
-static void setup_conda(struct Delivery *ctx, char *installer_url) {
+static void setup_conda(struct Delivery *ctx, char *installer_url, const size_t maxlen) {
     msg(STASIS_MSG_L1, "Conda setup\n");
-    delivery_get_conda_installer_url(ctx, installer_url);
+    delivery_get_conda_installer_url(ctx, installer_url, maxlen);
     msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
     if (delivery_get_conda_installer(ctx, installer_url)) {
         msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
@@ -429,7 +429,7 @@ static void build_docker(struct Delivery *ctx, const int disabled) {
             msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Docker image building is disabled by CLI argument\n");
         } else {
             char dockerfile[PATH_MAX] = {0};
-            sprintf(dockerfile, "%s/%s", ctx->storage.build_docker_dir, "Dockerfile");
+            snprintf(dockerfile, sizeof(dockerfile), "%s/%s", ctx->storage.build_docker_dir, "Dockerfile");
             if (globals.enable_docker) {
                 if (!access(dockerfile, F_OK)) {
                     msg(STASIS_MSG_L1, "Building Docker image\n");
@@ -461,7 +461,7 @@ static void generate_release(struct Delivery *ctx, char *env_name, char *env_nam
     delivery_export(ctx, (char *[]) {env_name, env_name_testing, NULL});
 
     char specfile[PATH_MAX];
-    sprintf(specfile, "%s/%s.yml", ctx->storage.delivery_dir, env_name);
+    snprintf(specfile, sizeof(specfile), "%s/%s.yml", ctx->storage.delivery_dir, env_name);
 
     delivery_rewrite_stage1(ctx, specfile);
     build_docker(ctx, disable_docker);
@@ -666,7 +666,7 @@ int main(int argc, char *argv[]) {
 
     check_conda_install_prefix(&ctx);
     check_conda_prefix_length(&ctx);
-    setup_conda(&ctx, installer_url);
+    setup_conda(&ctx, installer_url, sizeof(installer_url));
     configure_conda_base(&ctx, envs);
     configure_conda_purge(&ctx, envs);
     setup_activate_test_env(&ctx, env_name_testing);

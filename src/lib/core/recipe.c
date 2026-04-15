@@ -9,14 +9,14 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
     memset(destdir, 0, sizeof(destdir));
     reponame = path_basename(url);
 
-    sprintf(destdir, "%s/%s", recipe_dir, reponame);
+    snprintf(destdir, sizeof(destdir), "%s/%s", recipe_dir, reponame);
     if (!*result) {
         *result = calloc(PATH_MAX, sizeof(*result));
         if (!*result) {
             return -1;
         }
     }
-    strncpy(*result, destdir, PATH_MAX);
+    strncpy(*result, destdir, PATH_MAX - 1);
 
     if (!access(destdir, F_OK)) {
         if (!strcmp(destdir, "/")) {
@@ -52,7 +52,7 @@ int recipe_get_type(char *repopath) {
 
     for (size_t i = 0; marker[i] != NULL; i++) {
         char path[PATH_MAX] = {0};
-        sprintf(path, "%s/%s", repopath, marker[i]);
+        snprintf(path, sizeof(path), "%s/%s", repopath, marker[i]);
         int result = access(path, F_OK);
         if (!result) {
             return type[i];

@@ -44,7 +44,7 @@ int get_github_release_notes_auto_tplfunc_entrypoint(void *frame, void *data_out
                 // Using HEAD, GitHub returns the previous tag
                 char *note = NULL;
                 char h1_title[NAME_MAX] = {0};
-                sprintf(h1_title, "# %s", test->name);
+                snprintf(h1_title, sizeof(h1_title), "# %s", test->name);
                 strlist_append(&notes_list, h1_title);
                 result += get_github_release_notes(api_token ? api_token : "anonymous",
                                                    repository,
@@ -88,7 +88,7 @@ int get_junitxml_file_entrypoint(void *frame, void *data_out) {
         SYSERROR("failed to allocate output string: %s", strerror(errno));
         return -1;
     }
-    sprintf(*output, "%s/results-%s-%s.xml", ctx->storage.results_dir, name, ctx->info.release_name);
+    snprintf(*output, PATH_MAX, "%s/results-%s-%s.xml", ctx->storage.results_dir, name, ctx->info.release_name);
 
     return result;
 }
@@ -113,7 +113,7 @@ int get_basetemp_dir_entrypoint(void *frame, void *data_out) {
         SYSERROR("failed to allocate output string: %s", strerror(errno));
         return -1;
     }
-    sprintf(*output, "%s/truth-%s-%s", ctx->storage.tmpdir, name, ctx->info.release_name);
+    snprintf(*output, PATH_MAX, "%s/truth-%s-%s", ctx->storage.tmpdir, name, ctx->info.release_name);
 
     return result;
 }

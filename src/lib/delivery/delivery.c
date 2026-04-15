@@ -265,8 +265,11 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->_stasis_ini_fp.mission_path);
 }
 
-int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
-    size_t fmt_len = strlen(fmt);
+int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const char *fmt) {
+    const size_t fmt_len = strlen(fmt);
+    if (maxlen < 1) {
+        maxlen = 1;
+    }
 
     if (!*dest) {
         *dest = calloc(STASIS_NAME_MAX, sizeof(**dest));
@@ -280,47 +283,47 @@ int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt) {
             i++;
             switch (fmt[i]) {
                 case 'n':   // name
-                    strcat(*dest, ctx->meta.name);
+                    strncat(*dest, ctx->meta.name, maxlen - 1);
                     break;
                 case 'c':   // codename
-                    strcat(*dest, ctx->meta.codename);
+                    strncat(*dest, ctx->meta.codename, maxlen - 1);
                     break;
                 case 'm':   // mission
-                    strcat(*dest, ctx->meta.mission);
+                    strncat(*dest, ctx->meta.mission, maxlen - 1);
                     break;
                 case 'r':   // revision
-                    sprintf(*dest + strlen(*dest), "%d", ctx->meta.rc);
+                    snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
                     break;
                 case 'R':   // "final"-aware revision
                     if (ctx->meta.final)
-                        strcat(*dest, "final");
+                        strncat(*dest, "final", maxlen);
                     else
-                        sprintf(*dest + strlen(*dest), "%d", ctx->meta.rc);
+                        snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
                     break;
                 case 'v':   // version
-                    strcat(*dest, ctx->meta.version);
+                    strncat(*dest, ctx->meta.version, maxlen - 1);
                     break;
                 case 'P':   // python version
-                    strcat(*dest, ctx->meta.python);
+                    strncat(*dest, ctx->meta.python, maxlen - 1);
                     break;
                 case 'p':   // python version major/minor
-                    strcat(*dest, ctx->meta.python_compact);
+                    strncat(*dest, ctx->meta.python_compact, maxlen - 1);
                     break;
                 case 'a':   // system architecture name
-                    strcat(*dest, ctx->system.arch);
+                    strncat(*dest, ctx->system.arch, maxlen - 1);
                     break;
                 case 'o':   // system platform (OS) name
-                    strcat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
+                    strncat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], maxlen - 1);
                     break;
                 case 't':   // unix epoch
-                    sprintf(*dest + strlen(*dest), "%ld", ctx->info.time_now);
+                    snprintf(*dest + strlen(*dest), maxlen, "%ld", ctx->info.time_now);
                     break;
                 default:    // unknown formatter, write as-is
-                    sprintf(*dest + strlen(*dest), "%c%c", fmt[i - 1], fmt[i]);
+                    snprintf(*dest + strlen(*dest), maxlen, "%c%c", fmt[i - 1], fmt[i]);
                     break;
             }
         } else {    // write non-format text
-            sprintf(*dest + strlen(*dest), "%c", fmt[i]);
+            snprintf(*dest + strlen(*dest), maxlen, "%c", fmt[i]);
         }
     }
     return 0;

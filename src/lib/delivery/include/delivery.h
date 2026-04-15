@@ -321,9 +321,10 @@ int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url);
  * Generate URL based on Delivery context
  * @param ctx pointer to Delivery context
  * @param result pointer to char
+ * @param maxlen
  * @return in result
  */
-void delivery_get_conda_installer_url(struct Delivery *ctx, char *result);
+void delivery_get_conda_installer_url(struct Delivery *ctx, char *result, size_t maxlen);
 
 /**
  * Install packages based on Delivery context
@@ -394,10 +395,11 @@ void delivery_install_conda(char *install_script, char *conda_install_dir);
  *
  * @param ctx pointer to Delivery context
  * @param dest NULL pointer to string, or initialized string
+ * @param maxlen
  * @param fmt release format string
  * @return 0 on success, -1 on error
  */
-int delivery_format_str(struct Delivery *ctx, char **dest, const char *fmt);
+int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const char *fmt);
 
 // helper function
 int delivery_gather_tool_versions(struct Delivery *ctx);

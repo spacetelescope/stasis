@@ -4,7 +4,7 @@
 
 static void make_local_recipe(const char *localdir) {
     char path[PATH_MAX] = {0};
-    sprintf(path, "./%s", localdir);
+    snprintf(path, sizeof(path), "./%s", localdir);
     mkdir(path, 0755);
     if (!pushd(path)) {
         touch("meta.yaml");

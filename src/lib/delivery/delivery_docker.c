@@ -19,7 +19,7 @@ int delivery_docker(struct Delivery *ctx) {
         msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker tags defined by configuration. Generating default tag(s).\n");
         // generate local tag
         memset(default_tag, 0, sizeof(default_tag));
-        sprintf(default_tag, "%s:%s-py%s", ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
+        snprintf(default_tag, sizeof(default_tag), "%s:%s-py%s", ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
         tolower_s(default_tag);
 
         // Add tag
@@ -29,7 +29,7 @@ int delivery_docker(struct Delivery *ctx) {
         if (has_registry) {
             // generate tag for target registry
             memset(default_tag, 0, sizeof(default_tag));
-            sprintf(default_tag, "%s/%s:%s-py%s", ctx->deploy.docker.registry, ctx->meta.name, ctx->info.build_number, ctx->meta.python_compact);
+            snprintf(default_tag, sizeof(default_tag), "%s/%s:%s-py%s", ctx->deploy.docker.registry, ctx->meta.name, ctx->info.build_number, ctx->meta.python_compact);
             tolower_s(default_tag);
 
             // Add tag
@@ -44,9 +44,12 @@ int delivery_docker(struct Delivery *ctx) {
     // Append image tags to command
     for (size_t i = 0; i < total_tags; i++) {
         char *tag_orig = strlist_item(ctx->deploy.docker.tags, i);
-        strcpy(tag, tag_orig);
+        strncpy(tag, tag_orig, sizeof(tag) - 1);
         docker_sanitize_tag(tag);
-        sprintf(args + strlen(args), " -t \"%s\" ", tag);
+
+        const char *tag_fmt = " -t \"%s\" ";
+        const int tag_fmt_len = snprintf(NULL, 0, tag_fmt, tag);
+        snprintf(args + strlen(args), tag_fmt_len, tag_fmt, tag);
     }
 
     // Append build arguments to command (i.e. --build-arg "key=value"
@@ -55,7 +58,10 @@ int delivery_docker(struct Delivery *ctx) {
         if (!build_arg) {
             break;
         }
-        sprintf(args + strlen(args), " --build-arg \"%s\" ", build_arg);
+
+        const char *build_arg_fmt = " --build-arg \"%s\" ";
+        const int build_arg_fmt_len = snprintf(NULL, 0, build_arg_fmt, build_arg);
+        snprintf(args + strlen(args), sizeof(args) - build_arg_fmt_len, build_arg_fmt, build_arg);
     }
 
     // Build the image
@@ -65,24 +71,24 @@ int delivery_docker(struct Delivery *ctx) {
     memset(delivery_file, 0, sizeof(delivery_file));
     memset(dest, 0, sizeof(dest));
 
-    sprintf(delivery_file, "%s/%s.yml", ctx->storage.delivery_dir, ctx->info.release_name);
+    snprintf(delivery_file, sizeof(delivery_file), "%s/%s.yml", ctx->storage.delivery_dir, ctx->info.release_name);
     if (access(delivery_file, F_OK) < 0) {
         fprintf(stderr, "docker build cannot proceed without delivery file: %s\n", delivery_file);
         return -1;
     }
 
-    sprintf(dest, "%s/%s.yml", ctx->storage.build_docker_dir, ctx->info.release_name);
+    snprintf(dest, sizeof(dest), "%s/%s.yml", ctx->storage.build_docker_dir, ctx->info.release_name);
     if (copy2(delivery_file, dest, CT_PERM)) {
         fprintf(stderr, "Failed to copy delivery file to %s: %s\n", dest, strerror(errno));
         return -1;
     }
 
     memset(dest, 0, sizeof(dest));
-    sprintf(dest, "%s/packages", ctx->storage.build_docker_dir);
+    snprintf(dest, sizeof(dest), "%s/packages", ctx->storage.build_docker_dir);
 
     msg(STASIS_MSG_L2, "Copying conda packages\n");
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
-    sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.conda_artifact_dir, dest);
+    snprintf(rsync_cmd, sizeof(rsync_cmd), "rsync -avi --progress '%s' '%s'", ctx->storage.conda_artifact_dir, dest);
     if (system(rsync_cmd)) {
         fprintf(stderr, "Failed to copy conda artifacts to docker build directory\n");
         return -1;
@@ -90,7 +96,7 @@ int delivery_docker(struct Delivery *ctx) {
 
     msg(STASIS_MSG_L2, "Copying wheel packages\n");
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
-    sprintf(rsync_cmd, "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
+    snprintf(rsync_cmd, sizeof(rsync_cmd), "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
     if (system(rsync_cmd)) {
         fprintf(stderr, "Failed to copy wheel artifacts to docker build directory\n");
     }
@@ -102,7 +108,7 @@ int delivery_docker(struct Delivery *ctx) {
     // Test the image
     // All tags point back to the same image so test the first one we see
     // regardless of how many are defined
-    strcpy(tag, strlist_item(ctx->deploy.docker.tags, 0));
+    strncpy(tag, strlist_item(ctx->deploy.docker.tags, 0), sizeof(tag) - 1);
     docker_sanitize_tag(tag);
 
     msg(STASIS_MSG_L2, "Executing image test script for %s\n", tag);

@@ -8,7 +8,7 @@ int indexer_make_website(struct Delivery **ctx) {
         return -1;
     }
 
-    sprintf(css_filename, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
+    snprintf(css_filename, PATH_MAX, "%s/%s", globals.sysconfdir, "stasis_pandoc.css");
     const int have_css = access(css_filename, F_OK | R_OK) == 0;
 
     struct StrList *dirs = strlist_init();
@@ -29,13 +29,13 @@ int indexer_make_website(struct Delivery **ctx) {
             char *filename = path_basename(strlist_item(inputs, x));
             char fullpath_src[PATH_MAX] = {0};
             char fullpath_dest[PATH_MAX] = {0};
-            sprintf(fullpath_src, "%s/%s", root, filename);
+            snprintf(fullpath_src, sizeof(fullpath_src), "%s/%s", root, filename);
             if (access(fullpath_src, F_OK)) {
                 continue;
             }
 
             // Replace *.md extension with *.html.
-            strcpy(fullpath_dest, fullpath_src);
+            strncpy(fullpath_dest, fullpath_src, sizeof(fullpath_dest) - 1);
             gen_file_extension_str(fullpath_dest, ".html");
 
             // Convert markdown to html
@@ -52,8 +52,8 @@ int indexer_make_website(struct Delivery **ctx) {
             if (!strcmp(filename, "README.md")) {
                 char link_from[PATH_MAX] = {0};
                 char link_dest[PATH_MAX] = {0};
-                strcpy(link_from, "README.html");
-                sprintf(link_dest, "%s/%s", root, "index.html");
+                strncpy(link_from, "README.html", sizeof(link_from) - 1);
+                snprintf(link_dest, sizeof(link_dest), "%s/%s", root, "index.html");
                 if (symlink(link_from, link_dest)) {
                     SYSERROR("Warning: symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
                 }

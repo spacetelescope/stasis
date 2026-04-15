@@ -10,8 +10,9 @@ static int adder(struct tplfunc_frame *frame, void *result) {
     int a = (int) strtol(frame->argv[0].t_char_ptr, NULL, 10);
     int b = (int) strtol(frame->argv[1].t_char_ptr, NULL, 10);
     char **ptr = (char **) result;
-    *ptr = calloc(100, sizeof(*ptr));
-    sprintf(*ptr, "%d", a + b);
+    const size_t sz = 100;
+    *ptr = calloc(sz, sizeof(*ptr));
+    snprintf(*ptr, sz, "%d", a + b);
     return 0;
 }
 
@@ -19,8 +20,9 @@ static int subtractor(struct tplfunc_frame *frame, void *result) {
     int a = (int) strtol(frame->argv[0].t_char_ptr, NULL, 10);
     int b = (int) strtol(frame->argv[1].t_char_ptr, NULL, 10);
     char **ptr = (char **) result;
-    *ptr = calloc(100, sizeof(*ptr));
-    sprintf(*ptr, "%d", a - b);
+    const size_t sz = 100;
+    *ptr = calloc(sz, sizeof(*ptr));
+    snprintf(*ptr, sz, "%d", a - b);
     return 0;
 }
 
@@ -28,8 +30,9 @@ static int multiplier(struct tplfunc_frame *frame, void *result) {
     int a = (int) strtol(frame->argv[0].t_char_ptr, NULL, 10);
     int b = (int) strtol(frame->argv[1].t_char_ptr, NULL, 10);
     char **ptr = (char **) result;
-    *ptr = calloc(100, sizeof(*ptr));
-    sprintf(*ptr, "%d", a * b);
+    const size_t sz = 100;
+    *ptr = calloc(sz, sizeof(*ptr));
+    snprintf(*ptr, sz, "%d", a * b);
     return 0;
 }
 
@@ -37,8 +40,9 @@ static int divider(struct tplfunc_frame *frame, void *result) {
     int a = (int) strtol(frame->argv[0].t_char_ptr, NULL, 10);
     int b = (int) strtol(frame->argv[1].t_char_ptr, NULL, 10);
     char **ptr = (char **) result;
-    *ptr = calloc(100, sizeof(*ptr));
-    sprintf(*ptr, "%d", a / b);
+    size_t sz = 100;
+    *ptr = calloc(sz, sizeof(*ptr));
+    snprintf(*ptr, sz, "%d", a / b);
     return 0;
 }
 

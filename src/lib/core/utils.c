@@ -316,11 +316,13 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     }
 
     static char command[PATH_MAX] = {0};
-    sprintf(command, "%s clone -c advice.detachedHead=false --recursive %s", program, url);
+    snprintf(command, sizeof(command), "%s clone -c advice.detachedHead=false --recursive %s", program, url);
 
     if (destdir && access(destdir, F_OK) < 0) {
         // Destination directory does not exist
-        sprintf(command + strlen(command), " %s", destdir);
+        const char *command_fmt = " %s";
+        const int command_fmt_len = snprintf(NULL, 0, command_fmt, destdir);
+        snprintf(command + strlen(command), sizeof(command) - command_fmt_len, command_fmt, destdir);
         // Clone the repo
         result = shell(proc, command);
         if (result) {
@@ -338,7 +340,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
     if (!pushd(chdir_to)) {
         memset(command, 0, sizeof(command));
-        sprintf(command, "%s fetch --all", program);
+        snprintf(command, sizeof(command), "%s fetch --all", program);
         result = shell(proc, command);
         if (result) {
             goto die_pop;
@@ -346,7 +348,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
         if (gitref != NULL) {
             memset(command, 0, sizeof(command));
-            sprintf(command, "%s checkout %s", program, gitref);
+            snprintf(command, sizeof(command), "%s checkout %s", program, gitref);
 
             result = shell(proc, command);
             if (result) {
@@ -403,7 +405,7 @@ char *git_rev_parse(const char *path, char *args) {
     }
 
     // TODO: Use `-C [path]` if the version of git installed supports it
-    sprintf(cmd, "git rev-parse %s", args);
+    snprintf(cmd, sizeof(cmd), "git rev-parse %s", args);
     FILE *pp = popen(cmd, "r");
     if (!pp) {
         return NULL;
@@ -453,11 +455,11 @@ void msg(unsigned type, char *fmt, ...) {
     }
 
     if (type & STASIS_MSG_L1) {
-        sprintf(header, "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
+        snprintf(header, sizeof(header), "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
     } else if (type & STASIS_MSG_L2) {
-        sprintf(header, " ->%s" STASIS_COLOR_RESET, status);
+        snprintf(header, sizeof(header), " ->%s" STASIS_COLOR_RESET, status);
     } else if (type & STASIS_MSG_L3) {
-        sprintf(header, STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
+        snprintf(header, sizeof(header), STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
     }
 
     fprintf(stream, "%s", header);
@@ -487,7 +489,7 @@ char *xmkstemp(FILE **fp, const char *mode) {
         strcpy(tmpdir, "/tmp");
     }
     memset(t_name, 0, sizeof(t_name));
-    sprintf(t_name, "%s/%s", tmpdir, "STASIS.XXXXXX");
+    snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
 
     fd = mkstemp(t_name);
     *fp = fdopen(fd, mode);
@@ -912,13 +914,15 @@ void debug_hexdump(char *data, int len) {
     char *pos = start;
     while (pos != end) {
         if (count == 0) {
-            sprintf(addr + strlen(addr), "%p", pos);
+            const char *pos_fmt = "%p";
+            const int pos_fmt_len = snprintf(NULL, 0, pos_fmt, pos);
+            snprintf(addr + strlen(addr), sizeof(addr) - pos_fmt_len, pos_fmt, pos);
         }
         if (count == 8) {
             strcat(bytes, " ");
         }
         if (count > 15) {
-            sprintf(output, "%s | %s | %s", addr, bytes, ascii);
+            snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
             puts(output);
             memset(output, 0, sizeof(output));
             memset(addr, 0, sizeof(addr));
@@ -928,8 +932,13 @@ void debug_hexdump(char *data, int len) {
             continue;
         }
 
-        sprintf(bytes + strlen(bytes), "%02X ", (unsigned char) *pos);
-        sprintf(ascii + strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
+        const char *bytes_fmt = "%02X ";
+        const int bytes_fmt_len = snprintf(NULL, 0, bytes_fmt, (unsigned char) *pos);
+        snprintf(bytes + strlen(bytes), sizeof(bytes) - bytes_fmt_len, bytes_fmt, (unsigned char) *pos);
+
+        const char *ascii_fmt = "%c";
+        // no need to calculate length for a single character
+        snprintf(ascii + strlen(ascii), sizeof(ascii) - 1, ascii_fmt, isprint(*pos) ? *pos : '.');
 
         pos++;
         count++;
@@ -1171,4 +1180,3 @@ int get_random_bytes(char *result, size_t maxlen) {
     result[bytes ? bytes - 1 : 0] = '\0';
     return 0;
 }
-

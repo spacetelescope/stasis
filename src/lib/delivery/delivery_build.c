@@ -48,15 +48,15 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 //                 Perhaps we can key it to the recipe type, because the archive is a requirement imposed
                 //                 by conda-forge. Hmm.
 
-                sprintf(recipe_version, "{%% set version = \"%s\" %%}", tag);
-                sprintf(recipe_git_url, "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests->test[i]->repository);
-                strcpy(recipe_git_rev, "");
-                sprintf(recipe_buildno, "  number: 0");
+                snprintf(recipe_version, sizeof(recipe_version), "{%% set version = \"%s\" %%}", tag);
+                snprintf(recipe_git_url, sizeof(recipe_git_url), "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests->test[i]->repository);
+                strncpy(recipe_git_rev, "", sizeof(recipe_git_rev) - 1);
+                snprintf(recipe_buildno, sizeof(recipe_buildno), "  number: 0");
 
                 unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
                 //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
                 if (ctx->meta.final) { // remove this. i.e. statis cannot deploy a release to conda-forge
-                    sprintf(recipe_version, "{%% set version = \"%s\" %%}", ctx->tests->test[i]->version);
+                    snprintf(recipe_version, sizeof(recipe_version), "{%% set version = \"%s\" %%}", ctx->tests->test[i]->version);
                     // TODO: replace sha256 of tagged archive
                     // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
                     // For now, remove the sha256 requirement
@@ -74,25 +74,25 @@ int delivery_build_recipes(struct Delivery *ctx) {
                     char arch[STASIS_NAME_MAX] = {0};
                     char platform[STASIS_NAME_MAX] = {0};
 
-                    strcpy(platform, ctx->system.platform[DELIVERY_PLATFORM]);
+                    strncpy(platform, ctx->system.platform[DELIVERY_PLATFORM], sizeof(platform) - 1);
                     if (strstr(platform, "Darwin")) {
                         memset(platform, 0, sizeof(platform));
-                        strcpy(platform, "osx");
+                        strncpy(platform, "osx", sizeof(platform) - 1);
                     }
                     tolower_s(platform);
                     if (strstr(ctx->system.arch, "arm64")) {
-                        strcpy(arch, "arm64");
+                        strncpy(arch, "arm64", sizeof(arch) - 1);
                     } else if (strstr(ctx->system.arch, "64")) {
-                        strcpy(arch, "64");
+                        strncpy(arch, "64", sizeof(arch) - 1);
                     } else {
-                        strcat(arch, "32"); // blind guess
+                        strncat(arch, "32", sizeof(arch) - 1); // blind guess
                     }
                     tolower_s(arch);
 
-                    sprintf(command, "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
+                    snprintf(command, sizeof(command), "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
                             ctx->meta.python, platform, arch);
                 } else {
-                    sprintf(command, "mambabuild --python=%s .", ctx->meta.python);
+                    snprintf(command, sizeof(command), "mambabuild --python=%s .", ctx->meta.python);
                 }
                 int status = conda_exec(command);
                 if (status) {
@@ -131,7 +131,7 @@ int filter_repo_tags(char *repo, struct StrList *patterns) {
                 int match = fnmatch(pattern, tag, 0);
                 if (!match) {
                     char cmd[PATH_MAX] = {0};
-                    sprintf(cmd, "git tag -d %s", tag);
+                    snprintf(cmd, sizeof(cmd), "git tag -d %s", tag);
                     result += system(cmd);
                     break;
                 }
@@ -398,7 +398,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 memset(srcdir, 0, sizeof(srcdir));
                 memset(wheeldir, 0, sizeof(wheeldir));
 
-                sprintf(srcdir, "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
+                snprintf(srcdir, sizeof(srcdir), "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
                 if (git_clone(&proc, ctx->tests->test[i]->repository, srcdir, ctx->tests->test[i]->version)) {
                     SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'\n",
                     ctx->tests->test[i]->version, ctx->tests->test[i]->name, ctx->tests->test[i]->repository);
@@ -436,7 +436,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
 
                     strcpy(dname, ctx->tests->test[i]->name);
                     tolower_s(dname);
-                    sprintf(outdir, "%s/%s", ctx->storage.wheel_artifact_dir, dname);
+                    snprintf(outdir, sizeof(outdir), "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                     if (mkdirs(outdir, 0755)) {
                         fprintf(stderr, "failed to create output directory: %s\n", outdir);
                         guard_strlist_free(&result);

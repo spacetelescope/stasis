@@ -80,11 +80,11 @@ int indexer_symlinks(struct Delivery **ctx, const size_t nelem) {
             if (!data[i]->meta.name) {
                 continue;
             }
-            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_spec, "%s.yml", data[i]->info.release_name);
+            snprintf(link_name_spec, sizeof(link_name_spec), "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            snprintf(file_name_spec, sizeof(file_name_spec), "%s.yml", data[i]->info.release_name);
 
-            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_readme, "README-%s.md", data[i]->info.release_name);
+            snprintf(link_name_readme, sizeof(link_name_readme), "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            snprintf(file_name_readme, sizeof(file_name_readme), "README-%s.md", data[i]->info.release_name);
 
             if (!access(link_name_spec, F_OK)) {
                 if (unlink(link_name_spec)) {
@@ -151,7 +151,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
 
     char newpath[PATH_MAX] = {0};
     if (getenv("PATH")) {
-        sprintf(newpath, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+        snprintf(newpath, sizeof(newpath), "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
         setenv("PATH", newpath, 1);
     } else {
         SYSERROR("%s", "environment variable PATH is undefined. Unable to continue.");
@@ -411,7 +411,7 @@ int main(const int argc, char *argv[]) {
 
     msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX] = {0};
-    sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
+    snprintf(cmd, sizeof(cmd), "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
     guard_free(destdir);
 
     if (globals.verbose) {
