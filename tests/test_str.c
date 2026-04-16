@@ -341,7 +341,7 @@ void test_strip() {
     STASIS_ASSERT(strip(NULL) == NULL, "incorrect return type");
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
-        strncpy(buf, tc[i].data, sizeof(buf) - 1);
+        strncpy(buf, tc[i].data, 254);
         char *result = strip(buf);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
         guard_free(buf);
