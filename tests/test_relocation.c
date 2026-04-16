@@ -16,7 +16,10 @@ void test_replace_text() {
         char input[BUFSIZ] = {0};
         strcpy(input, test_string);
 
+        printf("input: %s\n", input);
+        printf("target: %s\n", target);
         STASIS_ASSERT(replace_text(input, target, "^^^", 0) == 0, "string replacement failed");
+        printf("result: %s\n\n", input);
         STASIS_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
     }
 
