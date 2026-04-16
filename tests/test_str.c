@@ -317,9 +317,8 @@ void test_lstrip() {
     STASIS_ASSERT(lstrip(NULL) == NULL, "incorrect return type");
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
-        char *result;
-        strncpy(buf, tc[i].data, sizeof(buf) - 1);
-        result = lstrip(buf);
+        strncpy(buf, tc[i].data, 254);
+        char *result = lstrip(buf);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-left");
         guard_free(buf);
     }
