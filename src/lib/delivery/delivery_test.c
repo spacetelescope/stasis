@@ -200,11 +200,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                 msg(STASIS_MSG_L3, "Queuing task for %s\n", test->name);
                 memset(&proc, 0, sizeof(proc));
 
-                strcpy(cmd, test->script);
+                strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ - 1);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
-                        strcpy(cmd, cmd_rendered);
+                        strncpy(cmd, cmd_rendered, strlen(test->script) + STASIS_BUFSIZ - 1);
                         cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
@@ -229,7 +229,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 if (!globals.enable_parallel || !test->parallel) {
                     selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
-                    strcpy(pool_name, "serial");
+                    strncpy(pool_name, "serial", sizeof(pool_name) - 1);
                 }
 
                 if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {

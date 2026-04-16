@@ -174,13 +174,13 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
 
     if (!strcmp(ctx->system.arch, "x86_64")) {
-        strcpy(archsuffix, "64");
+        strncpy(archsuffix, "64", sizeof(archsuffix) - 1);
     } else {
-        strcpy(archsuffix, ctx->system.arch);
+        strncpy(archsuffix, ctx->system.arch, sizeof(archsuffix) - 1);
     }
 
     SYSDEBUG("%s", "Setting platform");
-    strcpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname);
+    strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN - 1);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN - 1);

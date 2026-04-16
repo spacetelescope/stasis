@@ -145,16 +145,16 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
         case PKG_USE_CONDA:
             fn = conda_exec;
             list = ctx->conda.conda_packages_purge;
-            strcpy(package_manager, "conda");
+            strncpy(package_manager, "conda", sizeof(package_manager) - 1);
             // conda is already configured for "always_yes"
-            strcpy(subcommand, "remove");
+            strncpy(subcommand, "remove", sizeof(subcommand) - 1);
             break;
         case PKG_USE_PIP:
             fn = pip_exec;
             list = ctx->conda.pip_packages_purge;
-            strcpy(package_manager, "pip");
+            strncpy(package_manager, "pip", sizeof(package_manager) - 1);
             // avoid user prompt to remove packages
-            strcpy(subcommand, "uninstall -y");
+            strncpy(subcommand, "uninstall -y", sizeof(subcommand) - 1);
             break;
         default:
             SYSERROR("Unknown package manager: %d", use_pkg_manager);
@@ -289,9 +289,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
 
                     char req[255] = {0};
                     if (!strcmp(name, info->name)) {
-                        strcpy(req, info->name);
+                        strncpy(req, info->name, sizeof(req) - 1);
                     } else {
-                        strcpy(req, name);
+                        strncpy(req, name, sizeof(req) - 1);
                         char *spec = find_version_spec(req);
                         if (spec) {
                             *spec = 0;

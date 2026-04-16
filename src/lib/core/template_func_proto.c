@@ -80,7 +80,7 @@ int get_junitxml_file_entrypoint(void *frame, void *data_out) {
         return -1;
     }
     char nametmp[PATH_MAX] = {0};
-    strcpy(nametmp, cwd);
+    strncpy(nametmp, cwd, sizeof(nametmp) - 1);
     char *name = path_basename(nametmp);
 
     *output = calloc(PATH_MAX, sizeof(**output));
@@ -105,7 +105,7 @@ int get_basetemp_dir_entrypoint(void *frame, void *data_out) {
         return -1;
     }
     char nametmp[PATH_MAX] = {0};
-    strcpy(nametmp, cwd);
+    strncpy(nametmp, cwd, sizeof(nametmp) - 1);
     char *name = path_basename(nametmp);
 
     *output = calloc(PATH_MAX, sizeof(**output));
@@ -126,7 +126,7 @@ int tox_run_entrypoint(void *frame, void *data_out) {
     // Apply workaround for tox positional arguments
     char *toxconf = NULL;
     if (!access("tox.ini", F_OK)) {
-        if (!fix_tox_conf("tox.ini", &toxconf)) {
+        if (!fix_tox_conf("tox.ini", &toxconf, PATH_MAX)) {
             msg(STASIS_MSG_L3, "Fixing tox positional arguments\n");
             *output = calloc(STASIS_BUFSIZ, sizeof(**output));
             if (!*output) {

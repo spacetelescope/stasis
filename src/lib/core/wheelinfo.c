@@ -6,7 +6,7 @@ struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to
     char package_path[PATH_MAX];
     char package_name[NAME_MAX];
 
-    strcpy(package_name, name);
+    strncpy(package_name, name, sizeof(package_name) - 1);
     tolower_s(package_name);
     snprintf(package_path, sizeof(package_path), "%s/%s", basepath, package_name);
 
@@ -20,7 +20,7 @@ struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to
             continue;
         }
         char filename[NAME_MAX];
-        strcpy(filename, rec->d_name);
+        strncpy(filename, rec->d_name, sizeof(filename) - 1);
         char *ext = strstr(filename, ".whl");
         if (ext) {
             *ext = '\0';

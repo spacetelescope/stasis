@@ -65,7 +65,7 @@ void test_fix_tox_conf() {
     if (fp) {
         fprintf(fp, "%s", data);
         fclose(fp);
-        STASIS_ASSERT(fix_tox_conf(filename, &result) == 0, "fix_tox_conf failed");
+        STASIS_ASSERT(fix_tox_conf(filename, &result, PATH_MAX) == 0, "fix_tox_conf failed");
     } else {
         STASIS_ASSERT(false, "writing mock tox.ini failed");
     }
@@ -308,7 +308,7 @@ void test_path_dirname() {
         const char *input = data[i];
         const char *expected = data[i + 1];
         char tmp[PATH_MAX] = {0};
-        strcpy(tmp, input);
+        strncpy(tmp, input, sizeof(tmp) - 1);
 
         char *result = path_dirname(tmp);
         STASIS_ASSERT(strcmp(expected, result) == 0, NULL);

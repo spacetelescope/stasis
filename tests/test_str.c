@@ -37,7 +37,7 @@ void test_tolower_s() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char input[100] = {0};
-        strcpy(input, tc[i].data);
+        strncpy(input, tc[i].data, sizeof(input) - 1);
         tolower_s(input);
         STASIS_ASSERT(strcmp(input, tc[i].expected) == 0, "unexpected result");
     }
@@ -318,7 +318,7 @@ void test_lstrip() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
         char *result;
-        strcpy(buf, tc[i].data);
+        strncpy(buf, tc[i].data, sizeof(buf) - 1);
         result = lstrip(buf);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-left");
         guard_free(buf);
@@ -342,9 +342,8 @@ void test_strip() {
     STASIS_ASSERT(strip(NULL) == NULL, "incorrect return type");
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *buf = calloc(255, sizeof(*buf));
-        char *result;
-        strcpy(buf, tc[i].data);
-        result = strip(buf);
+        strncpy(buf, tc[i].data, sizeof(buf) - 1);
+        char *result = strip(buf);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
         guard_free(buf);
     }

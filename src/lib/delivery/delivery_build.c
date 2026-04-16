@@ -37,7 +37,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                         tag[strlen(ctx->tests->test[i]->repository_info_tag)] = '\0';
                     }
                 } else {
-                    strcpy(tag, ctx->tests->test[i]->version);
+                    strncpy(tag, ctx->tests->test[i]->version, sizeof(tag) - 1);
                 }
 
                 //sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
@@ -434,7 +434,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
                     }
 
-                    strcpy(dname, ctx->tests->test[i]->name);
+                    strncpy(dname, ctx->tests->test[i]->name, sizeof(dname) - 1);
                     tolower_s(dname);
                     snprintf(outdir, sizeof(outdir), "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                     if (mkdirs(outdir, 0755)) {

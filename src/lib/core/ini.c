@@ -177,7 +177,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             }
             break;
         case INIVAL_TYPE_STR_ARRAY:
-            strcpy(tbufp, data_copy);
+            strncpy(tbufp, data_copy, sizeof(tbuf) - 1);
             guard_free(data_copy);
             data_copy = calloc(STASIS_BUFSIZ, sizeof(*data_copy));
             if (!data_copy) {
@@ -522,7 +522,7 @@ struct INIFILE *ini_open(const char *filename) {
 
     // Create an implicit section. [default] does not need to be present in the INI config
     ini_section_create(&ini, "default");
-    strcpy(current_section, "default");
+    strncpy(current_section, "default", sizeof(current_section) - 1);
 
     // Open the configuration file for reading
     FILE *fp = fopen(filename, "r");
@@ -596,7 +596,7 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Record the name of the section. This is used until another section is found.
             memset(current_section, 0, sizeof(current_section));
-            strcpy(current_section, section_name);
+            strncpy(current_section, section_name, sizeof(current_section) - 1);
             guard_free(section_name);
             memset(line, 0, sizeof(line));
             continue;
@@ -621,12 +621,12 @@ struct INIFILE *ini_open(const char *filename) {
             lstrip(key);
             strip(key);
             memset(key_last, 0, sizeof(inikey[1]));
-            strcpy(key_last, key);
+            strncpy(key_last, key, sizeof(inikey[1]) - 1);
             reading_value = 1;
             if (strlen(operator) > 1) {
-                strcpy(value, &operator[1]);
+                strncpy(value, &operator[1], sizeof(value) - 1);
             } else {
-                strcpy(value, "");
+                strncpy(value, "", sizeof(value) - 1);
             }
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
@@ -640,8 +640,8 @@ struct INIFILE *ini_open(const char *filename) {
             }
             strip(value);
         } else {
-            strcpy(key, key_last);
-            strcpy(value, line);
+            strncpy(key, key_last, sizeof(inikey[0]) - 1);
+            strncpy(value, line, sizeof(value) - 1);
         }
         memset(line, 0, sizeof(line));
 

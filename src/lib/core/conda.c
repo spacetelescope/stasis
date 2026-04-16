@@ -10,11 +10,11 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
 
     tolower_s(sys.sysname);
     if (!strcmp(sys.sysname, "darwin")) {
-        strcpy(sys.sysname, "osx");
+        strncpy(sys.sysname, "osx", sizeof(sys.sysname) - 1);
     }
 
     if (!strcmp(sys.machine, "x86_64")) {
-        strcpy(sys.machine, "64");
+        strncpy(sys.machine, "64", sizeof(sys.machine) - 1);
     }
 
     char url[PATH_MAX];
@@ -149,7 +149,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
     int status = 0;
     struct Process proc = {0};
     proc.redirect_stderr = 1;
-    strcpy(proc.f_stdout, logfile);
+    strncpy(proc.f_stdout, logfile, sizeof(proc.f_stdout) - 1);
 
     if (mode == PKG_USE_PIP) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
@@ -226,12 +226,12 @@ int conda_exec(const char *args) {
             "deactivate",
             NULL
     };
-    char conda_as[6] = {0};
+    char conda_as[10] = {0};
 
-    strcpy(conda_as, "conda");
+    strncpy(conda_as, "conda", sizeof(conda_as) - 1);
     for (size_t i = 0; mamba_commands[i] != NULL; i++) {
         if (startswith(args, mamba_commands[i])) {
-            strcpy(conda_as, "mamba");
+            strncpy(conda_as, "mamba", sizeof(conda_as) - 1);
             break;
         }
     }
@@ -483,7 +483,7 @@ int conda_setup_headless() {
     const char *cmd_fmt = "'%s'";
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
         memset(cmd, 0, sizeof(cmd));
-        strcpy(cmd, "install ");
+        strncpy(cmd, "install ", sizeof(cmd) - 1);
 
         total = strlist_count(globals.conda_packages);
         for (size_t i = 0; i < total; i++) {
@@ -506,7 +506,7 @@ int conda_setup_headless() {
 
     if (globals.pip_packages && strlist_count(globals.pip_packages)) {
         memset(cmd, 0, sizeof(cmd));
-        strcpy(cmd, "install ");
+        strncpy(cmd, "install ", sizeof(cmd) - 1);
 
         total = strlist_count(globals.pip_packages);
         for (size_t i = 0; i < total; i++) {

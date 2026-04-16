@@ -14,31 +14,31 @@ int artifactory_download_cli(char *dest,
     char arch_ident[STASIS_NAME_MAX] = {0};
 
     // convert platform string to lower-case
-    strcpy(os_ident, os);
+    strncpy(os_ident, os, sizeof(os_ident) - 1);
     tolower_s(os_ident);
 
     // translate OS identifier
     if (!strcmp(os_ident, "darwin") || startswith(os_ident, "macos")) {
-        strcpy(os_ident, "mac");
+        strncpy(os_ident, "mac", sizeof(os_ident) - 1);
     } else if (!strcmp(os_ident, "linux")) {
-        strcpy(os_ident, "linux");
+        strncpy(os_ident, "linux", sizeof(os_ident) - 1);
     } else {
         fprintf(stderr, "%s: unknown operating system: %s\n", __FUNCTION__, os_ident);
         return -1;
     }
 
     // translate ARCH identifier
-    strcpy(arch_ident, arch);
+    strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
-        strcpy(arch_ident, "386");
+        strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
         if (!strcmp(os_ident, "mac")) {
-            strcpy(arch_ident, "386");
+            strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
         } else {
-            strcpy(arch_ident, "amd64");
+            strncpy(arch_ident, "amd64", sizeof(arch_ident) - 1);
         }
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
-        strcpy(arch_ident, "arm64");
+        strncpy(arch_ident, "arm64", sizeof(arch_ident) - 1);
     } else {
         fprintf(stderr, "%s: unknown architecture: %s\n", __FUNCTION__, arch_ident);
         return -1;
@@ -53,7 +53,7 @@ int artifactory_download_cli(char *dest,
              os_ident,                             // ...
              arch_ident,                           // jfrog-cli-linux-x86_64
              remote_filename);                     // jf
-    strcpy(path, dest);
+    strncpy(path, dest, sizeof(path) - 1);
 
     if (mkdirs(path, 0755)) {
         fprintf(stderr, "%s: %s: %s", __FUNCTION__, path, strerror(errno));
@@ -244,8 +244,8 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
     }
 
     if (!globals.verbose) {
-        strcpy(proc.f_stdout, "/dev/null");
-        strcpy(proc.f_stderr, "/dev/null");
+        strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout) - 1);
+        strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
     }
     return shell(&proc, cmd);
 }

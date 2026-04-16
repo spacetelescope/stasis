@@ -444,14 +444,14 @@ void msg(unsigned type, char *fmt, ...) {
         // for error output
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_RED);
-        strcpy(status, " ERROR: ");
+        strncpy(status, " ERROR: ", sizeof(status) - 1);
     } else if (type & STASIS_MSG_WARN) {
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_YELLOW);
-        strcpy(status, " WARNING: ");
+        strncpy(status, " WARNING: ", sizeof(status) - 1);
     } else {
         fprintf(stream, "%s", STASIS_COLOR_GREEN);
-        strcpy(status, " ");
+        strncpy(status, " ", sizeof(status) - 1);
     }
 
     if (type & STASIS_MSG_L1) {
@@ -484,9 +484,9 @@ char *xmkstemp(FILE **fp, const char *mode) {
     char t_name[PATH_MAX * 2];
 
     if (globals.tmpdir) {
-        strcpy(tmpdir, globals.tmpdir);
+        strncpy(tmpdir, globals.tmpdir, sizeof(tmpdir) - 1);
     } else {
-        strcpy(tmpdir, "/tmp");
+        strncpy(tmpdir, "/tmp", sizeof(tmpdir) - 1);
     }
     memset(t_name, 0, sizeof(t_name));
     snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
@@ -638,9 +638,10 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  *
  * @param filename /path/to/tox.ini
  * @param result path of replacement tox.ini configuration
+ * @param maxlen
  * @return 0 on success, -1 on error
  */
-int fix_tox_conf(const char *filename, char **result) {
+int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     struct INIFILE *toxini;
     FILE *fptemp;
 
@@ -652,7 +653,7 @@ int fix_tox_conf(const char *filename, char **result) {
 
     // If the result pointer is NULL, allocate enough to store a filesystem path
     if (!*result) {
-        *result = calloc(PATH_MAX, sizeof(**result));
+        *result = calloc(maxlen, sizeof(**result));
         if (!*result) {
             guard_free(tempfile);
             return -1;
@@ -709,7 +710,7 @@ int fix_tox_conf(const char *filename, char **result) {
     fclose(fptemp);
 
     // Store path to modified config
-    strcpy(*result, tempfile);
+    strncpy(*result, tempfile, maxlen - 1);
     guard_free(tempfile);
 
     ini_free(&toxini);
@@ -758,7 +759,7 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
     if (!tmp) {
         return -1;
     }
-    strcpy(tmp, src);
+    strncpy(tmp, src, strlen(redacted) + strlen(src));
 
     for (size_t i = 0; i < to_redact_size; i++) {
         if (to_redact[i] && strstr(tmp, to_redact[i])) {
@@ -821,9 +822,8 @@ long get_cpu_count() {
 int mkdirs(const char *_path, mode_t mode) {
     char *token;
     char pathbuf[PATH_MAX] = {0};
-    char *path;
-    path = pathbuf;
-    strcpy(path, _path);
+    strncpy(pathbuf, _path, sizeof(pathbuf) - 1);
+    char *path = pathbuf;
     errno = 0;
 
     char result[PATH_MAX] = {0};

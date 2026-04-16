@@ -119,7 +119,7 @@ char** split(char *_sptr, const char* delim, size_t max)
         if (!result[i]) {
             return NULL;
         }
-        strcpy(result[i], token);
+        strncpy(result[i], token, STASIS_BUFSIZ - 1);
     }
 
     // pos is non-zero when maximum split is reached
@@ -129,7 +129,7 @@ char** split(char *_sptr, const char* delim, size_t max)
         if (!result[i]) {
             return NULL;
         }
-        strcpy(result[i], &orig[pos]);
+        strncpy(result[i], &orig[pos], STASIS_BUFSIZ - 1);
     }
 
     guard_free(sptr);
@@ -562,7 +562,7 @@ char *normalize_space(char *s) {
     }
 
     // Rewrite the input string
-    strcpy(result, tmp_orig);
+    strncpy(result, tmp_orig, strlen(result) + 1);
     guard_free(tmp_orig);
     return result;
 }

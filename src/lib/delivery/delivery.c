@@ -338,11 +338,11 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     if (DEFER_CONDA == type) {
         dataptr = ctx->conda.conda_packages;
         deferred = ctx->conda.conda_packages_defer;
-        strcpy(mode, "conda");
+        strncpy(mode, "conda", sizeof(mode) - 1);
     } else if (DEFER_PIP == type) {
         dataptr = ctx->conda.pip_packages;
         deferred = ctx->conda.pip_packages_defer;
-        strcpy(mode, "pip");
+        strncpy(mode, "pip", sizeof(mode) - 1);
     } else {
         SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
         exit(1);

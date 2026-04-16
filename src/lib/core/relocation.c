@@ -84,7 +84,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
         memset(original + buffer_len, 0, original_len - buffer_len);
     }
     // replace original with contents of buffer
-    strcpy(original, buffer);
+    strncpy(original, buffer, buffer_len + 1);
     return 0;
 }
 
