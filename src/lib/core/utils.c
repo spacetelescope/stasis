@@ -886,10 +886,10 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     return 0;
 }
 
-int gen_file_extension_str(char *filename, const char *extension) {
+int gen_file_extension_str(char *filename, const size_t maxlen, const char *extension) {
     char *ext_orig = strrchr(filename, '.');
     if (!ext_orig) {
-        strcat(filename, extension);
+        strncat(filename, extension, maxlen - strlen(filename) - 1);
         return 0;
     }
 
