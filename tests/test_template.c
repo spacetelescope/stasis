@@ -61,6 +61,19 @@ void test_tpl_workflow() {
     STASIS_ASSERT(strcmp(result, "Hello environment!") == 0, "environment variable content mismatch");
     guard_free(result);
     unsetenv("HELLO");
+
+    const char *message_file = "message.txt";
+    char message_fmt[] = "They wanted a {{ hello_message }} "
+                         "So we gave them a {{  hello_message       }}";
+    const char *message_expected = "They wanted a Hello world! "
+                                   "So we gave them a Hello world!";
+    const int state = tpl_render_to_file(message_fmt, message_file);
+    STASIS_ASSERT_FATAL(state == 0, "failed to write rendered string to file");
+    char *message_contents = stasis_testing_read_ascii(message_file);
+    STASIS_ASSERT(strcmp(message_contents, message_expected) == 0, "message in file does not match original message");
+    guard_free(message_contents);
+    remove(message_file);
+
     guard_free(data);
 }
 
@@ -72,6 +85,8 @@ void test_tpl_register() {
 
     STASIS_ASSERT(tpl_pool_used == (used_before_register + 1), "tpl_register did not increment allocation counter");
     STASIS_ASSERT(tpl_pool[used_before_register] != NULL, "register did not allocate a tpl_item record in the pool");
+    const char *message = tpl_getval("hello_message");
+    STASIS_ASSERT(strcmp(message, "Hello world!") == 0, "stored message corrupt");
     free(data);
 }
 
@@ -96,25 +111,25 @@ void test_tpl_register_func() {
 
     char *result = NULL;
     result = tpl_render("{{ func:add(0,3) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "add: Answer was not 3");
     guard_free(result);
     result = tpl_render("{{ func:add(1,2) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "add: Answer was not 3");
     guard_free(result);
     result = tpl_render("{{ func:sub(6,3) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "sub: was not 3");
     guard_free(result);
     result = tpl_render("{{ func:sub(4,1) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "sub: Answer was not 3");
     guard_free(result);
     result = tpl_render("{{ func:mul(1,   3) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "mul: Answer was not 3");
     guard_free(result);
     result = tpl_render("{{ func:div(6,2) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "div: Answer was not 3");
     guard_free(result);
     result = tpl_render("{{ func:div(3,1) }}");
-    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "Answer was not 3");
+    STASIS_ASSERT(result != NULL && strcmp(result, "3") == 0, "div: Answer was not 3");
     guard_free(result);
 }
 
