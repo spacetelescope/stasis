@@ -203,7 +203,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     memset(command_base, 0, sizeof(command_base));
-    strcat(command_base, "install");
+    strncat(command_base, "install", sizeof(command_base) - strlen(command_base) - 1);
 
     typedef int (*Runner)(const char *);
     Runner runner = NULL;
@@ -214,13 +214,13 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
-        strcat(command_base, " --use-local");
+        strncat(command_base, " --use-local", sizeof(command_base) - strlen(command_base) - 1);
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
         // as possible between releases.
         if (!ctx->meta.based_on) {
-            strcat(command_base, " --upgrade");
+            strncat(command_base, " --upgrade", sizeof(command_base) - strlen(command_base) - 1);
         }
         const char *command_base_fmt = " --extra-index-url 'file://%s'";
         const int len = snprintf(NULL, 0, command_base_fmt, ctx->storage.wheel_artifact_dir);

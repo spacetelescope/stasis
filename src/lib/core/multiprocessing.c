@@ -173,17 +173,17 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
     if (globals.enable_task_logging) {
-        strcat(slot->log_file, pool->log_root);
-        strcat(slot->log_file, "/");
+        strncat(slot->log_file, pool->log_root, sizeof(slot->log_file) - strlen(slot->log_file) - 1);
+        strncat(slot->log_file, "/", sizeof(slot->log_file) - strlen(slot->log_file) - 1);
     } else {
-        strcpy(slot->log_file, "/dev/stdout");
+        strncpy(slot->log_file, "/dev/stdout", sizeof(slot->log_file) - 1);
     }
 
     // Set working directory
     if (isempty(working_dir)) {
-        strcpy(slot->working_dir, ".");
+        strncpy(slot->working_dir, ".", sizeof(slot->working_dir) - 1);
     } else {
-        strncpy(slot->working_dir, working_dir, PATH_MAX - 1);
+        strncpy(slot->working_dir, working_dir, sizeof(slot->working_dir) - 1);
     }
 
     // Create a temporary file to act as our intermediate command script

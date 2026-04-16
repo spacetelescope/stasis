@@ -36,7 +36,7 @@ int indexer_make_website(struct Delivery **ctx) {
 
             // Replace *.md extension with *.html.
             strncpy(fullpath_dest, fullpath_src, sizeof(fullpath_dest) - 1);
-            gen_file_extension_str(fullpath_dest, ".html");
+            gen_file_extension_str(fullpath_dest, sizeof(fullpath_dest), ".html");
 
             // Convert markdown to html
             if (pandoc_exec(fullpath_src, fullpath_dest, have_css ? css_filename : NULL, "STASIS")) {

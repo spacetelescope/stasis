@@ -13,9 +13,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
     char destdir_with_output[PATH_MAX] = {0};
     char *destdir = destdir_bare;
 
-    strcpy(destdir_bare, dest);
-    strcpy(destdir_with_output, dest);
-    strcat(destdir_with_output, "/output");
+    strncpy(destdir_bare, dest, sizeof(destdir_bare) - 1);
+    strncpy(destdir_with_output, dest, sizeof(destdir_with_output) - 1);
+    strncat(destdir_with_output, "/output", sizeof(destdir_with_output) - strlen(destdir_with_output) - 1);
 
     if (!access(destdir_with_output, F_OK)) {
         destdir = destdir_with_output;
@@ -26,9 +26,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         char srcdir_bare[PATH_MAX] = {0};
         char srcdir_with_output[PATH_MAX] = {0};
         char *srcdir = srcdir_bare;
-        strcpy(srcdir_bare, rootdirs[i]);
-        strcpy(srcdir_with_output, rootdirs[i]);
-        strcat(srcdir_with_output, "/output");
+        strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare) - 1);
+        strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output) - 1);
+        strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output) - strlen(srcdir_with_output) - 1);
 
         if (access(srcdir_bare, F_OK)) {
             fprintf(stderr, "%s does not exist\n", srcdir_bare);
@@ -261,11 +261,11 @@ int main(const int argc, char *argv[]) {
     char workdir_template[PATH_MAX] = {0};
     const char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
-        strcat(workdir_template, system_tmp);
+        strncat(workdir_template, system_tmp, sizeof(workdir_template) - strlen(workdir_template) - 1);
     } else {
-        strcat(workdir_template, "/tmp");
+        strncat(workdir_template, "/tmp", sizeof(workdir_template) - strlen(workdir_template) - 1);
     }
-    strcat(workdir_template, "/stasis-combine.XXXXXX");
+    strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template) - strlen(workdir_template) - 1);
     char *workdir = mkdtemp(workdir_template);
     if (!workdir) {
         SYSERROR("Unable to create temporary directory: %s", workdir_template);

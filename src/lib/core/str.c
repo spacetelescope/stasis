@@ -153,9 +153,9 @@ char *join(char **arr, const char *separator) {
 
     result = (char *)calloc(total_bytes, sizeof(char));
     for (int i = 0; i < records; i++) {
-        strcat(result, arr[i]);
+        strncat(result, arr[i], total_bytes - strlen(result) - 1);
         if (i < (records - 1)) {
-            strcat(result, separator);
+            strncat(result, separator, total_bytes - strlen(result) - 1);
         }
     }
     return result;
@@ -207,11 +207,11 @@ char *join_ex(char *separator, ...) {
     result = calloc(size + 1, sizeof(char));
     for (size_t i = 0; i < argc; i++) {
         // Append argument to string
-        strcat(result, argv[i]);
+        strncat(result, argv[i], size - strlen(result)); // no -1 because +1 above
 
         // Do not append a trailing separator when we reach the last argument
         if (i < (argc - 1)) {
-            strcat(result, separator);
+            strncat(result, separator, size - strlen(result)); // no -1 because +1 above
         }
         guard_free(argv[i]);
     }

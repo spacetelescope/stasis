@@ -419,15 +419,15 @@ int conda_check_required() {
 
     // Construct a "conda list" command that searches for all required packages
     // using conda's (python's) regex matching
-    strcat(cmd, "conda list '");
+    strncat(cmd, "conda list '", sizeof(cmd) - strlen(cmd) - 1);
     for (size_t i = 0; conda_minimum_viable_tools[i] != NULL; i++) {
-        strcat(cmd, "^");
-        strcat(cmd, conda_minimum_viable_tools[i]);
+        strncat(cmd, "^", sizeof(cmd) - strlen(cmd) - 1);
+        strncat(cmd, conda_minimum_viable_tools[i], sizeof(cmd) - strlen(cmd) - 1);
         if (conda_minimum_viable_tools[i + 1] != NULL) {
-            strcat(cmd, "|");
+            strncat(cmd, "|", sizeof(cmd) - strlen(cmd) - 1);
         }
     }
-    strcat(cmd, "' | cut -d ' ' -f 1");
+    strncat(cmd, "' | cut -d ' ' -f 1", sizeof(cmd) - strlen(cmd) - 1);
 
     // Verify all required packages are installed
     char *cmd_out = shell_output(cmd, &status);
@@ -565,7 +565,7 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     unlink(tempfile);
 
     // We'll create a new file with the same random bits, ending with .yml
-    strcat(tempfile, ".yml");
+    strncat(tempfile, ".yml", sizeof(tempfile) - strlen(tempfile) - 1);
     char *errmsg = NULL;
     const long http_code = download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
     if (HTTP_ERROR(http_code)) {

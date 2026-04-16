@@ -532,7 +532,7 @@ int main(int argc, char *argv[]) {
                 globals.continue_on_error = true;
                 break;
             case 'p':
-                strcpy(python_override_version, optarg);
+                strncpy(python_override_version, optarg, sizeof(python_override_version) - 1);
                 break;
             case 'l':
                 globals.cpu_limit = strtol(optarg, NULL, 10);
@@ -652,9 +652,9 @@ int main(int argc, char *argv[]) {
     configure_jfrog_cli(&ctx);
 
     runtime_apply(ctx.runtime.environ);
-    strcpy(env_name, ctx.info.release_name);
-    strcpy(env_name_testing, env_name);
-    strcat(env_name_testing, "-test");
+    strncpy(env_name, ctx.info.release_name, sizeof(env_name) - 1);
+    strncpy(env_name_testing, env_name, sizeof(env_name_testing) - 1);
+    strncat(env_name_testing, "-test", sizeof(env_name_testing) - strlen(env_name_testing) - 1);
     char *envs[] = {
         "release", env_name,
         "testing", env_name_testing,

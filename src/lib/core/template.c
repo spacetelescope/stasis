@@ -272,7 +272,7 @@ char *tpl_render(char *str) {
 
             // Append replacement value
             grow(z, &output_bytes, &output);
-            strcat(output, value);
+            strncat(output, value, output_bytes - strlen(output) - 1);
             guard_free(value);
             output[z] = 0;
         }

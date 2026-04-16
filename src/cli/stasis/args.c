@@ -89,20 +89,20 @@ void usage(char *progname) {
         char opt_long[50] = {0};        // --? [ARG]?
         char opt_short[50] = {0};        // -? [ARG]?
 
-        strcat(opt_long, "--");
-        strcat(opt_long, long_options[x].name);
+        strncat(opt_long, "--", sizeof(opt_long) - strlen(opt_long) - 1);
+        strncat(opt_long, long_options[x].name, sizeof(opt_long) - strlen(opt_long) - 1);
         if (long_options[x].has_arg) {
-            strcat(opt_long, " ARG");
+            strncat(opt_long, " ARG", sizeof(opt_long) - strlen(opt_long) - 1);
         }
 
         if (long_options[x].val <= 'z') {
-            strcat(opt_short, "-");
+            strncat(opt_short, "-", sizeof(opt_short) - strlen(opt_short) - 1);
             opt_short[1] = (char) long_options[x].val;
             if (long_options[x].has_arg) {
-                strcat(opt_short, " ARG");
+                strncat(opt_short, " ARG", sizeof(opt_short) - strlen(opt_short) - 1);
             }
         } else {
-            strcat(opt_short, "  ");
+            strncat(opt_short, "  ", sizeof(opt_short) - strlen(opt_short) - 1);
         }
 
         const char *opt_fmt = "  %%-%ds\t%%s\t\t%%s";

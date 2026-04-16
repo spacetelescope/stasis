@@ -50,18 +50,18 @@ int replace_text(char *original, const char *target, const char *replacement, un
             // replacement is shorter than the target
             if (rep_len < target_len) {
                 // shrink the string
-                strcat(buffer, replacement);
+                strncat(buffer, replacement, sizeof(buffer) - strlen(buffer) - 1);
                 memmove(pos, pos + target_len, strlen(pos) - target_len);
                 memset(pos + (strlen(pos) - target_len), 0, target_len);
             } else { // replacement is longer than the target
                 // write the replacement value to the buffer
-                strcat(buffer, replacement);
+                strncat(buffer, replacement, sizeof(buffer) - strlen(buffer) - 1);
                 // target consumed. jump to the end of the substring.
                 pos += target_len;
             }
             if (flags & REPLACE_TRUNCATE_AFTER_MATCH) {
                 if (strstr(pos, LINE_SEP)) {
-                    strcat(buffer, LINE_SEP);
+                    strncat(buffer, LINE_SEP, sizeof(buffer) - strlen(buffer) - 1);
                 }
                 break;
             }
@@ -69,7 +69,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
             if (!((match = strstr(pos, target)))) {
                 // no more matches
                 // append whatever remains to the buffer
-                strcat(buffer, pos);
+                strncat(buffer, pos, sizeof(buffer) - strlen(buffer) - 1);
                 // stop
                 break;
             }

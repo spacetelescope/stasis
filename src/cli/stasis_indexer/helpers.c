@@ -96,44 +96,44 @@ int pandoc_exec(const char *in_file, const char *out_file, const char *css_file,
     if (!get_pandoc_version(&pandoc_version)) {
         // < 2.19
         if (pandoc_version < 0x02130000) {
-            strcat(pandoc_versioned_args, "--self-contained ");
+            strncat(pandoc_versioned_args, "--self-contained ", sizeof(pandoc_versioned_args) - strlen(pandoc_versioned_args) - 1);
         } else {
             // >= 2.19
-            strcat(pandoc_versioned_args, "--embed-resources ");
+            strncat(pandoc_versioned_args, "--embed-resources ", sizeof(pandoc_versioned_args) - strlen(pandoc_versioned_args) - 1);
         }
 
         // >= 1.15.0.4
         if (pandoc_version >= 0x010f0004) {
-            strcat(pandoc_versioned_args, "--standalone ");
+            strncat(pandoc_versioned_args, "--standalone ", sizeof(pandoc_versioned_args) - strlen(pandoc_versioned_args) - 1);
         }
 
         // >= 1.10.0.1
         if (pandoc_version >= 0x010a0001) {
-            strcat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ");
+            strncat(pandoc_versioned_args, "-f gfm+autolink_bare_uris ", sizeof(pandoc_versioned_args) - strlen(pandoc_versioned_args) - 1);
         }
 
         // > 3.1.9
         if (pandoc_version > 0x03010900) {
-            strcat(pandoc_versioned_args, "-f gfm+alerts ");
+            strncat(pandoc_versioned_args, "-f gfm+alerts ", sizeof(pandoc_versioned_args) - strlen(pandoc_versioned_args) - 1);
         }
     }
 
     // Converts a markdown file to html
     char cmd[STASIS_BUFSIZ] = {0};
-    strcpy(cmd, "pandoc ");
-    strcat(cmd, pandoc_versioned_args);
+    strncpy(cmd, "pandoc ", sizeof(cmd));
+    strncat(cmd, pandoc_versioned_args, sizeof(cmd) - strlen(cmd) - 1);
     if (css_file && strlen(css_file)) {
-        strcat(cmd, "--css ");
-        strcat(cmd, css_file);
+        strncat(cmd, "--css ", sizeof(cmd) - strlen(cmd) - 1);
+        strncat(cmd, css_file, sizeof(cmd) - strlen(cmd) - 1);
     }
-    strcat(cmd, " ");
-    strcat(cmd, "--metadata title=\"");
-    strcat(cmd, title);
-    strcat(cmd, "\" ");
-    strcat(cmd, "-o ");
-    strcat(cmd, out_file);
-    strcat(cmd, " ");
-    strcat(cmd, in_file);
+    strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, "--metadata title=\"", sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, title, sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, "\" ", sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, "-o ", sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, out_file, sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
+    strncat(cmd, in_file, sizeof(cmd) - strlen(cmd) - 1);
 
     if (globals.verbose) {
         puts(cmd);
@@ -377,8 +377,8 @@ int write_manifest(const char *path, char **exclude_path, FILE *fp) {
         }
         char filepath[PATH_MAX] = {0};
         strncpy(filepath, path, PATH_MAX - 1);
-        strcat(filepath, "/");
-        strcat(filepath, rec->d_name);
+        strncat(filepath, "/", sizeof(filepath) - strlen(filepath) - 1);
+        strncat(filepath, rec->d_name, sizeof(filepath) - strlen(filepath) - 1);
         if (rec->d_type == DT_DIR) {
             write_manifest(filepath, exclude_path, fp);
             continue;

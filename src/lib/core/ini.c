@@ -186,8 +186,8 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             while ((token = strsep(&tbufp, "\n")) != NULL) {
                 //lstrip(token);
                 if (!isempty(token)) {
-                    strcat(data_copy, token);
-                    strcat(data_copy, "\n");
+                    strncat(data_copy, token, BUFSIZ - strlen(data_copy) - 1);
+                    strncat(data_copy, "\n", BUFSIZ - strlen(data_copy) - 1);
                 }
             }
             strip(data_copy);
@@ -353,7 +353,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         } else {
             data->value = value_tmp;
         }
-        strcat(data->value, value);
+        strncat(data->value, value, value_len_new - strlen(data->value));
     }
     return 0;
 }
@@ -467,7 +467,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 }
                 guard_array_free(parts);
                 strip(outvalue);
-                strcat(outvalue, LINE_SEP);
+                strncat(outvalue, LINE_SEP, sizeof(outvalue) - strlen(outvalue) - 1);
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
                 guard_free(value);
             } else {

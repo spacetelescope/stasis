@@ -413,7 +413,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         if (base) {
             src = base;
         } else {
-            strcat(src, "/");
+            strncat(src, "/", sizeof(src) - strlen(src) - 1);
         }
         pushd(new_src);
     }

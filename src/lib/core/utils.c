@@ -45,9 +45,9 @@ int rmtree(char *_path) {
 
     while ((d_entity = readdir(dir)) != NULL) {
         char abspath[PATH_MAX] = {0};
-        strcat(abspath, path);
-        strcat(abspath, DIR_SEP);
-        strcat(abspath, d_entity->d_name);
+        strncat(abspath, path, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, d_entity->d_name, sizeof(abspath) - strlen(abspath) - 1);
 
         if (!strcmp(d_entity->d_name, ".") || !strcmp(d_entity->d_name, "..") || !strcmp(abspath, path)) {
             continue;
@@ -278,13 +278,13 @@ char *find_program(const char *name) {
     result[0] = '\0';
     while ((path_elem = strsep(&path, PATH_SEP))) {
         char abspath[PATH_MAX] = {0};
-        strcat(abspath, path_elem);
-        strcat(abspath, DIR_SEP);
-        strcat(abspath, name);
+        strncat(abspath, path_elem, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, name, sizeof(abspath) - strlen(abspath) - 1);
         if (access(abspath, F_OK) < 0) {
             continue;
         }
-        strncpy(result, abspath, sizeof(result));
+        strncpy(result, abspath, sizeof(result) - 1);
         break;
     }
     path = path_orig;
@@ -694,7 +694,7 @@ int fix_tox_conf(const char *filename, char **result) {
                                 return -1;
                             }
                             value = tmp;
-                            strcat(value, with_posargs);
+                            strncat(value, with_posargs, (strlen(value) + strlen(with_posargs)) - strlen(value) - 1);
                             ini_setval(&toxini, INI_SETVAL_REPLACE, section_name, key, value);
                         }
                     }
@@ -829,8 +829,8 @@ int mkdirs(const char *_path, mode_t mode) {
     char result[PATH_MAX] = {0};
     int status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
-        strcat(result, token);
-        strcat(result, "/");
+        strncat(result, token, sizeof result - strlen(result) - 1);
+        strncat(result, "/", sizeof result - strlen(result) - 1);
         status = mkdir(result, mode);
         if (status && errno == EEXIST) {
             status = 0;
@@ -919,7 +919,7 @@ void debug_hexdump(char *data, int len) {
             snprintf(addr + strlen(addr), sizeof(addr) - pos_fmt_len, pos_fmt, pos);
         }
         if (count == 8) {
-            strcat(bytes, " ");
+            strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
         }
         if (count > 15) {
             snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
@@ -946,11 +946,11 @@ void debug_hexdump(char *data, int len) {
 
     if (count <= 8) {
         // Add group padding
-        strcat(bytes, " ");
+        strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
     }
     const int padding = 16 - count;
     for (int i = 0; i < padding; i++) {
-        strcat(bytes, "   ");
+        strncat(bytes, "   ", sizeof(bytes) - strlen(bytes) - 1);
     }
     snprintf(output, DEBUG_HEXDUMP_FMT_BYTES + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
     puts(output);

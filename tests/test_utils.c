@@ -329,8 +329,7 @@ void test_path_basename() {
 }
 
 void test_expandpath() {
-    char *home;
-
+    char *home = NULL;
     const char *homes[] = {
             "HOME",
             "USERPROFILE",
@@ -341,10 +340,11 @@ void test_expandpath() {
             break;
         }
     }
+    STASIS_ASSERT_FATAL(home != NULL, "cannot expand without knowing the user's home directory path");
 
     char path[PATH_MAX] = {0};
-    strcat(path, "~");
-    strcat(path, DIR_SEP);
+    strncat(path, "~", sizeof(path) - strlen(path) - 1);
+    strncat(path, DIR_SEP, sizeof(path) - strlen(path) - 1);
 
     char *expanded = expandpath(path);
     STASIS_ASSERT(startswith(expanded, home) > 0, expanded);
