@@ -120,7 +120,7 @@ int pandoc_exec(const char *in_file, const char *out_file, const char *css_file,
 
     // Converts a markdown file to html
     char cmd[STASIS_BUFSIZ] = {0};
-    strncpy(cmd, "pandoc ", sizeof(cmd));
+    strncpy(cmd, "pandoc ", sizeof(cmd) - 1);
     strncat(cmd, pandoc_versioned_args, sizeof(cmd) - strlen(cmd) - 1);
     if (css_file && strlen(css_file)) {
         strncat(cmd, "--css ", sizeof(cmd) - strlen(cmd) - 1);
