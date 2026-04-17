@@ -243,7 +243,15 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
     va_list args;
     va_start(args, pattern);
     char userpattern[PATH_MAX] = {0};
-    vsprintf(userpattern, pattern, args);
+    const int len = vsnprintf(userpattern, sizeof(userpattern), pattern, args);
+    if (len < 0) {
+        SYSERROR("%s", "vsnprintf failed\n");
+        va_end(args);
+        return -1;
+    }
+    if ((size_t) len > sizeof(userpattern)) {
+        fprintf(stderr, "WARNING: %s: userpattern truncated!\n", __FUNCTION__);
+    }
     va_end(args);
     if (!strlen(userpattern)) {
         userpattern[0] = '*';

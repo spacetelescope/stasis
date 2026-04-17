@@ -49,10 +49,31 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     char cmd[STASIS_BUFSIZ] = {0};
-    snprintf(cmd, sizeof(cmd), "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
     va_list args;
+    int cmd_len = snprintf(cmd, sizeof(cmd), "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
+    if (cmd_len < 0) {
+        SYSERROR("%s", "Unable to build argument list for micromamba");
+        va_end(args);
+        return -1;
+    }
+    if ((size_t) cmd_len > sizeof(cmd)) {
+        SYSERROR("%s", "micromamba command truncated");
+        va_end(args);
+        return -1;
+    }
+
     va_start(args, command);
-    vsprintf(cmd + strlen(cmd), command, args);
+    cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_len, command, args);
+    if (cmd_len < 0) {
+        SYSERROR("%s", "Unable to append arguments to micromamba command");
+        va_end(args);
+        return -1;
+    }
+    if ((size_t) cmd_len > sizeof(cmd)) {
+        SYSERROR("%s", "micromamba command truncated while appending arguments");
+        va_end(args);
+        return -1;
+    }
     va_end(args);
 
     mkdirs(info->conda_prefix, 0755);

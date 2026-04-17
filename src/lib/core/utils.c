@@ -462,9 +462,21 @@ void msg(unsigned type, char *fmt, ...) {
         snprintf(header, sizeof(header), STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
     }
 
-    fprintf(stream, "%s", header);
-    vfprintf(stream, fmt, args);
-    fprintf(stream, "%s", STASIS_COLOR_RESET);
+    if (fprintf(stream, "%s", header) < 0) {
+        SYSERROR("%s", "unable to write message header to stream");
+        return;
+    }
+
+    const int len = vfprintf(stream, fmt, args);
+    if (len < 0) {
+        SYSERROR("%s", "unable to write message to stream");
+        return;
+    }
+
+    if (fprintf(stream, "%s", STASIS_COLOR_RESET) < 0) {
+        SYSERROR("%s", "unable to write message footer to stream");
+        return;
+    }
     va_end(args);
 }
 
