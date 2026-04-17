@@ -601,7 +601,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
         return 0;
     }
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "%s %s %s", pretty_print_prog, pretty_print_args, filename);
+    snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
         goto pretty_print_failed;
@@ -950,7 +950,7 @@ void debug_hexdump(char *data, int len) {
 
         const char *ascii_fmt = "%c";
         // no need to calculate length for a single character
-        snprintf(ascii + strlen(ascii), sizeof(ascii) - 1, ascii_fmt, isprint(*pos) ? *pos : '.');
+        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), ascii_fmt, isprint(*pos) ? *pos : '.');
 
         pos++;
         count++;

@@ -15,14 +15,14 @@ const char *gbuild_num = "1";
 static int jfrog_cli_rt_build_delete(struct JFRT_Auth *auth, char *build_name, char *build_num) {
     char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "--build \"%s/%s\"", build_name, build_num);
+    snprintf(cmd, sizeof(cmd), "--build \"%s/%s\"", build_name, build_num);
     return jfrog_cli(auth, "rt", "delete", cmd);
 }
 
 static int jfrog_cli_rt_delete(struct JFRT_Auth *auth, char *pattern) {
     char cmd[STASIS_BUFSIZ];
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "\"%s\"", pattern);
+    snprintf(cmd, sizeof(cmd), "\"%s\"", pattern);
     return jfrog_cli(auth, "rt", "delete", cmd);
 }
 

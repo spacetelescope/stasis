@@ -44,7 +44,7 @@ int artifactory_download_cli(char *dest,
         return -1;
     }
 
-    snprintf(url, sizeof(url) - 1, "%s/%s/%s/%s/%s-%s-%s/%s",
+    snprintf(url, sizeof(url), "%s/%s/%s/%s/%s-%s-%s/%s",
              jfrog_artifactory_base_url,           // https://releases.jfrog.io/artifactory
              jfrog_artifactory_product,            // jfrog-cli
              cli_major_ver,                        // v\d+(-jf)?
@@ -102,7 +102,7 @@ void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=%d", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=%d", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -113,7 +113,7 @@ void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList 
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=%ld", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=%ld", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -232,7 +232,7 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
             auth->client_cert_path,
             auth->password,
     };
-    snprintf(cmd, sizeof(cmd) - 1, "jf %s %s %s %s", subsystem, task, auth_args, args ? args : "");
+    snprintf(cmd, sizeof(cmd), "jf %s %s %s %s", subsystem, task, auth_args, args ? args : "");
     redact_sensitive(redactable, sizeof(redactable) / sizeof (*redactable), cmd, cmd_redacted, sizeof(cmd_redacted) - 1);
 
     guard_free(auth_args);
@@ -256,13 +256,13 @@ static int jfrog_cli_rt(struct JFRT_Auth *auth, char *task, char *args) {
 
 int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-collect-env", cmd);
 }
 
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-publish", cmd);
 }
 
@@ -328,7 +328,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' '%s'", args, repo_path, dest ? dest : "");
+    snprintf(cmd, sizeof(cmd), "%s '%s' '%s'", args, repo_path, dest ? dest : "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 
@@ -418,7 +418,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         pushd(new_src);
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' \"%s\"", args, src, repo_path);
+    snprintf(cmd, sizeof(cmd), "%s '%s' \"%s\"", args, src, repo_path);
     guard_free(args);
     guard_strlist_free(&arg_map);
 
@@ -477,7 +477,7 @@ int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *r
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s/%s'", args, repo_path, pattern ? pattern: "");
+    snprintf(cmd, sizeof(cmd), "%s '%s/%s'", args, repo_path, pattern ? pattern: "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 

@@ -363,7 +363,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
             char progress[1024] = {0};
             const double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
-            snprintf(progress, sizeof(progress) - 1, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
+            snprintf(progress, sizeof(progress), "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
 
             int task_timed_out = false;
             if (slot->timeout) {

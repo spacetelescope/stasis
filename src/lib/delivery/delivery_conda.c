@@ -72,7 +72,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
             // Proceed with the installation
             // -b = batch mode (non-interactive)
             char cmd[PATH_MAX] = {0};
-            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+            snprintf(cmd, sizeof(cmd), "%s %s -b -p %s",
                      find_program("bash"),
                      install_script,
                      conda_install_dir);
@@ -84,7 +84,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
             // Proceed with the installation
             // -b = batch mode (non-interactive)
             char cmd[PATH_MAX] = {0};
-            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+            snprintf(cmd, sizeof(cmd), "%s %s -b -p %s",
                      find_program("bash"),
                      install_script,
                      conda_install_dir);

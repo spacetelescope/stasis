@@ -177,15 +177,15 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
         // The --force argument ignores local installation and cache, and actually polls the remote index(es)
         strncpy(cmd, "python -m pip install --force --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
         if (index) {
-            snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "--index-url='%s' ", index);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--index-url='%s' ", index);
         }
-        snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "'%s' ", spec_local);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s' ", spec_local);
     } else if (mode == PKG_USE_CONDA) {
         strncpy(cmd, "mamba search ", sizeof(cmd) - 1);
         if (index) {
-            snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "--channel '%s' ", index);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--channel '%s' ", index);
         }
-        snprintf(cmd + strlen(cmd), (sizeof(cmd) - 1) - strlen(cmd), "'%s' ", spec_local);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s' ", spec_local);
     } else {
         return PKG_INDEX_PROVIDES_E_INTERNAL_MODE_UNKNOWN;
     }

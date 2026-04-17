@@ -186,7 +186,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
         return 0;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "rsync -avi --progress %s/%s %s",
+    snprintf(cmd, sizeof(cmd), "rsync -avi --progress %s/%s %s",
              conda_build_dir,
              ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR],
              ctx->storage.conda_artifact_dir);
@@ -200,7 +200,7 @@ int delivery_index_conda_artifacts(struct Delivery *ctx) {
 
 int delivery_copy_wheel_artifacts(struct Delivery *ctx) {
     char cmd[PATH_MAX] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "rsync -avi --progress %s/*/dist/*.whl %s",
+    snprintf(cmd, sizeof(cmd), "rsync -avi --progress %s/*/dist/*.whl %s",
              ctx->storage.build_sources_dir,
              ctx->storage.wheel_artifact_dir);
     return system(cmd);

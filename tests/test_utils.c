@@ -147,7 +147,9 @@ void test_xmkstemp() {
 
     char buf[100] = {0};
     tempfp = fopen(tempfile, "r");
-    fgets(buf, sizeof(buf) - 1, tempfp);
+    const char *line = fgets(buf, sizeof(buf) - 1, tempfp);
+    STASIS_ASSERT_FATAL(line != NULL, "file should contain data written earlier");
+    STASIS_ASSERT(strcmp(line, buf) == 0, "file should contain the correct data");
     fclose(tempfp);
 
     STASIS_ASSERT(strcmp(buf, data) == 0, "data written to temp file is incorrect");
