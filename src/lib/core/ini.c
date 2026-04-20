@@ -454,12 +454,12 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                     if (*hint == INIVAL_TYPE_STR_ARRAY) {
                         int leading_space = isspace(*render);
                         if (leading_space) {
-                            sprintf(outvalue + strlen(outvalue), "%s" LINE_SEP, render);
+                            snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "%s" LINE_SEP, render);
                         } else {
-                            sprintf(outvalue + strlen(outvalue), "    %s" LINE_SEP, render);
+                            snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "    %s" LINE_SEP, render);
                         }
                     } else {
-                        sprintf(outvalue + strlen(outvalue), "%s", render);
+                        snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "%s", render);
                     }
                     if (mode == INI_WRITE_PRESERVE) {
                         guard_free(render);
