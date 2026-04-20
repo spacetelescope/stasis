@@ -10,7 +10,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/statvfs.h>
+#include "version.h"
 
+#define STASIS_BANNER_HEADER "------------------------------------------------------------------------"
 #define STASIS_BUFSIZ 8192
 #define STASIS_NAME_MAX 255
 #define STASIS_DIRSTACK_MAX 1024
