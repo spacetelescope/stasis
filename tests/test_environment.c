@@ -58,7 +58,7 @@ void test_runtime() {
 
     char output_truth[BUFSIZ] = {0};
     char *your_path = runtime_get(env, "PATH");
-    sprintf(output_truth, "Your PATH is '%s'.", your_path);
+    snprintf(output_truth, sizeof(output_truth), "Your PATH is '%s'.", your_path);
     guard_free(your_path);
 
     char *output_expanded = runtime_expand_var(env, "Your PATH is '${PATH}'.");

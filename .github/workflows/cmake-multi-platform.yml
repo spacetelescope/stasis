@@ -64,6 +64,7 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DASAN=ON
         -DTESTS=ON
         -DTESTS_VERBOSE=ON
         -DTESTS_RT=ON
@@ -77,6 +78,13 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --output-junit results.xml --test-output-size-passed 65536 --test-output-size-failed 65536
+      run: |
+        export ASAN_OPTIONS="verify_asan_link_order=0 strict_string_checks=1 detect_stack_use_after_return=1"
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+            ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=0"
+        else
+            ASAN_OPTIONS="$ASAN_OPTIONS detect_leaks=1"
+        fi
+        ctest --build-config ${{ matrix.build_type }} --output-on-failure --output-junit results.xml --test-output-size-passed 65536 --test-output-size-failed 65536
       env:
         STASIS_SYSCONFDIR: ../../..

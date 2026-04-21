@@ -4,7 +4,7 @@
 void test_junitxml_testsuite_read() {
     struct JUNIT_Testsuite *testsuite;
     char datafile[PATH_MAX] = {0};
-    snprintf(datafile, sizeof(datafile) - 1, "%s/result.xml", TEST_DATA_DIR);
+    snprintf(datafile, sizeof(datafile), "%s/result.xml", TEST_DATA_DIR);
 
     STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read(datafile)) != NULL, "failed to load testsuite data");
     STASIS_ASSERT(testsuite->name != NULL, "Test suite must be named");
@@ -48,7 +48,7 @@ void test_junitxml_testsuite_read() {
 void test_junitxml_testsuite_read_error() {
     struct JUNIT_Testsuite *testsuite;
     char datafile[PATH_MAX] = {0};
-    snprintf(datafile, sizeof(datafile) - 1, "%s/result_error.xml", TEST_DATA_DIR);
+    snprintf(datafile, sizeof(datafile), "%s/result_error.xml", TEST_DATA_DIR);
     STASIS_ASSERT_FATAL((testsuite = junitxml_testsuite_read(datafile)) != NULL, "failed to load testsuite data");
 
     STASIS_ASSERT(testsuite->name != NULL, "test suite must be named");

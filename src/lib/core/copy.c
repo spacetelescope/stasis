@@ -14,7 +14,7 @@ int copy2(const char *src, const char *dest, unsigned int op) {
     }
 
     char dname[1024] = {0};
-    strcpy(dname, dest);
+    strncpy(dname, dest, sizeof(dname) - 1);
 
     char *dname_endptr = strrchr(dname, '/');
     if (dname_endptr != NULL) {

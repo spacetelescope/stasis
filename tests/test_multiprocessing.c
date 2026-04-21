@@ -65,7 +65,7 @@ void test_mp_task() {
         for (size_t i = 0; i < sizeof(commands) / sizeof(*commands); i++) {
             struct MultiProcessingTask *task;
             char task_name[100] = {0};
-            sprintf(task_name, "mytask%zu", i);
+            snprintf(task_name, sizeof(task_name), "mytask%zu", i);
             STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, NULL, commands[i])) != NULL, "Task should not be NULL");
             STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "PID should be non-zero at this point");
             STASIS_ASSERT(task->parent_pid == MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
@@ -137,7 +137,7 @@ void test_mp_fail_fast() {
     for (size_t i = 0; i < sizeof(commands_ff) / sizeof(*commands_ff); i++) {
         char *command = commands_ff[i];
         char taskname[100] = {0};
-        snprintf(taskname, sizeof(taskname) - 1, "task_%03zu", i);
+        snprintf(taskname, sizeof(taskname), "task_%03zu", i);
         STASIS_ASSERT(mp_pool_task(p, taskname, NULL, (char *) command) != NULL, "Failed to queue task");
     }
 

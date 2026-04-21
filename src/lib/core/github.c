@@ -58,9 +58,9 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
     }
 
     // Render the header data
-    sprintf(endpoint_header_auth, endpoint_header_auth_fmt, api_token);
-    sprintf(endpoint_post_fields, endpoint_post_fields_fmt, tag, target_commitish);
-    sprintf(endpoint_url, endpoint_url_fmt, repo);
+    snprintf(endpoint_header_auth, sizeof(endpoint_header_auth), endpoint_header_auth_fmt, api_token);
+    snprintf(endpoint_post_fields, sizeof(endpoint_post_fields), endpoint_post_fields_fmt, tag, target_commitish);
+    snprintf(endpoint_url, sizeof(endpoint_url), endpoint_url_fmt, repo);
 
     // Begin curl configuration
     curl_easy_setopt(curl, CURLOPT_URL, endpoint_url);
@@ -77,7 +77,7 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
 
     // Set the user-agent (github requires one)
     char user_agent[20] = {0};
-    sprintf(user_agent, "stasis/%s", VERSION);
+    snprintf(user_agent, sizeof(user_agent), "stasis/%s", VERSION);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, user_agent);
 
     // Execute curl request

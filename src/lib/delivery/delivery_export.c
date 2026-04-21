@@ -4,7 +4,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Exporting delivery configuration\n");
     if (!pushd(ctx->storage.cfgdump_dir)) {
         char filename[PATH_MAX] = {0};
-        sprintf(filename, "%s.ini", ctx->info.release_name);
+        snprintf(filename, sizeof(filename), "%s.ini", ctx->info.release_name);
         FILE *spec = fopen(filename, "w+");
         if (!spec) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
@@ -14,7 +14,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
         fclose(spec);
 
         memset(filename, 0, sizeof(filename));
-        sprintf(filename, "%s-rendered.ini", ctx->info.release_name);
+        snprintf(filename, sizeof(filename), "%s-rendered.ini", ctx->info.release_name);
         spec = fopen(filename, "w+");
         if (!spec) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);

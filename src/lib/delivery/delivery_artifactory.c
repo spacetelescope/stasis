@@ -4,8 +4,8 @@ int delivery_init_artifactory(struct Delivery *ctx) {
     int status = 0;
     char dest[PATH_MAX] = {0};
     char filepath[PATH_MAX] = {0};
-    snprintf(dest, sizeof(dest) - 1, "%s/bin", ctx->storage.tools_dir);
-    snprintf(filepath, sizeof(dest) - 1, "%s/bin/jf", ctx->storage.tools_dir);
+    snprintf(dest, sizeof(dest), "%s/bin", ctx->storage.tools_dir);
+    snprintf(filepath, sizeof(dest), "%s/bin/jf", ctx->storage.tools_dir);
 
     if (!access(filepath, F_OK)) {
         // already have it
@@ -32,7 +32,7 @@ int delivery_init_artifactory(struct Delivery *ctx) {
 
     // JFROG_CLI_HOME_DIR is where .jfrog is stored
     char path[PATH_MAX] = {0};
-    snprintf(path, sizeof(path) - 1, "%s/.jfrog", ctx->storage.build_dir);
+    snprintf(path, sizeof(path), "%s/.jfrog", ctx->storage.build_dir);
     setenv("JFROG_CLI_HOME_DIR", path, 1);
 
     // JFROG_CLI_TEMP_DIR is where the obvious is stored
@@ -84,8 +84,8 @@ int delivery_artifact_upload(struct Delivery *ctx) {
             for (size_t f = 0; f < strlist_count(ctx->deploy.jfrog[i].files); f++) {
                 char dest[PATH_MAX] = {0};
                 char files[PATH_MAX] = {0};
-                snprintf(dest, sizeof(dest) - 1, "%s/%s", ctx->deploy.jfrog[i].repo, ctx->deploy.jfrog[i].dest);
-                snprintf(files, sizeof(files) - 1, "%s", strlist_item(ctx->deploy.jfrog[i].files, f));
+                snprintf(dest, sizeof(dest), "%s/%s", ctx->deploy.jfrog[i].repo, ctx->deploy.jfrog[i].dest);
+                snprintf(files, sizeof(files), "%s", strlist_item(ctx->deploy.jfrog[i].files, f));
                 status += jfrog_cli_rt_upload(&ctx->deploy.jfrog_auth, &ctx->deploy.jfrog[i].upload_ctx, files, dest);
             }
         }
@@ -134,7 +134,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
             guard_free(data.src);
             return 1;
         }
-        sprintf(data.src, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
+        snprintf(data.src, PATH_MAX, "%s/%s/%s", ctx->storage.mission_dir, ctx->meta.mission, val.as_char_p);
         msg(STASIS_MSG_L2, "%s\n", data.src);
 
         int err = 0;
@@ -210,7 +210,7 @@ int delivery_series_sync(struct Delivery *ctx) {
     }
 
     char *release_pattern = NULL;
-    if (delivery_format_str(ctx, &release_pattern, r_fmt) < 0) {
+    if (delivery_format_str(ctx, &release_pattern, STASIS_NAME_MAX, r_fmt) < 0) {
         SYSERROR("Unable to render delivery format string: %s", r_fmt);
         guard_free(r_fmt);
         return -1;

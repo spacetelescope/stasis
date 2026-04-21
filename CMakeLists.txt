@@ -10,9 +10,13 @@ find_package(CURL)
 
 option(ASAN "Address Analyzer" OFF)
 set(ASAN_OPTIONS "-fsanitize=address,null,undefined")
+message(CHECK_START "Enable Address Analyzer (ASAN)")
 if (ASAN)
+	message(CHECK_PASS "Yes")
 	add_compile_options(${ASAN_OPTIONS} -fno-omit-frame-pointer -g -O0)
 	add_link_options(${ASAN_OPTIONS})
+else()
+	message(CHECK_FAIL "No")
 endif()
 
 pkg_check_modules(ZIP libzip)

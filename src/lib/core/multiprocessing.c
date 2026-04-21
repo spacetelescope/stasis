@@ -74,7 +74,9 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
 
     // Set log file name
     if (globals.enable_task_logging) {
-        sprintf(task->log_file + strlen(task->log_file), "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
+        const char *log_file_fmt = "task-%zu-%d.log";
+        const int log_file_len = snprintf(NULL, 0, log_file_fmt, mp_global_task_count, task->parent_pid);
+        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - log_file_len, log_file_fmt, mp_global_task_count, task->parent_pid);
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
@@ -171,17 +173,17 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
     if (globals.enable_task_logging) {
-        strcat(slot->log_file, pool->log_root);
-        strcat(slot->log_file, "/");
+        strncat(slot->log_file, pool->log_root, sizeof(slot->log_file) - strlen(slot->log_file) - 1);
+        strncat(slot->log_file, "/", sizeof(slot->log_file) - strlen(slot->log_file) - 1);
     } else {
-        strcpy(slot->log_file, "/dev/stdout");
+        strncpy(slot->log_file, "/dev/stdout", sizeof(slot->log_file) - 1);
     }
 
     // Set working directory
     if (isempty(working_dir)) {
-        strcpy(slot->working_dir, ".");
+        strncpy(slot->working_dir, ".", sizeof(slot->working_dir) - 1);
     } else {
-        strncpy(slot->working_dir, working_dir, PATH_MAX - 1);
+        strncpy(slot->working_dir, working_dir, sizeof(slot->working_dir) - 1);
     }
 
     // Create a temporary file to act as our intermediate command script
@@ -234,14 +236,13 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
         if (task->status == MP_POOL_TASK_STATUS_INITIAL && task->pid == MP_POOL_PID_UNUSED) {
             // You will only see this label if the task pool is killed by
             // MP_POOL_FAIL_FAST and tasks are still queued for execution
-            strcpy(status_str, "HOLD");
+            strncpy(status_str, "HOLD", sizeof(status_str) - 1);
         } else if (!task->status && !task->signaled_by) {
-
-            strcpy(status_str, "DONE");
+            strncpy(status_str, "DONE", sizeof(status_str) - 1);
         } else if (task->signaled_by) {
-            strcpy(status_str, "TERM");
+            strncpy(status_str, "TERM", sizeof(status_str) - 1);
         } else {
-            strcpy(status_str, "FAIL");
+            strncpy(status_str, "FAIL", sizeof(status_str) - 1);
         }
 
         char duration[255] = {0};
@@ -362,7 +363,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
 
             char progress[1024] = {0};
             const double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
-            snprintf(progress, sizeof(progress) - 1, "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
+            snprintf(progress, sizeof(progress), "[%s:%s] [%3.1f%%]", pool->ident, slot->ident, percent);
 
             int task_timed_out = false;
             if (slot->timeout) {

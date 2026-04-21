@@ -54,7 +54,7 @@ void test_shell_safe_verify_restrictions() {
         char cmd[PATH_MAX] = {0};
         memset(&proc, 0, sizeof(proc));
 
-        sprintf(cmd, "true%c false", invalid_chars[i]);
+        snprintf(cmd, sizeof(cmd), "true%c false", invalid_chars[i]);
         shell_safe(&proc, cmd);
         STASIS_ASSERT(proc.returncode == -1, "expected a negative result due to intentional error");
     }

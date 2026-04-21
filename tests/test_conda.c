@@ -40,7 +40,7 @@ struct Delivery ctx;
 
 void test_conda_installation() {
     char *install_url = calloc(255, sizeof(install_url));
-    delivery_get_conda_installer_url(&ctx, install_url);
+    delivery_get_conda_installer_url(&ctx, install_url, PATH_MAX);
     delivery_get_conda_installer(&ctx, install_url);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
 
@@ -92,7 +92,7 @@ void test_conda_exec() {
 void test_python_exec() {
     const char *python_system_path = find_program("python3");
     char python_path[PATH_MAX];
-    sprintf(python_path, "%s/bin/python3", ctx.storage.conda_install_prefix);
+    snprintf(python_path, sizeof(python_path), "%s/bin/python3", ctx.storage.conda_install_prefix);
 
     STASIS_ASSERT(strcmp(python_path, python_system_path ? python_system_path : "/not/found") == 0, "conda is not configured correctly.");
     STASIS_ASSERT(python_exec("-V") == 0, "python is broken");

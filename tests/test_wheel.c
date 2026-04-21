@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
     }
 
     char *install_url = calloc(255, sizeof(install_url));
-    delivery_get_conda_installer_url(&ctx, install_url);
+    delivery_get_conda_installer_url(&ctx, install_url, PATH_MAX);
     delivery_get_conda_installer(&ctx, install_url);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
     guard_free(install_url);

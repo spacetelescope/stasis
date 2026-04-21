@@ -218,7 +218,7 @@ char *tpl_render(char *str) {
                 value = strdup(env_val ? env_val : "");
             } else if (do_func) { // {{ func:NAME(a, ...) }}
                 char func_name_temp[STASIS_NAME_MAX] = {0};
-                strcpy(func_name_temp, type_stop + 1);
+                strncpy(func_name_temp, type_stop + 1, sizeof(func_name_temp) - 1);
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {
                     fprintf(stderr, "At position %zu in %s\nfunction name must be followed by a '('\n", off, key);
@@ -272,7 +272,7 @@ char *tpl_render(char *str) {
 
             // Append replacement value
             grow(z, &output_bytes, &output);
-            strcat(output, value);
+            strncat(output, value, output_bytes - strlen(output) - 1);
             guard_free(value);
             output[z] = 0;
         }

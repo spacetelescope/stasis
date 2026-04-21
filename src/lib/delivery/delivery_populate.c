@@ -256,16 +256,16 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
         return -1;
     }
 
-    if (delivery_format_str(ctx, &ctx->info.release_name, ctx->rules.release_fmt)) {
+    if (delivery_format_str(ctx, &ctx->info.release_name, STASIS_NAME_MAX, ctx->rules.release_fmt)) {
         fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
         return -1;
     }
 
     if (!ctx->info.build_name) {
-        delivery_format_str(ctx, &ctx->info.build_name, ctx->rules.build_name_fmt);
+        delivery_format_str(ctx, &ctx->info.build_name, STASIS_NAME_MAX, ctx->rules.build_name_fmt);
     }
     if (!ctx->info.build_number) {
-        delivery_format_str(ctx, &ctx->info.build_number, ctx->rules.build_number_fmt);
+        delivery_format_str(ctx, &ctx->info.build_number, STASIS_NAME_MAX, ctx->rules.build_number_fmt);
     }
 
     // Best I can do to make output directories unique. Annoying.
@@ -376,10 +376,10 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     // Now populate the rules
     char missionfile[PATH_MAX] = {0};
     if (getenv("STASIS_SYSCONFDIR")) {
-        sprintf(missionfile, "%s/%s/%s/%s.ini",
+        snprintf(missionfile, sizeof(missionfile), "%s/%s/%s/%s.ini",
                 getenv("STASIS_SYSCONFDIR"), "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     } else {
-        sprintf(missionfile, "%s/%s/%s/%s.ini",
+        snprintf(missionfile, sizeof(missionfile), "%s/%s/%s/%s.ini",
                 globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 

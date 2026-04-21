@@ -11,7 +11,7 @@ char *delivery_get_release_header(struct Delivery *ctx) {
     char output[STASIS_BUFSIZ];
     char stamp[100];
     strftime(stamp, sizeof(stamp) - 1, "%c", ctx->info.time_info);
-    sprintf(output, release_header,
+    snprintf(output, sizeof(output), release_header,
             ctx->info.release_name,
             ctx->rules.release_fmt,
             stamp,
@@ -22,7 +22,7 @@ char *delivery_get_release_header(struct Delivery *ctx) {
 
 int delivery_dump_metadata(struct Delivery *ctx) {
     char filename[PATH_MAX];
-    sprintf(filename, "%s/meta-%s.stasis", ctx->storage.meta_dir, ctx->info.release_name);
+    snprintf(filename, sizeof(filename), "%s/meta-%s.stasis", ctx->storage.meta_dir, ctx->info.release_name);
     FILE *fp = fopen(filename, "w+");
     if (!fp) {
         return -1;
@@ -143,7 +143,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
         } else if (globals.jfrog.repo) {
             SYSDEBUG("%s", "Will replace conda channel with artifactory repo packages/conda url");
-            sprintf(output, "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
+            snprintf(output, sizeof(output), "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
             SYSDEBUG("%s", "Will replace conda channel with local conda artifact directory");
@@ -153,16 +153,16 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
 
         if (ctx->storage.wheel_staging_url) {
             SYSDEBUG("%s", "Will replace pip arguments with wheel staging url");
-            sprintf(output, "--extra-index-url %s/%s/%s/packages/wheels", ctx->storage.wheel_staging_url, ctx->meta.mission, ctx->info.build_name);
+            snprintf(output, sizeof(output), "--extra-index-url %s/%s/%s/packages/wheels", ctx->storage.wheel_staging_url, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
         } else if (globals.enable_artifactory && globals.jfrog.url && globals.jfrog.repo) {
             SYSDEBUG("%s", "Will replace pip arguments with artifactory repo packages/wheel url");
-            sprintf(output, "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
+            snprintf(output, sizeof(output), "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
             SYSDEBUG("%s", "Will replace pip arguments with local wheel artifact directory");
             msg(STASIS_MSG_WARN, "wheel_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.wheel_artifact_dir);
-            sprintf(output, "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
+            snprintf(output, sizeof(output), "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
     }
@@ -177,7 +177,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
     memset(conda_build_dir, 0, sizeof(conda_build_dir));
     memset(subdir, 0, sizeof(subdir));
 
-    sprintf(conda_build_dir, "%s/%s", ctx->storage.conda_install_prefix, "conda-bld");
+    snprintf(conda_build_dir, sizeof(conda_build_dir), "%s/%s", ctx->storage.conda_install_prefix, "conda-bld");
     // One must run conda build at least once to create the "conda-bld" directory.
     // When this directory is missing there can be no build artifacts.
     if (access(conda_build_dir, F_OK) < 0) {
@@ -186,7 +186,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
         return 0;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "rsync -avi --progress %s/%s %s",
+    snprintf(cmd, sizeof(cmd), "rsync -avi --progress %s/%s %s",
              conda_build_dir,
              ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR],
              ctx->storage.conda_artifact_dir);
@@ -200,7 +200,7 @@ int delivery_index_conda_artifacts(struct Delivery *ctx) {
 
 int delivery_copy_wheel_artifacts(struct Delivery *ctx) {
     char cmd[PATH_MAX] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "rsync -avi --progress %s/*/dist/*.whl %s",
+    snprintf(cmd, sizeof(cmd), "rsync -avi --progress %s/*/dist/*.whl %s",
              ctx->storage.build_sources_dir,
              ctx->storage.wheel_artifact_dir);
     return system(cmd);
@@ -217,7 +217,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     // Generate a "dumb" local pypi index that is compatible with:
     // pip install --extra-index-url
     char top_index[PATH_MAX] = {0};
-    sprintf(top_index, "%s/index.html", ctx->storage.wheel_artifact_dir);
+    snprintf(top_index, sizeof(top_index),"%s/index.html", ctx->storage.wheel_artifact_dir);
     SYSDEBUG("Opening top-level index for writing: %s", top_index);
     FILE *top_fp = fopen(top_index, "w+");
     if (!top_fp) {
@@ -232,7 +232,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         }
 
         char bottom_index[PATH_MAX * 2] = {0};
-        sprintf(bottom_index, "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
+        snprintf(bottom_index, sizeof(bottom_index), "%s/%s/index.html", ctx->storage.wheel_artifact_dir, rec->d_name);
         SYSDEBUG("Opening bottom-level for writing: %s", bottom_index);
         FILE *bottom_fp = fopen(bottom_index, "w+");
         if (!bottom_fp) {
@@ -248,7 +248,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         fprintf(top_fp, "<a href=\"%s/\">%s</a><br/>\n", rec->d_name, rec->d_name);
 
         char dpath[PATH_MAX * 2] = {0};
-        sprintf(dpath, "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
+        snprintf(dpath, sizeof(dpath), "%s/%s", ctx->storage.wheel_artifact_dir, rec->d_name);
         struct StrList *packages = listdir(dpath);
         if (!packages) {
             closedir(dp);

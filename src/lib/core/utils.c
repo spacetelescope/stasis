@@ -45,9 +45,9 @@ int rmtree(char *_path) {
 
     while ((d_entity = readdir(dir)) != NULL) {
         char abspath[PATH_MAX] = {0};
-        strcat(abspath, path);
-        strcat(abspath, DIR_SEP);
-        strcat(abspath, d_entity->d_name);
+        strncat(abspath, path, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, d_entity->d_name, sizeof(abspath) - strlen(abspath) - 1);
 
         if (!strcmp(d_entity->d_name, ".") || !strcmp(d_entity->d_name, "..") || !strcmp(abspath, path)) {
             continue;
@@ -278,13 +278,13 @@ char *find_program(const char *name) {
     result[0] = '\0';
     while ((path_elem = strsep(&path, PATH_SEP))) {
         char abspath[PATH_MAX] = {0};
-        strcat(abspath, path_elem);
-        strcat(abspath, DIR_SEP);
-        strcat(abspath, name);
+        strncat(abspath, path_elem, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
+        strncat(abspath, name, sizeof(abspath) - strlen(abspath) - 1);
         if (access(abspath, F_OK) < 0) {
             continue;
         }
-        strncpy(result, abspath, sizeof(result));
+        strncpy(result, abspath, sizeof(result) - 1);
         break;
     }
     path = path_orig;
@@ -316,11 +316,13 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
     }
 
     static char command[PATH_MAX] = {0};
-    sprintf(command, "%s clone -c advice.detachedHead=false --recursive %s", program, url);
+    snprintf(command, sizeof(command), "%s clone -c advice.detachedHead=false --recursive %s", program, url);
 
     if (destdir && access(destdir, F_OK) < 0) {
         // Destination directory does not exist
-        sprintf(command + strlen(command), " %s", destdir);
+        const char *command_fmt = " %s";
+        const int command_fmt_len = snprintf(NULL, 0, command_fmt, destdir);
+        snprintf(command + strlen(command), sizeof(command) - command_fmt_len, command_fmt, destdir);
         // Clone the repo
         result = shell(proc, command);
         if (result) {
@@ -338,7 +340,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
     if (!pushd(chdir_to)) {
         memset(command, 0, sizeof(command));
-        sprintf(command, "%s fetch --all", program);
+        snprintf(command, sizeof(command), "%s fetch --all", program);
         result = shell(proc, command);
         if (result) {
             goto die_pop;
@@ -346,7 +348,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
         if (gitref != NULL) {
             memset(command, 0, sizeof(command));
-            sprintf(command, "%s checkout %s", program, gitref);
+            snprintf(command, sizeof(command), "%s checkout %s", program, gitref);
 
             result = shell(proc, command);
             if (result) {
@@ -403,7 +405,7 @@ char *git_rev_parse(const char *path, char *args) {
     }
 
     // TODO: Use `-C [path]` if the version of git installed supports it
-    sprintf(cmd, "git rev-parse %s", args);
+    snprintf(cmd, sizeof(cmd), "git rev-parse %s", args);
     FILE *pp = popen(cmd, "r");
     if (!pp) {
         return NULL;
@@ -442,27 +444,39 @@ void msg(unsigned type, char *fmt, ...) {
         // for error output
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_RED);
-        strcpy(status, " ERROR: ");
+        strncpy(status, " ERROR: ", sizeof(status) - 1);
     } else if (type & STASIS_MSG_WARN) {
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_YELLOW);
-        strcpy(status, " WARNING: ");
+        strncpy(status, " WARNING: ", sizeof(status) - 1);
     } else {
         fprintf(stream, "%s", STASIS_COLOR_GREEN);
-        strcpy(status, " ");
+        strncpy(status, " ", sizeof(status) - 1);
     }
 
     if (type & STASIS_MSG_L1) {
-        sprintf(header, "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
+        snprintf(header, sizeof(header), "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
     } else if (type & STASIS_MSG_L2) {
-        sprintf(header, " ->%s" STASIS_COLOR_RESET, status);
+        snprintf(header, sizeof(header), " ->%s" STASIS_COLOR_RESET, status);
     } else if (type & STASIS_MSG_L3) {
-        sprintf(header, STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
+        snprintf(header, sizeof(header), STASIS_COLOR_BLUE "  ->%s" STASIS_COLOR_RESET, status);
     }
 
-    fprintf(stream, "%s", header);
-    vfprintf(stream, fmt, args);
-    fprintf(stream, "%s", STASIS_COLOR_RESET);
+    if (fprintf(stream, "%s", header) < 0) {
+        SYSERROR("%s", "unable to write message header to stream");
+        return;
+    }
+
+    const int len = vfprintf(stream, fmt, args);
+    if (len < 0) {
+        SYSERROR("%s", "unable to write message to stream");
+        return;
+    }
+
+    if (fprintf(stream, "%s", STASIS_COLOR_RESET) < 0) {
+        SYSERROR("%s", "unable to write message footer to stream");
+        return;
+    }
     va_end(args);
 }
 
@@ -482,12 +496,12 @@ char *xmkstemp(FILE **fp, const char *mode) {
     char t_name[PATH_MAX * 2];
 
     if (globals.tmpdir) {
-        strcpy(tmpdir, globals.tmpdir);
+        strncpy(tmpdir, globals.tmpdir, sizeof(tmpdir) - 1);
     } else {
-        strcpy(tmpdir, "/tmp");
+        strncpy(tmpdir, "/tmp", sizeof(tmpdir) - 1);
     }
     memset(t_name, 0, sizeof(t_name));
-    sprintf(t_name, "%s/%s", tmpdir, "STASIS.XXXXXX");
+    snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
 
     fd = mkstemp(t_name);
     *fp = fdopen(fd, mode);
@@ -587,7 +601,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
         return 0;
     }
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, sizeof(cmd) - 1, "%s %s %s", pretty_print_prog, pretty_print_args, filename);
+    snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
         goto pretty_print_failed;
@@ -636,9 +650,10 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  *
  * @param filename /path/to/tox.ini
  * @param result path of replacement tox.ini configuration
+ * @param maxlen
  * @return 0 on success, -1 on error
  */
-int fix_tox_conf(const char *filename, char **result) {
+int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     struct INIFILE *toxini;
     FILE *fptemp;
 
@@ -650,7 +665,7 @@ int fix_tox_conf(const char *filename, char **result) {
 
     // If the result pointer is NULL, allocate enough to store a filesystem path
     if (!*result) {
-        *result = calloc(PATH_MAX, sizeof(**result));
+        *result = calloc(maxlen, sizeof(**result));
         if (!*result) {
             guard_free(tempfile);
             return -1;
@@ -692,7 +707,7 @@ int fix_tox_conf(const char *filename, char **result) {
                                 return -1;
                             }
                             value = tmp;
-                            strcat(value, with_posargs);
+                            strncat(value, with_posargs, (strlen(value) + strlen(with_posargs)) - strlen(value) - 1);
                             ini_setval(&toxini, INI_SETVAL_REPLACE, section_name, key, value);
                         }
                     }
@@ -707,7 +722,7 @@ int fix_tox_conf(const char *filename, char **result) {
     fclose(fptemp);
 
     // Store path to modified config
-    strcpy(*result, tempfile);
+    strncpy(*result, tempfile, maxlen - 1);
     guard_free(tempfile);
 
     ini_free(&toxini);
@@ -756,7 +771,7 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
     if (!tmp) {
         return -1;
     }
-    strcpy(tmp, src);
+    strncpy(tmp, src, strlen(redacted) + strlen(src));
 
     for (size_t i = 0; i < to_redact_size; i++) {
         if (to_redact[i] && strstr(tmp, to_redact[i])) {
@@ -819,16 +834,15 @@ long get_cpu_count() {
 int mkdirs(const char *_path, mode_t mode) {
     char *token;
     char pathbuf[PATH_MAX] = {0};
-    char *path;
-    path = pathbuf;
-    strcpy(path, _path);
+    strncpy(pathbuf, _path, sizeof(pathbuf) - 1);
+    char *path = pathbuf;
     errno = 0;
 
     char result[PATH_MAX] = {0};
     int status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
-        strcat(result, token);
-        strcat(result, "/");
+        strncat(result, token, sizeof result - strlen(result) - 1);
+        strncat(result, "/", sizeof result - strlen(result) - 1);
         status = mkdir(result, mode);
         if (status && errno == EEXIST) {
             status = 0;
@@ -884,10 +898,10 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     return 0;
 }
 
-int gen_file_extension_str(char *filename, const char *extension) {
+int gen_file_extension_str(char *filename, const size_t maxlen, const char *extension) {
     char *ext_orig = strrchr(filename, '.');
     if (!ext_orig) {
-        strcat(filename, extension);
+        strncat(filename, extension, maxlen - strlen(filename) - 1);
         return 0;
     }
 
@@ -912,13 +926,15 @@ void debug_hexdump(char *data, int len) {
     char *pos = start;
     while (pos != end) {
         if (count == 0) {
-            sprintf(addr + strlen(addr), "%p", pos);
+            const char *pos_fmt = "%p";
+            const int pos_fmt_len = snprintf(NULL, 0, pos_fmt, pos);
+            snprintf(addr + strlen(addr), sizeof(addr) - pos_fmt_len, pos_fmt, pos);
         }
         if (count == 8) {
-            strcat(bytes, " ");
+            strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
         }
         if (count > 15) {
-            sprintf(output, "%s | %s | %s", addr, bytes, ascii);
+            snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
             puts(output);
             memset(output, 0, sizeof(output));
             memset(addr, 0, sizeof(addr));
@@ -928,8 +944,13 @@ void debug_hexdump(char *data, int len) {
             continue;
         }
 
-        sprintf(bytes + strlen(bytes), "%02X ", (unsigned char) *pos);
-        sprintf(ascii + strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
+        const char *bytes_fmt = "%02X ";
+        const int bytes_fmt_len = snprintf(NULL, 0, bytes_fmt, (unsigned char) *pos);
+        snprintf(bytes + strlen(bytes), sizeof(bytes) - bytes_fmt_len, bytes_fmt, (unsigned char) *pos);
+
+        const char *ascii_fmt = "%c";
+        // no need to calculate length for a single character
+        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), ascii_fmt, isprint(*pos) ? *pos : '.');
 
         pos++;
         count++;
@@ -937,11 +958,11 @@ void debug_hexdump(char *data, int len) {
 
     if (count <= 8) {
         // Add group padding
-        strcat(bytes, " ");
+        strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
     }
     const int padding = 16 - count;
     for (int i = 0; i < padding; i++) {
-        strcat(bytes, "   ");
+        strncat(bytes, "   ", sizeof(bytes) - strlen(bytes) - 1);
     }
     snprintf(output, DEBUG_HEXDUMP_FMT_BYTES + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
@@ -1171,4 +1192,3 @@ int get_random_bytes(char *result, size_t maxlen) {
     result[bytes ? bytes - 1 : 0] = '\0';
     return 0;
 }
-

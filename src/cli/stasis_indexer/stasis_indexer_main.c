@@ -13,9 +13,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
     char destdir_with_output[PATH_MAX] = {0};
     char *destdir = destdir_bare;
 
-    strcpy(destdir_bare, dest);
-    strcpy(destdir_with_output, dest);
-    strcat(destdir_with_output, "/output");
+    strncpy(destdir_bare, dest, sizeof(destdir_bare) - 1);
+    strncpy(destdir_with_output, dest, sizeof(destdir_with_output) - 1);
+    strncat(destdir_with_output, "/output", sizeof(destdir_with_output) - strlen(destdir_with_output) - 1);
 
     if (!access(destdir_with_output, F_OK)) {
         destdir = destdir_with_output;
@@ -26,9 +26,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         char srcdir_bare[PATH_MAX] = {0};
         char srcdir_with_output[PATH_MAX] = {0};
         char *srcdir = srcdir_bare;
-        strcpy(srcdir_bare, rootdirs[i]);
-        strcpy(srcdir_with_output, rootdirs[i]);
-        strcat(srcdir_with_output, "/output");
+        strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare) - 1);
+        strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output) - 1);
+        strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output) - strlen(srcdir_with_output) - 1);
 
         if (access(srcdir_bare, F_OK)) {
             fprintf(stderr, "%s does not exist\n", srcdir_bare);
@@ -80,11 +80,11 @@ int indexer_symlinks(struct Delivery **ctx, const size_t nelem) {
             if (!data[i]->meta.name) {
                 continue;
             }
-            sprintf(link_name_spec, "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_spec, "%s.yml", data[i]->info.release_name);
+            snprintf(link_name_spec, sizeof(link_name_spec), "latest-py%s-%s-%s.yml", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            snprintf(file_name_spec, sizeof(file_name_spec), "%s.yml", data[i]->info.release_name);
 
-            sprintf(link_name_readme, "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
-            sprintf(file_name_readme, "README-%s.md", data[i]->info.release_name);
+            snprintf(link_name_readme, sizeof(link_name_readme), "README-py%s-%s-%s.md", data[i]->meta.python_compact, data[i]->system.platform[DELIVERY_PLATFORM_RELEASE], data[i]->system.arch);
+            snprintf(file_name_readme, sizeof(file_name_readme), "README-%s.md", data[i]->info.release_name);
 
             if (!access(link_name_spec, F_OK)) {
                 if (unlink(link_name_spec)) {
@@ -151,7 +151,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
 
     char newpath[PATH_MAX] = {0};
     if (getenv("PATH")) {
-        sprintf(newpath, "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
+        snprintf(newpath, sizeof(newpath), "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
         setenv("PATH", newpath, 1);
     } else {
         SYSERROR("%s", "environment variable PATH is undefined. Unable to continue.");
@@ -261,11 +261,11 @@ int main(const int argc, char *argv[]) {
     char workdir_template[PATH_MAX] = {0};
     const char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
-        strcat(workdir_template, system_tmp);
+        strncat(workdir_template, system_tmp, sizeof(workdir_template) - strlen(workdir_template) - 1);
     } else {
-        strcat(workdir_template, "/tmp");
+        strncat(workdir_template, "/tmp", sizeof(workdir_template) - strlen(workdir_template) - 1);
     }
-    strcat(workdir_template, "/stasis-combine.XXXXXX");
+    strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template) - strlen(workdir_template) - 1);
     char *workdir = mkdtemp(workdir_template);
     if (!workdir) {
         SYSERROR("Unable to create temporary directory: %s", workdir_template);
@@ -320,6 +320,11 @@ int main(const int argc, char *argv[]) {
     msg(STASIS_MSG_L1, "Loading metadata\n");
     struct StrList *metafiles = NULL;
     get_files(&metafiles, ctx.storage.meta_dir, "*.stasis");
+    if (!metafiles || !strlist_count(metafiles)) {
+        SYSERROR("%s: No metadata!", ctx.storage.meta_dir);
+        delivery_free(&ctx);
+        exit(1);
+    }
     strlist_sort(metafiles, STASIS_SORT_LEN_ASCENDING);
 
     struct Delivery **local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
@@ -411,7 +416,7 @@ int main(const int argc, char *argv[]) {
 
     msg(STASIS_MSG_L1, "Copying indexed delivery to '%s'\n", destdir);
     char cmd[PATH_MAX] = {0};
-    sprintf(cmd, "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
+    snprintf(cmd, sizeof(cmd), "rsync -ah%s --delete --exclude 'tmp/' --exclude 'tools/' '%s/' '%s/'", globals.verbose ? "v" : "q", workdir, destdir);
     guard_free(destdir);
 
     if (globals.verbose) {

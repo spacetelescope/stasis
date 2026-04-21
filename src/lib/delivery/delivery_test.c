@@ -156,7 +156,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
 
             char destdir[PATH_MAX];
-            sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
+            snprintf(destdir, sizeof(destdir), "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
 
             if (!access(destdir, F_OK)) {
                 msg(STASIS_MSG_L3, "Purging repository %s\n", destdir);
@@ -200,11 +200,11 @@ void delivery_tests_run(struct Delivery *ctx) {
                 msg(STASIS_MSG_L3, "Queuing task for %s\n", test->name);
                 memset(&proc, 0, sizeof(proc));
 
-                strcpy(cmd, test->script);
+                strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ - 1);
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
-                        strcpy(cmd, cmd_rendered);
+                        strncpy(cmd, cmd_rendered, strlen(test->script) + STASIS_BUFSIZ - 1);
                         cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
                     }
                     guard_free(cmd_rendered);
@@ -229,7 +229,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 if (!globals.enable_parallel || !test->parallel) {
                     selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
-                    strcpy(pool_name, "serial");
+                    strncpy(pool_name, "serial", sizeof(pool_name) - 1);
                 }
 
                 if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
@@ -267,7 +267,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             const struct Test *test = ctx->tests->test[i];
             if (test->script_setup) {
                 char destdir[PATH_MAX];
-                sprintf(destdir, "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
+                snprintf(destdir, sizeof(destdir), "%s/%s", ctx->storage.build_sources_dir, path_basename(test->repository));
                 if (access(destdir, F_OK)) {
                     SYSERROR("%s: %s", destdir, strerror(errno));
                     exit(1);
@@ -382,7 +382,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
             continue;
         }
 
-        sprintf(path, "%s/%s", ctx->storage.results_dir, rec->d_name);
+        snprintf(path, sizeof(path), "%s/%s", ctx->storage.results_dir, rec->d_name);
         msg(STASIS_MSG_L3, "%s\n", rec->d_name);
         if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
             msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);

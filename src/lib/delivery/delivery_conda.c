@@ -1,21 +1,32 @@
 #include "delivery.h"
 
-void delivery_get_conda_installer_url(struct Delivery *ctx, char *result) {
+void delivery_get_conda_installer_url(struct Delivery *ctx, char *result, size_t maxlen) {
+    int len = 0;
     if (ctx->conda.installer_version) {
         // Use version specified by configuration file
-        sprintf(result, "%s/%s-%s-%s-%s.sh", ctx->conda.installer_baseurl,
+        len = snprintf(NULL, 0, ctx->conda.installer_baseurl,
+                ctx->conda.installer_name,
+                ctx->conda.installer_version,
+                ctx->conda.installer_platform,
+                ctx->conda.installer_arch);
+
+        snprintf(result, maxlen - len, "%s/%s-%s-%s-%s.sh", ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_version,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);
     } else {
         // Use latest installer
-        sprintf(result, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
+        len = snprintf(NULL, 0, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
+                ctx->conda.installer_name,
+                ctx->conda.installer_platform,
+                ctx->conda.installer_arch);
+
+        snprintf(result, maxlen - len, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);
     }
-
 }
 
 int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url) {
@@ -23,7 +34,7 @@ int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url) {
     char *installer = path_basename(installer_url);
 
     memset(script_path, 0, sizeof(script_path));
-    sprintf(script_path, "%s/%s", ctx->storage.tmpdir, installer);
+    snprintf(script_path, sizeof(script_path), "%s/%s", ctx->storage.tmpdir, installer);
     if (access(script_path, F_OK)) {
         // Script doesn't exist
         char *errmsg = NULL;
@@ -61,7 +72,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
             // Proceed with the installation
             // -b = batch mode (non-interactive)
             char cmd[PATH_MAX] = {0};
-            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+            snprintf(cmd, sizeof(cmd), "%s %s -b -p %s",
                      find_program("bash"),
                      install_script,
                      conda_install_dir);
@@ -73,7 +84,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
             // Proceed with the installation
             // -b = batch mode (non-interactive)
             char cmd[PATH_MAX] = {0};
-            snprintf(cmd, sizeof(cmd) - 1, "%s %s -b -p %s",
+            snprintf(cmd, sizeof(cmd), "%s %s -b -p %s",
                      find_program("bash"),
                      install_script,
                      conda_install_dir);
@@ -97,7 +108,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
     // way to make sure the file is used. Not setting this variable leads to strange
     // behavior, especially if a conda environment is already active when STASIS is loaded.
     char rcpath[PATH_MAX];
-    sprintf(rcpath, "%s/%s", conda_install_dir, ".condarc");
+    snprintf(rcpath, sizeof(rcpath), "%s/%s", conda_install_dir, ".condarc");
     setenv("CONDARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
         perror("unable to replace runtime environment after activating conda");

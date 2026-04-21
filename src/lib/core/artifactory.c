@@ -14,37 +14,37 @@ int artifactory_download_cli(char *dest,
     char arch_ident[STASIS_NAME_MAX] = {0};
 
     // convert platform string to lower-case
-    strcpy(os_ident, os);
+    strncpy(os_ident, os, sizeof(os_ident) - 1);
     tolower_s(os_ident);
 
     // translate OS identifier
     if (!strcmp(os_ident, "darwin") || startswith(os_ident, "macos")) {
-        strcpy(os_ident, "mac");
+        strncpy(os_ident, "mac", sizeof(os_ident) - 1);
     } else if (!strcmp(os_ident, "linux")) {
-        strcpy(os_ident, "linux");
+        strncpy(os_ident, "linux", sizeof(os_ident) - 1);
     } else {
         fprintf(stderr, "%s: unknown operating system: %s\n", __FUNCTION__, os_ident);
         return -1;
     }
 
     // translate ARCH identifier
-    strcpy(arch_ident, arch);
+    strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
-        strcpy(arch_ident, "386");
+        strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
         if (!strcmp(os_ident, "mac")) {
-            strcpy(arch_ident, "386");
+            strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
         } else {
-            strcpy(arch_ident, "amd64");
+            strncpy(arch_ident, "amd64", sizeof(arch_ident) - 1);
         }
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
-        strcpy(arch_ident, "arm64");
+        strncpy(arch_ident, "arm64", sizeof(arch_ident) - 1);
     } else {
         fprintf(stderr, "%s: unknown architecture: %s\n", __FUNCTION__, arch_ident);
         return -1;
     }
 
-    snprintf(url, sizeof(url) - 1, "%s/%s/%s/%s/%s-%s-%s/%s",
+    snprintf(url, sizeof(url), "%s/%s/%s/%s/%s-%s-%s/%s",
              jfrog_artifactory_base_url,           // https://releases.jfrog.io/artifactory
              jfrog_artifactory_product,            // jfrog-cli
              cli_major_ver,                        // v\d+(-jf)?
@@ -53,14 +53,16 @@ int artifactory_download_cli(char *dest,
              os_ident,                             // ...
              arch_ident,                           // jfrog-cli-linux-x86_64
              remote_filename);                     // jf
-    strcpy(path, dest);
+    strncpy(path, dest, sizeof(path) - 1);
 
     if (mkdirs(path, 0755)) {
         fprintf(stderr, "%s: %s: %s", __FUNCTION__, path, strerror(errno));
         return -1;
     }
 
-    sprintf(path + strlen(path), "/%s", remote_filename);
+    const char *remote_filename_fmt = "/%s";
+    int remote_filename_fmt_len = snprintf(NULL, 0, remote_filename_fmt, remote_filename);
+    snprintf(path + strlen(path), sizeof(path) - remote_filename_fmt_len, remote_filename_fmt, remote_filename);
     char *errmsg = NULL;
     long fetch_status = download(url, path, &errmsg);
     if (HTTP_ERROR(fetch_status)) {
@@ -78,7 +80,7 @@ void jfrt_register_opt_str(char *jfrt_val, const char *opt_name, struct StrList 
         // no data
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=\"%s\"", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=\"%s\"", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -89,7 +91,7 @@ void jfrt_register_opt_bool(bool jfrt_val, const char *opt_name, struct StrList 
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s", opt_name);
+    snprintf(data, sizeof(data), "--%s", opt_name);
     strlist_append(&*opt_map, data);
 }
 
@@ -100,7 +102,7 @@ void jfrt_register_opt_int(int jfrt_val, const char *opt_name, struct StrList **
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=%d", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=%d", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -111,7 +113,7 @@ void jfrt_register_opt_long(long jfrt_val, const char *opt_name, struct StrList 
         // option will not be used
         return;
     }
-    snprintf(data, sizeof(data) - 1, "--%s=%ld", opt_name, jfrt_val);
+    snprintf(data, sizeof(data), "--%s=%ld", opt_name, jfrt_val);
     strlist_append(&*opt_map, data);
 }
 
@@ -230,7 +232,7 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
             auth->client_cert_path,
             auth->password,
     };
-    snprintf(cmd, sizeof(cmd) - 1, "jf %s %s %s %s", subsystem, task, auth_args, args ? args : "");
+    snprintf(cmd, sizeof(cmd), "jf %s %s %s %s", subsystem, task, auth_args, args ? args : "");
     redact_sensitive(redactable, sizeof(redactable) / sizeof (*redactable), cmd, cmd_redacted, sizeof(cmd_redacted) - 1);
 
     guard_free(auth_args);
@@ -242,8 +244,8 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
     }
 
     if (!globals.verbose) {
-        strcpy(proc.f_stdout, "/dev/null");
-        strcpy(proc.f_stderr, "/dev/null");
+        strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout) - 1);
+        strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
     }
     return shell(&proc, cmd);
 }
@@ -254,13 +256,13 @@ static int jfrog_cli_rt(struct JFRT_Auth *auth, char *task, char *args) {
 
 int jfrog_cli_rt_build_collect_env(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-collect-env", cmd);
 }
 
 int jfrog_cli_rt_build_publish(struct JFRT_Auth *auth, char *build_name, char *build_number) {
     char cmd[STASIS_BUFSIZ] = {0};
-    snprintf(cmd, sizeof(cmd) - 1, "\"%s\" \"%s\"", build_name, build_number);
+    snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", build_name, build_number);
     return jfrog_cli(auth, "rt", "build-publish", cmd);
 }
 
@@ -326,7 +328,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' '%s'", args, repo_path, dest ? dest : "");
+    snprintf(cmd, sizeof(cmd), "%s '%s' '%s'", args, repo_path, dest ? dest : "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 
@@ -411,12 +413,12 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         if (base) {
             src = base;
         } else {
-            strcat(src, "/");
+            strncat(src, "/", sizeof(src) - strlen(src) - 1);
         }
         pushd(new_src);
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s' \"%s\"", args, src, repo_path);
+    snprintf(cmd, sizeof(cmd), "%s '%s' \"%s\"", args, src, repo_path);
     guard_free(args);
     guard_strlist_free(&arg_map);
 
@@ -475,7 +477,7 @@ int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *r
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd) - 1, "%s '%s/%s'", args, repo_path, pattern ? pattern: "");
+    snprintf(cmd, sizeof(cmd), "%s '%s/%s'", args, repo_path, pattern ? pattern: "");
     guard_free(args);
     guard_strlist_free(&arg_map);
 

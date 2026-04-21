@@ -293,9 +293,10 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  * Applies STASIS fixups to a tox ini config
  * @param filename path to tox.ini
  * @param result path to processed configuration
+ * @param maxlen
  * @return 0 on success, -1 on error
  */
-int fix_tox_conf(const char *filename, char **result);
+int fix_tox_conf(const char *filename, char **result, size_t maxlen);
 
 char *collapse_whitespace(char **s);
 
@@ -420,7 +421,7 @@ int env_manipulate_pathstr(const char *key, char *path, int mode);
 /**
 * Append or replace a file extension
 */
-int gen_file_extension_str(char *filename, const char *extension);
+int gen_file_extension_str(char *filename, size_t maxlen, const char *extension);
 
 /**
  * Remove [extra]s from a spec string

@@ -65,7 +65,7 @@ void test_fix_tox_conf() {
     if (fp) {
         fprintf(fp, "%s", data);
         fclose(fp);
-        STASIS_ASSERT(fix_tox_conf(filename, &result) == 0, "fix_tox_conf failed");
+        STASIS_ASSERT(fix_tox_conf(filename, &result, PATH_MAX) == 0, "fix_tox_conf failed");
     } else {
         STASIS_ASSERT(false, "writing mock tox.ini failed");
     }
@@ -129,7 +129,7 @@ void test_isempty_dir() {
     STASIS_ASSERT(isempty_dir(dname) > 0, "empty directory went undetected");
 
     char path[PATH_MAX];
-    sprintf(path, "%s/file.txt", dname);
+    snprintf(path, sizeof(path), "%s/file.txt", dname);
     touch(path);
 
     STASIS_ASSERT(isempty_dir(dname) == 0, "populated directory went undetected");
@@ -147,7 +147,9 @@ void test_xmkstemp() {
 
     char buf[100] = {0};
     tempfp = fopen(tempfile, "r");
-    fgets(buf, sizeof(buf) - 1, tempfp);
+    const char *line = fgets(buf, sizeof(buf) - 1, tempfp);
+    STASIS_ASSERT_FATAL(line != NULL, "file should contain data written earlier");
+    STASIS_ASSERT(strcmp(line, buf) == 0, "file should contain the correct data");
     fclose(tempfp);
 
     STASIS_ASSERT(strcmp(buf, data) == 0, "data written to temp file is incorrect");
@@ -193,7 +195,7 @@ void test_git_clone_and_describe() {
 
     // initialize a bare repo so we can clone it
     char init_cmd[PATH_MAX];
-    sprintf(init_cmd, "git init --bare %s", repo_git);
+    snprintf(init_cmd, sizeof(init_cmd), "git init --bare %s", repo_git);
     system(init_cmd);
 
     // clone the bare repo
@@ -308,7 +310,7 @@ void test_path_dirname() {
         const char *input = data[i];
         const char *expected = data[i + 1];
         char tmp[PATH_MAX] = {0};
-        strcpy(tmp, input);
+        strncpy(tmp, input, sizeof(tmp) - 1);
 
         char *result = path_dirname(tmp);
         STASIS_ASSERT(strcmp(expected, result) == 0, NULL);
@@ -329,8 +331,7 @@ void test_path_basename() {
 }
 
 void test_expandpath() {
-    char *home;
-
+    char *home = NULL;
     const char *homes[] = {
             "HOME",
             "USERPROFILE",
@@ -341,10 +342,11 @@ void test_expandpath() {
             break;
         }
     }
+    STASIS_ASSERT_FATAL(home != NULL, "cannot expand without knowing the user's home directory path");
 
     char path[PATH_MAX] = {0};
-    strcat(path, "~");
-    strcat(path, DIR_SEP);
+    strncat(path, "~", sizeof(path) - strlen(path) - 1);
+    strncat(path, DIR_SEP, sizeof(path) - strlen(path) - 1);
 
     char *expanded = expandpath(path);
     STASIS_ASSERT(startswith(expanded, home) > 0, expanded);
@@ -366,8 +368,8 @@ void test_rmtree() {
     for (size_t i = 0; i < sizeof(tree) / sizeof(*tree); i++) {
         char path[PATH_MAX];
         char mockfile[PATH_MAX + 10];
-        sprintf(path, "%s/%s", root, tree[i]);
-        sprintf(mockfile, "%s/%zu.txt", path, i);
+        snprintf(path, sizeof(path), "%s/%s", root, tree[i]);
+        snprintf(mockfile, sizeof(mockfile), "%s/%zu.txt", path, i);
         if (mkdir(path, 0755)) {
             perror(path);
             STASIS_ASSERT(false, NULL);

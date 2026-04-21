@@ -70,7 +70,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             NULL,
     };
 
-    char export_command[7]; // export=6 and setenv=6... convenient
+    char export_command[10]; // export=6 and setenv=6... convenient
     char *_sh = getenv("SHELL");
     char *sh = path_basename(_sh);
     if (sh == NULL) {
@@ -80,13 +80,13 @@ void runtime_export(RuntimeEnv *env, char **keys) {
 
     for (size_t i = 0; borne[i] != NULL; i++) {
         if (strcmp(sh, borne[i]) == 0) {
-            strcpy(export_command, "export");
+            strncpy(export_command, "export", sizeof(export_command) - 1);
             break;
         }
     }
     for (size_t i = 0; unborne[i] != NULL; i++) {
         if (strcmp(sh, unborne[i]) == 0) {
-            strcpy(export_command, "setenv");
+            strncpy(export_command, "setenv", sizeof(export_command) - 1);
             break;
         }
     }
