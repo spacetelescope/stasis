@@ -3,6 +3,8 @@
 
 const char *release_header = "# delivery_name: %s\n"
                              "# delivery_fmt: %s\n"
+                             "# stasis_version: %s\n"
+                             "# stasis_branch: %s\n"
                              "# creation_time: %s\n"
                              "# conda_ident: %s\n"
                              "# conda_build_ident: %s\n";
@@ -14,6 +16,8 @@ char *delivery_get_release_header(struct Delivery *ctx) {
     snprintf(output, sizeof(output), release_header,
             ctx->info.release_name,
             ctx->rules.release_fmt,
+            STASIS_VERSION,
+            STASIS_VERSION_BRANCH,
             stamp,
             ctx->conda.tool_version,
             ctx->conda.tool_build_version);
@@ -30,6 +34,8 @@ int delivery_dump_metadata(struct Delivery *ctx) {
     if (globals.verbose) {
         msg(STASIS_MSG_L2, "%s\n", filename);
     }
+    fprintf(fp, "stasis_version %s\n", STASIS_VERSION);
+    fprintf(fp, "stasis_version_branch %s\n", STASIS_VERSION_BRANCH);
     fprintf(fp, "name %s\n", ctx->meta.name);
     fprintf(fp, "version %s\n", ctx->meta.version);
     fprintf(fp, "rc %d\n", ctx->meta.rc);
