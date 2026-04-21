@@ -320,6 +320,11 @@ int main(const int argc, char *argv[]) {
     msg(STASIS_MSG_L1, "Loading metadata\n");
     struct StrList *metafiles = NULL;
     get_files(&metafiles, ctx.storage.meta_dir, "*.stasis");
+    if (!metafiles || !strlist_count(metafiles)) {
+        SYSERROR("%s: No metadata!", ctx.storage.meta_dir);
+        delivery_free(&ctx);
+        exit(1);
+    }
     strlist_sort(metafiles, STASIS_SORT_LEN_ASCENDING);
 
     struct Delivery **local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
