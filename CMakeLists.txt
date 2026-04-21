@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 project(STASIS C)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 include(GNUInstallDirs)
+include(GitVersion)
+get_version_from_git()
+configure_file(
+	${CMAKE_SOURCE_DIR}/include/version.h.in
+	${CMAKE_BINARY_DIR}/include/version.h
+)
+message("-- STASIS version: ${PROJECT_VERSION} (${PROJECT_VERSION_BRANCH})")
 
 set(nix_cflags -Wall -Wextra -fPIC -D_GNU_SOURCE)
 set(win_cflags /Wall)

@@ -313,13 +313,22 @@ int load_metadata(struct Delivery *ctx, const char *filename) {
         return -1;
     }
 
+    // Reserved for future use.
+    // i.e. adjust values based on the version of the software that produced the input
+    char *stasis_version = NULL;
+    char *stasis_version_branch = NULL;
+
     while (fgets(line, sizeof(line) - 1, fp) != NULL) {
         char **parts = split(line, " ", 1);
         const char *name = parts[0];
         char *value = parts[1];
 
         strip(value);
-        if (!strcmp(name, "name")) {
+        if (!strcmp(name, "stasis_version")) {
+            stasis_version = strdup(value);
+        } else if (!strcmp(name, "stasis_version_branch")) {
+            stasis_version_branch = strdup(value);
+        } else if (!strcmp(name, "name")) {
             ctx->meta.name = strdup(value);
         } else if (!strcmp(name, "version")) {
             ctx->meta.version = strdup(value);
@@ -364,6 +373,9 @@ int load_metadata(struct Delivery *ctx, const char *filename) {
         }
         guard_array_free(parts);
     }
+
+    guard_free(stasis_version);
+    guard_free(stasis_version_branch);
     fclose(fp);
 
     return 0;

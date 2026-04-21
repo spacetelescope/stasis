@@ -3,10 +3,10 @@
 #include "core.h"
 #include "envctl.h"
 
-const char *VERSION = "1.0.0";
+const char *VERSION = STASIS_VERSION " (" STASIS_VERSION_BRANCH ")";
 const char *AUTHOR = "Joseph Hunkeler";
 const char *BANNER =
-        "------------------------------------------------------------------------\n"
+        STASIS_BANNER_HEADER "\n"
 #if defined(STASIS_DUMB_TERMINAL)
         "                                 STASIS                                 \n"
 #else
@@ -18,10 +18,10 @@ const char *BANNER =
         "               |_____/   |_/_/    \\_\\_____/|_____|_____/              \n"
         "\n"
 #endif
-        "------------------------------------------------------------------------\n"
+        STASIS_BANNER_HEADER "\n"
         "                           Delivery Generator                           \n"
-        "                                 v%s                                    \n"
-        "------------------------------------------------------------------------\n"
+        "%s\n"
+        STASIS_BANNER_HEADER "\n"
         "Copyright (C) 2023-2025 %s,\n"
         "Association of Universities for Research in Astronomy (AURA)\n";
 
