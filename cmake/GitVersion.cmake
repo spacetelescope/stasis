@@ -20,7 +20,6 @@ function(get_version_from_git)
         message(WARNING "Failed to get git describe info")
         return()
     endif()
-    message(${GIT_TAG})
 
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
@@ -33,7 +32,6 @@ function(get_version_from_git)
         message(WARNING "Failed to get git branch")
         return()
     endif()
-    message(${GIT_BRANCH})
 
     string(REGEX REPLACE "^v" "" CLEAN_TAG "${GIT_TAG}")
     set(PROJECT_VERSION ${CLEAN_TAG})
