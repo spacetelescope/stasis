@@ -28,7 +28,16 @@ extern void tpl_reset() {
 
 void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in) {
     struct tplfunc_frame *frame = calloc(1, sizeof(*frame));
+    if (!frame) {
+        SYSERROR("%s", "unable to allocate memory for function frame");
+        exit(1);
+    }
+
     frame->key = strdup(key);
+    if (!frame->key) {
+        SYSERROR("%s", "unable to allocate memory for function frame key");
+        exit(1);
+    }
     frame->argc = argc;
     frame->func = tplfunc_ptr;
     frame->data_in = data_in;
@@ -71,7 +80,15 @@ void tpl_register(char *key, char **ptr) {
     } else {
         SYSDEBUG("%s", "Creating new item");
         item = calloc(1, sizeof(*item));
+        if (!item) {
+            SYSERROR("%s", "unable to allocate memory for new item");
+            exit(1);
+        }
         item->key = strdup(key);
+        if (!key) {
+            SYSERROR("%s", "unable to allocate memory for new key");
+            exit(1);
+        }
     }
 
     if (!item) {
@@ -240,6 +257,11 @@ char *tpl_render(char *str) {
                 for (params_count = 0; params[params_count] != NULL; params_count++) {}
 
                 struct tplfunc_frame *frame = tpl_getfunc(k);
+                if (!frame) {
+                    SYSERROR("no function named '%s'", k);
+                    guard_array_n_free(params, (size_t) params_count);
+                    return NULL;
+                }
                 if (params_count > frame->argc || params_count < frame->argc) {
                     fprintf(stderr, "At position %zu in %s\nIncorrect number of arguments for function: %s (expected %d, got %d)\n", off, key, frame->key, frame->argc, params_count);
                     value = strdup("");
