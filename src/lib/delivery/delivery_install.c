@@ -128,6 +128,11 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     return 0;
 }
 
+static int fn_nop(const char *command) {
+    (void) command;
+    return 1;
+}
+
 int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_pkg_manager) {
     int status = 0;
     char subcommand[100] = {0};
@@ -158,6 +163,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
             break;
         default:
             SYSERROR("Unknown package manager: %d", use_pkg_manager);
+            fn = fn_nop;
             status = -1;
             break;
     }
@@ -175,11 +181,12 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
             SYSERROR("%s removal operation failed", package_manager);
             guard_free(command);
             status = 1;
-            break;
+            goto cleanup;
         }
         guard_free(command);
     }
 
+    cleanup:
     if (current_env) {
         conda_activate(ctx->storage.conda_install_prefix, current_env);
         guard_free(current_env);
@@ -211,6 +218,11 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         runner = conda_exec;
     } else if (INSTALL_PKG_PIP & type) {
         runner = pip_exec;
+    }
+
+    if (!runner) {
+        SYSERROR("Invalid callback runner of type: %d", type);
+        return -1;
     }
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
