@@ -2,7 +2,12 @@
 
 static char *strdup_maybe(const char * restrict s) {
     if (s != NULL) {
-        return strdup(s);
+        char *x = strdup(s);
+        if (!x) {
+            SYSERROR("%s", "strdup failed");
+            exit(1);
+        }
+        return x;
     }
     return NULL;
 }
