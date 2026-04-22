@@ -62,6 +62,7 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     memcpy(&result->rules.content, &ctx->rules.content, sizeof(ctx->rules.content));
 
     if (ctx->rules._handle) {
+        /*
         result->rules._handle = malloc(sizeof(*result->rules._handle));
         result->rules._handle->section = malloc(result->rules._handle->section_count * sizeof(*result->rules._handle->section));
         memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
@@ -99,6 +100,10 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->system.arch = strdup_maybe(ctx->system.arch);
     if (ctx->system.platform) {
         result->system.platform = malloc(DELIVERY_PLATFORM_MAX * sizeof(*result->system.platform));
+        if (!result->system.platform) {
+            SYSERROR("%s", "unable to allocate space for system platform array");
+            return NULL;
+        }
         for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
             result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
         }
