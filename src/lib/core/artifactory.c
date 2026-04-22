@@ -78,7 +78,13 @@ int artifactory_download_cli(char *dest,
     SYSDEBUG("%s", "Construct path to write data");
     const char *remote_filename_fmt = "/%s";
     int remote_filename_fmt_len = snprintf(NULL, 0, remote_filename_fmt, remote_filename);
-    snprintf(path + strlen(path), sizeof(path) - remote_filename_fmt_len, remote_filename_fmt, remote_filename);
+    SYSDEBUG("path buffer contents: '%s'", path);
+    SYSDEBUG("path buffer size: %zu", sizeof(path));
+    SYSDEBUG("path strlen: %zu", strlen(path));
+    SYSDEBUG("remote_filename_fmt_len: %d", remote_filename_fmt_len);
+    SYSDEBUG("maxlen for snprintf: %zu", sizeof(path) - strlen(path) - remote_filename_fmt_len);
+
+    snprintf(path + strlen(path), sizeof(path) - strlen(path) - remote_filename_fmt_len, remote_filename_fmt, remote_filename);
     char *errmsg = NULL;
     SYSDEBUG("%s", "Downloading...");
     long fetch_status = download(url, path, &errmsg);
