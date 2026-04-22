@@ -4,8 +4,12 @@ int delivery_init_artifactory(struct Delivery *ctx) {
     int status = 0;
     char dest[PATH_MAX] = {0};
     char filepath[PATH_MAX] = {0};
+
+    SYSDEBUG("%s", "Initializing artifactory tools");
     snprintf(dest, sizeof(dest), "%s/bin", ctx->storage.tools_dir);
+    SYSDEBUG("dest=%s", dest);
     snprintf(filepath, sizeof(dest), "%s/bin/jf", ctx->storage.tools_dir);
+    SYSDEBUG("filepath=%s", filepath);
 
     if (!access(filepath, F_OK)) {
         // already have it
@@ -13,6 +17,7 @@ int delivery_init_artifactory(struct Delivery *ctx) {
         goto delivery_init_artifactory_envsetup;
     }
 
+    SYSDEBUG("%s", "Assign platform");
     char *platform = ctx->system.platform[DELIVERY_PLATFORM];
     msg(STASIS_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, platform, ctx->system.arch);
     if ((status = artifactory_download_cli(dest,
