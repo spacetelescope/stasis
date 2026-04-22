@@ -279,6 +279,7 @@ void test_file_readlines() {
     }
     if (fwrite(data, sizeof(*data), strlen(data), fp) != strlen(data)) {
         perror("short write");
+        fclose(fp);
         return;
     }
     fclose(fp);
