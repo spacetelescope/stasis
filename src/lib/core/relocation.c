@@ -138,6 +138,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
     fp = fopen(filename, "w+");
     if (!fp) {
         SYSERROR("unable to reopen %s for writing", filename);
+        fclose(tfp);
         return -1;
     }
 
