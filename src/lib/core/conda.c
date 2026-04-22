@@ -513,7 +513,7 @@ int conda_setup_headless() {
                 continue;
             }
             const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
-            snprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_fmt_len, cmd_fmt, item);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_fmt_len, cmd_fmt, item);
             if (i < total - 1) {
                 strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
@@ -536,7 +536,7 @@ int conda_setup_headless() {
                 continue;
             }
             const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
-            snprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_fmt_len, cmd_fmt, item);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_fmt_len, cmd_fmt, item);
             if (i < total - 1) {
                 strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
