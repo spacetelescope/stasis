@@ -7,6 +7,9 @@
 
 struct INIFILE *ini_init() {
     struct INIFILE *ini = calloc(1, sizeof(*ini));
+    if (!ini) {
+        return NULL;
+    }
     ini->section_count = 0;
     return ini;
 }
