@@ -62,10 +62,20 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     memcpy(&result->rules.content, &ctx->rules.content, sizeof(ctx->rules.content));
 
     if (ctx->rules._handle) {
-        /*
+        SYSDEBUG("%s", "duplicating INIFILE handle - BEGIN");
         result->rules._handle = malloc(sizeof(*result->rules._handle));
-        result->rules._handle->section = malloc(result->rules._handle->section_count * sizeof(*result->rules._handle->section));
+        if (!result->rules._handle) {
+            SYSERROR("%s", "unable to allocate space for INIFILE handle");
+            return NULL;
+        }
+        result->rules._handle->section = malloc(ctx->rules._handle->section_count * sizeof(**ctx->rules._handle->section));
+        if (!result->rules._handle->section) {
+            guard_free(result->rules._handle);
+            SYSERROR("%s", "unable to allocate space for INIFILE section");
+            return NULL;
+        }
         memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
+        SYSDEBUG("%s", "duplicating INIFILE handle - END");
     }
 
     // Runtime
