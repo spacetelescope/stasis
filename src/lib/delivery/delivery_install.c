@@ -320,7 +320,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), required_len + 1, fmt, req, info->version);
+                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     guard_free(args);
@@ -338,7 +338,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), required_len + 1, fmt, name);
+                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, name);
                 } else {
                     const char *fmt_append = "%s '%s'";
                     const char *fmt = " '%s'";
@@ -350,7 +350,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), required_len + 1, fmt, name);
+                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, name);
                 }
             }
         }

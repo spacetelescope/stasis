@@ -63,7 +63,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     va_start(args, command);
-    cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - cmd_len, command, args);
+    cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_len, command, args);
     if (cmd_len < 0) {
         SYSERROR("%s", "Unable to append arguments to micromamba command");
         va_end(args);

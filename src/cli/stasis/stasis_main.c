@@ -698,6 +698,12 @@ int main(int argc, char *argv[]) {
     configure_delivery_context(&ctx);
 
     configure_jfrog_cli(&ctx);
+    /*
+    delivery_free(&ctx);
+    tpl_free();
+    globals_free();
+    return 0;
+    */
 
     runtime_apply(ctx.runtime.environ);
     strncpy(env_name, ctx.info.release_name, sizeof(env_name) - 1);

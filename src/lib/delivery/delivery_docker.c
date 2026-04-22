@@ -49,7 +49,7 @@ int delivery_docker(struct Delivery *ctx) {
 
         const char *tag_fmt = " -t \"%s\" ";
         const int tag_fmt_len = snprintf(NULL, 0, tag_fmt, tag);
-        snprintf(args + strlen(args), tag_fmt_len, tag_fmt, tag);
+        snprintf(args + strlen(args), sizeof(args) - strlen(args) - tag_fmt_len, tag_fmt, tag);
     }
 
     // Append build arguments to command (i.e. --build-arg "key=value"
@@ -61,7 +61,7 @@ int delivery_docker(struct Delivery *ctx) {
 
         const char *build_arg_fmt = " --build-arg \"%s\" ";
         const int build_arg_fmt_len = snprintf(NULL, 0, build_arg_fmt, build_arg);
-        snprintf(args + strlen(args), sizeof(args) - build_arg_fmt_len, build_arg_fmt, build_arg);
+        snprintf(args + strlen(args), sizeof(args) - strlen(args) - build_arg_fmt_len, build_arg_fmt, build_arg);
     }
 
     // Build the image
