@@ -76,7 +76,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     if (globals.enable_task_logging) {
         const char *log_file_fmt = "task-%zu-%d.log";
         const int log_file_len = snprintf(NULL, 0, log_file_fmt, mp_global_task_count, task->parent_pid);
-        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - log_file_len, log_file_fmt, mp_global_task_count, task->parent_pid);
+        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - strlen(task->log_file) - log_file_len, log_file_fmt, mp_global_task_count, task->parent_pid);
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
