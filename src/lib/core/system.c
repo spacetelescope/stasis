@@ -72,12 +72,24 @@ int shell(struct Process *proc, char *args) {
 
         if (proc->redirect_stderr) {
             if (fp_err) {
+                if (dup2(fileno(fp_err), STDERR_FILENO) < 0) {
+                    fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stderr, strerror(errno));
+                    if (fp_out) {
+                        fclose(fp_out);
+                    }
+                    fclose(fp_err);
+                    _exit(1);
+                }
                 fclose(fp_err);
-                fclose(stderr);
-            }
-            if (dup2(fileno(stdout), fileno(stderr)) < 0) {
-                fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
-                exit(1);
+            } else {
+                // redirect stderr to stdout
+                if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
+                    fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
+                    if (fp_out) {
+                        fclose(fp_out);
+                    }
+                    _exit(1);
+                }
             }
         }
 
