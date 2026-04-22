@@ -368,7 +368,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // Compile a list of packages that are *also* to be tested.
         char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
-        char package_name[255] = {0};
+        char package_name[STASIS_NAME_MAX] = {0};
 
         if (spec_end) {
             // A version is present in the package name. Jump past operator(s).
@@ -386,7 +386,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < ctx->tests->num_used; x++) {
             struct Test *test = ctx->tests->test[x];
-            char nametmp[1024] = {0};
+            char nametmp[STASIS_NAME_MAX] = {0};
 
             strncpy(nametmp, package_name, sizeof(nametmp) - 1);
             // Is the [test:NAME] in the package name?
