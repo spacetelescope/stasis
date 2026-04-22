@@ -11,10 +11,15 @@ size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream) {
 }
 
 long download(char *url, const char *filename, char **errmsg) {
+    SYSDEBUG("%s", "ARGS follow");
+    SYSDEBUG("url=%s", url);
+    SYSDEBUG("filename=%s", filename);
+    SYSDEBUG("errmsg=%s (NULL is OK)", *errmsg);
     long http_code = -1;
     char user_agent[STASIS_NAME_MAX] = {0};
     snprintf(user_agent, sizeof(user_agent), "stasis/%s", STASIS_VERSION);
 
+    SYSDEBUG("%s", "Setting timeout");
     long timeout = 30L;
     const char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
     if (timeout_str) {
@@ -24,6 +29,7 @@ long download(char *url, const char *filename, char **errmsg) {
         }
     }
 
+    SYSDEBUG("%s", "Setting max_retries");
     ssize_t max_retries = 5;
     const char *max_retries_str = getenv("STASIS_DOWNLOAD_RETRY_MAX");
     if (max_retries_str) {
@@ -33,6 +39,7 @@ long download(char *url, const char *filename, char **errmsg) {
         }
     }
 
+    SYSDEBUG("%s", "Setting max_retry_seconds");
     ssize_t max_retry_seconds = 3;
     const char *max_retry_seconds_str = getenv("STASIS_DOWNLOAD_RETRY_SECONDS");
     if (max_retry_seconds_str) {
@@ -43,12 +50,15 @@ long download(char *url, const char *filename, char **errmsg) {
     }
 
 
+    SYSDEBUG("%s", "Initializing curl context");
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *c = curl_easy_init();
     for (ssize_t retry = 0; retry < max_retries; retry++) {
         if (retry) {
             fprintf(stderr, "[RETRY %zu/%zu] %s: %s\n", retry + 1, max_retries, *errmsg, url);
         }
+
+        SYSDEBUG("%s", "Configuring curl");
         curl_easy_setopt(c, CURLOPT_URL, url);
         curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, download_writer);
         FILE *fp = fopen(filename, "wb");
@@ -64,13 +74,19 @@ long download(char *url, const char *filename, char **errmsg) {
         curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, timeout);
 
         SYSDEBUG("curl_easy_perform(): \n\turl=%s\n\tfilename=%s\n\tuser agent=%s\n\ttimeout=%zu", url, filename, user_agent, timeout);
-        CURLcode curl_code = curl_easy_perform(c);
+        const CURLcode curl_code = curl_easy_perform(c);
         SYSDEBUG("curl status code: %d", curl_code);
 
         if (curl_code != CURLE_OK) {
+            SYSDEBUG("curl failed with code: %s", curl_easy_strerror(curl_code));
             const size_t errmsg_maxlen = 256;
             if (!*errmsg) {
+                SYSDEBUG("%s", "allocating memory for error message");
                 *errmsg = calloc(errmsg_maxlen, sizeof(char));
+                if (!*errmsg) {
+                    SYSERROR("%s", "unable to allocate memory for error message");
+                    goto cleanup;
+                }
             }
             snprintf(*errmsg, errmsg_maxlen, "%s", curl_easy_strerror(curl_code));
             curl_easy_reset(c);
@@ -79,6 +95,8 @@ long download(char *url, const char *filename, char **errmsg) {
             continue;
         }
 
+        cleanup:
+        SYSDEBUG("%s", "Cleaning up");
         // Data written. Clean up.
         fclose(fp);
 
