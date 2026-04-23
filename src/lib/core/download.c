@@ -30,22 +30,26 @@ long download(char *url, const char *filename, char **errmsg) {
     }
 
     SYSDEBUG("%s", "Setting max_retries");
-    ssize_t max_retries = 5;
+    const size_t max_retries_default = 5;
+    size_t max_retries = max_retries_default;
     const char *max_retries_str = getenv("STASIS_DOWNLOAD_RETRY_MAX");
     if (max_retries_str) {
-        max_retries = strtol(max_retries_str, NULL, 10);
-        if (max_retries <= 0) {
-            max_retries = 1;
+        max_retries = strtoul(max_retries_str, NULL, 10);
+        if (max_retries == ULONG_MAX && errno == ERANGE) {
+            SYSERROR("STASIS_DOWNLOAD_RETRY_MAX must be a positive integer. Using default (%zu).", max_retries);
+            max_retries = max_retries_default;
         }
     }
 
     SYSDEBUG("%s", "Setting max_retry_seconds");
-    ssize_t max_retry_seconds = 3;
+    const size_t max_retry_seconds_default = 3;
+    size_t max_retry_seconds = max_retry_seconds_default;
     const char *max_retry_seconds_str = getenv("STASIS_DOWNLOAD_RETRY_SECONDS");
     if (max_retry_seconds_str) {
-        max_retry_seconds = strtol(max_retry_seconds_str, NULL, 10);
-        if (max_retry_seconds < 0) {
-            max_retry_seconds = 0;
+        max_retry_seconds = strtoul(max_retry_seconds_str, NULL, 10);
+        if (max_retry_seconds == ULONG_MAX && errno == ERANGE) {
+            SYSERROR("STASIS_DOWNLOAD_RETRY_SECONDS must be a positive integer. Using default (%zu).", max_retry_seconds);
+            max_retry_seconds = max_retry_seconds_default;
         }
     }
 
@@ -53,7 +57,7 @@ long download(char *url, const char *filename, char **errmsg) {
     SYSDEBUG("%s", "Initializing curl context");
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *c = curl_easy_init();
-    for (ssize_t retry = 0; retry < max_retries; retry++) {
+    for (size_t retry = 0; retry < max_retries; retry++) {
         if (retry) {
             fprintf(stderr, "[RETRY %zu/%zu] %s: %s\n", retry + 1, max_retries, *errmsg, url);
         }
