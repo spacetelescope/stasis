@@ -925,9 +925,7 @@ void debug_hexdump(char *data, int len) {
     char *pos = start;
     while (pos != end) {
         if (count == 0) {
-            const char *pos_fmt = "%p";
-            const int pos_fmt_len = snprintf(NULL, 0, pos_fmt, pos);
-            snprintf(addr + strlen(addr), sizeof(addr) - strlen(addr) - pos_fmt_len, pos_fmt, pos);
+            snprintf(addr + strlen(addr), sizeof(addr) - strlen(addr), "%p", pos);
         }
         if (count == 8) {
             strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
