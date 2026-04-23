@@ -53,11 +53,21 @@ int semaphore_init(struct Semaphore *s, const char *name, const int value) {
 }
 
 int semaphore_wait(struct Semaphore *s) {
-    return sem_wait(s->sem);
+    //int sgv_value = 0;
+    //int sgv_ret = sem_getvalue(s->sem, &sgv_value);
+    //SYSDEBUG("sem_getvalue() returned %d, value %d", sgv_ret, sgv_value);
+    const int status = sem_wait(s->sem);
+    //SYSDEBUG("returning %d", status);
+    return status;
 }
 
 int semaphore_post(struct Semaphore *s) {
-    return sem_post(s->sem);
+    //int sgv_value = 0;
+    //int sgv_ret = sem_getvalue(s->sem, &sgv_value);
+    //SYSDEBUG("sem_getvalue() returned %d, value %d", sgv_ret, sgv_value);
+    const int status = sem_post(s->sem);
+    //SYSDEBUG("returning %d", status);
+    return status;
 }
 
 void semaphore_destroy(struct Semaphore *s) {

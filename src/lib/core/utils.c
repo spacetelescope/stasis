@@ -320,9 +320,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
     if (destdir && access(destdir, F_OK) < 0) {
         // Destination directory does not exist
-        const char *command_fmt = " %s";
-        const int command_fmt_len = snprintf(NULL, 0, command_fmt, destdir);
-        snprintf(command + strlen(command), sizeof(command) - command_fmt_len, command_fmt, destdir);
+        snprintf(command + strlen(command), sizeof(command) - strlen(command), " %s", destdir);
         // Clone the repo
         result = shell(proc, command);
         if (result) {
@@ -677,9 +675,9 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     if (!toxini) {
         if (fptemp) {
             guard_free(result);
-            guard_free(tempfile);
             fclose(fptemp);
         }
+        guard_free(tempfile);
         return -1;
     }
 
@@ -704,6 +702,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                                 SYSERROR("failed to increase size to +%zu bytes",
                                          strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
+                                guard_free(tempfile);
                                 return -1;
                             }
                             value = tmp;
@@ -926,9 +925,7 @@ void debug_hexdump(char *data, int len) {
     char *pos = start;
     while (pos != end) {
         if (count == 0) {
-            const char *pos_fmt = "%p";
-            const int pos_fmt_len = snprintf(NULL, 0, pos_fmt, pos);
-            snprintf(addr + strlen(addr), sizeof(addr) - pos_fmt_len, pos_fmt, pos);
+            snprintf(addr + strlen(addr), sizeof(addr) - strlen(addr), "%p", pos);
         }
         if (count == 8) {
             strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
@@ -944,13 +941,8 @@ void debug_hexdump(char *data, int len) {
             continue;
         }
 
-        const char *bytes_fmt = "%02X ";
-        const int bytes_fmt_len = snprintf(NULL, 0, bytes_fmt, (unsigned char) *pos);
-        snprintf(bytes + strlen(bytes), sizeof(bytes) - bytes_fmt_len, bytes_fmt, (unsigned char) *pos);
-
-        const char *ascii_fmt = "%c";
-        // no need to calculate length for a single character
-        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), ascii_fmt, isprint(*pos) ? *pos : '.');
+        snprintf(bytes + strlen(bytes), sizeof(bytes) - strlen(bytes), "%02X ", (unsigned char) *pos);
+        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
 
         pos++;
         count++;
@@ -964,7 +956,7 @@ void debug_hexdump(char *data, int len) {
     for (int i = 0; i < padding; i++) {
         strncat(bytes, "   ", sizeof(bytes) - strlen(bytes) - 1);
     }
-    snprintf(output, DEBUG_HEXDUMP_FMT_BYTES + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
+    snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
 }
 
@@ -1178,6 +1170,7 @@ int get_random_bytes(char *result, size_t maxlen) {
         }
         if (fp && ferror(fp)) {
             SYSERROR("%s", "unable to read from random generator");
+            fclose(fp);
             return -1;
         }
         if (isalnum(ch)) {

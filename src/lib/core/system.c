@@ -21,7 +21,12 @@ int shell(struct Process *proc, char *args) {
 
     FILE *tp = NULL;
     char *t_name = xmkstemp(&tp, "w");
-    if (!t_name || !tp) {
+    if (!t_name) {
+        fclose(tp);
+        return -1;
+    }
+    if (!tp) {
+        guard_free(t_name);
         return -1;
     }
 
@@ -37,6 +42,8 @@ int shell(struct Process *proc, char *args) {
     pid_t pid = fork();
     if (pid == -1) {
         fprintf(stderr, "fork failed\n");
+        guard_free(t_name);
+        fclose(tp);
         exit(1);
     } else if (pid == 0) {
         FILE *fp_out = NULL;
@@ -55,6 +62,9 @@ int shell(struct Process *proc, char *args) {
                 fp_err = freopen(proc->f_stderr, "w+", stderr);
                 if (!fp_err) {
                     fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stdout, strerror(errno));
+                    if (fp_out) {
+                        fclose(fp_out);
+                    }
                     exit(1);
                 }
             }
@@ -62,12 +72,24 @@ int shell(struct Process *proc, char *args) {
 
         if (proc->redirect_stderr) {
             if (fp_err) {
+                if (dup2(fileno(fp_err), STDERR_FILENO) < 0) {
+                    fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stderr, strerror(errno));
+                    if (fp_out) {
+                        fclose(fp_out);
+                    }
+                    fclose(fp_err);
+                    _exit(1);
+                }
                 fclose(fp_err);
-                fclose(stderr);
-            }
-            if (dup2(fileno(stdout), fileno(stderr)) < 0) {
-                fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
-                exit(1);
+            } else {
+                // redirect stderr to stdout
+                if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
+                    fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
+                    if (fp_out) {
+                        fclose(fp_out);
+                    }
+                    _exit(1);
+                }
             }
         }
 

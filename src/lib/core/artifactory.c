@@ -8,14 +8,26 @@ int artifactory_download_cli(char *dest,
                              char *os,
                              char *arch,
                              char *remote_filename) {
+    SYSDEBUG("%s", "ARGS follow");
+    SYSDEBUG("dest=%s", dest);
+    SYSDEBUG("jfrog_artifactory_base_url=%s", jfrog_artifactory_base_url);
+    SYSDEBUG("jfrog_artifactory_product=%s", jfrog_artifactory_product);
+    SYSDEBUG("cli_major_ver=%s", cli_major_ver);
+    SYSDEBUG("version=%s", version);
+    SYSDEBUG("os=%s", os);
+    SYSDEBUG("arch=%s", arch);
+    SYSDEBUG("remote_filename=%s", remote_filename);
+
     char url[PATH_MAX] = {0};
     char path[PATH_MAX] = {0};
     char os_ident[STASIS_NAME_MAX] = {0};
     char arch_ident[STASIS_NAME_MAX] = {0};
 
     // convert platform string to lower-case
+    SYSDEBUG("%s", "Set os_ident");
     strncpy(os_ident, os, sizeof(os_ident) - 1);
     tolower_s(os_ident);
+    SYSDEBUG("os_ident=%s", os_ident);
 
     // translate OS identifier
     if (!strcmp(os_ident, "darwin") || startswith(os_ident, "macos")) {
@@ -28,7 +40,9 @@ int artifactory_download_cli(char *dest,
     }
 
     // translate ARCH identifier
+    SYSDEBUG("%s", "Set arch_ident");
     strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
+    SYSDEBUG("arch_ident=%s", arch_ident);
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
         strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
@@ -44,6 +58,7 @@ int artifactory_download_cli(char *dest,
         return -1;
     }
 
+    SYSDEBUG("%s", "Construct URL");
     snprintf(url, sizeof(url), "%s/%s/%s/%s/%s-%s-%s/%s",
              jfrog_artifactory_base_url,           // https://releases.jfrog.io/artifactory
              jfrog_artifactory_product,            // jfrog-cli
@@ -60,10 +75,15 @@ int artifactory_download_cli(char *dest,
         return -1;
     }
 
-    const char *remote_filename_fmt = "/%s";
-    int remote_filename_fmt_len = snprintf(NULL, 0, remote_filename_fmt, remote_filename);
-    snprintf(path + strlen(path), sizeof(path) - remote_filename_fmt_len, remote_filename_fmt, remote_filename);
+    SYSDEBUG("%s", "Construct path to write data");
+    SYSDEBUG("path buffer contents: '%s'", path);
+    SYSDEBUG("path buffer size: %zu", sizeof(path));
+    SYSDEBUG("path strlen: %zu", strlen(path));
+    SYSDEBUG("maxlen for snprintf: %zu", sizeof(path) - strlen(path));
+
+    snprintf(path + strlen(path), sizeof(path) - strlen(path), "/%s", remote_filename);
     char *errmsg = NULL;
+    SYSDEBUG("%s", "Downloading...");
     long fetch_status = download(url, path, &errmsg);
     if (HTTP_ERROR(fetch_status)) {
         SYSERROR("download failed: %s: %s\n", errmsg, url);

@@ -63,13 +63,13 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                     fprintf(indexfp, "  - Receipt: [STASIS input file](%s)\n", conf_name_relative);
 
                     char *pattern = NULL;
-                    asprintf(&pattern, "*%s*%s*",
+                    if (asprintf(&pattern, "*%s*%s*",
                              latest_deliveries[i]->info.build_number,
-                             strstr((*ctx)->rules.release_fmt, "%p") ? latest_deliveries[i]->meta.python_compact : "" );
-                    if (!pattern) {
+                             strstr((*ctx)->rules.release_fmt, "%p") ? latest_deliveries[i]->meta.python_compact : "" ) < 0) {
                         SYSERROR("%s", "Unable to allocate bytes for pattern");
                         return -1;
                     }
+
                     struct StrList *docker_images = get_docker_images(latest_deliveries[i], pattern);
                     if (docker_images
                         && strlist_count(docker_images)
@@ -105,6 +105,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                  strstr((*ctx)->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
         if (!pattern) {
             SYSERROR("%s", "Unable to allocate bytes for pattern");
+            fclose(indexfp);
             return -1;
         }
 

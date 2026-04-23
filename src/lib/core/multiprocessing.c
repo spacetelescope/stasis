@@ -74,16 +74,21 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
 
     // Set log file name
     if (globals.enable_task_logging) {
-        const char *log_file_fmt = "task-%zu-%d.log";
-        const int log_file_len = snprintf(NULL, 0, log_file_fmt, mp_global_task_count, task->parent_pid);
-        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - log_file_len, log_file_fmt, mp_global_task_count, task->parent_pid);
+        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - strlen(task->log_file),
+            "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
         return -1;
     }
-    dup2(fileno(stdout), fileno(stderr));
+
+    int fd = -1;
+    if ((fd = dup2(STDOUT_FILENO, STDERR_FILENO)) < 0) {
+        SYSERROR("%s", "Unable to redirect stderr to stdout");
+        fclose(fp_log);
+        return -1;
+    }
 
     // Generate timestamp for log header
     time_t t = time(NULL);
@@ -168,22 +173,21 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Set task identifier string
     memset(slot->ident, 0, sizeof(slot->ident));
-    strncpy(slot->ident, ident, sizeof(slot->ident) - 1);
+    snprintf(slot->ident, sizeof(slot->ident), "%s", ident);
 
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
     if (globals.enable_task_logging) {
-        strncat(slot->log_file, pool->log_root, sizeof(slot->log_file) - strlen(slot->log_file) - 1);
-        strncat(slot->log_file, "/", sizeof(slot->log_file) - strlen(slot->log_file) - 1);
+        snprintf(slot->log_file, sizeof(slot->log_file) - strlen(slot->log_file), "%s/", pool->log_root);
     } else {
-        strncpy(slot->log_file, "/dev/stdout", sizeof(slot->log_file) - 1);
+        snprintf(slot->log_file, sizeof(slot->log_file), "/dev/stdout");
     }
 
     // Set working directory
     if (isempty(working_dir)) {
-        strncpy(slot->working_dir, ".", sizeof(slot->working_dir) - 1);
+        snprintf(slot->working_dir, sizeof(slot->working_dir), ".");
     } else {
-        strncpy(slot->working_dir, working_dir, sizeof(slot->working_dir) - 1);
+        snprintf(slot->working_dir, sizeof(slot->working_dir), "%s", working_dir);
     }
 
     // Create a temporary file to act as our intermediate command script
@@ -191,7 +195,16 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     char *t_name = NULL;
 
     t_name = xmkstemp(&tp, "w");
-    if (!t_name || !tp) {
+    if (!t_name) {
+        SYSERROR("%s", "Failed to create temporary file name");
+        if (tp) {
+            fclose(tp);
+        }
+        return NULL;
+    }
+    if (!tp) {
+        SYSERROR("%s", "Failed to create temporary file");
+        guard_free(t_name);
         return NULL;
     }
 
@@ -202,7 +215,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Record the script path
     memset(slot->parent_script, 0, sizeof(slot->parent_script));
-    strncpy(slot->parent_script, t_name, PATH_MAX - 1);
+    snprintf(slot->parent_script, sizeof(slot->parent_script), "%s", t_name);
     guard_free(t_name);
 
     // Populate the script
@@ -216,7 +229,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     slot->cmd_len = (strlen(cmd) * sizeof(*cmd)) + 1;
     slot->cmd = mmap(NULL, slot->cmd_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     memset(slot->cmd, 0, slot->cmd_len);
-    strncpy(slot->cmd, cmd, slot->cmd_len);
+    snprintf(slot->cmd, slot->cmd_len, "%s", cmd);
 
     // Set task timeout
     slot->timeout = globals.task_timeout;
@@ -236,13 +249,13 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
         if (task->status == MP_POOL_TASK_STATUS_INITIAL && task->pid == MP_POOL_PID_UNUSED) {
             // You will only see this label if the task pool is killed by
             // MP_POOL_FAIL_FAST and tasks are still queued for execution
-            strncpy(status_str, "HOLD", sizeof(status_str) - 1);
+            snprintf(status_str, sizeof(status_str), "HOLD");
         } else if (!task->status && !task->signaled_by) {
-            strncpy(status_str, "DONE", sizeof(status_str) - 1);
+            snprintf(status_str, sizeof(status_str), "DONE");
         } else if (task->signaled_by) {
-            strncpy(status_str, "TERM", sizeof(status_str) - 1);
+            snprintf(status_str, sizeof(status_str), "TERM");
         } else {
-            strncpy(status_str, "FAIL", sizeof(status_str) - 1);
+            snprintf(status_str, sizeof(status_str), "FAIL");
         }
 
         char duration[255] = {0};
@@ -512,11 +525,11 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
     // Set pool identity string
     memset(pool->ident, 0, sizeof(pool->ident));
-    strncpy(pool->ident, ident, sizeof(pool->ident) - 1);
+    snprintf(pool->ident, sizeof(pool->ident), "%s", ident);
 
     // Set logging base directory
     memset(pool->log_root, 0, sizeof(pool->log_root));
-    strncpy(pool->log_root, log_root, sizeof(pool->log_root) - 1);
+    snprintf(pool->log_root, sizeof(pool->log_root), "%s", log_root);
     pool->num_used = 0;
     pool->num_alloc = MP_POOL_TASK_MAX;
 

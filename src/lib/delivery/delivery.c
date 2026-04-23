@@ -2,7 +2,12 @@
 
 static char *strdup_maybe(const char * restrict s) {
     if (s != NULL) {
-        return strdup(s);
+        char *x = strdup(s);
+        if (!x) {
+            SYSERROR("%s", "strdup failed");
+            exit(1);
+        }
+        return x;
     }
     return NULL;
 }
@@ -57,9 +62,20 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     memcpy(&result->rules.content, &ctx->rules.content, sizeof(ctx->rules.content));
 
     if (ctx->rules._handle) {
+        SYSDEBUG("%s", "duplicating INIFILE handle - BEGIN");
         result->rules._handle = malloc(sizeof(*result->rules._handle));
-        result->rules._handle->section = malloc(result->rules._handle->section_count * sizeof(*result->rules._handle->section));
+        if (!result->rules._handle) {
+            SYSERROR("%s", "unable to allocate space for INIFILE handle");
+            return NULL;
+        }
+        result->rules._handle->section = malloc(ctx->rules._handle->section_count * sizeof(**ctx->rules._handle->section));
+        if (!result->rules._handle->section) {
+            guard_free(result->rules._handle);
+            SYSERROR("%s", "unable to allocate space for INIFILE section");
+            return NULL;
+        }
         memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
+        SYSDEBUG("%s", "duplicating INIFILE handle - END");
     }
 
     // Runtime
@@ -94,6 +110,10 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     result->system.arch = strdup_maybe(ctx->system.arch);
     if (ctx->system.platform) {
         result->system.platform = malloc(DELIVERY_PLATFORM_MAX * sizeof(*result->system.platform));
+        if (!result->system.platform) {
+            SYSERROR("%s", "unable to allocate space for system platform array");
+            return NULL;
+        }
         for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
             result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
         }
@@ -363,7 +383,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // Compile a list of packages that are *also* to be tested.
         char *spec_begin = strpbrk(name, "@~=<>!");
         char *spec_end = spec_begin;
-        char package_name[255] = {0};
+        char package_name[STASIS_NAME_MAX] = {0};
 
         if (spec_end) {
             // A version is present in the package name. Jump past operator(s).
@@ -381,7 +401,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < ctx->tests->num_used; x++) {
             struct Test *test = ctx->tests->test[x];
-            char nametmp[1024] = {0};
+            char nametmp[STASIS_NAME_MAX] = {0};
 
             strncpy(nametmp, package_name, sizeof(nametmp) - 1);
             // Is the [test:NAME] in the package name?

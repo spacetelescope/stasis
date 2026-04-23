@@ -30,14 +30,19 @@ static void setup_sysconfdir() {
 
 static void setup_python_version_override(struct Delivery *ctx, const char *version) {
     // Override Python version from command-line, if any
-    if (strlen(version)) {
+    if (version && strlen(version)) {
         guard_free(ctx->meta.python);
         ctx->meta.python = strdup(version);
         if (!ctx->meta.python) {
             SYSERROR("%s", "Unable to allocate bytes for python version override");
+            exit(1);
         }
         guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
+        if (!ctx->meta.python_compact) {
+            SYSERROR("%s", "Unable to allocate bytes for python compact version override");
+            exit(1);
+        }
     }
 }
 
@@ -693,6 +698,12 @@ int main(int argc, char *argv[]) {
     configure_delivery_context(&ctx);
 
     configure_jfrog_cli(&ctx);
+    /*
+    delivery_free(&ctx);
+    tpl_free();
+    globals_free();
+    return 0;
+    */
 
     runtime_apply(ctx.runtime.environ);
     strncpy(env_name, ctx.info.release_name, sizeof(env_name) - 1);

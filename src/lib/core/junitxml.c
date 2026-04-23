@@ -3,17 +3,32 @@
 #include "strlist.h"
 #include "junitxml.h"
 
+static void testcase_failure_free(struct JUNIT_Failure **failure) {
+    struct JUNIT_Failure *x = (*failure);
+    guard_free(x->message);
+    guard_free(x);
+}
+
+static void testcase_error_free(struct JUNIT_Error **error) {
+    struct JUNIT_Error *x = (*error);
+    guard_free(x->message);
+    guard_free(x);
+}
+
+static void testcase_skipped_free(struct JUNIT_Skipped **skipped) {
+    struct JUNIT_Skipped *x = (*skipped);
+    guard_free(x->message);
+    guard_free(x);
+}
+
 static void testcase_result_state_free(struct JUNIT_Testcase **testcase) {
     struct JUNIT_Testcase *tc = (*testcase);
     if (tc->tc_result_state_type == JUNIT_RESULT_STATE_FAILURE) {
-        guard_free(tc->result_state.failure->message);
-        guard_free(tc->result_state.failure);
+        testcase_failure_free(&tc->result_state.failure);
     } else if (tc->tc_result_state_type == JUNIT_RESULT_STATE_ERROR) {
-        guard_free(tc->result_state.error->message);
-        guard_free(tc->result_state.error);
+        testcase_error_free(&tc->result_state.error);
     } else if (tc->tc_result_state_type == JUNIT_RESULT_STATE_SKIPPED) {
-        guard_free(tc->result_state.skipped->message);
-        guard_free(tc->result_state.skipped);
+        testcase_skipped_free(&tc->result_state.skipped);
     }
 }
 
@@ -58,10 +73,16 @@ static struct JUNIT_Failure *testcase_failure_from_attributes(struct StrList *at
         return NULL;
     }
     for (size_t x = 0; x < strlist_count(attrs); x += 2) {
-        char *attr_name = strlist_item(attrs, x);
-        char *attr_value = strlist_item(attrs, x + 1);
-        if (!strcmp(attr_name, "message")) {
-            result->message = strdup(attr_value);
+        const char *attr_name = strlist_item(attrs, x);
+        const char *attr_value = strlist_item(attrs, x + 1);
+        if (attr_name && attr_value) {
+            if (!strcmp(attr_name, "message")) {
+                result->message = strdup(attr_value);
+                if (!result->message) {
+                    SYSERROR("%s", "failed to allocate memory for testcase failure message");
+                    break;
+                }
+            }
         }
     }
     return result;
@@ -73,10 +94,16 @@ static struct JUNIT_Error *testcase_error_from_attributes(struct StrList *attrs)
         return NULL;
     }
     for (size_t x = 0; x < strlist_count(attrs); x += 2) {
-        char *attr_name = strlist_item(attrs, x);
-        char *attr_value = strlist_item(attrs, x + 1);
-        if (!strcmp(attr_name, "message")) {
-            result->message = strdup(attr_value);
+        const char *attr_name = strlist_item(attrs, x);
+        const char *attr_value = strlist_item(attrs, x + 1);
+        if (attr_name && attr_value) {
+            if (!strcmp(attr_name, "message")) {
+                result->message = strdup(attr_value);
+                if (!result->message) {
+                    SYSERROR("%s", "failed to allocate memory for testcase error message");
+                    break;
+                }
+            }
         }
     }
     return result;
@@ -88,10 +115,16 @@ static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *at
         return NULL;
     }
     for (size_t x = 0; x < strlist_count(attrs); x += 2) {
-        char *attr_name = strlist_item(attrs, x);
-        char *attr_value = strlist_item(attrs, x + 1);
-        if (!strcmp(attr_name, "message")) {
-            result->message = strdup(attr_value);
+        const char *attr_name = strlist_item(attrs, x);
+        const char *attr_value = strlist_item(attrs, x + 1);
+        if (attr_name && attr_value) {
+            if (!strcmp(attr_name, "message")) {
+                result->message = strdup(attr_value);
+                if (!result->message) {
+                    SYSERROR("%s", "failed to allocate memory for testcase skip message");
+                    break;
+                }
+            }
         }
     }
     return result;
@@ -100,19 +133,37 @@ static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *at
 static struct JUNIT_Testcase *testcase_from_attributes(struct StrList *attrs) {
     struct JUNIT_Testcase *result = calloc(1, sizeof(*result));
     if(!result) {
+        SYSERROR("%s", "failed to allocate memory for testcase");
         return NULL;
     }
     for (size_t x = 0; x < strlist_count(attrs); x += 2) {
         char *attr_name = strlist_item(attrs, x);
         char *attr_value = strlist_item(attrs, x + 1);
-        if (!strcmp(attr_name, "name")) {
-            result->name = strdup(attr_value);
-        } else if (!strcmp(attr_name, "classname")) {
-            result->classname = strdup(attr_value);
-        } else if (!strcmp(attr_name, "time")) {
-            result->time = strtof(attr_value, NULL);
-        } else if (!strcmp(attr_name, "message")) {
-            result->message = strdup(attr_value);
+        if (attr_name && attr_value) {
+            if (!strcmp(attr_name, "name")) {
+                result->name = strdup(attr_value);
+                if (!result->name) {
+                    SYSERROR("%s", "failed to allocate memory for testcase name");
+                    testcase_free(&result);
+                    break;
+                }
+            } else if (!strcmp(attr_name, "classname")) {
+                result->classname = strdup(attr_value);
+                if (!result->classname) {
+                    SYSERROR("%s", "failed to allocate memory for testcase class name");
+                    testcase_free(&result);
+                    break;
+                }
+            } else if (!strcmp(attr_name, "time")) {
+                result->time = strtof(attr_value, NULL);
+            } else if (!strcmp(attr_name, "message")) {
+                result->message = strdup(attr_value);
+                if (!result->message) {
+                    SYSERROR("%s", "failed to allocate memory for testcase message");
+                    testcase_free(&result);
+                    break;
+                }
+            }
         }
     }
     return result;

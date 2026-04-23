@@ -47,6 +47,7 @@ int docker_script(const char *image, char *args, char *data, const unsigned flag
     FILE *infile = fmemopen(data, strlen(data), "r");
     if (!infile) {
         // opening memory file for reading failed
+        pclose(outfile);
         return -1;
     }
 

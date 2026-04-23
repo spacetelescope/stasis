@@ -4,25 +4,29 @@ void delivery_get_conda_installer_url(struct Delivery *ctx, char *result, size_t
     int len = 0;
     if (ctx->conda.installer_version) {
         // Use version specified by configuration file
-        len = snprintf(NULL, 0, ctx->conda.installer_baseurl,
+        len = snprintf(NULL, 0, "%s/%s-%s-%s-%s.sh",
+                ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_version,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);
 
-        snprintf(result, maxlen - len, "%s/%s-%s-%s-%s.sh", ctx->conda.installer_baseurl,
+        snprintf(result, maxlen - len, "%s/%s-%s-%s-%s.sh",
+                ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_version,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);
     } else {
         // Use latest installer
-        len = snprintf(NULL, 0, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
+        len = snprintf(NULL, 0, "%s/%s-%s-%s.sh",
+                ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);
 
-        snprintf(result, maxlen - len, "%s/%s-%s-%s.sh", ctx->conda.installer_baseurl,
+        snprintf(result, maxlen - len, "%s/%s-%s-%s.sh",
+                ctx->conda.installer_baseurl,
                 ctx->conda.installer_name,
                 ctx->conda.installer_platform,
                 ctx->conda.installer_arch);

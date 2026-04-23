@@ -58,6 +58,7 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         FILE *fp2 = fopen(dest, "w+b");
         if (!fp2) {
             perror(dest);
+            fclose(fp1);
             return -1;
         }
 
