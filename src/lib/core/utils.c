@@ -1172,6 +1172,7 @@ int get_random_bytes(char *result, size_t maxlen) {
         }
         if (fp && ferror(fp)) {
             SYSERROR("%s", "unable to read from random generator");
+            fclose(fp);
             return -1;
         }
         if (isalnum(ch)) {
