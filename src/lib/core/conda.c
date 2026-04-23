@@ -561,11 +561,11 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
 
     // Convert a bare system path to a file:// path
     if (!strstr(uri, "://")) {
-        uri_fs = calloc(strlen(uri) + strlen("file://") + 1, sizeof(*uri_fs));
+        uri_fs = calloc(PATH_MAX, sizeof(*uri_fs));
         if (!uri_fs) {
             return -1;
         }
-        snprintf(uri_fs, strlen(uri) + strlen("file://") + 1, "%s%s", "file://", uri);
+        snprintf(uri_fs, PATH_MAX, "%s%s", "file://", uri);
     }
 
     char tempfile[PATH_MAX] = {0};
