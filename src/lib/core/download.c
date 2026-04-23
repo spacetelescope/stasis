@@ -20,12 +20,14 @@ long download(char *url, const char *filename, char **errmsg) {
     snprintf(user_agent, sizeof(user_agent), "stasis/%s", STASIS_VERSION);
 
     SYSDEBUG("%s", "Setting timeout");
-    long timeout = 30L;
+    size_t timeout_default = 30L;
+    size_t timeout = timeout_default;
     const char *timeout_str = getenv("STASIS_DOWNLOAD_TIMEOUT");
     if (timeout_str) {
-        timeout = strtol(timeout_str, NULL, 10);
-        if (timeout <= 0L) {
-            timeout = 1L;
+        timeout = strtoul(timeout_str, NULL, 10);
+        if (timeout == ULONG_MAX && errno == ERANGE) {
+            SYSERROR("STASIS_DOWNLOAD_TIMEOUT must be a positive integer. Using default (%zu).", timeout);
+            timeout = timeout_default;
         }
     }
 
