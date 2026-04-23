@@ -61,7 +61,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     va_start(args, command);
-    cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_len, command, args);
+    cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), command, args);
     if (cmd_len < 0) {
         SYSERROR("%s", "Unable to append arguments to micromamba command");
         va_end(args);
@@ -527,8 +527,7 @@ int conda_setup_headless() {
             if (isempty(item)) {
                 continue;
             }
-            const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
-            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_fmt_len, cmd_fmt, item);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), cmd_fmt, item);
             if (i < total - 1) {
                 strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
