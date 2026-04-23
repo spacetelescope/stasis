@@ -82,7 +82,11 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
         return -1;
     }
-    dup2(fileno(stdout), fileno(stderr));
+
+    if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
+        fclose(fp_log);
+        return -1;
+    }
 
     // Generate timestamp for log header
     time_t t = time(NULL);
