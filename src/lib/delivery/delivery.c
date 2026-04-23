@@ -312,13 +312,13 @@ int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const 
                     strncat(*dest, ctx->meta.mission, maxlen - 1);
                     break;
                 case 'r':   // revision
-                    snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
                     break;
                 case 'R':   // "final"-aware revision
                     if (ctx->meta.final)
                         strncat(*dest, "final", maxlen);
                     else
-                        snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
+                        snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
                     break;
                 case 'v':   // version
                     strncat(*dest, ctx->meta.version, maxlen - 1);
@@ -336,14 +336,14 @@ int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const 
                     strncat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], maxlen - 1);
                     break;
                 case 't':   // unix epoch
-                    snprintf(*dest + strlen(*dest), maxlen, "%ld", ctx->info.time_now);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%ld", ctx->info.time_now);
                     break;
                 default:    // unknown formatter, write as-is
-                    snprintf(*dest + strlen(*dest), maxlen, "%c%c", fmt[i - 1], fmt[i]);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%c%c", fmt[i - 1], fmt[i]);
                     break;
             }
         } else {    // write non-format text
-            snprintf(*dest + strlen(*dest), maxlen, "%c", fmt[i]);
+            snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%c", fmt[i]);
         }
     }
     return 0;
