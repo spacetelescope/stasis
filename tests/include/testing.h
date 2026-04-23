@@ -115,8 +115,7 @@ inline char *stasis_testing_read_ascii(const char *filename) {
 }
 
 inline int stasis_testing_write_ascii(const char *filename, const char *data) {
-    FILE *fp;
-    fp = fopen(filename, "w+");
+    FILE *fp = fopen(filename, "w+");
     if (!fp) {
         perror(filename);
         return -1;
