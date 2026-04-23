@@ -17,10 +17,8 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         strncpy(sys.machine, "64", sizeof(sys.machine) - 1);
     }
 
-    char url[PATH_MAX];
-    const char *url_fmt = "https://micro.mamba.pm/api/micromamba/%s-%s/latest";
-    const int url_fmt_len = snprintf(NULL, 0, url_fmt, sys.sysname, sys.machine);
-    snprintf(url, sizeof(url) - url_fmt_len, url_fmt, sys.sysname, sys.machine);
+    char url[PATH_MAX] = {0};
+    snprintf(url, sizeof(url), "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
 
     char installer_path[PATH_MAX];
     snprintf(installer_path, sizeof(installer_path), "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
@@ -95,16 +93,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
 
 int python_exec(const char *args) {
     const char *command_base = "python ";
-    const char *command_fmt = "%s%s";
 
-    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
-    char *command = calloc(len + 1, sizeof(*command));
-    if (!command) {
-        SYSERROR("Unable to allocate %d bytes for command string", len);
+    char *command = NULL;
+    if (asprintf(&command, "%s%s", command_base, args) < 0 || !command) {
+        SYSERROR("%s", "Unable to allocate command string");
         return -1;
     }
-
-    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
     const int result = system(command);
@@ -114,15 +108,12 @@ int python_exec(const char *args) {
 
 int pip_exec(const char *args) {
     const char *command_base = "python -m pip ";
-    const char *command_fmt = "%s%s";
 
-    const int len = snprintf(NULL, 0, command_fmt, command_base, args);
-    char *command = calloc(len + 1, sizeof(*command));
-    if (!command) {
-        SYSERROR("Unable to allocate %d bytes for command string", len);
+    char *command = NULL;
+    if (asprintf(&command, "%s%s", command_base, args) < 0 || !command) {
+        SYSERROR("%s", "Unable to allocate command string");
         return -1;
     }
-    snprintf(command, len + 1, command_fmt, command_base, args);
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
 
     const int result = system(command);
@@ -170,7 +161,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
     int status = 0;
     struct Process proc = {0};
     proc.redirect_stderr = 1;
-    strncpy(proc.f_stdout, logfile, sizeof(proc.f_stdout) - 1);
+    snprintf(proc.f_stdout, sizeof(proc.f_stdout), "%s", logfile);
 
     if (mode == PKG_USE_PIP) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
@@ -512,8 +503,8 @@ int conda_setup_headless() {
             if (isempty(item)) {
                 continue;
             }
-            const int cmd_fmt_len = snprintf(NULL, 0, cmd_fmt, item);
-            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - cmd_fmt_len, cmd_fmt, item);
+
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), cmd_fmt, item);
             if (i < total - 1) {
                 strncat(cmd, " ", sizeof(cmd) - strlen(cmd) - 1);
             }
@@ -605,13 +596,12 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     file_replace_text(tempfile, "- python\n", spec, 0);
 
     const char *fmt = "env create -n '%s' --file='%s'";
-    int len = snprintf(NULL, 0, fmt, name, tempfile);
-    char *env_command = calloc(len + 1, sizeof(*env_command));
-    if (!env_command) {
+    char *env_command = NULL;
+    if (asprintf(&env_command, fmt, name, tempfile) < 0 || !env_command) {
+        SYSERROR("%s", "unable to allocate environment command");
         return -1;
     }
 
-    snprintf(env_command, len + 1, fmt, name, tempfile);
     const int status = conda_exec(env_command);
     unlink(tempfile);
     guard_free(env_command);
@@ -669,7 +659,6 @@ int conda_index(const char *path) {
 
 int conda_env_exists(const char *root, const char *name) {
     char path[PATH_MAX] = {0};
-    const int len = snprintf(NULL, 0, "%s/%s", root, name);
-    snprintf(path, sizeof(path) - len, "%s/envs/%s", root, name);
+    snprintf(path, sizeof(path), "%s/envs/%s", root, name);
     return access(path, F_OK) == 0;
 }

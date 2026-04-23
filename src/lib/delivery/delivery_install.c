@@ -234,9 +234,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (!ctx->meta.based_on) {
             strncat(command_base, " --upgrade", sizeof(command_base) - strlen(command_base) - 1);
         }
-        const char *command_base_fmt = " --extra-index-url 'file://%s'";
-        const int len = snprintf(NULL, 0, command_base_fmt, ctx->storage.wheel_artifact_dir);
-        snprintf(command_base + strlen(command_base), sizeof(command_base) - len, command_base_fmt, ctx->storage.wheel_artifact_dir);
+        snprintf(command_base + strlen(command_base), sizeof(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
 
     size_t args_alloc_len = STASIS_BUFSIZ;
@@ -320,7 +318,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, req, info->version);
+                    snprintf(args + strlen(args), args_alloc_len - strlen(args), fmt, req, info->version);
                 } else {
                     fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
                     guard_free(args);
@@ -338,7 +336,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, name);
+                    snprintf(args + strlen(args), args_alloc_len - strlen(args), fmt, name);
                 } else {
                     const char *fmt_append = "%s '%s'";
                     const char *fmt = " '%s'";
@@ -350,7 +348,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             return -1;
                         }
                     }
-                    snprintf(args + strlen(args), sizeof(args) - strlen(args) - required_len + 1, fmt, name);
+                    snprintf(args + strlen(args), args_alloc_len - strlen(args), fmt, name);
                 }
             }
         }

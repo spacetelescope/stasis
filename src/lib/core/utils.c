@@ -320,9 +320,7 @@ int git_clone(struct Process *proc, char *url, char *destdir, char *gitref) {
 
     if (destdir && access(destdir, F_OK) < 0) {
         // Destination directory does not exist
-        const char *command_fmt = " %s";
-        const int command_fmt_len = snprintf(NULL, 0, command_fmt, destdir);
-        snprintf(command + strlen(command), sizeof(command) - strlen(command) - command_fmt_len, command_fmt, destdir);
+        snprintf(command + strlen(command), sizeof(command) - strlen(command), " %s", destdir);
         // Clone the repo
         result = shell(proc, command);
         if (result) {
@@ -944,13 +942,8 @@ void debug_hexdump(char *data, int len) {
             continue;
         }
 
-        const char *bytes_fmt = "%02X ";
-        const int bytes_fmt_len = snprintf(NULL, 0, bytes_fmt, (unsigned char) *pos);
-        snprintf(bytes + strlen(bytes), sizeof(bytes) - strlen(bytes) - bytes_fmt_len, bytes_fmt, (unsigned char) *pos);
-
-        const char *ascii_fmt = "%c";
-        // no need to calculate length for a single character
-        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), ascii_fmt, isprint(*pos) ? *pos : '.');
+        snprintf(bytes + strlen(bytes), sizeof(bytes) - strlen(bytes), "%02X ", (unsigned char) *pos);
+        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
 
         pos++;
         count++;
@@ -964,7 +957,7 @@ void debug_hexdump(char *data, int len) {
     for (int i = 0; i < padding; i++) {
         strncat(bytes, "   ", sizeof(bytes) - strlen(bytes) - 1);
     }
-    snprintf(output, DEBUG_HEXDUMP_FMT_BYTES + sizeof(addr) + sizeof(bytes) + sizeof(ascii), "%s | %s | %s", addr, bytes, ascii);
+    snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
 }
 
