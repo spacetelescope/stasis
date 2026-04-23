@@ -83,7 +83,9 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         return -1;
     }
 
-    if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
+    int fd = -1;
+    if ((fd = dup2(STDOUT_FILENO, STDERR_FILENO)) < 0) {
+        SYSERROR("%s", "Unable to redirect stderr to stdout");
         fclose(fp_log);
         return -1;
     }
