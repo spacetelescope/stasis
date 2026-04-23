@@ -118,7 +118,10 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
         } else if ((data_offset = strstr(line, field_message))) {
             // Skip past the message field
             data_offset += strlen(field_message);
-            *(strchr(data_offset, '"')) = 0;
+            char *data_mark = strchr(data_offset, '"');
+            if (data_mark) {
+                *data_mark = '\0';
+            }
             fprintf(stderr, "GitHub API Error: '%s'\n", data_offset);
             fprintf(stderr, "URL: %s\n", endpoint_url);
             fprintf(stderr, "POST: %s\n", endpoint_post_fields);
