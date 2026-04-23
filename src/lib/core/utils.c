@@ -675,9 +675,9 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     if (!toxini) {
         if (fptemp) {
             guard_free(result);
-            guard_free(tempfile);
             fclose(fptemp);
         }
+        guard_free(tempfile);
         return -1;
     }
 
@@ -702,6 +702,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                                 SYSERROR("failed to increase size to +%zu bytes",
                                          strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
+                                guard_free(tempfile);
                                 return -1;
                             }
                             value = tmp;
