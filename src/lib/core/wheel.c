@@ -90,6 +90,7 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->wheel_version = strdup(value);
                     if (!pkg->wheel_version) {
                         // memory error
+                        wheel_package_free(&pkg);
                         return -1;
                     }
                     break;
@@ -98,6 +99,7 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->generator = strdup(value);
                     if (!pkg->generator) {
                         // memory error
+                        wheel_package_free(&pkg);
                         return -1;
                     }
                     break;
@@ -106,6 +108,7 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->root_is_pure_lib = strdup(value);
                     if (!pkg->root_is_pure_lib) {
                         // memory error
+                        wheel_package_free(&pkg);
                         return -1;
                     }
                     break;
@@ -114,6 +117,7 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     if (!pkg->tag) {
                         pkg->tag = strlist_init();
                         if (!pkg->tag) {
+                            wheel_package_free(&pkg);
                             return -1;
                         }
                     }
@@ -124,10 +128,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     fprintf(stderr, "warning: unhandled wheel key on line %zu:\nbuffer contents: '%s'\n", i, value);
                     break;
             }
-            guard_free(key);
-            guard_free(value);
+            guard_array_n_free(pair, 2);
         }
-        guard_array_free(pair);
     }
     guard_strlist_free(&lines);
     return data ? (ssize_t) strlen(data) : -1;
@@ -145,8 +147,8 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
     int reading_extra = 0;
     size_t provides_extra_i = 0;
     int reading_description = 0;
-    size_t base_description_len = 1024;
-    size_t len_description = 0;
+    int base_description_len = 1024;
+    int len_description = 0;
     struct WheelMetadata_ProvidesExtra *current_extra = NULL;
 
     if (!data) {
@@ -577,16 +579,16 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
                 // reading_description will never be reset to zero
                 reading_description = 1;
                 if (!pkg->description) {
-                    pkg->description = malloc(base_description_len + 1);
+                    pkg->description = malloc((size_t) base_description_len + 1);
                     if (!pkg->description) {
                         return -1;
                     }
-                    len_description = snprintf(pkg->description, base_description_len, "%s\n", line);
+                    len_description = snprintf(pkg->description, (size_t) base_description_len, "%s\n", line);
                 } else {
-                    const size_t next_len = snprintf(NULL, 0, "%s\n%s\n", pkg->description, line);
+                    const int next_len = snprintf(NULL, 0, "%s\n%s\n", pkg->description, line);
                     if (next_len + 1 > base_description_len) {
                         base_description_len *= 2;
-                        char *tmp = realloc(pkg->description, base_description_len + 1);
+                        char *tmp = realloc(pkg->description, (size_t) base_description_len + 1);
                         if (!tmp) {
                             // memory error
                             guard_free(pkg->description);
@@ -594,7 +596,7 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
                         }
                         pkg->description = tmp;
                     }
-                    len_description += snprintf(pkg->description + len_description, next_len + 1, "%s\n", line);
+                    len_description += snprintf(pkg->description + len_description, (size_t) next_len + 1, "%s\n", line);
                 }
                 break;
             }
@@ -1049,13 +1051,13 @@ int wheel_get_records(struct Wheel *pkg, const char *filename) {
             const char *next_comma = strpbrk(token, ",");
             if (next_comma) {
                 if (x == 0) {
-                    record->filename = strndup(token, next_comma - token);
+                    record->filename = strndup(token, (size_t) (next_comma - token));
                 } else if (x == 1) {
-                    record->checksum = strndup(token, next_comma - token);
+                    record->checksum = strndup(token, (size_t) (next_comma - token));
                 }
                 token = next_comma + 1;
             } else {
-                record->size = strtol(token, NULL, 10);
+                record->size = (size_t) strtol(token, NULL, 10);
             }
         }
         records_count++;
