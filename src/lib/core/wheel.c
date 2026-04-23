@@ -128,6 +128,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     fprintf(stderr, "warning: unhandled wheel key on line %zu:\nbuffer contents: '%s'\n", i, value);
                     break;
             }
+            guard_free(key);
+            guard_free(value);
             guard_array_n_free(pair, 2);
         }
     }
