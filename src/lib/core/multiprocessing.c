@@ -195,7 +195,16 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     char *t_name = NULL;
 
     t_name = xmkstemp(&tp, "w");
-    if (!t_name || !tp) {
+    if (!t_name) {
+        SYSERROR("%s", "Failed to create temporary file name");
+        if (tp) {
+            fclose(tp);
+        }
+        return NULL;
+    }
+    if (!tp) {
+        SYSERROR("%s", "Failed to create temporary file");
+        guard_free(t_name);
         return NULL;
     }
 
