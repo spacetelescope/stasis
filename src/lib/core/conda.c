@@ -311,6 +311,7 @@ static int env0_to_runtime(const char *logfile) {
         char **part = split(buf, "=", 1);
         if (!part) {
             perror("unable to split environment variable buffer");
+            fclose(fp);
             return -1;
         }
         if (!part[0]) {
