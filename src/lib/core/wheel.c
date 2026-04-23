@@ -595,8 +595,6 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
                         pkg->description = tmp;
                     }
                     len_description += snprintf(pkg->description + len_description, next_len + 1, "%s\n", line);
-
-                    //consume_append(&pkg->description, line, "\r\n");
                 }
                 break;
             }
