@@ -32,8 +32,13 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         char srcdir_with_output[PATH_MAX] = {0};
         char *srcdir = srcdir_bare;
         strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare) - 1);
+        srcdir_bare[sizeof(srcdir_bare) - 1] = '\0';
+
         strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output) - 1);
+        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
+
         strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output) - strlen(srcdir_with_output) - 1);
+        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
 
         if (access(srcdir_bare, F_OK)) {
             fprintf(stderr, "%s does not exist\n", srcdir_bare);
