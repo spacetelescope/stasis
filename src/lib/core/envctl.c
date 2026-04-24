@@ -53,7 +53,7 @@ size_t envctl_get_index(const struct EnvCtl *envctl, const char *name) {
     for (size_t i = 0; i < envctl->num_used; i++) {
         if (!strcmp(envctl->item[i]->name, name)) {
             // pack state flag, outer (struct) index and inner (name) index
-            return 1L << 63L | i;
+            return 1UL << 63UL | i;
         }
     }
     return 0;
