@@ -679,8 +679,8 @@ float strlist_item_as_float(struct StrList *pStrList, size_t index) {
     char *error_p;
 
     strlist_clear_error();
-    float result = (float) strtof(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const float result = strtof(strlist_item(pStrList, index), &error_p);
+    if ((result == FLT_MIN || result == HUGE_VALF) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }
@@ -698,8 +698,8 @@ double strlist_item_as_double(struct StrList *pStrList, size_t index) {
     char *error_p;
 
     strlist_clear_error();
-    double result = (double) strtod(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const double result = strtod(strlist_item(pStrList, index), &error_p);
+    if ((result == DBL_MIN || result == HUGE_VAL) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }
@@ -717,8 +717,8 @@ long double strlist_item_as_long_double(struct StrList *pStrList, size_t index) 
     char *error_p;
 
     strlist_clear_error();
-    long double result = (long double) strtold(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const long double result = strtold(strlist_item(pStrList, index), &error_p);
+    if ((result == DBL_MIN || result == HUGE_VALL) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }
