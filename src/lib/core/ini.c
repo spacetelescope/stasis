@@ -181,7 +181,9 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             break;
         case INIVAL_TYPE_STR_ARRAY:
             strncpy(tbufp, data_copy, sizeof(tbuf) - 1);
+            tbuf[sizeof(tbuf) - 1] = '\0';
             guard_free(data_copy);
+
             data_copy = calloc(STASIS_BUFSIZ, sizeof(*data_copy));
             if (!data_copy) {
                 return -1;
@@ -526,6 +528,7 @@ struct INIFILE *ini_open(const char *filename) {
     // Create an implicit section. [default] does not need to be present in the INI config
     ini_section_create(&ini, "default");
     strncpy(current_section, "default", sizeof(current_section) - 1);
+    current_section[sizeof(current_section) - 1] = '\0';
 
     // Open the configuration file for reading
     FILE *fp = fopen(filename, "r");
@@ -600,6 +603,8 @@ struct INIFILE *ini_open(const char *filename) {
             // Record the name of the section. This is used until another section is found.
             memset(current_section, 0, sizeof(current_section));
             strncpy(current_section, section_name, sizeof(current_section) - 1);
+            current_section[sizeof(current_section) - 1] = '\0';
+
             guard_free(section_name);
             memset(line, 0, sizeof(line));
             continue;
@@ -621,16 +626,21 @@ struct INIFILE *ini_open(const char *filename) {
             size_t key_len = operator - line;
             memset(key, 0, sizeof(inikey[0]));
             strncpy(key, line, key_len);
+            key[key_len] = '\0';
             lstrip(key);
             strip(key);
+
             memset(key_last, 0, sizeof(inikey[1]));
             strncpy(key_last, key, sizeof(inikey[1]) - 1);
+            key_last[sizeof(inikey[1]) - 1] = '\0';
+
             reading_value = 1;
             if (strlen(operator) > 1) {
                 strncpy(value, &operator[1], sizeof(value) - 1);
             } else {
                 strncpy(value, "", sizeof(value) - 1);
             }
+            value[sizeof(value) - 1] = '\0';
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
                 hint = INIVAL_TYPE_STR_ARRAY;
@@ -644,7 +654,9 @@ struct INIFILE *ini_open(const char *filename) {
             strip(value);
         } else {
             strncpy(key, key_last, sizeof(inikey[0]) - 1);
+            key[sizeof(inikey[0]) - 1] = '\0';
             strncpy(value, line, sizeof(value) - 1);
+            value[sizeof(value) - 1] = '\0';
         }
         memset(line, 0, sizeof(line));
 

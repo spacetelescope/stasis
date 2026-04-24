@@ -11,10 +11,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     tolower_s(sys.sysname);
     if (!strcmp(sys.sysname, "darwin")) {
         strncpy(sys.sysname, "osx", sizeof(sys.sysname) - 1);
+        sys.sysname[sizeof(sys.sysname) - 1] = '\0';
     }
 
     if (!strcmp(sys.machine, "x86_64")) {
         strncpy(sys.machine, "64", sizeof(sys.machine) - 1);
+        sys.machine[sizeof(sys.machine) - 1] = '\0';
     }
 
     char url[PATH_MAX] = {0};
@@ -146,6 +148,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
 
     // Normalize the local spec string
     strncpy(spec_local, spec, sizeof(spec_local) - 1);
+    spec_local[sizeof(spec_local) - 1] = '\0';
     tolower_s(spec_local);
     lstrip(spec_local);
     strip(spec_local);
@@ -167,12 +170,15 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
         // The --force argument ignores local installation and cache, and actually polls the remote index(es)
         strncpy(cmd, "python -m pip install --force --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
         if (index) {
             snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--index-url='%s' ", index);
         }
         snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s' ", spec_local);
     } else if (mode == PKG_USE_CONDA) {
         strncpy(cmd, "mamba search ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
+
         if (index) {
             snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--channel '%s' ", index);
         }
@@ -247,6 +253,8 @@ int conda_exec(const char *args) {
             break;
         }
     }
+    conda_as[sizeof(conda_as) - 1] = '\0';
+
 
     const char *command_fmt = "%s %s";
     const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
@@ -352,7 +360,8 @@ int conda_activate(const char *root, const char *env_name) {
     close(fd);
 
     // Configure our process for output to a log file
-    strncpy(proc.f_stdout, logfile, PATH_MAX - 1);
+    strncpy(proc.f_stdout, logfile, sizeof(proc.f_stdout) - 1);
+    proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
 
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
@@ -497,6 +506,7 @@ int conda_setup_headless() {
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
         memset(cmd, 0, sizeof(cmd));
         strncpy(cmd, "install ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
 
         total = strlist_count(globals.conda_packages);
         for (size_t i = 0; i < total; i++) {
@@ -520,6 +530,7 @@ int conda_setup_headless() {
     if (globals.pip_packages && strlist_count(globals.pip_packages)) {
         memset(cmd, 0, sizeof(cmd));
         strncpy(cmd, "install ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
 
         total = strlist_count(globals.pip_packages);
         for (size_t i = 0; i < total; i++) {

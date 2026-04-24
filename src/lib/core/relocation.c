@@ -85,6 +85,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
     }
     // replace original with contents of buffer
     strncpy(original, buffer, buffer_len + 1);
+    original[buffer_len] = '\0';
     return 0;
 }
 

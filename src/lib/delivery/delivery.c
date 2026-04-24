@@ -367,6 +367,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
         exit(1);
     }
+    mode[sizeof(mode) - 1] = '\0';
+
     msg(STASIS_MSG_L2, "Filtering %s packages by test definition...\n", mode);
 
     struct StrList *filtered = NULL;
@@ -391,8 +393,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 spec_end++;
             }
             strncpy(package_name, name, spec_begin - name);
+            package_name[spec_begin - name] = '\0';
         } else {
             strncpy(package_name, name, sizeof(package_name) - 1);
+            package_name[sizeof(package_name) - 1] = '\0';
         }
         remove_extras(package_name);
 
@@ -404,6 +408,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             char nametmp[STASIS_NAME_MAX] = {0};
 
             strncpy(nametmp, package_name, sizeof(nametmp) - 1);
+            nametmp[sizeof(nametmp) - 1] = '\0';
+
             // Is the [test:NAME] in the package name?
             if (!strcmp(nametmp, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item

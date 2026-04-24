@@ -201,6 +201,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 memset(&proc, 0, sizeof(proc));
 
                 strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ - 1);
+                cmd[strlen(test->script) + STASIS_BUFSIZ - 1] = '\0';
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
@@ -230,6 +231,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
                     strncpy(pool_name, "serial", sizeof(pool_name) - 1);
+                    pool_name[sizeof(pool_name) - 1] = '\0';
                 }
 
                 if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
@@ -281,11 +283,13 @@ void delivery_tests_run(struct Delivery *ctx) {
                     }
 
                     strncpy(cmd, test->script_setup, cmd_len - 1);
+                    cmd[cmd_len - 1] = '\0';
+
                     char *cmd_rendered = tpl_render(cmd);
                     if (cmd_rendered) {
                         if (strcmp(cmd_rendered, cmd) != 0) {
                             strncpy(cmd, cmd_rendered, cmd_len - 1);
-                            cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
+                            cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = '\0';
                         }
                         guard_free(cmd_rendered);
                     } else {

@@ -35,8 +35,10 @@ int popd() {
 int rmtree(char *_path) {
     int status = 0;
     char path[PATH_MAX] = {0};
-    strncpy(path, _path, sizeof(path) - 1);
     struct dirent *d_entity;
+
+    strncpy(path, _path, sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
 
     DIR *dir = opendir(path);
     if (!dir) {
@@ -106,6 +108,7 @@ char *expandpath(const char *_path) {
         char *tmphome;
         if ((tmphome = getenv(homes[i])) != NULL) {
             strncpy(home, tmphome, PATH_MAX - 1);
+            home[PATH_MAX - 1] = '\0';
             break;
         }
     }
@@ -285,6 +288,7 @@ char *find_program(const char *name) {
             continue;
         }
         strncpy(result, abspath, sizeof(result) - 1);
+        result[sizeof(result) - 1] = '\0';
         break;
     }
     path = path_orig;
@@ -451,6 +455,7 @@ void msg(unsigned type, char *fmt, ...) {
         fprintf(stream, "%s", STASIS_COLOR_GREEN);
         strncpy(status, " ", sizeof(status) - 1);
     }
+    status[sizeof(status) - 1] = '\0';
 
     if (type & STASIS_MSG_L1) {
         snprintf(header, sizeof(header), "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
@@ -498,6 +503,8 @@ char *xmkstemp(FILE **fp, const char *mode) {
     } else {
         strncpy(tmpdir, "/tmp", sizeof(tmpdir) - 1);
     }
+    tmpdir[sizeof(tmpdir) - 1] = '\0';
+
     memset(t_name, 0, sizeof(t_name));
     snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
 
@@ -722,6 +729,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
 
     // Store path to modified config
     strncpy(*result, tempfile, maxlen - 1);
+    *result[maxlen - 1] = '\0';
     guard_free(tempfile);
 
     ini_free(&toxini);
@@ -766,11 +774,12 @@ char *collapse_whitespace(char **s) {
 int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, char *dest, size_t maxlen) {
     const char *redacted = "***REDACTED***";
 
-    char *tmp = calloc(strlen(redacted) + strlen(src) + 1, sizeof(*tmp));
+    char *tmp = calloc(maxlen + 1, sizeof(*tmp));
     if (!tmp) {
         return -1;
     }
-    strncpy(tmp, src, strlen(redacted) + strlen(src));
+    strncpy(tmp, src, maxlen);
+    tmp[maxlen] = '\0';
 
     for (size_t i = 0; i < to_redact_size; i++) {
         if (to_redact[i] && strstr(tmp, to_redact[i])) {
@@ -780,7 +789,8 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
     }
 
     memset(dest, 0, maxlen);
-    strncpy(dest, tmp, maxlen - 1);
+    strncpy(dest, tmp, maxlen);
+    dest[maxlen] = '\0';
     guard_free(tmp);
 
     return 0;
@@ -834,6 +844,7 @@ int mkdirs(const char *_path, mode_t mode) {
     char *token;
     char pathbuf[PATH_MAX] = {0};
     strncpy(pathbuf, _path, sizeof(pathbuf) - 1);
+    pathbuf[sizeof(pathbuf) - 1] = '\0';
     char *path = pathbuf;
     errno = 0;
 

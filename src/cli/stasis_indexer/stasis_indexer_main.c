@@ -14,8 +14,13 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
     char *destdir = destdir_bare;
 
     strncpy(destdir_bare, dest, sizeof(destdir_bare) - 1);
+    destdir[sizeof(destdir_bare) - 1] = '\0';
+
     strncpy(destdir_with_output, dest, sizeof(destdir_with_output) - 1);
+    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
+
     strncat(destdir_with_output, "/output", sizeof(destdir_with_output) - strlen(destdir_with_output) - 1);
+    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
 
     if (!access(destdir_with_output, F_OK)) {
         destdir = destdir_with_output;
@@ -251,6 +256,7 @@ int main(const int argc, char *argv[]) {
     } else {
         strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
     }
+    stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {

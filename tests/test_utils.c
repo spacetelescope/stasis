@@ -312,6 +312,7 @@ void test_path_dirname() {
         const char *expected = data[i + 1];
         char tmp[PATH_MAX] = {0};
         strncpy(tmp, input, sizeof(tmp) - 1);
+        tmp[sizeof(tmp) - 1] = '\0';
 
         char *result = path_dirname(tmp);
         STASIS_ASSERT(strcmp(expected, result) == 0, NULL);

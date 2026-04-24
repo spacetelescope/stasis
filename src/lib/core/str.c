@@ -63,6 +63,7 @@ void strchrdel(char *sptr, const char *chars) {
     for (size_t i = 0; i < strlen(chars); i++) {
         char ch[2] = {0};
         strncpy(ch, &chars[i], 1);
+        ch[sizeof(ch) - 1] = '\0';
         replace_text(sptr, ch, "", 0);
     }
 }
@@ -105,7 +106,7 @@ char** split(char *_sptr, const char* delim, size_t max)
     // Separate the string into individual parts and store them in the result array
     char *token = NULL;
     char *sptr_tmp = sptr;
-    size_t pos = 0;
+    ptrdiff_t pos = 0;
     size_t i;
     for (i = 0; (token = strsep(&sptr_tmp, delim)) != NULL; i++) {
         // When max is zero, record all tokens
@@ -120,6 +121,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             return NULL;
         }
         strncpy(result[i], token, STASIS_BUFSIZ - 1);
+        result[i][STASIS_BUFSIZ - 1] = '\0';
     }
 
     // pos is non-zero when maximum split is reached
@@ -130,6 +132,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             return NULL;
         }
         strncpy(result[i], &orig[pos], STASIS_BUFSIZ - 1);
+        result[i][STASIS_BUFSIZ - 1] = '\0';
     }
 
     guard_free(sptr);
@@ -562,7 +565,10 @@ char *normalize_space(char *s) {
     }
 
     // Rewrite the input string
-    strncpy(result, tmp_orig, strlen(result) + 1);
+    const size_t result_len = strlen(result) + 1;
+    strncpy(result, tmp_orig, result_len);
+    result[result_len] = '\0';
+
     guard_free(tmp_orig);
     return result;
 }
@@ -583,6 +589,10 @@ char **strdup_array(char **array) {
     result = calloc(elems + 1, sizeof(*result));
     for (size_t i = 0; i < elems; i++) {
         result[i] = strdup(array[i]);
+        if (!result[i]) {
+            guard_array_free(result);
+            break;
+        }
     }
 
     return result;

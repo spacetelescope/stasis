@@ -81,6 +81,8 @@ int get_junitxml_file_entrypoint(void *frame, void *data_out) {
     }
     char nametmp[PATH_MAX] = {0};
     strncpy(nametmp, cwd, sizeof(nametmp) - 1);
+    nametmp[sizeof(nametmp) - 1] = '\0';
+
     char *name = path_basename(nametmp);
 
     *output = calloc(PATH_MAX, sizeof(**output));
@@ -106,6 +108,7 @@ int get_basetemp_dir_entrypoint(void *frame, void *data_out) {
     }
     char nametmp[PATH_MAX] = {0};
     strncpy(nametmp, cwd, sizeof(nametmp) - 1);
+    nametmp[sizeof(nametmp) - 1] = '\0';
     char *name = path_basename(nametmp);
 
     *output = calloc(PATH_MAX, sizeof(**output));
