@@ -522,7 +522,7 @@ static char *center_text(const char *s, const size_t maxwidth) {
     }
     result[i++] = 'v';
     strncpy(&result[i], s, maxwidth - middle - 1);
-    result[maxwidth - middle - 1] = '\0';
+    result[maxwidth - 1] = '\0';
 
     return result;
 }
