@@ -90,6 +90,7 @@ int shell(struct Process *proc, char *args) {
                     }
                     _exit(1);
                 }
+                fclose(fp_out);
             }
         }
 
