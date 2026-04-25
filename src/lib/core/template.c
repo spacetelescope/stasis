@@ -98,7 +98,7 @@ void tpl_register(char *key, char **ptr) {
 
     item->ptr = ptr;
     if (!replacing) {
-        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr);
+        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr ? *item->ptr : "NULL");
         tpl_pool[tpl_pool_used] = item;
         tpl_pool_used++;
     }
