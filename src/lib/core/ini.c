@@ -456,15 +456,19 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                         return -1;
                     }
 
+                    size_t len = 0;
                     if (*hint == INIVAL_TYPE_STR_ARRAY) {
                         int leading_space = isspace(*render);
                         if (leading_space) {
-                            snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "%s" LINE_SEP, render);
+                            len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "%s" LINE_SEP, render);
+                            snprintf(outvalue + strlen(outvalue), len, "%s" LINE_SEP, render);
                         } else {
-                            snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "    %s" LINE_SEP, render);
+                            len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "    %s" LINE_SEP, render);
+                            snprintf(outvalue + strlen(outvalue), len, "    %s" LINE_SEP, render);
                         }
                     } else {
-                        snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "%s", render);
+                        len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "%s", render);
+                        snprintf(outvalue + strlen(outvalue), len, "%s", render);
                     }
                     if (mode == INI_WRITE_PRESERVE) {
                         guard_free(render);
