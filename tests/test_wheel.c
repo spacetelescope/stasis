@@ -41,13 +41,13 @@ static void test_wheel_package() {
     const struct WheelValue dist_version = wheel_get_value_by_name(wheel, WHEEL_FROM_DIST, "Wheel-Version");
     STASIS_ASSERT(dist_version.type == WHEELVAL_STR, "Wheel dist version value must be a string");
     STASIS_ASSERT_FATAL(dist_version.data != NULL, "Wheel dist version value must not be NULL");
-    STASIS_ASSERT(dist_version.count, "Wheel value must be populated");
+    STASIS_ASSERT(dist_version.count != 0, "Wheel value must be populated");
 
     // Get data from METADATA
     const struct WheelValue meta_name = wheel_get_value_by_name(wheel, WHEEL_FROM_METADATA, "Metadata-Version");
     STASIS_ASSERT(meta_name.type == WHEELVAL_STR, "Wheel metadata version value must be a string");
     STASIS_ASSERT_FATAL(meta_name.data != NULL, "Wheel metadata version value must not be NULL");
-    STASIS_ASSERT(meta_name.count, "Wheel metadata version value must be populated");
+    STASIS_ASSERT(meta_name.count != 0, "Wheel metadata version value must be populated");
 
     wheel_package_free(&wheel);
     STASIS_ASSERT(wheel == NULL, "wheel struct should be NULL after free");
