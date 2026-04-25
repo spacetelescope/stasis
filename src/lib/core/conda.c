@@ -153,7 +153,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
     lstrip(spec_local);
     strip(spec_local);
 
-    char logfile[] = "/tmp/STASIS-package_exists.XXXXXX";
+    char logfile[] = "/tmp/stasis/STASIS-package_exists.XXXXXX";
     int logfd = mkstemp(logfile);
     if (logfd < 0) {
         perror(logfile);
