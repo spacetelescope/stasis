@@ -729,7 +729,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
 
     // Store path to modified config
     strncpy(*result, tempfile, maxlen - 1);
-    *result[maxlen - 1] = '\0';
+    (*result)[maxlen - 1] = '\0';
     guard_free(tempfile);
 
     ini_free(&toxini);
