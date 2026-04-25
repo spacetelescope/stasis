@@ -501,7 +501,7 @@ char *xmkstemp(FILE **fp, const char *mode) {
     if (globals.tmpdir) {
         strncpy(tmpdir, globals.tmpdir, sizeof(tmpdir) - 1);
     } else {
-        strncpy(tmpdir, "/tmp", sizeof(tmpdir) - 1);
+        strncpy(tmpdir, "/tmp/stasis", sizeof(tmpdir) - 1);
     }
     tmpdir[sizeof(tmpdir) - 1] = '\0';
 
