@@ -17,7 +17,10 @@ if (BASH_PROGRAM AND TESTS_RT)
         file(REAL_PATH ${rt_file} rt_name)
         string(REGEX REPLACE ${ext_pattern} "" rt_name ${rt_file})
         add_test (${rt_name} ${BASH_PROGRAM} ${rt_file})
-    endforeach()
+        set_property(TEST ${rt_name}
+                PROPERTY ENVIRONMENT "GIT_CEILING_DIRECTORIES=${CMAKE_BINARY_DIR}"
+        )
+endforeach()
 endif()
 
 foreach(source_file ${source_files})
@@ -49,5 +52,7 @@ foreach(source_file ${source_files})
             PROPERTIES
             SKIP_RETURN_CODE 127)
     set_property(TEST ${test_executable}
-            PROPERTY ENVIRONMENT "STASIS_SYSCONFDIR=${CMAKE_SOURCE_DIR}")
+            PROPERTY ENVIRONMENT "STASIS_SYSCONFDIR=${CMAKE_SOURCE_DIR}"
+            PROPERTY ENVIRONMENT "GIT_CEILING_DIRECTORIES=${CMAKE_BINARY_DIR}"
+    )
 endforeach()
