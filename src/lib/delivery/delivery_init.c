@@ -12,7 +12,7 @@ int has_mount_flags(const char *mount_point, const unsigned long flags) {
 int delivery_init_tmpdir(struct Delivery *ctx) {
     char *tmpdir = NULL;
     char *x = NULL;
-    int unusable = 0;
+    int unusable = 1;
     errno = 0;
 
     x = getenv("TMPDIR");
@@ -25,7 +25,8 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 
     if (!tmpdir) {
         // memory error
-        return -1;
+        SYSERROR("%s", "unable to allocate tmpdir");
+        goto l_delivery_init_tmpdir_fatal;
     }
 
     // If the directory doesn't exist, create it
@@ -61,15 +62,25 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 
     if (!globals.tmpdir) {
         globals.tmpdir = strdup(tmpdir);
+        if (!globals.tmpdir) {
+            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     }
 
     if (!ctx->storage.tmpdir) {
         ctx->storage.tmpdir = strdup(globals.tmpdir);
+        if (!ctx->storage.tmpdir) {
+            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     }
-    return unusable;
+    unusable = 0;
 
     l_delivery_init_tmpdir_fatal:
-    unusable = 1;
+    if (unusable) {
+        guard_free(tmpdir);
+    }
     return unusable;
 }
 
