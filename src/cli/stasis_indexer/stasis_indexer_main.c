@@ -274,8 +274,14 @@ int main(const int argc, char *argv[]) {
     if (system_tmp) {
         strncat(workdir_template, system_tmp, sizeof(workdir_template) - strlen(workdir_template) - 1);
     } else {
-        strncat(workdir_template, "/tmp", sizeof(workdir_template) - strlen(workdir_template) - 1);
+        strncat(workdir_template, "/tmp/stasis", sizeof(workdir_template) - strlen(workdir_template) - 1);
     }
+
+    if (mkdirs(workdir_template, 0700)) {
+        SYSERROR("Unable to create directory '%s': %s", workdir_template, strerror(errno));
+        exit(1);
+    }
+
     strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template) - strlen(workdir_template) - 1);
     char *workdir = mkdtemp(workdir_template);
     if (!workdir) {

@@ -38,10 +38,6 @@ void check_system_requirements(struct Delivery *ctx) {
         msg(STASIS_MSG_RESTRICT, "found\n");
     }
 
-    if (!globals.tmpdir && !ctx->storage.tmpdir) {
-        delivery_init_tmpdir(ctx);
-    }
-
     msg(STASIS_MSG_L2, "Docker\n");
     if (docker_capable(&ctx->deploy.docker.capabilities)) {
         struct DockerCapabilities *dcap = &ctx->deploy.docker.capabilities;
