@@ -80,7 +80,6 @@ int shell(struct Process *proc, char *args) {
                     fclose(fp_err);
                     _exit(1);
                 }
-                fclose(fp_err);
             } else {
                 // redirect stderr to stdout
                 if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
@@ -90,7 +89,6 @@ int shell(struct Process *proc, char *args) {
                     }
                     _exit(1);
                 }
-                fclose(fp_out);
             }
         }
 
