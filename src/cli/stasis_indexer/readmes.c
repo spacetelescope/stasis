@@ -67,6 +67,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                              latest_deliveries[i]->info.build_number,
                              strstr((*ctx)->rules.release_fmt, "%p") ? latest_deliveries[i]->meta.python_compact : "" ) < 0) {
                         SYSERROR("%s", "Unable to allocate bytes for pattern");
+                        fclose(indexfp);
                         return -1;
                     }
 
