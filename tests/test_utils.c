@@ -71,6 +71,8 @@ void test_fix_tox_conf() {
     }
 
     char **lines = file_readlines(result, 0, 0, NULL);
+    STASIS_ASSERT_FATAL(lines != NULL, "lines array should not be NULL");
+    STASIS_ASSERT_FATAL(result != NULL, "result should not be NULL");
     STASIS_ASSERT(strstr_array(lines, expected) != NULL, "{posargs} not found in result");
     guard_array_free(lines);
 
