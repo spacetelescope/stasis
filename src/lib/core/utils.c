@@ -505,6 +505,11 @@ char *xmkstemp(FILE **fp, const char *mode) {
     }
     tmpdir[sizeof(tmpdir) - 1] = '\0';
 
+    if (mkdirs(tmpdir, 0700) < 0) {
+        SYSERROR("unable to create sub-directories in %s", tmpdir);
+        return NULL;
+    }
+
     memset(t_name, 0, sizeof(t_name));
     snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
 
@@ -665,6 +670,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     // Create new temporary tox configuration file
     char *tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
+        SYSERROR("%s", "unable to create temporary file");
         return -1;
     }
 
