@@ -212,6 +212,10 @@ int main(const int argc, char *argv[]) {
     if (optind < argc) {
         rootdirs_total = argc - current_index;
         rootdirs = calloc(rootdirs_total + 1, sizeof(*rootdirs));
+        if (!rootdirs) {
+            SYSERROR("%s", "unable to allocate memory for rootdirs array");
+            exit(1);
+        }
 
         int i = 0;
         while (optind < argc) {
@@ -223,6 +227,10 @@ int main(const int argc, char *argv[]) {
             }
             // use first positional argument
             rootdirs[i] = realpath(argv[optind], NULL);
+            if (!rootdirs[i]) {
+                SYSERROR("%s", "Unable to allocate memory for root directory");
+                exit(1);
+            }
             optind++;
             break;
         }
