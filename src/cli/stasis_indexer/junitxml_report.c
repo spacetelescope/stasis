@@ -38,6 +38,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         char *short_name_pattern = NULL;
         if (asprintf(&short_name_pattern, "-%s", ctx->info.release_name) < 0 || !short_name_pattern) {
             SYSERROR("%s", "unable to allocate bytes for short name pattern");
+            guard_free(bname);
             return -1;
         }
 
