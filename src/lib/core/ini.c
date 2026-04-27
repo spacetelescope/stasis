@@ -648,14 +648,19 @@ struct INIFILE *ini_open(const char *filename) {
         if (operator) {
             size_t key_len = operator - line;
             memset(key, 0, key_size);
+
+            SYSDEBUG("%s", "operator reached");
+            SYSDEBUG("in: '%s'", line);
             strncpy(key, line, key_len);
             key[key_size - 1] = '\0';
             lstrip(key);
             strip(key);
+            SYSDEBUG("key is: %s", key);
 
             memset(key_last, 0, key_last_size);
             strncpy(key_last, key, key_last_size - 1);
             key_last[key_last_size - 1] = '\0';
+            SYSDEBUG("last key is: %s", key_last);
 
             reading_value = 1;
             if (strlen(operator) > 1) {
@@ -664,13 +669,17 @@ struct INIFILE *ini_open(const char *filename) {
                 strncpy(value, "", sizeof(value) - 1);
             }
             value[sizeof(value) - 1] = '\0';
+            SYSDEBUG("value: %s", value);
+
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
+                SYSDEBUG("%s", "multiline data encountered");
                 hint = INIVAL_TYPE_STR_ARRAY;
                 multiline_data = 1;
                 no_data = 1;
             } else {
                 //printf("%s is probably short data\n", key);
+                SYSDEBUG("%s", "string data encountered");
                 hint = INIVAL_TYPE_STR;
                 multiline_data = 0;
             }
@@ -678,8 +687,10 @@ struct INIFILE *ini_open(const char *filename) {
         } else {
             strncpy(key, key_last, key_size - 1);
             key[key_size - 1] = '\0';
+            SYSDEBUG("updated key (%s) with key_last (%s)", key, key_last);
             strncpy(value, line, sizeof(value) - 1);
             value[sizeof(value) - 1] = '\0';
+            SYSDEBUG("wrote value: %s", value);
         }
         memset(line, 0, sizeof(line));
 
@@ -699,5 +710,6 @@ struct INIFILE *ini_open(const char *filename) {
     }
     fclose(fp);
 
+    SYSDEBUG("%s", "returning");
     return ini;
 }
