@@ -422,6 +422,8 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
     for (size_t x = 0; x < ini->section_count; x++) {
         struct INISection *section = ini->section[x];
         char *section_name = section->key;
+
+        SYSDEBUG("section name: %s", section_name);
         fprintf(*stream, "[%s]" LINE_SEP, section_name);
 
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
@@ -430,6 +432,9 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
             char *key = data->key;
             char *value = data->value;
             unsigned *hint = &data->type_hint;
+
+            SYSDEBUG("%s: %s = %s", section_name, key, value);
+
             memset(outvalue, 0, sizeof(outvalue));
             SYSDEBUG("%s", "outvalue zeroed");
 
@@ -447,8 +452,10 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 for (size_t p = 0; parts && parts[p] != NULL; p++) {
                     char *render = NULL;
                     if (mode == INI_WRITE_PRESERVE) {
+                        SYSDEBUG("Rendering %zu", p);
                         render = tpl_render(parts[p]);
                     } else {
+                        SYSDEBUG("Not rendering %zu", p);
                         render = parts[p];
                     }
 
@@ -476,6 +483,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                         snprintf(outvalue + strlen(outvalue), len, "%s", render);
                     }
                     if (mode == INI_WRITE_PRESERVE) {
+                        SYSDEBUG("%s", "freeing rendered value");
                         guard_free(render);
                     }
                 }
@@ -487,6 +495,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 SYSDEBUG("buffer final length: %zu", strlen(outvalue));
 
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
+                SYSDEBUG("%s", "freeing value");
                 guard_free(value);
             } else {
                 fprintf(*stream, "%s = %s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
@@ -494,6 +503,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
         }
         fprintf(*stream, LINE_SEP);
     }
+    SYSDEBUG("%s", "returning");
     return 0;
 }
 
