@@ -121,7 +121,11 @@ int pandoc_exec(const char *in_file, const char *out_file, const char *css_file,
     // Converts a markdown file to html
     char cmd[STASIS_BUFSIZ] = {0};
     strncpy(cmd, "pandoc ", sizeof(cmd) - 1);
+    cmd[sizeof(cmd) - 1] = '\0';
+
     strncat(cmd, pandoc_versioned_args, sizeof(cmd) - strlen(cmd) - 1);
+    cmd[sizeof(cmd) - 1] = '\0';
+
     if (css_file && strlen(css_file)) {
         strncat(cmd, "--css ", sizeof(cmd) - strlen(cmd) - 1);
         strncat(cmd, css_file, sizeof(cmd) - strlen(cmd) - 1);
@@ -152,6 +156,7 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     }
     m->conda_prefix = globals.conda_install_prefix;
     m->micromamba_prefix = micromamba_prefix;
+    m->download_dir = ctx->storage.tmpdir;
 
     const size_t pathvar_len = strlen(getenv("PATH")) + strlen(m->micromamba_prefix) + strlen(m->conda_prefix) + 3 + 4 + 1;
     // ^^^^^^^^^^^^^^^^^^
@@ -397,8 +402,11 @@ int write_manifest(const char *path, char **exclude_path, FILE *fp) {
         }
         char filepath[PATH_MAX] = {0};
         strncpy(filepath, path, PATH_MAX - 1);
+        filepath[PATH_MAX - 1] = '\0';
+
         strncat(filepath, "/", sizeof(filepath) - strlen(filepath) - 1);
         strncat(filepath, rec->d_name, sizeof(filepath) - strlen(filepath) - 1);
+
         if (rec->d_type == DT_DIR) {
             write_manifest(filepath, exclude_path, fp);
             continue;

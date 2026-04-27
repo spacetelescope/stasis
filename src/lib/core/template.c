@@ -98,7 +98,7 @@ void tpl_register(char *key, char **ptr) {
 
     item->ptr = ptr;
     if (!replacing) {
-        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr);
+        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr ? *item->ptr : "NULL");
         tpl_pool[tpl_pool_used] = item;
         tpl_pool_used++;
     }
@@ -236,6 +236,8 @@ char *tpl_render(char *str) {
             } else if (do_func) { // {{ func:NAME(a, ...) }}
                 char func_name_temp[STASIS_NAME_MAX] = {0};
                 strncpy(func_name_temp, type_stop + 1, sizeof(func_name_temp) - 1);
+                func_name_temp[sizeof(func_name_temp) - 1] = '\0';
+
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {
                     fprintf(stderr, "At position %zu in %s\nfunction name must be followed by a '('\n", off, key);

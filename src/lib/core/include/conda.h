@@ -29,6 +29,7 @@
 struct MicromambaInfo {
     char *micromamba_prefix;    //!< Path to write micromamba binary
     char *conda_prefix;         //!< Path to install conda base tree
+    char *download_dir;         //!< Path to store micromamba installer
 };
 
 /**
@@ -219,12 +220,13 @@ int conda_index(const char *path);
  * @param mode USE_CONDA
  * @param index a file system path or url pointing to a simple index or conda channel
  * @param spec a pip package specification (e.g. `name==1.2.3`)
+ * @param logdir the directory to store the output log
  * @param spec a conda package specification (e.g. `name=1.2.3`)
  * @return PKG_NOT_FOUND, if not found
  * @return PKG_FOUND, if found
  * @return PKG_E_INDEX_PROVIDES_{ERROR}, on error (see conda.h)
  */
-int pkg_index_provides(int mode, const char *index, const char *spec);
+int pkg_index_provides(int mode, const char *index, const char *spec, const char *logdir);
 const char *pkg_index_provides_strerror(int code);
 
 char *conda_get_active_environment();

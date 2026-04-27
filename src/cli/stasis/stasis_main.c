@@ -20,6 +20,7 @@ static void setup_sysconfdir() {
     } else {
         strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
     }
+    stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
@@ -521,6 +522,8 @@ static char *center_text(const char *s, const size_t maxwidth) {
     }
     result[i++] = 'v';
     strncpy(&result[i], s, maxwidth - middle - 1);
+    result[maxwidth - 1] = '\0';
+
     return result;
 }
 
@@ -571,6 +574,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'p':
                 strncpy(python_override_version, optarg, sizeof(python_override_version) - 1);
+                python_override_version[sizeof(python_override_version) - 1] = '\0';
                 break;
             case 'l':
                 globals.cpu_limit = strtol(optarg, NULL, 10);
@@ -687,7 +691,6 @@ int main(int argc, char *argv[]) {
     setup_python_version_override(&ctx, python_override_version);
     configure_stasis_ini(&ctx, &config_input);
     check_system_path();
-    check_requirements(&ctx);
 
     msg(STASIS_MSG_L1, "Setup\n");
 
@@ -696,6 +699,7 @@ int main(int argc, char *argv[]) {
 
     configure_delivery_ini(&ctx, &delivery_input);
     configure_delivery_context(&ctx);
+    check_requirements(&ctx);
 
     configure_jfrog_cli(&ctx);
     /*
@@ -707,8 +711,14 @@ int main(int argc, char *argv[]) {
 
     runtime_apply(ctx.runtime.environ);
     strncpy(env_name, ctx.info.release_name, sizeof(env_name) - 1);
+    env_name[sizeof(env_name) - 1] = '\0';
+
     strncpy(env_name_testing, env_name, sizeof(env_name_testing) - 1);
+    env_name_testing[sizeof(env_name_testing) - 1] = '\0';
+
     strncat(env_name_testing, "-test", sizeof(env_name_testing) - strlen(env_name_testing) - 1);
+    env_name_testing[sizeof(env_name_testing) - 1] = '\0';
+
     char *envs[] = {
         "release", env_name,
         "testing", env_name_testing,

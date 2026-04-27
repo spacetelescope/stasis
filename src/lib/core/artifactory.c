@@ -26,14 +26,17 @@ int artifactory_download_cli(char *dest,
     // convert platform string to lower-case
     SYSDEBUG("%s", "Set os_ident");
     strncpy(os_ident, os, sizeof(os_ident) - 1);
+    os_ident[sizeof(os_ident) - 1] = '\0';
     tolower_s(os_ident);
     SYSDEBUG("os_ident=%s", os_ident);
 
     // translate OS identifier
     if (!strcmp(os_ident, "darwin") || startswith(os_ident, "macos")) {
         strncpy(os_ident, "mac", sizeof(os_ident) - 1);
+        os_ident[sizeof(os_ident) - 1] = '\0';
     } else if (!strcmp(os_ident, "linux")) {
         strncpy(os_ident, "linux", sizeof(os_ident) - 1);
+        os_ident[sizeof(os_ident) - 1] = '\0';
     } else {
         fprintf(stderr, "%s: unknown operating system: %s\n", __FUNCTION__, os_ident);
         return -1;
@@ -42,7 +45,9 @@ int artifactory_download_cli(char *dest,
     // translate ARCH identifier
     SYSDEBUG("%s", "Set arch_ident");
     strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
+    arch_ident[sizeof(arch_ident) - 1] = '\0';
     SYSDEBUG("arch_ident=%s", arch_ident);
+
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
         strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
@@ -57,6 +62,8 @@ int artifactory_download_cli(char *dest,
         fprintf(stderr, "%s: unknown architecture: %s\n", __FUNCTION__, arch_ident);
         return -1;
     }
+    arch_ident[sizeof(arch_ident) - 1] = '\0';
+
 
     SYSDEBUG("%s", "Construct URL");
     snprintf(url, sizeof(url), "%s/%s/%s/%s/%s-%s-%s/%s",
@@ -69,6 +76,7 @@ int artifactory_download_cli(char *dest,
              arch_ident,                           // jfrog-cli-linux-x86_64
              remote_filename);                     // jf
     strncpy(path, dest, sizeof(path) - 1);
+    path[sizeof(path) - 1] = '\0';
 
     if (mkdirs(path, 0755)) {
         fprintf(stderr, "%s: %s: %s", __FUNCTION__, path, strerror(errno));
@@ -265,7 +273,10 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
 
     if (!globals.verbose) {
         strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout) - 1);
+        proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
+
         strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
+        proc.f_stderr[sizeof(proc.f_stderr) - 1] = '\0';
     }
     return shell(&proc, cmd);
 }

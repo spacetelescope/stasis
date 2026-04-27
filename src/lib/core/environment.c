@@ -90,6 +90,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
             break;
         }
     }
+    export_command[sizeof(export_command) - 1] = '\0';
 
     for (size_t i = 0; i < strlist_count(env); i++) {
         char output[STASIS_BUFSIZ] = {0};

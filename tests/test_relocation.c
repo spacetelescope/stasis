@@ -15,6 +15,7 @@ void test_replace_text() {
         const char *expected = targets[i + 1];
         char input[BUFSIZ] = {0};
         strncpy(input, test_string, sizeof(input) - 1);
+        input[sizeof(input) - 1] = '\0';
 
         printf("input: %s\n", input);
         printf("target: %s\n", target);
@@ -39,6 +40,7 @@ void test_file_replace_text() {
             STASIS_ASSERT(file_replace_text(filename, target, "^^^", 0) == 0, "string replacement failed");
         } else {
             STASIS_ASSERT(false, "failed to open file for writing");
+            fclose(fp);
             return;
         }
 
@@ -47,8 +49,10 @@ void test_file_replace_text() {
         if (fp) {
             fread(input, sizeof(*input), sizeof(input), fp);
             STASIS_ASSERT(strcmp(input, expected) == 0, "unexpected replacement");
+            fclose(fp);
         } else {
             STASIS_ASSERT(false, "failed to open file for reading");
+            fclose(fp);
             return;
         }
     }

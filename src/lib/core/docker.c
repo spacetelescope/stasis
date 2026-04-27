@@ -19,9 +19,11 @@ int docker_exec(const char *args, const unsigned flags) {
 
     if (final_flags & STASIS_DOCKER_QUIET_STDOUT) {
         strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout) - 1);
+        proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
     }
     if (final_flags & STASIS_DOCKER_QUIET_STDERR) {
         strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
+        proc.f_stderr[sizeof(proc.f_stderr) - 1] = '\0';
     }
 
     if (!final_flags) {
@@ -74,6 +76,8 @@ int docker_build(const char *dirpath, const char *args, int engine) {
     if (engine & STASIS_DOCKER_BUILD_X) {
         strncpy(build, "buildx build", sizeof(build) - 1);
     }
+    build[sizeof(build) - 1] = '\0';
+
     snprintf(cmd, sizeof(cmd), "%s %s %s", build, args, dirpath);
     return docker_exec(cmd, 0);
 }
@@ -94,6 +98,7 @@ int docker_save(const char *image, const char *destdir, const char *compression_
         } else {
             strncpy(ext, compression_program, sizeof(ext) - 1);
         }
+        ext[sizeof(ext) - 1] = '\0';
         snprintf(cmd, sizeof(cmd), "save \"%s\" | %s > \"%s/%s.tar.%s\"", image, compression_program, destdir, image, ext);
     } else {
         snprintf(cmd, sizeof(cmd), "save \"%s\" -o \"%s/%s.tar\"", image, destdir, image);
@@ -122,7 +127,11 @@ static char *docker_ident() {
 
     memset(&proc, 0, sizeof(proc));
     strncpy(proc.f_stdout, tempfile, sizeof(proc.f_stdout) - 1);
+    proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
+
     strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
+    proc.f_stderr[sizeof(proc.f_stderr) - 1] = '\0';
+
     shell(&proc, "docker --version");
 
     if (!freopen(tempfile, "r", fp)) {

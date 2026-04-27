@@ -11,23 +11,43 @@ int has_mount_flags(const char *mount_point, const unsigned long flags) {
 
 int delivery_init_tmpdir(struct Delivery *ctx) {
     char *tmpdir = NULL;
-    char *x = NULL;
-    int unusable = 0;
+    int unusable = 1;
     errno = 0;
 
-    x = getenv("TMPDIR");
+    int need_setenv = 0;
+    const char *x = getenv("TMPDIR");
     if (x) {
         guard_free(ctx->storage.tmpdir);
         tmpdir = strdup(x);
+        if (!tmpdir) {
+            // memory error
+            SYSERROR("%s", "unable to allocate tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     } else {
-        tmpdir = ctx->storage.tmpdir;
+        tmpdir = strdup("/tmp/stasis");
+        if (!tmpdir) {
+            SYSERROR("%s", "unable to allocate tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
+        need_setenv = 1;
     }
 
-    if (!tmpdir) {
-        // memory error
-        return -1;
+    if (!ctx->storage.tmpdir) {
+        ctx->storage.tmpdir = strdup(tmpdir);
+        if (!ctx->storage.tmpdir) {
+            SYSERROR("%s", "unable to allocate ctx->storage.tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
+    } else {
+        // we already have a temp directory to use
+        guard_free(tmpdir);
+        tmpdir = strdup(ctx->storage.tmpdir);
+        if (!tmpdir) {
+            SYSERROR("%s", "unable to allocate tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     }
-
     // If the directory doesn't exist, create it
     if (access(tmpdir, F_OK) < 0) {
         if (mkdirs(tmpdir, 0755) < 0) {
@@ -59,17 +79,28 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         goto l_delivery_init_tmpdir_fatal;
     }
 
-    if (!globals.tmpdir) {
+    if (!globals.tmpdir || strcmp(globals.tmpdir, ctx->storage.tmpdir) != 0) {
         globals.tmpdir = strdup(tmpdir);
+        if (!globals.tmpdir) {
+            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     }
 
     if (!ctx->storage.tmpdir) {
         ctx->storage.tmpdir = strdup(globals.tmpdir);
+        if (!ctx->storage.tmpdir) {
+            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            goto l_delivery_init_tmpdir_fatal;
+        }
     }
-    return unusable;
+    unusable = 0;
+    if (need_setenv) {
+        setenv("TMPDIR", ctx->storage.tmpdir, 1);
+    }
 
     l_delivery_init_tmpdir_fatal:
-    unusable = 1;
+    guard_free(tmpdir);
     return unusable;
 }
 
@@ -178,22 +209,30 @@ int delivery_init_platform(struct Delivery *ctx) {
     } else {
         strncpy(archsuffix, ctx->system.arch, sizeof(archsuffix) - 1);
     }
+    archsuffix[sizeof(archsuffix) - 1] = '\0';
 
     SYSDEBUG("%s", "Setting platform");
     strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN - 1);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos", DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
     } else if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "linux-%s", archsuffix);
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux", DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux", DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
     } else {
         // Not explicitly supported systems
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
+        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
         tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
     }
 

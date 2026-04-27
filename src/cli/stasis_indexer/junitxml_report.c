@@ -36,10 +36,16 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
         char result_outfile[PATH_MAX] = {0};
         char *short_name_pattern = NULL;
-        asprintf(&short_name_pattern, "-%s", ctx->info.release_name);
+        if (asprintf(&short_name_pattern, "-%s", ctx->info.release_name) < 0 || !short_name_pattern) {
+            SYSERROR("%s", "unable to allocate bytes for short name pattern");
+            guard_free(bname);
+            return -1;
+        }
 
         char short_name[PATH_MAX] = {0};
         strncpy(short_name, bname, sizeof(short_name) - 1);
+        short_name[sizeof(short_name) - 1] = '\0';
+
         replace_text(short_name, short_name_pattern, "", 0);
         replace_text(short_name, "results-", "", 0);
         guard_free(short_name_pattern);
@@ -52,8 +58,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
                 testsuite->passed, testsuite->failures,
                 testsuite->skipped, testsuite->errors);
 
-        snprintf(result_outfile, sizeof(result_outfile) - strlen(bname) - 3, "%s.md",
-                 bname);
+        snprintf(result_outfile, sizeof(result_outfile) - strlen(bname), "%s.md", bname);
         guard_free(bname);
 
         FILE *resultfp = fopen(result_outfile, "w+");

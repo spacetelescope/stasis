@@ -71,6 +71,8 @@ void test_fix_tox_conf() {
     }
 
     char **lines = file_readlines(result, 0, 0, NULL);
+    STASIS_ASSERT_FATAL(lines != NULL, "lines array should not be NULL");
+    STASIS_ASSERT_FATAL(result != NULL, "result should not be NULL");
     STASIS_ASSERT(strstr_array(lines, expected) != NULL, "{posargs} not found in result");
     guard_array_free(lines);
 
@@ -312,6 +314,7 @@ void test_path_dirname() {
         const char *expected = data[i + 1];
         char tmp[PATH_MAX] = {0};
         strncpy(tmp, input, sizeof(tmp) - 1);
+        tmp[sizeof(tmp) - 1] = '\0';
 
         char *result = path_dirname(tmp);
         STASIS_ASSERT(strcmp(expected, result) == 0, NULL);

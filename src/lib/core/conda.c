@@ -11,17 +11,30 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     tolower_s(sys.sysname);
     if (!strcmp(sys.sysname, "darwin")) {
         strncpy(sys.sysname, "osx", sizeof(sys.sysname) - 1);
+        sys.sysname[sizeof(sys.sysname) - 1] = '\0';
     }
 
     if (!strcmp(sys.machine, "x86_64")) {
         strncpy(sys.machine, "64", sizeof(sys.machine) - 1);
+        sys.machine[sizeof(sys.machine) - 1] = '\0';
+    }
+
+    if (!info->download_dir || isempty(info->download_dir)) {
+        SYSERROR("%s", "micromamba inf->download_dir is NULL, or empty");
+        return -1;
+    }
+
+    if (mkdirs(info->download_dir, 0755) < 0) {
+        SYSERROR("Unable to create info->download_dir: %s", info->download_dir);
+        return -1;
     }
 
     char url[PATH_MAX] = {0};
     snprintf(url, sizeof(url), "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
 
-    char installer_path[PATH_MAX];
-    snprintf(installer_path, sizeof(installer_path), "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+    const char installer_name[] = "mm_latest";
+    char installer_path[PATH_MAX] = {0};
+    snprintf(installer_path, sizeof(installer_path), "%s/%s", info->download_dir, installer_name);
 
     if (access(installer_path, F_OK)) {
         char *errmsg = NULL;
@@ -39,7 +52,9 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     if (access(mmbin, F_OK)) {
         char untarcmd[PATH_MAX * 2];
         mkdirs(info->micromamba_prefix, 0755);
-        snprintf(untarcmd, sizeof(untarcmd), "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
+        snprintf(untarcmd, sizeof(untarcmd),
+            "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null",
+            installer_path, info->micromamba_prefix);
         int untarcmd_status = system(untarcmd);
         if (untarcmd_status) {
             return -1;
@@ -135,7 +150,7 @@ const char *pkg_index_provides_strerror(int code) {
     return PKG_ERROR_STR[code];
 }
 
-int pkg_index_provides(int mode, const char *index, const char *spec) {
+int pkg_index_provides(int mode, const char *index, const char *spec, const char *logdir) {
     char cmd[PATH_MAX] = {0};
     char spec_local[255] = {0};
 
@@ -146,11 +161,19 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
 
     // Normalize the local spec string
     strncpy(spec_local, spec, sizeof(spec_local) - 1);
+    spec_local[sizeof(spec_local) - 1] = '\0';
     tolower_s(spec_local);
     lstrip(spec_local);
     strip(spec_local);
 
-    char logfile[] = "/tmp/STASIS-package_exists.XXXXXX";
+    if (mkdirs(logdir, 0700) < 0) {
+        SYSERROR("Unable to create log directory: %s", logdir ? logdir : "NULL");
+        return -1;
+    }
+    const char logfile_template[] = "STASIS-package_exists.XXXXXX";
+    char logfile[PATH_MAX] = {0};
+    snprintf(logfile, sizeof(logfile), "%s/%s", logdir, logfile_template);
+
     int logfd = mkstemp(logfile);
     if (logfd < 0) {
         perror(logfile);
@@ -167,12 +190,15 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
         // The --force argument ignores local installation and cache, and actually polls the remote index(es)
         strncpy(cmd, "python -m pip install --force --dry-run --no-cache --no-deps ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
         if (index) {
             snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--index-url='%s' ", index);
         }
         snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s' ", spec_local);
     } else if (mode == PKG_USE_CONDA) {
         strncpy(cmd, "mamba search ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
+
         if (index) {
             snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "--channel '%s' ", index);
         }
@@ -181,11 +207,24 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
         return PKG_INDEX_PROVIDES_E_INTERNAL_MODE_UNKNOWN;
     }
 
+#if defined(DEBUG)
+    const int debug_log = 1;
+#else
+    const debug_log = 0;
+#endif
+
     // Print errors only when shell() itself throws one
     // If some day we want to see the errors thrown by pip too, use this
     // condition instead:  (status != 0)
+    if (debug_log) {
+        SYSDEBUG("Executing: %s", cmd);
+    }
     status = shell(&proc, cmd);
-    if (status < 0) {
+
+    if (debug_log) {
+        SYSDEBUG("Log file: %s", logfile);
+    }
+    if (status < 0 || debug_log) {
         FILE *fp = fdopen(logfd, "r");
         if (!fp) {
             remove(logfile);
@@ -195,7 +234,11 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
             fflush(stdout);
             fflush(stderr);
             while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-                fprintf(stderr, "%s", line);
+                if (debug_log) {
+                    SYSDEBUG("%s", strip(line));
+                } else {
+                    fprintf(stderr, "%s", line);
+                }
             }
             fflush(stderr);
             fclose(fp);
@@ -247,6 +290,8 @@ int conda_exec(const char *args) {
             break;
         }
     }
+    conda_as[sizeof(conda_as) - 1] = '\0';
+
 
     const char *command_fmt = "%s %s";
     const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
@@ -352,7 +397,8 @@ int conda_activate(const char *root, const char *env_name) {
     close(fd);
 
     // Configure our process for output to a log file
-    strncpy(proc.f_stdout, logfile, PATH_MAX - 1);
+    strncpy(proc.f_stdout, logfile, sizeof(proc.f_stdout) - 1);
+    proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
 
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
@@ -497,6 +543,7 @@ int conda_setup_headless() {
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
         memset(cmd, 0, sizeof(cmd));
         strncpy(cmd, "install ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
 
         total = strlist_count(globals.conda_packages);
         for (size_t i = 0; i < total; i++) {
@@ -520,6 +567,7 @@ int conda_setup_headless() {
     if (globals.pip_packages && strlist_count(globals.pip_packages)) {
         memset(cmd, 0, sizeof(cmd));
         strncpy(cmd, "install ", sizeof(cmd) - 1);
+        cmd[sizeof(cmd) - 1] = '\0';
 
         total = strlist_count(globals.pip_packages);
         for (size_t i = 0; i < total; i++) {
@@ -561,11 +609,11 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
 
     // Convert a bare system path to a file:// path
     if (!strstr(uri, "://")) {
-        uri_fs = calloc(strlen(uri) + strlen("file://") + 1, sizeof(*uri_fs));
+        uri_fs = calloc(PATH_MAX, sizeof(*uri_fs));
         if (!uri_fs) {
             return -1;
         }
-        snprintf(uri_fs, strlen(uri) + strlen("file://") + 1, "%s%s", "file://", uri);
+        snprintf(uri_fs, PATH_MAX, "%s%s", "file://", uri);
     }
 
     char tempfile[PATH_MAX] = {0};

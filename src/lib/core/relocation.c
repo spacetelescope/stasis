@@ -8,8 +8,9 @@
  * Replace all occurrences of `target` with `replacement` in `original`
  *
  * ~~~{.c}
- * char *str = calloc(100, sizeof(char));
- * strcpy(str, "This are a test.");
+ * size_t str_maxlen = 100;
+ * char *str = calloc(str_maxlen, sizeof(char));
+ * strncpy(str, "This are a test.", str_maxlen - 1);
  * if (replace_text(str, "are", "is")) {
  *     fprintf(stderr, "string replacement failed\n");
  *     exit(1);
@@ -85,6 +86,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
     }
     // replace original with contents of buffer
     strncpy(original, buffer, buffer_len + 1);
+    original[buffer_len] = '\0';
     return 0;
 }
 

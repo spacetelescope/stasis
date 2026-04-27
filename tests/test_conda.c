@@ -18,10 +18,10 @@ void test_micromamba() {
         int result;
     };
     struct testcase tc[] = {
-            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "info", .result = 0},
-            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "env list", .result = 0},
-            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python3 -V", .result = 0},
-            {.mminfo = {.micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "no_such_option", .result = 109},
+            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "info", .result = 0},
+            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "env list", .result = 0},
+            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python3 -V", .result = 0},
+            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "no_such_option", .result = 109},
     };
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
@@ -31,7 +31,7 @@ void test_micromamba() {
             result = result >> 8;
         }
         STASIS_ASSERT(result == item->result, "unexpected exit value");
-        SYSERROR("micromamba command: '%s' (returned: %d)", item->cmd, result);
+        SYSDEBUG("micromamba command: '%s' (returned: %d)", item->cmd, result);
     }
 }
 
@@ -143,7 +143,7 @@ void test_pip_index_provides() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name);
+        int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name, ".");
         STASIS_ASSERT(result == test->expected, "Unexpected result");
         if (PKG_INDEX_PROVIDES_FAILED(result)) {
             fprintf(stderr, "error: %s\n", pkg_index_provides_strerror(result));
@@ -175,7 +175,7 @@ void test_conda_provides() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = pkg_index_provides(PKG_USE_CONDA, NULL, test->name);
+        int result = pkg_index_provides(PKG_USE_CONDA, NULL, test->name, ".");
         printf("%s returned %d, expecting %d\n", test->name, result, test->expected);
         STASIS_ASSERT(result == test->expected, "Unexpected result");
     }

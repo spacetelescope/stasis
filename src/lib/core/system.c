@@ -80,7 +80,6 @@ int shell(struct Process *proc, char *args) {
                     fclose(fp_err);
                     _exit(1);
                 }
-                fclose(fp_err);
             } else {
                 // redirect stderr to stdout
                 if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
@@ -179,9 +178,8 @@ char *shell_output(const char *command, int *status) {
             char *tmp = realloc(result, sizeof(*result) * current_size);
             if (!tmp) {
                 return NULL;
-            } else if (tmp != result) {
-                result = tmp;
             }
+            result = tmp;
         }
         strncat(result, line, current_size - strlen(result) - 1);
         memset(line, 0, sizeof(line));

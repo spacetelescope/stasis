@@ -4,6 +4,10 @@
  */
 #include "download.h"
 #include "strlist.h"
+
+#include <float.h>
+#include <math.h>
+
 #include "utils.h"
 
 /**
@@ -85,6 +89,8 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
         int fd;
         char tempfile[PATH_MAX] = {0};
         strncpy(tempfile, "/tmp/.remote_file.XXXXXX", sizeof(tempfile) - 1);
+        tempfile[sizeof(tempfile) - 1] = '\0';
+
         if ((fd = mkstemp(tempfile)) < 0) {
             retval = -1;
             goto fatal;
@@ -420,8 +426,10 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value) {
             (*pStrList)->data[index] = tmp;
         }
 
-        memset((*pStrList)->data[index], '\0', strlen(value) + 1);
-        strncpy((*pStrList)->data[index], value, strlen(value));
+        const size_t len = strlen(value) + 1;
+        memset((*pStrList)->data[index], '\0', len);
+        strncpy((*pStrList)->data[index], value, len);
+        (*pStrList)->data[index][len] = '\0';
     }
 }
 
@@ -671,8 +679,8 @@ float strlist_item_as_float(struct StrList *pStrList, size_t index) {
     char *error_p;
 
     strlist_clear_error();
-    float result = (float) strtof(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const float result = strtof(strlist_item(pStrList, index), &error_p);
+    if ((result == FLT_MIN || result == HUGE_VALF) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }
@@ -690,8 +698,8 @@ double strlist_item_as_double(struct StrList *pStrList, size_t index) {
     char *error_p;
 
     strlist_clear_error();
-    double result = (double) strtod(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const double result = strtod(strlist_item(pStrList, index), &error_p);
+    if ((result == DBL_MIN || result == HUGE_VAL) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }
@@ -709,8 +717,8 @@ long double strlist_item_as_long_double(struct StrList *pStrList, size_t index) 
     char *error_p;
 
     strlist_clear_error();
-    long double result = (long double) strtold(strlist_item(pStrList, index), &error_p);
-    if (!result && error_p && *error_p != 0) {
+    const long double result = strtold(strlist_item(pStrList, index), &error_p);
+    if ((result == DBL_MIN || result == HUGE_VALL) && errno == ERANGE) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
         return 0;
     }

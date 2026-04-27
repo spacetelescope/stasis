@@ -312,13 +312,13 @@ int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const 
                     strncat(*dest, ctx->meta.mission, maxlen - 1);
                     break;
                 case 'r':   // revision
-                    snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
                     break;
                 case 'R':   // "final"-aware revision
                     if (ctx->meta.final)
                         strncat(*dest, "final", maxlen);
                     else
-                        snprintf(*dest + strlen(*dest), maxlen, "%d", ctx->meta.rc);
+                        snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
                     break;
                 case 'v':   // version
                     strncat(*dest, ctx->meta.version, maxlen - 1);
@@ -336,14 +336,14 @@ int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const 
                     strncat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], maxlen - 1);
                     break;
                 case 't':   // unix epoch
-                    snprintf(*dest + strlen(*dest), maxlen, "%ld", ctx->info.time_now);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%ld", ctx->info.time_now);
                     break;
                 default:    // unknown formatter, write as-is
-                    snprintf(*dest + strlen(*dest), maxlen, "%c%c", fmt[i - 1], fmt[i]);
+                    snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%c%c", fmt[i - 1], fmt[i]);
                     break;
             }
         } else {    // write non-format text
-            snprintf(*dest + strlen(*dest), maxlen, "%c", fmt[i]);
+            snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%c", fmt[i]);
         }
     }
     return 0;
@@ -367,6 +367,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
         exit(1);
     }
+    mode[sizeof(mode) - 1] = '\0';
+
     msg(STASIS_MSG_L2, "Filtering %s packages by test definition...\n", mode);
 
     struct StrList *filtered = NULL;
@@ -391,8 +393,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 spec_end++;
             }
             strncpy(package_name, name, spec_begin - name);
+            package_name[spec_begin - name] = '\0';
         } else {
             strncpy(package_name, name, sizeof(package_name) - 1);
+            package_name[sizeof(package_name) - 1] = '\0';
         }
         remove_extras(package_name);
 
@@ -404,6 +408,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             char nametmp[STASIS_NAME_MAX] = {0};
 
             strncpy(nametmp, package_name, sizeof(nametmp) - 1);
+            nametmp[sizeof(nametmp) - 1] = '\0';
+
             // Is the [test:NAME] in the package name?
             if (!strcmp(nametmp, test->name)) {
                 // Override test->version when a version is provided by the (pip|conda)_package list item
@@ -447,9 +453,9 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
                 int upstream_exists = 0;
                 if (DEFER_PIP == type) {
-                    upstream_exists = pkg_index_provides(PKG_USE_PIP, PYPI_INDEX_DEFAULT, name);
+                    upstream_exists = pkg_index_provides(PKG_USE_PIP, PYPI_INDEX_DEFAULT, name, ctx->storage.tmpdir);
                 } else if (DEFER_CONDA == type) {
-                    upstream_exists = pkg_index_provides(PKG_USE_CONDA, NULL, name);
+                    upstream_exists = pkg_index_provides(PKG_USE_CONDA, NULL, name, ctx->storage.tmpdir);
                 }
 
                 if (PKG_INDEX_PROVIDES_FAILED(upstream_exists)) {

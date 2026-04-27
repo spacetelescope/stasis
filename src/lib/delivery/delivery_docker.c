@@ -45,6 +45,7 @@ int delivery_docker(struct Delivery *ctx) {
     for (size_t i = 0; i < total_tags; i++) {
         char *tag_orig = strlist_item(ctx->deploy.docker.tags, i);
         strncpy(tag, tag_orig, sizeof(tag) - 1);
+        tag[sizeof(tag) - 1] = '\0';
         docker_sanitize_tag(tag);
         snprintf(args + strlen(args), sizeof(args) - strlen(args), " -t \"%s\" ", tag);
     }
@@ -103,6 +104,7 @@ int delivery_docker(struct Delivery *ctx) {
     // All tags point back to the same image so test the first one we see
     // regardless of how many are defined
     strncpy(tag, strlist_item(ctx->deploy.docker.tags, 0), sizeof(tag) - 1);
+    tag[sizeof(tag) - 1] = '\0';
     docker_sanitize_tag(tag);
 
     msg(STASIS_MSG_L2, "Executing image test script for %s\n", tag);

@@ -22,6 +22,10 @@ const char *long_options_help[] = {
 void usage(char *name) {
     const int maxopts = sizeof(long_options) / sizeof(long_options[0]);
     char *opts = calloc(maxopts + 1, sizeof(char));
+    if (!opts) {
+        SYSERROR("%s", "Unable to allocate memory for options array");
+        exit(1);
+    }
     for (int i = 0; i < maxopts; i++) {
         opts[i] = (char) long_options[i].val;
     }

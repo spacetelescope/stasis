@@ -14,8 +14,13 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
     char *destdir = destdir_bare;
 
     strncpy(destdir_bare, dest, sizeof(destdir_bare) - 1);
+    destdir[sizeof(destdir_bare) - 1] = '\0';
+
     strncpy(destdir_with_output, dest, sizeof(destdir_with_output) - 1);
+    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
+
     strncat(destdir_with_output, "/output", sizeof(destdir_with_output) - strlen(destdir_with_output) - 1);
+    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
 
     if (!access(destdir_with_output, F_OK)) {
         destdir = destdir_with_output;
@@ -27,8 +32,13 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         char srcdir_with_output[PATH_MAX] = {0};
         char *srcdir = srcdir_bare;
         strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare) - 1);
+        srcdir_bare[sizeof(srcdir_bare) - 1] = '\0';
+
         strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output) - 1);
+        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
+
         strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output) - strlen(srcdir_with_output) - 1);
+        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
 
         if (access(srcdir_bare, F_OK)) {
             fprintf(stderr, "%s does not exist\n", srcdir_bare);
@@ -202,6 +212,10 @@ int main(const int argc, char *argv[]) {
     if (optind < argc) {
         rootdirs_total = argc - current_index;
         rootdirs = calloc(rootdirs_total + 1, sizeof(*rootdirs));
+        if (!rootdirs) {
+            SYSERROR("%s", "unable to allocate memory for rootdirs array");
+            exit(1);
+        }
 
         int i = 0;
         while (optind < argc) {
@@ -213,6 +227,10 @@ int main(const int argc, char *argv[]) {
             }
             // use first positional argument
             rootdirs[i] = realpath(argv[optind], NULL);
+            if (!rootdirs[i]) {
+                SYSERROR("%s", "Unable to allocate memory for root directory");
+                exit(1);
+            }
             optind++;
             break;
         }
@@ -251,6 +269,7 @@ int main(const int argc, char *argv[]) {
     } else {
         strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
     }
+    stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
@@ -263,8 +282,14 @@ int main(const int argc, char *argv[]) {
     if (system_tmp) {
         strncat(workdir_template, system_tmp, sizeof(workdir_template) - strlen(workdir_template) - 1);
     } else {
-        strncat(workdir_template, "/tmp", sizeof(workdir_template) - strlen(workdir_template) - 1);
+        strncat(workdir_template, "/tmp/stasis", sizeof(workdir_template) - strlen(workdir_template) - 1);
     }
+
+    if (mkdirs(workdir_template, 0700)) {
+        SYSERROR("Unable to create directory '%s': %s", workdir_template, strerror(errno));
+        exit(1);
+    }
+
     strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template) - strlen(workdir_template) - 1);
     char *workdir = mkdtemp(workdir_template);
     if (!workdir) {

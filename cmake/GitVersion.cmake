@@ -15,7 +15,7 @@ function(get_version_from_git)
     endif()
 
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe --first-parent --long --dirty --tags --always
+        COMMAND ${GIT_EXECUTABLE} describe --long --dirty --tags --always
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_TAG
         OUTPUT_STRIP_TRAILING_WHITESPACE

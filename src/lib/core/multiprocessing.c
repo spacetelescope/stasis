@@ -261,7 +261,6 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
         char duration[255] = {0};
         seconds_to_human_readable(task->time_data.duration, duration, sizeof(duration));
         printf("%-4s   %10d    %10s     %-10s\n", status_str, task->parent_pid, duration, task->ident) ;
-        //printf("%-4s   %10d  %7lds     %-10s\n", status_str, task->parent_pid, task->elapsed, task->ident) ;
     }
     puts("");
 }

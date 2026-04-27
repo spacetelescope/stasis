@@ -243,6 +243,7 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
         FILE *bottom_fp = fopen(bottom_index, "w+");
         if (!bottom_fp) {
             closedir(dp);
+            fclose(top_fp);
             return -3;
         }
 

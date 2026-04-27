@@ -69,9 +69,15 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
         char **pair = split(line, ":", 1);
         if (pair) {
             char *key = strdup(strip(pair[0]));
-            char *value = strdup(lstrip(pair[1]));
+            if (!key) {
+                SYSERROR("%s", "could not allocate memory for pair wheel key");
+                return -1;
+            }
 
-            if (!key || !value) {
+            char *value = strdup(lstrip(pair[1]));
+            if (!value) {
+                SYSERROR("%s", "could not allocate memory for wheel value");
+                guard_free(key);
                 return -1;
             }
 
@@ -90,6 +96,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->wheel_version = strdup(value);
                     if (!pkg->wheel_version) {
                         // memory error
+                        guard_free(key);
+                        guard_free(value);
                         wheel_package_free(&pkg);
                         return -1;
                     }
@@ -99,6 +107,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->generator = strdup(value);
                     if (!pkg->generator) {
                         // memory error
+                        guard_free(key);
+                        guard_free(value);
                         wheel_package_free(&pkg);
                         return -1;
                     }
@@ -108,6 +118,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     pkg->root_is_pure_lib = strdup(value);
                     if (!pkg->root_is_pure_lib) {
                         // memory error
+                        guard_free(key);
+                        guard_free(value);
                         wheel_package_free(&pkg);
                         return -1;
                     }
@@ -117,6 +129,8 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     if (!pkg->tag) {
                         pkg->tag = strlist_init();
                         if (!pkg->tag) {
+                            guard_free(key);
+                            guard_free(value);
                             wheel_package_free(&pkg);
                             return -1;
                         }
