@@ -347,6 +347,10 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         section->data_count++;
     } else {
         struct INIData *data = ini_data_get(*ini, section_name, key);
+        if (!data) {
+            SYSERROR("%s:%s: key does not exist", section_name, key);
+            return -1;
+        }
         size_t value_len_old = strlen(data->value);
         size_t value_len = strlen(value);
         size_t value_len_new = value_len_old + value_len;
@@ -355,10 +359,12 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         if (!value_tmp) {
             SYSERROR("Unable to increase data->value size to %zu bytes", value_len_new + 2);
             return -1;
-        } else {
-            data->value = value_tmp;
         }
+        data->value = value_tmp;
+
+        SYSDEBUG("%s", "writing value");
         strncat(data->value, value, value_len_new - strlen(data->value));
+        SYSDEBUG("%s", "value written");
     }
     return 0;
 }
@@ -701,9 +707,11 @@ struct INIFILE *ini_open(const char *filename) {
             unquote(value);
             if (!multiline_data) {
                 reading_value = 0;
+                SYSDEBUG("appending multiline (%s): %s", key, value);
                 ini_data_append(&ini, current_section, key, value, hint);
                 continue;
             }
+            SYSDEBUG("appending (%s): %s", key, value);
             ini_data_append(&ini, current_section, key, value, hint);
             reading_value = 1;
         }
