@@ -431,6 +431,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
             char *value = data->value;
             unsigned *hint = &data->type_hint;
             memset(outvalue, 0, sizeof(outvalue));
+            SYSDEBUG("%s", "outvalue zeroed");
 
             if (key && value) {
                 int err = 0;
@@ -458,15 +459,19 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
 
                     size_t len = 0;
                     if (*hint == INIVAL_TYPE_STR_ARRAY) {
+                        SYSDEBUG("%s", "array hint.");
                         int leading_space = isspace(*render);
                         if (leading_space) {
                             len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "%s" LINE_SEP, render);
+                            SYSDEBUG("has leading space. buffer remaining=%zu", len);
                             snprintf(outvalue + strlen(outvalue), len, "%s" LINE_SEP, render);
                         } else {
                             len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "    %s" LINE_SEP, render);
+                            SYSDEBUG("no leading space. buffer remaining=%zu", len);
                             snprintf(outvalue + strlen(outvalue), len, "    %s" LINE_SEP, render);
                         }
                     } else {
+                        SYSDEBUG("string hint. buffer remaining=%zu", len);
                         len = sizeof(outvalue) - (size_t) snprintf(NULL, 0, "%s", render);
                         snprintf(outvalue + strlen(outvalue), len, "%s", render);
                     }
@@ -476,7 +481,11 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                 }
                 guard_array_free(parts);
                 strip(outvalue);
-                strncat(outvalue, LINE_SEP, sizeof(outvalue) - strlen(outvalue) - 1);
+
+                SYSDEBUG("%s", "appending line separator to buffer");
+                snprintf(outvalue + strlen(outvalue), sizeof(outvalue) - strlen(outvalue), "%s", LINE_SEP);
+                SYSDEBUG("buffer final length: %zu", strlen(outvalue));
+
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
                 guard_free(value);
             } else {
