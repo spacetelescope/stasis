@@ -29,6 +29,7 @@
 struct MicromambaInfo {
     char *micromamba_prefix;    //!< Path to write micromamba binary
     char *conda_prefix;         //!< Path to install conda base tree
+    char *download_dir;         //!< Path to store micromamba installer
 };
 
 /**

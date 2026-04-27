@@ -19,11 +19,22 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         sys.machine[sizeof(sys.machine) - 1] = '\0';
     }
 
+    if (!info->download_dir || isempty(info->download_dir)) {
+        SYSERROR("%s", "micromamba inf->download_dir is NULL, or empty");
+        return -1;
+    }
+
+    if (mkdirs(info->download_dir, 0755) < 0) {
+        SYSERROR("Unable to create info->download_dir: %s", info->download_dir);
+        return -1;
+    }
+
     char url[PATH_MAX] = {0};
     snprintf(url, sizeof(url), "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
 
-    char installer_path[PATH_MAX];
-    snprintf(installer_path, sizeof(installer_path), "%s/latest", getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp");
+    const char installer_name[] = "mm_latest";
+    char installer_path[PATH_MAX] = {0};
+    snprintf(installer_path, sizeof(installer_path), "%s/%s", info->download_dir, installer_name);
 
     if (access(installer_path, F_OK)) {
         char *errmsg = NULL;
@@ -41,7 +52,9 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     if (access(mmbin, F_OK)) {
         char untarcmd[PATH_MAX * 2];
         mkdirs(info->micromamba_prefix, 0755);
-        snprintf(untarcmd, sizeof(untarcmd), "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null", installer_path, info->micromamba_prefix);
+        snprintf(untarcmd, sizeof(untarcmd),
+            "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null",
+            installer_path, info->micromamba_prefix);
         int untarcmd_status = system(untarcmd);
         if (untarcmd_status) {
             return -1;
