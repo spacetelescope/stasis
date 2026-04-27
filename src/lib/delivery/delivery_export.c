@@ -2,26 +2,44 @@
 
 static void delivery_export_configuration(const struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Exporting delivery configuration\n");
+
+    SYSDEBUG("Entering configuration directory: %s", ctx->storage.delivery_dir);
     if (!pushd(ctx->storage.cfgdump_dir)) {
         char filename[PATH_MAX] = {0};
+        SYSDEBUG("%s", "Populating filename");
         snprintf(filename, sizeof(filename), "%s.ini", ctx->info.release_name);
+        SYSDEBUG("filename: %s", filename);
+
+        SYSDEBUG("%s: opening", filename);
         FILE *spec = fopen(filename, "w+");
         if (!spec) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
             exit(1);
         }
+        SYSDEBUG("%s: writing", filename);
         ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_RAW);
+        SYSDEBUG("%s: writing done", filename);
         fclose(spec);
+        SYSDEBUG("%s: closing", filename);
 
+        SYSDEBUG("%s", "Zeroing filename");
         memset(filename, 0, sizeof(filename));
+        SYSDEBUG("%s", "Populating rendered filename");
         snprintf(filename, sizeof(filename), "%s-rendered.ini", ctx->info.release_name);
+        SYSDEBUG("filename: %s", filename);
+
+        SYSDEBUG("%s: opening", filename);
         spec = fopen(filename, "w+");
         if (!spec) {
             msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
             exit(1);
         }
+        SYSDEBUG("%s: writing", filename);
         ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_PRESERVE);
+        SYSDEBUG("%s: writing done", filename);
+        SYSDEBUG("%s: closing", filename);
         fclose(spec);
+        SYSDEBUG("Returning from %s", ctx->storage.cfgdump_dir);
         popd();
     } else {
         SYSERROR("Failed to enter directory: %s", ctx->storage.delivery_dir);
