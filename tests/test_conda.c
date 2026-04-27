@@ -143,7 +143,7 @@ void test_pip_index_provides() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name);
+        int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name, ".");
         STASIS_ASSERT(result == test->expected, "Unexpected result");
         if (PKG_INDEX_PROVIDES_FAILED(result)) {
             fprintf(stderr, "error: %s\n", pkg_index_provides_strerror(result));
@@ -175,7 +175,7 @@ void test_conda_provides() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *test = &tc[i];
-        int result = pkg_index_provides(PKG_USE_CONDA, NULL, test->name);
+        int result = pkg_index_provides(PKG_USE_CONDA, NULL, test->name, ".");
         printf("%s returned %d, expecting %d\n", test->name, result, test->expected);
         STASIS_ASSERT(result == test->expected, "Unexpected result");
     }

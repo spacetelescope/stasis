@@ -137,7 +137,7 @@ const char *pkg_index_provides_strerror(int code) {
     return PKG_ERROR_STR[code];
 }
 
-int pkg_index_provides(int mode, const char *index, const char *spec) {
+int pkg_index_provides(int mode, const char *index, const char *spec, const char *logdir) {
     char cmd[PATH_MAX] = {0};
     char spec_local[255] = {0};
 
@@ -153,7 +153,14 @@ int pkg_index_provides(int mode, const char *index, const char *spec) {
     lstrip(spec_local);
     strip(spec_local);
 
-    char logfile[] = "/tmp/stasis/STASIS-package_exists.XXXXXX";
+    if (mkdirs(logdir, 0700) < 0) {
+        SYSERROR("Unable to create log directory: %s", logdir ? logdir : "NULL");
+        return -1;
+    }
+    const char logfile_template[] = "STASIS-package_exists.XXXXXX";
+    char logfile[PATH_MAX] = {0};
+    snprintf(logfile, sizeof(logfile), "%s/%s", logdir, logfile_template);
+
     int logfd = mkstemp(logfile);
     if (logfd < 0) {
         perror(logfile);

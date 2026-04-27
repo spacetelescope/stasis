@@ -453,9 +453,9 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
 
                 int upstream_exists = 0;
                 if (DEFER_PIP == type) {
-                    upstream_exists = pkg_index_provides(PKG_USE_PIP, PYPI_INDEX_DEFAULT, name);
+                    upstream_exists = pkg_index_provides(PKG_USE_PIP, PYPI_INDEX_DEFAULT, name, ctx->storage.tmpdir);
                 } else if (DEFER_CONDA == type) {
-                    upstream_exists = pkg_index_provides(PKG_USE_CONDA, NULL, name);
+                    upstream_exists = pkg_index_provides(PKG_USE_CONDA, NULL, name, ctx->storage.tmpdir);
                 }
 
                 if (PKG_INDEX_PROVIDES_FAILED(upstream_exists)) {
