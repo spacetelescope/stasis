@@ -423,25 +423,27 @@ char *git_rev_parse(const char *path, char *args) {
 }
 
 void msg(unsigned type, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
     FILE *stream = NULL;
     char header[255];
     char status[20];
 
     if (type & STASIS_MSG_NOP) {
         // quiet mode
+        va_end(args);
         return;
     }
 
     if (!globals.verbose && type & STASIS_MSG_RESTRICT) {
         // Verbose mode is not active
+        va_end(args);
         return;
     }
 
     memset(header, 0, sizeof(header));
     memset(status, 0, sizeof(status));
-
-    va_list args;
-    va_start(args, fmt);
 
     stream = stdout;
     fprintf(stream, "%s", STASIS_COLOR_RESET);
@@ -1000,7 +1002,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
     }
     if (size_new >= *size_orig) {
         const size_t new_size = *size_orig + size_new + 1;
-        SYSDEBUG("template data buffer new size: %zu", new_size);
+        SYSDEBUG("template data buffer new size: %zu\n", new_size);
 
         char *tmp = realloc(*data, new_size);
         if (!tmp) {
@@ -1188,7 +1190,7 @@ int get_random_bytes(char *result, size_t maxlen) {
     if (filename != NULL) {
         fp = fopen(filename, "rb");
         if (!fp) {
-            SYSERROR("unable to open random generator");
+            SYSERROR("%s", "unable to open random generator");
             return -1;
         }
     }
@@ -1201,7 +1203,7 @@ int get_random_bytes(char *result, size_t maxlen) {
             ch = rand() % 255;
         }
         if (fp && ferror(fp)) {
-            SYSERROR("unable to read from random generator");
+            SYSERROR("%s", "unable to read from random generator");
             fclose(fp);
             return -1;
         }
