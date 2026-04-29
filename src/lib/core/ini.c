@@ -545,10 +545,19 @@ struct INIFILE *ini_open(const char *filename) {
         return NULL;
     }
 
-    ini_section_init(&ini);
+    ini->section = ini_section_init(&ini);
+    if (!ini->section) {
+        ini_free(&ini);
+        return NULL;
+    }
 
     // Create an implicit section. [default] does not need to be present in the INI config
-    ini_section_create(&ini, "default");
+    if (ini_section_create(&ini, "default")) {
+        SYSERROR("%s", "unable to create default section");
+        ini_free(&ini);
+        ini = NULL;
+        return NULL;
+    }
     strncpy(current_section, "default", sizeof(current_section) - 1);
     current_section[sizeof(current_section) - 1] = '\0';
 
@@ -621,7 +630,11 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Create new named section
             strip(section_name);
-            ini_section_create(&ini, section_name);
+            if (ini_section_create(&ini, section_name)) {
+                SYSERROR("unable to create section: %s", section_name);
+                ini_free(&ini);
+                return NULL;
+            }
 
             // Record the name of the section. This is used until another section is found.
             memset(current_section, 0, sizeof(current_section));
