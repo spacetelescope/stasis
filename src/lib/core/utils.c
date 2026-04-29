@@ -504,14 +504,10 @@ void debug_shell() {
 
 char *xmkstemp(FILE **fp, const char *mode) {
     int fd = -1;
-    char tmpdir[PATH_MAX];
-    char t_name[PATH_MAX * 2];
+    char tmpdir[PATH_MAX] = {0};
+    char t_name[PATH_MAX * 2] = {0};
 
-    if (globals.tmpdir) {
-        strncpy(tmpdir, globals.tmpdir, sizeof(tmpdir) - 1);
-    } else {
-        strncpy(tmpdir, "/tmp/stasis", sizeof(tmpdir) - 1);
-    }
+    strncpy(tmpdir, globals.tmpdir ? globals.tmpdir : "/tmp/stasis", sizeof(tmpdir) - 1);
     tmpdir[sizeof(tmpdir) - 1] = '\0';
 
     if (mkdirs(tmpdir, 0700) < 0) {
