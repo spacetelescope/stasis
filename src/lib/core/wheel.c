@@ -957,6 +957,9 @@ void wheel_entry_point_free(struct WheelEntryPoint **entry) {
 }
 
 void wheel_metadata_free(struct WheelMetadata *meta) {
+    if (!meta) {
+        return;
+    }
     guard_free(meta->license);
     guard_free(meta->license_expression);
     guard_free(meta->version);
