@@ -415,7 +415,11 @@ char *git_rev_parse(const char *path, char *args) {
     if (!pp) {
         return NULL;
     }
-    fgets(version, sizeof(version) - 1, pp);
+    if (fgets(version, sizeof(version) - 1, pp) == NULL) {
+        pclose(pp);
+        popd();
+        return NULL;
+    }
     strip(version);
     pclose(pp);
     popd();
