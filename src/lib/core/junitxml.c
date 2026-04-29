@@ -209,42 +209,78 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
             for (size_t x = 0; x < strlist_count(attrs); x += 2) {
                 char *attr_name = strlist_item(attrs, x);
                 char *attr_value = strlist_item(attrs, x + 1);
-                if (!strcmp(attr_name, "name")) {
-                    (*testsuite)->name = strdup(attr_value);
-                } else if (!strcmp(attr_name, "errors")) {
-                    (*testsuite)->errors = (int) strtol(attr_value, NULL, 10);
-                } else if (!strcmp(attr_name, "failures")) {
-                    (*testsuite)->failures = (int) strtol(attr_value, NULL, 0);
-                } else if (!strcmp(attr_name, "skipped")) {
-                    (*testsuite)->skipped = (int) strtol(attr_value, NULL, 0);
-                } else if (!strcmp(attr_name, "tests")) {
-                    (*testsuite)->tests = (int) strtol(attr_value, NULL, 0);
-                } else if (!strcmp(attr_name, "time")) {
-                    (*testsuite)->time = strtof(attr_value, NULL);
-                } else if (!strcmp(attr_name, "timestamp")) {
-                    (*testsuite)->timestamp = strdup(attr_value);
-                } else if (!strcmp(attr_name, "hostname")) {
-                    (*testsuite)->hostname = strdup(attr_value);
+                if (attr_name && attr_value) {
+                    if (!strcmp(attr_name, "name")) {
+                        (*testsuite)->name = strdup(attr_value);
+                        if (!(*testsuite)->name) {
+                            SYSERROR("%s", "failed to allocate memory for testcase name");
+                            return -1;
+                        }
+                    } else if (!strcmp(attr_name, "errors")) {
+                        (*testsuite)->errors = (int) strtol(attr_value, NULL, 10);
+                    } else if (!strcmp(attr_name, "failures")) {
+                        (*testsuite)->failures = (int) strtol(attr_value, NULL, 0);
+                    } else if (!strcmp(attr_name, "skipped")) {
+                        (*testsuite)->skipped = (int) strtol(attr_value, NULL, 0);
+                    } else if (!strcmp(attr_name, "tests")) {
+                        (*testsuite)->tests = (int) strtol(attr_value, NULL, 0);
+                    } else if (!strcmp(attr_name, "time")) {
+                        (*testsuite)->time = strtof(attr_value, NULL);
+                    } else if (!strcmp(attr_name, "timestamp")) {
+                        (*testsuite)->timestamp = strdup(attr_value);
+                        if (!(*testsuite)->timestamp) {
+                            SYSERROR("%s", "failed to allocate memory for testcase timestamp");
+                            return -1;
+                        }
+                    } else if (!strcmp(attr_name, "hostname")) {
+                        (*testsuite)->hostname = strdup(attr_value);
+                        if (!(*testsuite)->hostname) {
+                            SYSERROR("%s", "failed to allocate memory for testcase hostname");
+                            return -1;
+                        }
+                    }
                 }
             }
         } else if (!strcmp(node_name, "testcase")) {
             struct JUNIT_Testcase *testcase = testcase_from_attributes(attrs);
+            if (!testcase) {
+                SYSERROR("%s", "failed to allocate memory for testcase");
+                return -1;
+            }
             testsuite_append_testcase(testsuite, testcase);
         } else if (!strcmp(node_name, "failure")) {
             size_t cur_tc = (*testsuite)->_tc_inuse > 0 ? (*testsuite)->_tc_inuse - 1 : (*testsuite)->_tc_inuse;
             struct JUNIT_Failure *failure = testcase_failure_from_attributes(attrs);
-            (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_FAILURE;
-            (*testsuite)->testcase[cur_tc]->result_state.failure = failure;
+            if (!failure) {
+                SYSERROR("%s", "failed to allocate memory for testcase failure");
+                return -1;
+            }
+            if ((*testsuite)->testcase && (*testsuite)->testcase[cur_tc]) {
+                (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_FAILURE;
+                (*testsuite)->testcase[cur_tc]->result_state.failure = failure;
+            }
         } else if (!strcmp(node_name, "error")) {
             size_t cur_tc = (*testsuite)->_tc_inuse > 0 ? (*testsuite)->_tc_inuse - 1 : (*testsuite)->_tc_inuse;
             struct JUNIT_Error *error = testcase_error_from_attributes(attrs);
-            (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_ERROR;
-            (*testsuite)->testcase[cur_tc]->result_state.error = error;
+            if (!error) {
+                SYSERROR("%s", "failed to allocate memory for testcase error");
+                return -1;
+            }
+            if ((*testsuite)->testcase && (*testsuite)->testcase[cur_tc]) {
+                (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_ERROR;
+                (*testsuite)->testcase[cur_tc]->result_state.error = error;
+            }
         } else if (!strcmp(node_name, "skipped")) {
             size_t cur_tc = (*testsuite)->_tc_inuse > 0 ? (*testsuite)->_tc_inuse - 1 : (*testsuite)->_tc_inuse;
             struct JUNIT_Skipped *skipped = testcase_skipped_from_attributes(attrs);
-            (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_SKIPPED;
-            (*testsuite)->testcase[cur_tc]->result_state.skipped = skipped;
+            if (!skipped) {
+                SYSERROR("%s", "failed to allocate memory for testcase skipped");
+                return -1;
+            }
+            if ((*testsuite)->testcase && (*testsuite)->testcase[cur_tc]) {
+                (*testsuite)->testcase[cur_tc]->tc_result_state_type = JUNIT_RESULT_STATE_SKIPPED;
+                (*testsuite)->testcase[cur_tc]->result_state.skipped = skipped;
+            }
         }
     }
     (*testsuite)->passed = (*testsuite)->tests - (*testsuite)->failures - (*testsuite)->errors - (*testsuite)->skipped;
@@ -255,12 +291,17 @@ static int read_xml_data(xmlTextReaderPtr reader, struct JUNIT_Testsuite **tests
 static int read_xml_file(const char *filename, struct JUNIT_Testsuite **testsuite) {
     xmlTextReaderPtr reader = xmlReaderForFile(filename, NULL, 0);
     if (!reader) {
+        xmlFreeTextReader(reader);
         return -1;
     }
 
     int result = xmlTextReaderRead(reader);
     while (result == 1) {
-        read_xml_data(reader, testsuite);
+        if (read_xml_data(reader, testsuite) < 0) {
+            xmlFreeTextReader(reader);
+            return -1;
+        }
+
         result = xmlTextReaderRead(reader);
     }
 
@@ -279,6 +320,10 @@ struct JUNIT_Testsuite *junitxml_testsuite_read(const char *filename) {
     if (!result) {
         return NULL;
     }
-    read_xml_file(filename, &result);
+
+    if (read_xml_file(filename, &result)) {
+        junitxml_testsuite_free(&result);
+    }
+
     return result;
 }
