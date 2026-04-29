@@ -1,7 +1,7 @@
 #include "delivery.h"
 #include "conda.h"
 
-struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
+struct Delivery *delivery_duplicate(struct Delivery *ctx) {
     struct Delivery *result = calloc(1, sizeof(*result));
     if (!result) {
         return NULL;
@@ -106,6 +106,12 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
         }
         for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
             result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
+            if (!result->system.platform[i]) {
+                SYSERROR("%s", "unable to allocate record in system platform array");
+                guard_array_n_free(result->system.platform, DELIVERY_PLATFORM_MAX);
+                delivery_free(ctx);
+                return NULL;
+            }
         }
     }
 
