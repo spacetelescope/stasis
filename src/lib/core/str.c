@@ -175,7 +175,7 @@ char *join(char **arr, const char *separator) {
 
     result = (char *)calloc(total_bytes, sizeof(char));
     for (int i = 0; i < records; i++) {
-        strncat(result, arr[i], total_bytes - strlen(result) - 1);
+        strncat(result, arr[i], total_bytes - (result ? strlen(result) - 1 : 0));
         if (i < (records - 1)) {
             strncat(result, separator, total_bytes - strlen(result) - 1);
         }
