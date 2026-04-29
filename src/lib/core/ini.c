@@ -403,12 +403,12 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
 }
 
 int ini_section_create(struct INIFILE **ini, char *key) {
-    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof(**(*ini)->section));
-    if (tmp == NULL) {
+    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof (*(*ini)->section));
+    if (!tmp) {
+        ini_free(ini);
         return 1;
-    } else {
-        (*ini)->section = tmp;
     }
+    (*ini)->section = tmp;
 
     (*ini)->section[(*ini)->section_count] = calloc(1, sizeof(*(*ini)->section[0]));
     if (!(*ini)->section[(*ini)->section_count]) {
