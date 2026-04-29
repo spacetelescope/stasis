@@ -692,8 +692,8 @@ static int wheel_metadata_get(const struct Wheel *pkg, const char *wheel_filenam
     if (wheel_get_file_contents(wheel_filename, "*.dist-info/METADATA", &data)) {
         return -1;
     }
-    const ssize_t result = wheel_parse_metadata(pkg->metadata, data);
     char *data_orig = data;
+    const ssize_t result = wheel_parse_metadata(pkg->metadata, data);
     guard_free(data_orig);
     return (int) result;
 }
@@ -1142,6 +1142,7 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
     for (size_t i = 0; i < usable_lines; i++) {
         pkg->entry_point[i] = calloc(1, sizeof(*pkg->entry_point[0]));
         if (!pkg->entry_point[i]) {
+            guard_array_n_free(pkg->entry_point, usable_lines + 1);
             goto GEP_FAIL;
         }
     }
@@ -1343,41 +1344,54 @@ int wheel_show_info(const struct Wheel *wheel) {
 }
 
 int wheel_package(struct Wheel **pkg, const char *filename) {
+    int status = 0;
     if (!filename) {
-        return WHEEL_PACKAGE_E_FILENAME;
+        status = WHEEL_PACKAGE_E_FILENAME;
+        goto fail;
     }
     if (!*pkg) {
         *pkg = calloc(1, sizeof(**pkg));
         if (!*pkg) {
-            return WHEEL_PACKAGE_E_ALLOC;
+            status = WHEEL_PACKAGE_E_ALLOC;
+            goto fail;
         }
 
         (*pkg)->metadata = calloc(1, sizeof(*(*pkg)->metadata));
         if (!(*pkg)->metadata) {
-            guard_free(*pkg);
-            return WHEEL_PACKAGE_E_ALLOC;
+            status = WHEEL_PACKAGE_E_ALLOC;
+            goto fail;
         }
     }
     if (wheel_get(pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET;
+        status = WHEEL_PACKAGE_E_GET;
+        goto fail;
     }
     if (wheel_metadata_get(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_METADATA;
+        status = WHEEL_PACKAGE_E_GET_METADATA;
+        goto fail;
     }
     if (wheel_get_top_level(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_TOP_LEVEL;
+        status = WHEEL_PACKAGE_E_GET_TOP_LEVEL;
+        goto fail;
     }
     if (wheel_get_records(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_RECORDS;
+        status = WHEEL_PACKAGE_E_GET_RECORDS;
+        goto fail;
     }
     if (wheel_get_entry_point(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_ENTRY_POINT;
+        status = WHEEL_PACKAGE_E_GET_ENTRY_POINT;
+        goto fail;
     }
 
     // Optional marker
     wheel_get_zip_safe(*pkg, filename);
 
-    return WHEEL_PACKAGE_E_SUCCESS;
+    status = WHEEL_PACKAGE_E_SUCCESS;
+    return status;
+
+    fail:
+    wheel_package_free(pkg);
+    return status;
 }
 
 
