@@ -605,10 +605,7 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
 
 int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args) {
     int status = 0;
-    char *tempfile = NULL;
     char *result = NULL;
-    FILE *fp = NULL;
-    FILE *tmpfp = NULL;
     char cmd[PATH_MAX];
     if (!find_program(pretty_print_prog)) {
         // Pretty printing is optional. 99% chance the XML data will
@@ -619,11 +616,18 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
-        goto pretty_print_failed;
+        return status;
     }
 
-    tempfile = xmkstemp(&tmpfp, "w+");
-    if (!tmpfp || !tempfile) {
+    int clean_up_fp = 0;
+    FILE *tmpfp = NULL;
+    char *tempfile = xmkstemp(&tmpfp, "w+");
+    if (!tempfile || !tmpfp) {
+        guard_free(tempfile);
+        if (tmpfp) {
+            fclose(tmpfp);
+        }
+        status = -1;
         goto pretty_print_failed;
     }
 
@@ -631,10 +635,12 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     fflush(tmpfp);
     fclose(tmpfp);
 
-    fp = fopen(filename, "w+");
+    FILE *fp = fopen(filename, "w+");
     if (!fp) {
+        status = -1;
         goto pretty_print_failed;
     }
+    clean_up_fp = 1;
 
     if (copy2(tempfile, filename, CT_PERM)) {
         SYSWARN("unable to copy: '%s' -> '%s'", tempfile, filename);
@@ -651,15 +657,16 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     return 0;
 
     pretty_print_failed:
-        if (fp) {
-            fclose(fp);
-        }
-        if (tmpfp) {
-            fclose(tmpfp);
-        }
-        guard_free(tempfile);
-        guard_free(result);
-        return -1;
+    if (tempfile && remove(tempfile)) {
+        SYSERROR("unable to remove temporary file: %s", tempfile);
+    }
+    guard_free(tempfile);
+    guard_free(result);
+    if (clean_up_fp) {
+        fclose(fp);
+    }
+
+    return status;
 }
 
 /**
