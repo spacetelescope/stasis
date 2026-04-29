@@ -525,23 +525,19 @@ char *xmkstemp(FILE **fp, const char *mode) {
     }
     *fp = fdopen(fd, mode);
     if (!*fp) {
-        // unable to open, die
-        if (fd > 0)
-            close(fd);
-        *fp = NULL;
+        close(fd);
         return NULL;
     }
 
     char *path = strdup(t_name);
     if (!path) {
         // strdup failed, die
-        if (*fp) {
-            // close the file handle
-            fclose(*fp);
-            *fp = NULL;
-        }
-        // fall through. path is NULL.
+        // close the file handle
+        fclose(*fp);
+        *fp = NULL;
+        return NULL;
     }
+
     return path;
 }
 
