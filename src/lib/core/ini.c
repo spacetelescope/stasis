@@ -219,80 +219,82 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
 
 #define getval_returns(t) return result.t
 #define getval_setup(t, f) \
-    union INIVal result; \
+    union INIVal result = {0}; \
+    do {\
     int state_local = 0; \
     state_local = ini_getval(ini, section_name, key, t, f, &result); \
     if (state != NULL) { \
         *state = state_local; \
-    }
+    } \
+} while (0)
 
 int ini_getval_int(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_INT, flags)
+    getval_setup(INIVAL_TYPE_INT, flags);
     getval_returns(as_int);
 }
 
 unsigned int ini_getval_uint(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_UINT, flags)
+    getval_setup(INIVAL_TYPE_UINT, flags);
     getval_returns(as_uint);
 }
 
 long ini_getval_long(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_LONG, flags)
+    getval_setup(INIVAL_TYPE_LONG, flags);
     getval_returns(as_long);
 }
 
 unsigned long ini_getval_ulong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_ULONG, flags)
+    getval_setup(INIVAL_TYPE_ULONG, flags);
     getval_returns(as_ulong);
 }
 
 long long ini_getval_llong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_LLONG, flags)
+    getval_setup(INIVAL_TYPE_LLONG, flags);
     getval_returns(as_llong);
 }
 
 unsigned long long ini_getval_ullong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_ULLONG, flags)
+    getval_setup(INIVAL_TYPE_ULLONG, flags);
     getval_returns(as_ullong);
 }
 
 float ini_getval_float(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_FLOAT, flags)
+    getval_setup(INIVAL_TYPE_FLOAT, flags);
     getval_returns(as_float);
 }
 
 double ini_getval_double(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_DOUBLE, flags)
+    getval_setup(INIVAL_TYPE_DOUBLE, flags);
     getval_returns(as_double);
 }
 
 bool ini_getval_bool(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_BOOL, flags)
+    getval_setup(INIVAL_TYPE_BOOL, flags);
     getval_returns(as_bool);
 }
 
 short ini_getval_short(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_SHORT, flags)
+    getval_setup(INIVAL_TYPE_SHORT, flags);
     getval_returns(as_short);
 }
 
 unsigned short ini_getval_ushort(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_USHORT, flags)
+    getval_setup(INIVAL_TYPE_USHORT, flags);
     getval_returns(as_ushort);
 }
 
 char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_CHAR, flags)
+    getval_setup(INIVAL_TYPE_CHAR, flags);
     getval_returns(as_char);
 }
 
 unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_UCHAR, flags)
+    getval_setup(INIVAL_TYPE_UCHAR, flags);
     getval_returns(as_uchar);
 }
 
 char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR, flags)
+    getval_setup(INIVAL_TYPE_STR, flags);
     getval_returns(as_char_p);
 }
 
@@ -301,7 +303,7 @@ char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int fla
 }
 
 char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
+    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
     getval_returns(as_char_p);
 }
 
@@ -310,7 +312,7 @@ char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, i
 }
 
 struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
+    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
     struct StrList *list = strlist_init();
     strlist_append_tokenize(list, result.as_char_p, tok);
     guard_free(result.as_char_p);
