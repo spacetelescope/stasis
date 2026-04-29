@@ -201,6 +201,10 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
     for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
         ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
+        if (!ctx->system.platform[i]) {
+            SYSERROR("Unable to allocate record %zu in platform array\n", i);
+            return -1;
+        }
     }
 
     ctx->system.arch = strdup(uts.machine);
