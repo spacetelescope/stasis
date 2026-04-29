@@ -31,6 +31,10 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
 
         char *bname_tmp = strdup(xmlfilename);
         char *bname = strdup(path_basename(bname_tmp));
+        if (!bname) {
+            SYSERROR("%s", "unable to allocate bytes for basename");
+            return -1;
+        }
         if (endswith(bname, ".xml")) {
             bname[strlen(bname) - 4] = 0;
         }
