@@ -994,6 +994,9 @@ void wheel_metadata_free(struct WheelMetadata *meta) {
 }
 
 void wheel_package_free(struct Wheel **pkg) {
+    if (!*pkg) {
+        return;
+    }
     guard_free((*pkg)->wheel_version);
     guard_free((*pkg)->generator);
     guard_free((*pkg)->root_is_pure_lib);
