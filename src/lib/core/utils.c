@@ -678,12 +678,15 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  */
 int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     struct INIFILE *toxini;
-    FILE *fptemp;
+    FILE *fptemp = NULL;
 
     // Create new temporary tox configuration file
     char *tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
         SYSERROR("unable to create temporary file");
+        if (fptemp) {
+            fclose(fptemp);
+        }
         return -1;
     }
 
@@ -692,6 +695,9 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
         *result = calloc(maxlen, sizeof(**result));
         if (!*result) {
             guard_free(tempfile);
+            if (fptemp) {
+                fclose(fptemp);
+            }
             return -1;
         }
     }
@@ -729,6 +735,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                                          strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
                                 guard_free(tempfile);
+                                fclose(fptemp);
                                 return -1;
                             }
                             value = tmp;
