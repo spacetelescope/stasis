@@ -172,7 +172,7 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
         return -1;
     }
 
-    pkg->provides_extra = calloc(WHEEL_MAXELEM + 1, sizeof(pkg->provides_extra[0]));
+    pkg->provides_extra = calloc(WHEEL_MAXELEM + 1, sizeof(*pkg->provides_extra));
     if (!pkg->provides_extra) {
         // memory error
         return -1;
