@@ -410,13 +410,15 @@ int ini_section_create(struct INIFILE **ini, char *key) {
     }
     (*ini)->section = tmp;
 
-    (*ini)->section[(*ini)->section_count] = calloc(1, sizeof(*(*ini)->section[0]));
-    if (!(*ini)->section[(*ini)->section_count]) {
+    struct INISection **section = &(*ini)->section[(*ini)->section_count];
+    //[(*ini)->section_count];
+    *section = calloc(1, sizeof(*(*ini)->section[0]));
+    if (!*section) {
         return -1;
     }
 
-    (*ini)->section[(*ini)->section_count]->key = strdup(key);
-    if (!(*ini)->section[(*ini)->section_count]->key) {
+    (*section)->key = strdup(key);
+    if (!(*section)->key) {
         return -1;
     }
 
