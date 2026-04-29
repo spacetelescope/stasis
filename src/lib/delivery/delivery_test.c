@@ -8,6 +8,7 @@ struct Tests *tests_init(const size_t num_tests) {
 
     tests->test = calloc(num_tests, sizeof(*tests->test));
     if (!tests->test) {
+        guard_free(tests);
         return NULL;
     }
     tests->num_used = 0;
@@ -41,6 +42,7 @@ struct Test *test_init() {
     
     result->runtime = calloc(1, sizeof(*result->runtime));
     if (!result->runtime) {
+        guard_free(result);
         return NULL;
     }
 
