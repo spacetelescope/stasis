@@ -982,13 +982,14 @@ void wheel_metadata_free(struct WheelMetadata *meta) {
     guard_strlist_free(&meta->requires_dist);
     guard_strlist_free(&meta->keywords);
     guard_strlist_free(&meta->license_file);
-
-    for (size_t i = 0; meta->provides_extra[i] != NULL; i++) {
-        guard_free(meta->provides_extra[i]->target);
-        guard_strlist_free(&meta->provides_extra[i]->requires_dist);
-        guard_free(meta->provides_extra[i]);
+    if (meta->provides_extra) {
+        for (size_t i = 0; meta->provides_extra[i] != NULL; i++) {
+            guard_free(meta->provides_extra[i]->target);
+            guard_strlist_free(&meta->provides_extra[i]->requires_dist);
+            guard_free(meta->provides_extra[i]);
+        }
+        guard_free(meta->provides_extra);
     }
-    guard_free(meta->provides_extra);
 
     guard_free(meta);
 }
