@@ -48,9 +48,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         if (!access(srcdir_with_output, F_OK)) {
             srcdir = srcdir_with_output;
         }
-        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s'/ ", srcdir);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - non_format_len("'%s'/ "), "'%s'/ ", srcdir);
     }
-    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), " %s/", destdir);
+    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - non_format_len(" %s/"), " %s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
