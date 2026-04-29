@@ -539,6 +539,10 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
                     return -1;
                 }
                 current_extra = pkg->provides_extra[provides_extra_i];
+                if (!current_extra) {
+                    SYSERROR("%s", "provides_extra array cannot have a NULL record");
+                    return -1;
+                }
                 current_extra->target = strdup(value);
                 if (!current_extra->target) {
                     // memory error
