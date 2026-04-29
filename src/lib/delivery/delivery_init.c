@@ -294,7 +294,10 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
     }
 
     // Configure architecture and platform information
-    delivery_init_platform(ctx);
+    if (delivery_init_platform(ctx)) {
+        // memory error
+        return -1;
+    }
 
     // Create STASIS directory structure
     delivery_init_dirs_stage1(ctx);
