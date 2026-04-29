@@ -516,6 +516,9 @@ char *unquote(char *s) {
 }
 
 void ini_free(struct INIFILE **ini) {
+    if (!(*ini)) {
+        return;
+    }
     for (size_t section = 0; section < (*ini)->section_count; section++) {
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
             if ((*ini)->section[section]->data[data]) {
