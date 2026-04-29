@@ -14,8 +14,9 @@ struct INIFILE *ini_init() {
     return ini;
 }
 
-void ini_section_init(struct INIFILE **ini) {
-    (*ini)->section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
+struct INISection **ini_section_init(struct INIFILE **ini) {
+    struct INISection **section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
+    return section;
 }
 
 struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value) {
