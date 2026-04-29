@@ -1008,7 +1008,7 @@ void wheel_package_free(struct Wheel **pkg) {
     for (size_t i = 0; (*pkg)->record && (*pkg)->record[i] != NULL; i++) {
         wheel_record_free(&(*pkg)->record[i]);
     }
-    guard_free((*pkg)->record);
+    guard_array_n_free((*pkg)->record, (*pkg)->num_record);
 
     for (size_t i = 0; (*pkg)->entry_point && (*pkg)->entry_point[i] != NULL; i++) {
         wheel_entry_point_free(&(*pkg)->entry_point[i]);
