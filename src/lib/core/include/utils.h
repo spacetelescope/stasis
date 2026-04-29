@@ -484,4 +484,11 @@ int str_to_timeout(char *s);
 const char *get_random_generator_file();
 int get_random_bytes(char *result, size_t maxlen);
 
+/**
+ * Get length of `s` as if any formatters are not present
+ * @param s format string
+ * @return length
+ */
+int non_format_len(const char *s);
+
 #endif //STASIS_UTILS_H

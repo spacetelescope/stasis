@@ -1229,3 +1229,23 @@ int get_random_bytes(char *result, size_t maxlen) {
     result[bytes ? bytes - 1 : 0] = '\0';
     return 0;
 }
+
+int non_format_len(const char *s) {
+    int len = 0;
+    int until_space = 0;
+    for (size_t i = 0; i < strlen(s); i++) {
+        if (until_space && isspace(s[i])) {
+            until_space = 0;
+        }
+        if (until_space && !isspace(s[i])) {
+            continue;
+        }
+        if (s[i] == '%') {
+            until_space = 1;
+            continue;
+        }
+        len++;
+    }
+    return len;
+}
+
