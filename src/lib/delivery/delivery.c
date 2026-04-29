@@ -257,6 +257,9 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);
     guard_free(ctx->rules.build_number_fmt);
+    if (ctx->rules._handle) {
+        ini_free(&ctx->rules._handle);
+    }
 
     guard_free(ctx->deploy.docker.test_script);
     guard_free(ctx->deploy.docker.registry);
