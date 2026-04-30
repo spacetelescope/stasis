@@ -304,7 +304,17 @@ int main(const int argc, char *argv[]) {
 
     struct Delivery ctx = {0};
 
-    printf(BANNER, VERSION, AUTHOR);
+    char *version = center_text(VERSION, strlen(STASIS_BANNER_HEADER));
+    if (!version) {
+        SYSERROR("%s", "version too long?");
+        version = strdup(VERSION);
+        if (!version) {
+            SYSERROR("%s", "unable to allocate uncentered fallback version string");
+            exit(1);
+        }
+    }
+    printf(BANNER, version, AUTHOR);
+    guard_free(version);
 
     indexer_init_dirs(&ctx, workdir);
 

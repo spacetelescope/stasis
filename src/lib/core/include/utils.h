@@ -491,4 +491,5 @@ int get_random_bytes(char *result, size_t maxlen);
  */
 int non_format_len(const char *s);
 
+char *center_text(const char *s, size_t maxwidth);
 #endif //STASIS_UTILS_H
