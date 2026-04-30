@@ -633,6 +633,7 @@ struct INIFILE *ini_open(const char *filename) {
             strip(section_name);
             if (ini_section_create(&ini, section_name)) {
                 SYSERROR("unable to create section: %s", section_name);
+                guard_free(section_name);
                 ini_free(&ini);
                 return NULL;
             }
@@ -652,7 +653,7 @@ struct INIFILE *ini_open(const char *filename) {
             continue;
         }
 
-        char *operator = strchr(line, '=');
+        const char *operator = strchr(line, '=');
 
         // a value continuation line
         if (multiline_data && (startswith(line, " ") || startswith(line, "\t"))) {
@@ -660,7 +661,7 @@ struct INIFILE *ini_open(const char *filename) {
         }
 
         if (operator) {
-            size_t key_len = operator - line;
+            const size_t key_len = operator - line;
             memset(key, 0, key_size);
 
             strncpy(key, line, key_len);
