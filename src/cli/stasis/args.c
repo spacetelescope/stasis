@@ -59,7 +59,7 @@ static int get_option_max_width(struct option option[]) {
     int i = 0;
     int max = 0;
     const int indent = 4;
-    while (option[i].name != 0) {
+    while (option[i].name != NULL) {
         int len = (int) strlen(option[i].name);
         if (option[i].has_arg) {
             len += indent;
