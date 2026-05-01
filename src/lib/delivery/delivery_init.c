@@ -222,6 +222,8 @@ int delivery_init_platform(struct Delivery *ctx) {
 
     SYSDEBUG("Setting platform");
     strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN - 1);
+    ctx->system.platform[DELIVERY_PLATFORM][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
+
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
         strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN - 1);
