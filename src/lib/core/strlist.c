@@ -218,22 +218,30 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  * @param str
  * @param delim
  */
- void strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim) {
-     if (!str || !delim) {
-         return;
-     }
+int strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim) {
+    if (!str || !delim) {
+        return -1;
+    }
 
-     char *tmp = strdup(str);
-     char **token = split(tmp, delim, 0);
-     if (token) {
-         for (size_t i = 0; token[i] != NULL; i++) {
-             lstrip(token[i]);
-             strlist_append(&pStrList, token[i]);
-         }
-         guard_array_free(token);
-     }
+    char *tmp = strdup(str);
+    if (!tmp) {
+        return -1;
+    }
+
+    char **token = split(tmp, delim, 0);
+    if (!token) {
+        guard_free(tmp);
+        return -1;
+    }
+    for (size_t i = 0; token[i] != NULL; i++) {
+        lstrip(token[i]);
+        strlist_append(&pStrList, token[i]);
+    }
+    guard_array_free(token);
     guard_free(tmp);
- }
+
+    return 0;
+}
 
 /**
  * Append the contents of a newline delimited string without
@@ -242,20 +250,29 @@ void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2
  * @param str
  * @param delim
  */
-void strlist_append_tokenize_raw(struct StrList *pStrList, char *str, char *delim) {
+int strlist_append_tokenize_raw(struct StrList *pStrList, char *str, char *delim) {
     if (!str || !delim) {
-        return;
+        return -1;
     }
 
     char *tmp = strdup(str);
-    char **token = split(tmp, delim, 0);
-    if (token) {
-        for (size_t i = 0; token[i] != NULL; i++) {
-            strlist_append(&pStrList, token[i]);
-        }
-        guard_array_free(token);
+    if (!tmp) {
+        return -1;
     }
+
+    char **token = split(tmp, delim, 0);
+    if (!token) {
+        guard_free(tmp);
+        return -1;
+    }
+
+    for (size_t i = 0; token[i] != NULL; i++) {
+        strlist_append(&pStrList, token[i]);
+    }
+
+    guard_array_free(token);
     guard_free(tmp);
+    return 0;
 }
 
 /**
