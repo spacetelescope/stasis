@@ -21,6 +21,7 @@
 #include "wheel.h"
 #include "wheelinfo.h"
 #include "environment.h"
+#include "version_compare.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65
@@ -449,6 +450,8 @@ int filter_repo_tags(char *repo, struct StrList *patterns);
 int delivery_exists(struct Delivery *ctx);
 
 int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name);
+
+int delivery_conda_force_package_version(struct Delivery *ctx, const char *env_name, const char *name);
 
 /**
  * Retrieve remote deliveries associated with the current version series
