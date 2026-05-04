@@ -134,6 +134,142 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     return 0;
 }
 
+int delivery_conda_force_package_version(struct Delivery *ctx, const char *env_name, const char *name) {
+    char *spec_installed = NULL;
+    char *spec_request = NULL;
+    int status = 0;
+
+    if (isempty((char *) env_name)) {
+        SYSERROR("%s", "environment name cannot be NULL or empty");
+        return -1;
+    }
+    if (isempty((char *) name)) {
+        SYSERROR("%s", "name cannot be NULL or empty");
+        return -1;
+    }
+
+    int proc_status = 0;
+    char cmd[PATH_MAX] = {0};
+    snprintf(cmd, PATH_MAX, "conda list --name %s", env_name);
+
+    char *output = shell_output(cmd, &proc_status);
+    if (!output || proc_status) {
+        SYSERROR("unable to retreive list of installed packages (exit: %d)", proc_status);
+        guard_free(output);
+        return -1;
+    }
+
+    struct StrList *lines = strlist_init();
+    if (!lines) {
+        SYSERROR("%s", "unable to allocate memory for installed package list");
+        guard_free(output);
+        status = -1;
+        goto cleanup;
+    }
+
+    if (strlist_append_tokenize(lines, output, LINE_SEP)) {
+        SYSERROR("%s", "unable to tokenize installed package list");
+        guard_free(output);
+        strlist_free(&lines);
+        status = -1;
+        goto cleanup;
+    }
+
+    for (size_t i = 0; i < strlist_count(lines); i++) {
+        char *line = strlist_item(lines, i);
+        if (!line) {
+            SYSERROR("%s", "line is NULL");
+            status = -1;
+            goto cleanup;
+        }
+        if (startswith(line, "#") || isempty(line)) {
+            continue;
+        }
+        collapse_whitespace(&line);
+        strip(line);
+
+        struct StrList *tokens = strlist_init();
+        if (!tokens) {
+            SYSERROR("%s", "unable to allocate memory for tokenized installed package list");
+            status = -1;
+            goto cleanup;
+        }
+
+        if (strlist_append_tokenize(tokens, line, " ")) {
+            SYSERROR("%s", "unable to tokenize installed package list");
+            status = -1;
+            goto cleanup;
+        }
+
+        const char *installed_version = strlist_item(tokens, 1);
+        if (!installed_version) {
+            SYSERROR("%s", "not enough data in line (name and version not found)");
+            guard_strlist_free(&tokens);
+            status = -1;
+            goto cleanup;
+        }
+
+        if (strstr(line, name)) {
+            spec_installed = strdup(installed_version);
+            if (!spec_installed) {
+                SYSERROR("%s", "unable to allocated memory for installed package version");
+                guard_strlist_free(&tokens);
+                status = -1;
+                goto cleanup;
+            }
+            guard_strlist_free(&tokens);
+            break;
+        }
+
+        guard_strlist_free(&tokens);
+    }
+
+    for (size_t i = 0; i < strlist_count(ctx->conda.conda_packages); i++) {
+        const char *item = strlist_item(ctx->conda.conda_packages, i);
+        if (!item) {
+            SYSERROR("conda_packages list record %zu is NULL", i);
+            status = -1;
+            goto cleanup;
+        }
+        if (strstr(item, name)) {
+            char *spec_tmp = find_version_spec((char *) item);
+            while (!isalnum(*spec_tmp)) {
+                spec_tmp++;
+            }
+
+            spec_request = strdup(spec_tmp);
+            if (!spec_request) {
+                SYSERROR("%s", "unable to allocate memory for conda package spec request");
+                status = -1;
+                goto cleanup;
+            }
+            break;
+        }
+    }
+
+    int stop = version_compare(NOT | EQ, spec_request, spec_installed);
+    if (stop < 0) {
+        SYSERROR("version comparison failed (spec_request: %s, spec_installed: %s)", spec_request, spec_installed);
+        status = -1;
+        goto cleanup;
+    }
+    if (stop == 0) {
+        goto cleanup;
+    }
+
+    snprintf(cmd, PATH_MAX, "remove --name %s %s", env_name, name);
+    conda_exec(cmd);
+    snprintf(cmd, PATH_MAX, "install --name %s %s=%s", env_name, name, spec_request);
+    conda_exec(cmd);
+
+    cleanup:
+    guard_free(spec_request);
+    guard_free(spec_installed);
+    strlist_free(&lines);
+    guard_free(output);
+    return status;
+}
+
 static int fn_nop(const char *command) {
     (void) command;
     return 1;
