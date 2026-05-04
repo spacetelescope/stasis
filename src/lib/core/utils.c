@@ -742,29 +742,32 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     return 0;
 }
 
-static size_t count_blanks(char *s) {
-    // return the number of leading blanks (tab/space) in a string
-    size_t blank = 0;
-    for (size_t i = 0; i < strlen(s); i++) {
-        if (isblank(s[i])) {
-            blank++;
-        } else {
-            break;
-        }
-    }
-    return blank;
-}
-
+/**
+ * Collapse all whitespace in a string (to single spaces)
+ * @param s address of string to modify
+ * @return
+ */
 char *collapse_whitespace(char **s) {
-    char *x = (*s);
-    size_t len = strlen(x);
-    for (size_t i = 0; i < len; i++) {
-        size_t blank = count_blanks(&x[i]);
-        if (blank > 1) {
-            memmove(&x[i], &x[i] + blank, strlen(&x[i]));
+    char *dest = NULL;
+    char *src = NULL;
+    int in_ws = 1;
+
+    for (src = dest = *s; *src != '\0'; ++src) {
+        if (isspace(*src)) {
+            if (!in_ws) {
+                *dest++ = ' ';
+                in_ws = 1;
+            }
+        } else {
+            *dest++ = *src;
+            in_ws = 0;
         }
     }
 
+    if (dest > *s && *(dest - 1) == ' ') {
+        --dest;
+    }
+    *dest = '\0';
     return *s;
 }
 
