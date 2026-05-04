@@ -139,7 +139,6 @@ struct TestCase_version_compare test_cases_version_compare[] = {
 };
 
 void run_cases_version_compare(void) {
-    int failed = 0;
     const size_t size = sizeof(test_cases_version_compare) / sizeof(test_cases_version_compare[0]);
     for (size_t i = 0; i < size; i++) {
         int result = 0;
