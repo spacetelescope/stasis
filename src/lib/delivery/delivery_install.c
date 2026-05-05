@@ -134,7 +134,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     return 0;
 }
 
-int delivery_conda_force_package_version(struct Delivery *ctx, const char *env_name, const char *name) {
+int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env_name, const char *name) {
     char *spec_installed = NULL;
     char *spec_request = NULL;
     int status = 0;
@@ -247,7 +247,7 @@ int delivery_conda_force_package_version(struct Delivery *ctx, const char *env_n
         }
     }
 
-    int stop = version_compare(NOT | EQ, spec_request, spec_installed);
+    const int stop = version_compare(NOT | EQ, spec_request, spec_installed);
     if (stop < 0) {
         SYSERROR("version comparison failed (spec_request: %s, spec_installed: %s)", spec_request, spec_installed);
         status = -1;

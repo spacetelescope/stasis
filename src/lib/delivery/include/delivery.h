@@ -451,7 +451,15 @@ int delivery_exists(struct Delivery *ctx);
 
 int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_name);
 
-int delivery_conda_force_package_version(struct Delivery *ctx, const char *env_name, const char *name);
+/**
+ * Conda does not handle version suffixes well, if at all. For example, if pkg-1.2.3rc1 is installed Conda will
+ * silently ignore a request to install pkg-1.2.3. This function serves as a workaround by comparing the version
+ * on-disk, and the requested version from the package list, and if the versions are not equal the on-disk package
+ * is replaced by the one in the package list.
+ *
+ * When a package is present in the list without a pinned version it will be reinstalled with whatever is available
+ */
+int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env_name, const char *name);
 
 /**
  * Retrieve remote deliveries associated with the current version series
