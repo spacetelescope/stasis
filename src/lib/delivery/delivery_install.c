@@ -404,15 +404,18 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
+                SYSDEBUG("Getting requirements for test: %s", name);
                 struct Test *info = requirement_from_test(ctx, name);
                 if (info) {
                     if (!strcmp(info->version, "HEAD") || is_git_sha(info->version)) {
+                        SYSDEBUG("Using version: %s", info->version);
                         struct StrList *tag_data = strlist_init();
                         if (!tag_data) {
                             SYSERROR("Unable to allocate memory for tag data");
                             guard_free(args);
                             return -1;
                         }
+                        SYSDEBUG("%s", "Tokenizing repository info tag: %s\n", info->repository_info_tag);
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
                         struct WheelInfo *whl = NULL;
@@ -420,13 +423,16 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         char *hash = NULL;
                         if (strlist_count(tag_data) > 1) {
                             post_commit = strlist_item(tag_data, 1);
+                            SYSDEBUG("post_commit: %s", post_commit);
                             hash = strlist_item(tag_data, 2);
+                            SYSDEBUG("hash: %s", hash);
                         }
 
                         // We can't match on version here (index 0). The wheel's version is not guaranteed to be
                         // equal to the tag; setuptools_scm auto-increments the value, the user can change it manually,
                         // etc.
                         errno = 0;
+                        SYSDEBUG("%s", "Getting wheel information");
                         whl = wheelinfo_get(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
@@ -441,8 +447,10 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             SYSERROR("No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found, replace the original version with newly detected version
+                            SYSDEBUG("Replacing version: %s", whl->version);
                             guard_free(info->version);
                             info->version = strdup(whl->version);
+                            SYSDEBUG("Version replaced with: %s", whl->version);
                         }
                         guard_strlist_free(&tag_data);
                         wheelinfo_free(&whl);
