@@ -323,6 +323,37 @@ static void install_packaging_tools() {
     }
 }
 
+static void force_conda_package_reinstallation_on_mismatch(struct Delivery *ctx, const char *env_name) {
+    const size_t conda_package_count = strlist_count(ctx->conda.conda_packages);
+    if (conda_package_count) {
+        msg(STASIS_MSG_L1, "Enforcing Conda package versions: %s\n", env_name);
+        for (size_t i = 0; i < conda_package_count; i++) {
+            const char *item = strlist_item(ctx->conda.conda_packages, i);
+            if (!item) {
+                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "NULL record in conda package list\n");
+                exit(1);
+            }
+            char *pkg_name = strdup(item);
+            if (!pkg_name) {
+                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "unable to allocate memory for package name\n");
+                exit(1);
+            }
+            const char *spec = find_version_spec(pkg_name);
+            if (spec) {
+                pkg_name[spec - pkg_name] = '\0';
+            }
+
+            msg(STASIS_MSG_L2, "%s\n", pkg_name);
+            if (delivery_conda_enforce_package_version(ctx, env_name, pkg_name)) {
+                msg(STASIS_MSG_L3 | STASIS_MSG_ERROR, "Failed to determine conda package version: %s\n", pkg_name);
+                guard_free(pkg_name);
+                exit(1);
+            }
+            guard_free(pkg_name);
+        }
+    }
+}
+
 static void configure_package_overlay(struct Delivery *ctx, const char *env_name) {
     if (!isempty(ctx->meta.based_on)) {
         msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
@@ -398,6 +429,7 @@ static void release_install_conda_packages(struct Delivery *ctx, char *env_name)
         if (delivery_install_packages(ctx, ctx->storage.conda_install_prefix, env_name, INSTALL_PKG_CONDA, (struct StrList *[]) {ctx->conda.conda_packages, NULL})) {
             exit(1);
         }
+        force_conda_package_reinstallation_on_mismatch(ctx, env_name);
     }
     if (strlist_count(ctx->conda.conda_packages_defer)) {
         msg(STASIS_MSG_L3, "Installing deferred conda packages\n");

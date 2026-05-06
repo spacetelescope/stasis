@@ -57,32 +57,39 @@ inline void stasis_testing_record_result_summary() {
     size_t failed = 0;
     size_t skipped = 0;
     size_t passed = 0;
-    int do_message;
+    int do_message = 0;
+    int do_reason = 0;
     static char status_msg[255] = {0};
     for (size_t i = 0; i < stasis_test_results_i; i++) {
         if (stasis_test_results[i].status && stasis_test_results[i].skip) {
             strcpy(status_msg, "SKIP");
             do_message = 1;
+            do_reason = 1;
             skipped++;
         } else if (!stasis_test_results[i].status) {
             strcpy(status_msg, "FAIL");
             do_message = 1;
+            do_reason = 1;
             failed++;
         } else {
+#ifdef STASIS_TEST_VERBOSE
+            do_message = 1;
+#endif
             strcpy(status_msg, "PASS");
-            do_message = 0;
             passed++;
         }
-        fprintf(stdout, "[%s] %s:%d :: %s() => %s",
-               status_msg,
-               stasis_test_results[i].filename,
-               stasis_test_results[i].lineno,
-               stasis_test_results[i].funcname,
-               stasis_test_results[i].msg_assertion);
         if (do_message) {
-            fprintf(stdout, "\n      \\_ %s", stasis_test_results[i].msg_reason);
+            fprintf(stdout, "[%s] %s:%d :: %s() => %s",
+                   status_msg,
+                   stasis_test_results[i].filename,
+                   stasis_test_results[i].lineno,
+                   stasis_test_results[i].funcname,
+                   stasis_test_results[i].msg_assertion);
+            if (do_reason) {
+                fprintf(stdout, "\n      \\_ %s", stasis_test_results[i].msg_reason);
+            }
+            fprintf(stdout, "\n");
         }
-        fprintf(stdout, "\n");
     }
     fprintf(stdout, "\n[UNIT] %zu tests passed, %zu tests failed, %zu tests skipped out of %zu\n", passed, failed, skipped, stasis_test_results_i);
 }

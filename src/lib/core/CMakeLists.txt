@@ -24,6 +24,7 @@ add_library(stasis_core STATIC
         envctl.c
         multiprocessing.c
         semaphore.c
+        version_compare.c
 )
 target_include_directories(stasis_core PRIVATE
         ${core_INCLUDE}
