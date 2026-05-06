@@ -376,14 +376,16 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
         strncat(command_base, " --use-local", sizeof(command_base) - strlen(command_base) - 1);
+        command_base[sizeof(command_base) - 1] = '\0';
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
         // as possible between releases.
         if (!ctx->meta.based_on) {
             strncat(command_base, " --upgrade", sizeof(command_base) - strlen(command_base) - 1);
+            command_base[sizeof(command_base) - 1] = '\0';
         }
-        snprintf(command_base + strlen(command_base), sizeof(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
+        snprintf(command_base + strlen(command_base), sizeof(command_base) - strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
 
     size_t args_alloc_len = STASIS_BUFSIZ;
