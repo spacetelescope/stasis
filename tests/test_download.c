@@ -21,7 +21,7 @@ void test_download() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         const char *filename = "output.txt";
-        char errmsg[BUFSIZ] = {0};
+        char errmsg[STASIS_BUFSIZ] = {0};
         char *errmsg_p = errmsg;
         long http_code = download((char *) tc[i].url, filename, &errmsg_p);
         if (tc[i].errmsg) {

@@ -56,7 +56,7 @@ void test_runtime() {
     STASIS_ASSERT(strcmp(global_custom_value, custom_value) == 0, "local and global CUSTOM_KEY variable are supposed to be identical");
     guard_free(custom_value);
 
-    char output_truth[BUFSIZ] = {0};
+    char output_truth[STASIS_BUFSIZ] = {0};
     char *your_path = runtime_get(env, "PATH");
     snprintf(output_truth, sizeof(output_truth), "Your PATH is '%s'.", your_path);
     guard_free(your_path);

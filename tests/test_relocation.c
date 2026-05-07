@@ -13,7 +13,7 @@ void test_replace_text() {
     for (size_t i = 0; i < sizeof(targets) / sizeof(*targets); i += 2) {
         const char *target = targets[i];
         const char *expected = targets[i + 1];
-        char input[BUFSIZ] = {0};
+        char input[STASIS_BUFSIZ] = {0};
         strncpy(input, test_string, sizeof(input) - 1);
         input[sizeof(input) - 1] = '\0';
 
@@ -44,7 +44,7 @@ void test_file_replace_text() {
             return;
         }
 
-        char input[BUFSIZ] = {0};
+        char input[STASIS_BUFSIZ] = {0};
         fp = fopen(filename, "r");
         if (fp) {
             fread(input, sizeof(*input), sizeof(input), fp);

@@ -230,7 +230,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
             remove(logfile);
             return -1;
         } else {
-            char line[BUFSIZ] = {0};
+            char line[STASIS_BUFSIZ] = {0};
             fflush(stdout);
             fflush(stderr);
             while (fgets(line, sizeof(line) - 1, fp) != NULL) {

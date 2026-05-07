@@ -105,7 +105,7 @@ void test_xml_pretty_print_in_place() {
     }
 
     fp = fopen(filename, "r");
-    char buf[BUFSIZ] = {0};
+    char buf[STASIS_BUFSIZ] = {0};
     if (fread(buf, sizeof(*buf), sizeof(buf) - 1, fp) < 1) {
         STASIS_ASSERT(false, "failed to consume formatted xml file contents");
     }

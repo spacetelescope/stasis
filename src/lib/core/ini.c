@@ -180,6 +180,8 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             }
             break;
         case INIVAL_TYPE_STR_ARRAY:
+            // TODO: data_copy should be at least equal to the length of the data. The use of STASIS_BUFSIZ below is
+            // the root cause of crashes when stasis reads long arrays.
             strncpy(tbufp, data_copy, sizeof(tbuf) - 1);
             tbuf[sizeof(tbuf) - 1] = '\0';
             guard_free(data_copy);
@@ -191,10 +193,11 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             while ((token = strsep(&tbufp, "\n")) != NULL) {
                 //lstrip(token);
                 if (!isempty(token)) {
-                    strncat(data_copy, token, BUFSIZ - strlen(data_copy) - 1);
-                    strncat(data_copy, "\n", BUFSIZ - strlen(data_copy) - 1);
+                    strncat(data_copy, token, STASIS_BUFSIZ - strlen(data_copy) - 1);
+                    strncat(data_copy, "\n", STASIS_BUFSIZ - strlen(data_copy) - 1);
                 }
             }
+            data_copy[STASIS_BUFSIZ - 1] = '\0';
             strip(data_copy);
             result->as_char_p = strdup(data_copy);
             break;
