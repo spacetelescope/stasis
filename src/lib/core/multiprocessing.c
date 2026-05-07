@@ -270,7 +270,7 @@ static int show_log_contents(FILE *stream, struct MultiProcessingTask *task) {
     if (!fp) {
         return -1;
     }
-    char buf[BUFSIZ] = {0};
+    char buf[STASIS_BUFSIZ] = {0};
     while ((fgets(buf, sizeof(buf) - 1, fp)) != NULL) {
         fprintf(stream, "%s", buf);
         memset(buf, 0, sizeof(buf));

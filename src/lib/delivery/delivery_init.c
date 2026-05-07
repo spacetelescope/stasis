@@ -294,10 +294,18 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
     char config_local[PATH_MAX];
     snprintf(config_local, sizeof(config_local), "%s/%s", ctx->storage.tmpdir, "config");
     setenv("XDG_CONFIG_HOME", config_local, 1);
+    if (mkdirs(config_local, 0755)) {
+        SYSERROR("%s: unable to create directory", config_local);
+        // fall through because XDG doesn't _really_ need to be there
+    }
 
     char cache_local[PATH_MAX];
     snprintf(cache_local, sizeof(cache_local), "%s/%s", ctx->storage.tmpdir, "cache");
     setenv("XDG_CACHE_HOME", cache_local, 1);
+    if (mkdirs(cache_local, 0755)) {
+        SYSERROR("%s: unable to create directory", cache_local);
+        // fall through because XDG doesn't _really_ need to be there
+    }
 
     // add tools to PATH
     char pathvar_tmp[STASIS_BUFSIZ];
