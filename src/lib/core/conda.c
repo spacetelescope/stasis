@@ -20,7 +20,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     }
 
     if (!info->download_dir || isempty(info->download_dir)) {
-        SYSERROR("%s", "micromamba inf->download_dir is NULL, or empty");
+        SYSERROR("micromamba inf->download_dir is NULL, or empty");
         return -1;
     }
 
@@ -65,12 +65,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     va_list args;
     int cmd_len = snprintf(cmd, sizeof(cmd), "%s -r %s -p %s ", mmbin, info->conda_prefix, info->conda_prefix);
     if (cmd_len < 0) {
-        SYSERROR("%s", "Unable to build argument list for micromamba");
+        SYSERROR("Unable to build argument list for micromamba");
         va_end(args);
         return -1;
     }
     if ((size_t) cmd_len > sizeof(cmd)) {
-        SYSERROR("%s", "micromamba command truncated");
+        SYSERROR("micromamba command truncated");
         va_end(args);
         return -1;
     }
@@ -78,12 +78,12 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
     va_start(args, command);
     cmd_len = vsnprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), command, args);
     if (cmd_len < 0) {
-        SYSERROR("%s", "Unable to append arguments to micromamba command");
+        SYSERROR("Unable to append arguments to micromamba command");
         va_end(args);
         return -1;
     }
     if ((size_t) cmd_len > sizeof(cmd)) {
-        SYSERROR("%s", "micromamba command truncated while appending arguments");
+        SYSERROR("micromamba command truncated while appending arguments");
         va_end(args);
         return -1;
     }
@@ -111,7 +111,7 @@ int python_exec(const char *args) {
 
     char *command = NULL;
     if (asprintf(&command, "%s%s", command_base, args) < 0 || !command) {
-        SYSERROR("%s", "Unable to allocate command string");
+        SYSERROR("Unable to allocate command string");
         return -1;
     }
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
@@ -126,7 +126,7 @@ int pip_exec(const char *args) {
 
     char *command = NULL;
     if (asprintf(&command, "%s%s", command_base, args) < 0 || !command) {
-        SYSERROR("%s", "Unable to allocate command string");
+        SYSERROR("Unable to allocate command string");
         return -1;
     }
     msg(STASIS_MSG_L3, "Executing: %s\n", command);
@@ -646,7 +646,7 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     const char *fmt = "env create -n '%s' --file='%s'";
     char *env_command = NULL;
     if (asprintf(&env_command, fmt, name, tempfile) < 0 || !env_command) {
-        SYSERROR("%s", "unable to allocate environment command");
+        SYSERROR("unable to allocate environment command");
         return -1;
     }
 

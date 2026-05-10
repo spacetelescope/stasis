@@ -72,7 +72,7 @@ int semaphore_post(struct Semaphore *s) {
 
 void semaphore_destroy(struct Semaphore *s) {
     if (!s) {
-        SYSDEBUG("%s", "would have crashed");
+        SYSDEBUG("would have crashed");
         return;
     }
     SYSDEBUG("%s", s->name);

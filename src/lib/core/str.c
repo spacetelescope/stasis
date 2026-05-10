@@ -588,7 +588,7 @@ char **strdup_array(char **array) {
     // Create new array
     result = calloc(elems + 1, sizeof(*result));
     if (!result) {
-        SYSERROR("%s", "could not allocate memory for result array");
+        SYSERROR("could not allocate memory for result array");
         return NULL;
     }
     for (size_t i = 0; i < elems; i++) {

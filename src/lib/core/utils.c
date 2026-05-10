@@ -466,18 +466,18 @@ void msg(unsigned type, char *fmt, ...) {
     }
 
     if (fprintf(stream, "%s", header) < 0) {
-        SYSERROR("%s", "unable to write message header to stream");
+        SYSERROR("unable to write message header to stream");
         return;
     }
 
     const int len = vfprintf(stream, fmt, args);
     if (len < 0) {
-        SYSERROR("%s", "unable to write message to stream");
+        SYSERROR("unable to write message to stream");
         return;
     }
 
     if (fprintf(stream, "%s", STASIS_COLOR_RESET) < 0) {
-        SYSERROR("%s", "unable to write message footer to stream");
+        SYSERROR("unable to write message footer to stream");
         return;
     }
     va_end(args);
@@ -670,7 +670,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     // Create new temporary tox configuration file
     char *tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
-        SYSERROR("%s", "unable to create temporary file");
+        SYSERROR("unable to create temporary file");
         return -1;
     }
 
@@ -828,7 +828,7 @@ struct StrList *listdir(const char *path) {
         }
         char *fullpath = join_ex("/", path, rec->d_name, NULL);
         if (!fullpath) {
-            SYSERROR("%s", "Unable to allocate bytes to construct full path");
+            SYSERROR("Unable to allocate bytes to construct full path");
             guard_strlist_free(&node);
             closedir(dp);
             return NULL;
@@ -878,13 +878,13 @@ char *find_version_spec(char *str) {
 
 int env_manipulate_pathstr(const char *key, char *path, int mode) {
     if (isempty(path)) {
-        SYSERROR("%s", "New PATH element cannot be zero-length or NULL");
+        SYSERROR("New PATH element cannot be zero-length or NULL");
         return -1;
     }
 
     const char *system_path_old = getenv("PATH");
     if (!system_path_old) {
-        SYSERROR("%s", "Unable to read PATH");
+        SYSERROR("Unable to read PATH");
         return -1;
     }
 
@@ -897,7 +897,7 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     }
 
     if (!system_path_new) {
-        SYSERROR("%s", "Unable to allocate memory to update PATH");
+        SYSERROR("Unable to allocate memory to update PATH");
         return -1;
     }
 
@@ -986,7 +986,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
     }
     if (size_new >= *size_orig) {
         const size_t new_size = *size_orig + size_new + 1;
-        SYSDEBUG("template data buffer new size: %zu\n", new_size);
+        SYSDEBUG("template data buffer new size: %zu", new_size);
 
         char *tmp = realloc(*data, new_size);
         if (!tmp) {
@@ -1176,7 +1176,7 @@ int get_random_bytes(char *result, size_t maxlen) {
     if (filename != NULL) {
         fp = fopen(filename, "rb");
         if (!fp) {
-            SYSERROR("%s", "unable to open random generator");
+            SYSERROR("unable to open random generator");
             return -1;
         }
     }
@@ -1189,7 +1189,7 @@ int get_random_bytes(char *result, size_t maxlen) {
             ch = rand() % 255;
         }
         if (fp && ferror(fp)) {
-            SYSERROR("%s", "unable to read from random generator");
+            SYSERROR("unable to read from random generator");
             fclose(fp);
             return -1;
         }

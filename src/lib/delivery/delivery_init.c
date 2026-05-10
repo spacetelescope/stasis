@@ -24,13 +24,13 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         tmpdir = strdup(x);
         if (!tmpdir) {
             // memory error
-            SYSERROR("%s", "unable to allocate tmpdir");
+            SYSERROR("unable to allocate tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
     } else {
         tmpdir = strdup("/tmp/stasis");
         if (!tmpdir) {
-            SYSERROR("%s", "unable to allocate tmpdir");
+            SYSERROR("unable to allocate tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
         //need_setenv = 1;
@@ -39,7 +39,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     if (!ctx->storage.tmpdir) {
         ctx->storage.tmpdir = strdup(tmpdir);
         if (!ctx->storage.tmpdir) {
-            SYSERROR("%s", "unable to allocate ctx->storage.tmpdir");
+            SYSERROR("unable to allocate ctx->storage.tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
     } else {
@@ -47,7 +47,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
         guard_free(tmpdir);
         tmpdir = strdup(ctx->storage.tmpdir);
         if (!tmpdir) {
-            SYSERROR("%s", "unable to allocate tmpdir");
+            SYSERROR("unable to allocate tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
     }
@@ -85,7 +85,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     if (!globals.tmpdir || strcmp(globals.tmpdir, ctx->storage.tmpdir) != 0) {
         globals.tmpdir = strdup(tmpdir);
         if (!globals.tmpdir) {
-            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            SYSERROR("unable to allocate globals.tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
     }
@@ -93,7 +93,7 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     if (!ctx->storage.tmpdir) {
         ctx->storage.tmpdir = strdup(globals.tmpdir);
         if (!ctx->storage.tmpdir) {
-            SYSERROR("%s", "unable to allocate globals.tmpdir");
+            SYSERROR("unable to allocate globals.tmpdir");
             goto l_delivery_init_tmpdir_fatal;
         }
     }
@@ -185,7 +185,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
 }
 
 int delivery_init_platform(struct Delivery *ctx) {
-    SYSDEBUG("%s", "Setting architecture");
+    SYSDEBUG("Setting architecture");
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
@@ -195,7 +195,7 @@ int delivery_init_platform(struct Delivery *ctx) {
 
     ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX + 1, sizeof(*ctx->system.platform));
     if (!ctx->system.platform) {
-        SYSERROR("Unable to allocate %d records for platform array\n", DELIVERY_PLATFORM_MAX);
+        SYSERROR("Unable to allocate %d records for platform array", DELIVERY_PLATFORM_MAX);
         return -1;
     }
     for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
@@ -215,7 +215,7 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
     archsuffix[sizeof(archsuffix) - 1] = '\0';
 
-    SYSDEBUG("%s", "Setting platform");
+    SYSDEBUG("Setting platform");
     strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN - 1);
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
@@ -346,22 +346,22 @@ int bootstrap_build_info(struct Delivery *ctx) {
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
 
     if (delivery_init_platform(&local)) {
-        SYSDEBUG("%s", "delivery_init_platform failed");
+        SYSDEBUG("delivery_init_platform failed");
         delivery_free(&local);
         return -1;
     }
     if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
-        SYSDEBUG("%s", "populate_delivery_cfg failed");
+        SYSDEBUG("populate_delivery_cfg failed");
         delivery_free(&local);
         return -1;
     }
     if (populate_delivery_ini(&local, INI_READ_RENDER)) {
-        SYSDEBUG("%s", "populate_delivery_ini failed");
+        SYSDEBUG("populate_delivery_ini failed");
         delivery_free(&local);
         return -1;
     }
     if (populate_info(&local)) {
-        SYSDEBUG("%s", "populate_info failed");
+        SYSDEBUG("populate_info failed");
         delivery_free(&local);
         return -1;
     }
@@ -379,7 +379,7 @@ int bootstrap_build_info(struct Delivery *ctx) {
     memcpy(ctx->info.time_info, local.info.time_info, sizeof(*local.info.time_info));
     ctx->info.time_now = local.info.time_now;
     ctx->info.time_str_epoch = strdup(local.info.time_str_epoch);
-    SYSDEBUG("%s", "delivery_free local resources");
+    SYSDEBUG("delivery_free local resources");
     delivery_free(&local);
     return 0;
 }

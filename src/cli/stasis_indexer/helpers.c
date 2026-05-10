@@ -167,7 +167,7 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     // 1 = nul terminator
     char *pathvar = calloc(pathvar_len, sizeof(*pathvar));
     if (!pathvar) {
-        SYSERROR("%s", "Unable to allocate bytes for temporary path string");
+        SYSERROR("Unable to allocate bytes for temporary path string");
         exit(1);
     }
     snprintf(pathvar, pathvar_len, "%s/bin:%s:%s", m->conda_prefix, m->micromamba_prefix, getenv("PATH"));
@@ -252,12 +252,12 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
     char userpattern[PATH_MAX] = {0};
     const int len = vsnprintf(userpattern, sizeof(userpattern), pattern, args);
     if (len < 0) {
-        SYSERROR("%s", "vsnprintf failed\n");
+        SYSERROR("vsnprintf failed");
         va_end(args);
         return -1;
     }
     if ((size_t) len > sizeof(userpattern)) {
-        fprintf(stderr, "WARNING: %s: userpattern truncated!\n", __FUNCTION__);
+        SYSWARN("%s: userpattern truncated!", __FUNCTION__);
     }
     va_end(args);
     if (!strlen(userpattern)) {
@@ -299,7 +299,7 @@ struct StrList *get_docker_images(struct Delivery *ctx, char *pattern) {
     char *tarball = NULL;
     asprintf(&tarball, "%s*.tar*", pattern);
     if (!tarball) {
-        SYSERROR("%s", "Unable to allocate bytes for docker image wildcard pattern");
+        SYSERROR("Unable to allocate bytes for docker image wildcard pattern");
         return NULL;
     }
     tolower_s(tarball);

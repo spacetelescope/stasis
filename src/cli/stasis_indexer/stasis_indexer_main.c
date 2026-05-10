@@ -143,7 +143,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
 
     char *user_dir = expandpath("~/.stasis/indexer");
     if (!user_dir) {
-        SYSERROR("%s", "expandpath failed");
+        SYSERROR("expandpath failed");
     }
 
     path_store(&ctx->storage.output_dir, PATH_MAX, ctx->storage.root, "");
@@ -164,7 +164,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
         snprintf(newpath, sizeof(newpath), "%s/bin:%s", ctx->storage.tools_dir, getenv("PATH"));
         setenv("PATH", newpath, 1);
     } else {
-        SYSERROR("%s", "environment variable PATH is undefined. Unable to continue.");
+        SYSERROR("environment variable PATH is undefined. Unable to continue.");
         exit(1);
     }
 }
@@ -213,7 +213,7 @@ int main(const int argc, char *argv[]) {
         rootdirs_total = argc - current_index;
         rootdirs = calloc(rootdirs_total + 1, sizeof(*rootdirs));
         if (!rootdirs) {
-            SYSERROR("%s", "unable to allocate memory for rootdirs array");
+            SYSERROR("unable to allocate memory for rootdirs array");
             exit(1);
         }
 
@@ -228,7 +228,7 @@ int main(const int argc, char *argv[]) {
             // use first positional argument
             rootdirs[i] = realpath(argv[optind], NULL);
             if (!rootdirs[i]) {
-                SYSERROR("%s", "Unable to allocate memory for root directory");
+                SYSERROR("Unable to allocate memory for root directory");
                 exit(1);
             }
             optind++;
@@ -311,7 +311,7 @@ int main(const int argc, char *argv[]) {
         rootdirs_total > 1 ? "Merging" : "Indexing",
         rootdirs_total > 1 ? "directories" : "directory");
     if (indexer_combine_rootdirs(workdir, rootdirs, rootdirs_total)) {
-        SYSERROR("%s", "Copy operation failed");
+        SYSERROR("Copy operation failed");
         rmtree(workdir);
         exit(1);
     }
@@ -326,19 +326,19 @@ int main(const int argc, char *argv[]) {
 
     struct MicromambaInfo m;
     if (micromamba_configure(&ctx, &m)) {
-        SYSERROR("%s", "Unable to configure micromamba");
+        SYSERROR("Unable to configure micromamba");
         exit(1);
     }
 
     msg(STASIS_MSG_L1, "Indexing conda packages\n");
     if (indexer_conda(&ctx, m)) {
-        SYSERROR("%s", "Conda package indexing operation failed");
+        SYSERROR("Conda package indexing operation failed");
         exit(1);
     }
 
     msg(STASIS_MSG_L1, "Indexing wheel packages\n");
     if (indexer_wheels(&ctx)) {
-        SYSERROR("%s", "Python package indexing operation failed");
+        SYSERROR("Python package indexing operation failed");
         exit(1);
     }
 
@@ -354,7 +354,7 @@ int main(const int argc, char *argv[]) {
 
     struct Delivery **local = calloc(strlist_count(metafiles) + 1, sizeof(*local));
     if (!local) {
-        SYSERROR("%s", "Unable to allocate bytes for local delivery context array");
+        SYSERROR("Unable to allocate bytes for local delivery context array");
         exit(1);
     }
 
@@ -375,26 +375,26 @@ int main(const int argc, char *argv[]) {
 
     msg(STASIS_MSG_L1, "Generating links to latest release iteration\n");
     if (indexer_symlinks(local, strlist_count(metafiles))) {
-        SYSERROR("%s", "Link generation failed");
+        SYSERROR("Link generation failed");
         exit(1);
     }
 
     msg(STASIS_MSG_L1, "Generating README.md\n");
     if (indexer_readmes(local, strlist_count(metafiles))) {
-        SYSERROR("%s", "README indexing operation failed");
+        SYSERROR("README indexing operation failed");
         exit(1);
     }
 
     msg(STASIS_MSG_L1, "Indexing test results\n");
     if (indexer_junitxml_report(local, strlist_count(metafiles))) {
-        SYSERROR("%s", "Test result indexing operation failed");
+        SYSERROR("Test result indexing operation failed");
         exit(1);
     }
 
     if (do_html) {
         msg(STASIS_MSG_L1, "Generating HTML indexes\n");
         if (indexer_make_website(local)) {
-            SYSERROR("%s", "Site creation failed");
+            SYSERROR("Site creation failed");
             exit(1);
         }
     }
@@ -449,7 +449,7 @@ int main(const int argc, char *argv[]) {
     }
 
     if (system(cmd)) {
-        SYSERROR("%s", "Copy operation failed");
+        SYSERROR("Copy operation failed");
         rmtree(workdir);
         exit(1);
     }

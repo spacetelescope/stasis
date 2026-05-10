@@ -36,7 +36,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
 
     if (original_len > sizeof(buffer)) {
         errno = EINVAL;
-        SYSERROR("The original string is larger than buffer: %zu > %zu\n", original_len, sizeof(buffer));
+        SYSERROR("The original string is larger than buffer: %zu > %zu", original_len, sizeof(buffer));
         return -1;
     }
 

@@ -63,20 +63,20 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     memcpy(&result->rules.content, &ctx->rules.content, sizeof(ctx->rules.content));
 
     if (ctx->rules._handle) {
-        SYSDEBUG("%s", "duplicating INIFILE handle - BEGIN");
+        SYSDEBUG("duplicating INIFILE handle - BEGIN");
         result->rules._handle = malloc(sizeof(*result->rules._handle));
         if (!result->rules._handle) {
-            SYSERROR("%s", "unable to allocate space for INIFILE handle");
+            SYSERROR("unable to allocate space for INIFILE handle");
             return NULL;
         }
         result->rules._handle->section = malloc(ctx->rules._handle->section_count * sizeof(**ctx->rules._handle->section));
         if (!result->rules._handle->section) {
             guard_free(result->rules._handle);
-            SYSERROR("%s", "unable to allocate space for INIFILE section");
+            SYSERROR("unable to allocate space for INIFILE section");
             return NULL;
         }
         memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
-        SYSDEBUG("%s", "duplicating INIFILE handle - END");
+        SYSDEBUG("duplicating INIFILE handle - END");
     }
 
     // Runtime
@@ -112,7 +112,7 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     if (ctx->system.platform) {
         result->system.platform = malloc(DELIVERY_PLATFORM_MAX * sizeof(*result->system.platform));
         if (!result->system.platform) {
-            SYSERROR("%s", "unable to allocate space for system platform array");
+            SYSERROR("unable to allocate space for system platform array");
             return NULL;
         }
         for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
@@ -365,7 +365,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         deferred = ctx->conda.pip_packages_defer;
         strncpy(mode, "pip", sizeof(mode) - 1);
     } else {
-        SYSERROR("BUG: type %d does not map to a supported package manager!\n", type);
+        SYSERROR("BUG: type %d does not map to a supported package manager!", type);
         exit(1);
     }
     mode[sizeof(mode) - 1] = '\0';

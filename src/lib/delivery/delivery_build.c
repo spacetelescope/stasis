@@ -185,17 +185,17 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
     // setup
 
     if (get_random_bytes(suffix, sizeof(suffix))) {
-        SYSERROR("%s", "unable to acquire value from random generator");
+        SYSERROR("unable to acquire value from random generator");
         goto manylinux_fail;
     }
 
     if (asprintf(&container_name, "manylinux_build_%d_%zd_%s", uid, time(NULL), suffix) < 0) {
-        SYSERROR("%s", "unable to allocate memory for container name");
+        SYSERROR("unable to allocate memory for container name");
         goto manylinux_fail;
     }
 
     if (asprintf(&args, "--name %s -w /build -v %s:/build", container_name, container_name) < 0) {
-        SYSERROR("%s", "unable to allocate memory for docker arguments");
+        SYSERROR("unable to allocate memory for docker arguments");
         goto manylinux_fail;
     }
 
@@ -205,77 +205,77 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
     }
 
     if (asprintf(&nop_create_command, "run --name nop_%s -v %s:/build busybox", container_name, container_name) < 0) {
-        SYSERROR("%s", "unable to allocate memory for nop container command");
+        SYSERROR("unable to allocate memory for nop container command");
         goto manylinux_fail;
     }
 
     if (asprintf(&source_copy_command, "cp %s nop_%s:/build", copy_to_container_dir, container_name) < 0) {
-        SYSERROR("%s", "unable to allocate memory for source copy command");
+        SYSERROR("unable to allocate memory for source copy command");
         goto manylinux_fail;
     }
 
     if (asprintf(&nop_rm_command, "rm nop_%s", container_name) < 0) {
-        SYSERROR("%s", "unable to allocate memory for nop container command");
+        SYSERROR("unable to allocate memory for nop container command");
         goto manylinux_fail;
     }
 
     if (asprintf(&wheel_paths_filename, "%s/wheel_paths_%s.txt", globals.tmpdir, container_name) < 0) {
-        SYSERROR("%s", "unable to allocate memory for wheel paths file name");
+        SYSERROR("unable to allocate memory for wheel paths file name");
         goto manylinux_fail;
     }
 
     if (asprintf(&find_command, "run --rm -t -v %s:/build busybox sh -c 'find %s -name \"*.whl\"' > %s", container_name, copy_from_container_dir, wheel_paths_filename) < 0) {
-        SYSERROR("%s", "unable to allocate memory for find command");
+        SYSERROR("unable to allocate memory for find command");
         goto manylinux_fail;
     }
 
     // execute
 
     if (docker_exec(nop_create_command, 0)) {
-        SYSERROR("%s", "docker nop container creation failed");
+        SYSERROR("docker nop container creation failed");
         goto manylinux_fail;
     }
 
     if (docker_exec(source_copy_command, 0)) {
-        SYSERROR("%s", "docker source copy operation failed");
+        SYSERROR("docker source copy operation failed");
         goto manylinux_fail;
     }
 
     if (docker_exec(nop_rm_command, STASIS_DOCKER_QUIET)) {
-        SYSERROR("%s", "docker nop container removal failed");
+        SYSERROR("docker nop container removal failed");
         goto manylinux_fail;
     }
 
     if (docker_script(image, args, (char *) script, 0)) {
-        SYSERROR("%s", "manylinux execution failed");
+        SYSERROR("manylinux execution failed");
         goto manylinux_fail;
     }
 
     if (docker_exec(find_command, 0)) {
-        SYSERROR("%s", "docker find command failed");
+        SYSERROR("docker find command failed");
         goto manylinux_fail;
     }
 
     struct StrList *wheel_paths = strlist_init();
     if (!wheel_paths) {
-        SYSERROR("%s", "wheel_paths not initialized");
+        SYSERROR("wheel_paths not initialized");
         goto manylinux_fail;
     }
 
     if (strlist_append_file(wheel_paths, wheel_paths_filename, read_without_line_endings)) {
-        SYSERROR("%s", "wheel_paths append failed");
+        SYSERROR("wheel_paths append failed");
         goto manylinux_fail;
     }
 
     for (size_t i = 0; i < strlist_count(wheel_paths); i++) {
         const char *item = strlist_item(wheel_paths, i);
         if (asprintf(&copy_command, "cp %s:%s %s", container_name, item, copy_to_host_dir) < 0) {
-            SYSERROR("%s", "unable to allocate memory for docker copy command");
+            SYSERROR("unable to allocate memory for docker copy command");
             goto manylinux_fail;
         }
 
         if (docker_exec(copy_command, 0)) {
-            SYSERROR("%s", "docker copy operation failed");
+            SYSERROR("docker copy operation failed");
             goto manylinux_fail;
         }
         guard_free(copy_command);
@@ -293,21 +293,21 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
         // Keep going on failure unless memory related.
         // We don't want build debris everywhere.
         if (asprintf(&rm_command, "rm %s", container_name) < 0) {
-            SYSERROR("%s", "unable to allocate memory for rm command");
+            SYSERROR("unable to allocate memory for rm command");
             goto late_fail;
         }
 
         if (docker_exec(rm_command, STASIS_DOCKER_QUIET)) {
-            SYSERROR("%s", "docker container removal operation failed");
+            SYSERROR("docker container removal operation failed");
         }
 
         if (asprintf(&volume_rm_command, "volume rm -f %s", container_name) < 0) {
-            SYSERROR("%s", "unable to allocate memory for docker volume removal command");
+            SYSERROR("unable to allocate memory for docker volume removal command");
             goto late_fail;
         }
 
         if (docker_exec(volume_rm_command, STASIS_DOCKER_QUIET)) {
-            SYSERROR("%s", "docker volume removal operation failed");
+            SYSERROR("docker volume removal operation failed");
         }
     }
 
@@ -331,7 +331,7 @@ int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
 
     const char *manylinux_image = globals.wheel_builder_manylinux_image;
     if (!manylinux_image) {
-        SYSERROR("%s", "manylinux_image not initialized");
+        SYSERROR("manylinux_image not initialized");
         return -1;
     }
 
@@ -349,7 +349,7 @@ int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
     char *script = NULL;
     if (asprintf(&script, script_fmt,
         meta->python, meta->python) < 0) {
-        SYSERROR("%s", "unable to allocate memory for build script");
+        SYSERROR("unable to allocate memory for build script");
         return -1;
     }
     manylinux_build_status = manylinux_exec(
@@ -410,7 +410,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
 
                 snprintf(srcdir, sizeof(srcdir), "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
                 if (git_clone(&proc, ctx->tests->test[i]->repository, srcdir, ctx->tests->test[i]->version)) {
-                    SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'\n",
+                    SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'",
                     ctx->tests->test[i]->version, ctx->tests->test[i]->name, ctx->tests->test[i]->repository);
                     return NULL;
                 }
@@ -464,13 +464,13 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     } else if (use_builder_build || use_builder_cibuildwheel) {
                         if (use_builder_build) {
                             if (asprintf(&cmd, "-m build -w -o %s", outdir) < 0) {
-                                SYSERROR("%s", "Unable to allocate memory for build command");
+                                SYSERROR("Unable to allocate memory for build command");
                                 return NULL;
                             }
                         } else if (use_builder_cibuildwheel) {
                             if (asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s",
                                 outdir, ctx->meta.python_compact, ctx->system.arch) < 0) {
-                                SYSERROR("%s", "Unable to allocate memory for cibuildwheel command");
+                                SYSERROR("Unable to allocate memory for cibuildwheel command");
                                 return NULL;
                             }
                         }

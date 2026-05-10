@@ -20,7 +20,7 @@ struct tplfunc_frame *tpl_pool_func[1024] = {0};
 unsigned tpl_pool_func_used = 0;
 
 extern void tpl_reset() {
-    SYSDEBUG("%s", "Resetting template engine");
+    SYSDEBUG("Resetting template engine");
     tpl_free();
     tpl_pool_used = 0;
     tpl_pool_func_used = 0;
@@ -29,13 +29,13 @@ extern void tpl_reset() {
 void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in) {
     struct tplfunc_frame *frame = calloc(1, sizeof(*frame));
     if (!frame) {
-        SYSERROR("%s", "unable to allocate memory for function frame");
+        SYSERROR("unable to allocate memory for function frame");
         exit(1);
     }
 
     frame->key = strdup(key);
     if (!frame->key) {
-        SYSERROR("%s", "unable to allocate memory for function frame key");
+        SYSERROR("unable to allocate memory for function frame key");
         exit(1);
     }
     frame->argc = argc;
@@ -52,12 +52,12 @@ int tpl_key_exists(char *key) {
     for (size_t i = 0; i < tpl_pool_used; i++) {
         if (tpl_pool[i]->key) {
             if (!strcmp(tpl_pool[i]->key, key)) {
-                SYSDEBUG("%s", "YES");
+                SYSDEBUG("YES");
                 return true;
             }
         }
     }
-    SYSDEBUG("%s", "NO");
+    SYSDEBUG("NO");
     return false;
 }
 
@@ -76,17 +76,17 @@ void tpl_register(char *key, char **ptr) {
             }
         }
         replacing = 1;
-        SYSDEBUG("%s", "Item will be replaced");
+        SYSDEBUG("Item will be replaced");
     } else {
-        SYSDEBUG("%s", "Creating new item");
+        SYSDEBUG("Creating new item");
         item = calloc(1, sizeof(*item));
         if (!item) {
-            SYSERROR("%s", "unable to allocate memory for new item");
+            SYSERROR("unable to allocate memory for new item");
             exit(1);
         }
         item->key = strdup(key);
         if (!key) {
-            SYSERROR("%s", "unable to allocate memory for new key");
+            SYSERROR("unable to allocate memory for new key");
             exit(1);
         }
     }
@@ -186,7 +186,7 @@ char *tpl_render(char *str) {
             }
 
             // Read key name
-            SYSDEBUG("%s", "Reading key");
+            SYSDEBUG("Reading key");
             size_t key_len = 0;
             while (isalnum(pos[off]) || pos[off] != '}') {
                 if (isspace(pos[off]) || isblank(pos[off])) {
@@ -207,10 +207,10 @@ char *tpl_render(char *str) {
             int do_func = 0;
             if (type_stop) {
                 if (!strncmp(key, "env", type_stop - key)) {
-                    SYSDEBUG("%s", "Will render as value of environment variable");
+                    SYSDEBUG("Will render as value of environment variable");
                     do_env = 1;
                 } else if (!strncmp(key, "func", type_stop - key)) {
-                    SYSDEBUG("%s", "Will render as output from function");
+                    SYSDEBUG("Will render as output from function");
                     do_func = 1;
                 }
             }
@@ -327,7 +327,7 @@ int tpl_render_to_file(char *str, const char *filename) {
     // Write rendered string to file
     fprintf(fp, "%s", result);
     fclose(fp);
-    SYSDEBUG("%s", "Rendered successfully");
+    SYSDEBUG("Rendered successfully");
 
     guard_free(result);
     return 0;

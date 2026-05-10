@@ -319,7 +319,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     guard_free(cmd);
                     popd();
                 } else {
-                    SYSERROR("Failed to change directory: %s\n", destdir);
+                    SYSERROR("Failed to change directory: %s", destdir);
                     exit(1);
                 }
             }
