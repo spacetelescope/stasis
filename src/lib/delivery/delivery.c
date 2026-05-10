@@ -1,17 +1,6 @@
 #include "delivery.h"
 #include "conda.h"
 
-static char *strdup_maybe(const char * restrict s) {
-    if (s != NULL) {
-        char *x = strdup(s);
-        if (!x) {
-            SYSERROR("%s", "strdup failed");
-            exit(1);
-        }
-        return x;
-    }
-    return NULL;
-}
 struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
     struct Delivery *result = calloc(1, sizeof(*result));
     if (!result) {

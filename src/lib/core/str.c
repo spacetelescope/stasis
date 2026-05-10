@@ -4,6 +4,22 @@
 #include <unistd.h>
 #include "str.h"
 
+
+
+char *strdup_maybe_entry(const char * restrict s, const struct ExecPoint ep, const int exit_code) {
+    // USE MACRO FROM str.h: strdup_maybe()
+    if (s != NULL) {
+        char *x = strdup(s);
+        if (!x) {
+            SYSERROR("unable to duplicate string");
+            log_print_error(ep, "out of memory");
+            exit(exit_code);
+        }
+        return x;
+    }
+    return NULL;
+}
+
 int num_chars(const char *sptr, int ch) {
     int result = 0;
     for (int i = 0; sptr[i] != '\0'; i++) {
