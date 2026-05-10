@@ -2,6 +2,8 @@
 // Created by jhunk on 11/15/24.
 //
 
+#include <fnmatch.h>
+
 #include "core.h"
 #include "helpers.h"
 

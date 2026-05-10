@@ -1,4 +1,5 @@
 #include "delivery.h"
+#include "conda.h"
 
 static char *strdup_maybe(const char * restrict s) {
     if (s != NULL) {

@@ -1,4 +1,5 @@
 #include "delivery.h"
+#include "conda.h"
 
 static void delivery_export_configuration(const struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Exporting delivery configuration\n");

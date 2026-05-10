@@ -1,4 +1,5 @@
 #include "delivery.h"
+#include "conda.h"
 
 void delivery_get_conda_installer_url(struct Delivery *ctx, char *result, size_t maxlen) {
     int len = 0;

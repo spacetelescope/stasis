@@ -1,4 +1,7 @@
 #include "delivery.h"
+#include "conda.h"
+#include "wheelinfo.h"
+#include "version_compare.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
     struct Test *result = NULL;

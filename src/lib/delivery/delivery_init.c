@@ -1,3 +1,6 @@
+#include <fnmatch.h>
+#include <sys/utsname.h>
+
 #include "delivery.h"
 
 int has_mount_flags(const char *mount_point, const unsigned long flags) {

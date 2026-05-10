@@ -1,4 +1,6 @@
 #include "delivery.h"
+#include "log.h"
+#include "conda.h"
 
 
 const char *release_header = "# delivery_name: %s\n"

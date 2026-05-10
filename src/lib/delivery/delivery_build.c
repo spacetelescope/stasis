@@ -1,4 +1,8 @@
+#include <fnmatch.h>
+
 #include "delivery.h"
+#include "conda.h"
+#include "recipe.h"
 
 int delivery_build_recipes(struct Delivery *ctx) {
     for (size_t i = 0; i < ctx->tests->num_used; i++) {

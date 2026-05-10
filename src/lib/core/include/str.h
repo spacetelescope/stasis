@@ -9,8 +9,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "relocation.h"
 #include "core.h"
+#include "log.h"
+#include "relocation.h"
 
 #define STASIS_SORT_ALPHA 1 << 0
 #define STASIS_SORT_NUMERIC 1 << 1

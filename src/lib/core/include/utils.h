@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <errno.h>
 #include "core.h"
+#include "log.h"
 #include "copy.h"
 #include "system.h"
 #include "strlist.h"

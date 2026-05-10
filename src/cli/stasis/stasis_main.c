@@ -7,6 +7,7 @@
 
 // local includes
 #include "args.h"
+#include "conda.h"
 #include "system_requirements.h"
 #include "tpl.h"
 
