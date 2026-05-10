@@ -722,6 +722,8 @@ int main(int argc, char *argv[]) {
     printf(BANNER, version, AUTHOR);
     guard_free(version);
 
+    SYSDEBUG("LOG_LEVEL is %s", log_get_level_str());
+
     setup_python_version_override(&ctx, python_override_version);
     configure_stasis_ini(&ctx, &config_input);
     check_system_path();
