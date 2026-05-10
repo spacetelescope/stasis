@@ -18,9 +18,7 @@ struct Tests *tests_init(const size_t num_tests) {
 
 int tests_add(struct Tests *tests, struct Test *x) {
     if (tests->num_used >= tests->num_alloc) {
-#ifdef DEBUG
         const size_t old_alloc = tests->num_alloc;
-#endif
         struct Test **tmp = realloc(tests->test, tests->num_alloc++ * sizeof(**tests->test));
         SYSDEBUG("Increasing size of test array: %zu -> %zu", old_alloc, tests->num_alloc);
         if (!tmp) {

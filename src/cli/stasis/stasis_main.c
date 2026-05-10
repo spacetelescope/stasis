@@ -652,6 +652,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 globals.verbose = true;
+                LOG_LEVEL++;
                 break;
             case OPT_OVERWRITE:
                 globals.enable_overwrite = true;
