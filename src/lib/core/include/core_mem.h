@@ -2,6 +2,7 @@
 #ifndef STASIS_CORE_MEM_H
 #define STASIS_CORE_MEM_H
 
+#include "execpoint.h"
 #include "environment.h"
 #include "strlist.h"
 
