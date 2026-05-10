@@ -198,6 +198,7 @@ int main(const int argc, char *argv[]) {
                 break;
             case 'v':
                 globals.verbose = 1;
+                LOG_LEVEL++;
                 break;
             case 'w':
                 do_html = 1;
