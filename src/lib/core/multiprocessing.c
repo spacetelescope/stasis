@@ -82,7 +82,6 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
-        fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
         SYSERROR("unable to open '%s' for writing: %s", task->log_file, strerror(errno));
         semaphore_post(&pool->semaphore);
         return -1;
