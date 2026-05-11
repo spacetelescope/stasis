@@ -353,7 +353,7 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
 }
 
 int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
-    int status = 0;
+    int child_status = 0;
     int failures = 0;
     size_t tasks_complete = 0;
     size_t lower_i = 0;
@@ -394,7 +394,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             }
 
             // Is the process finished?
-            pid_t pid = waitpid(slot->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+            const pid_t pid = waitpid(slot->pid, &child_status, WNOHANG | WUNTRACED | WCONTINUED);
 
             char progress[1024] = {0};
             const double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
@@ -407,7 +407,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     seconds_to_human_readable(slot->timeout, duration, sizeof(duration));
                     printf("%s Task timed out after %s (pid: %d)\n", progress, duration, slot->pid);
                     if (kill(slot->pid, SIGKILL) == 0) {
-                        status = SIGKILL;
+                        child_status = SIGKILL;
                     } else {
                         SYSERROR("Timeout reached, however pid %d could not be killed.", slot->pid);
                         return -1;
@@ -415,13 +415,13 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
             }
 
-            const int task_ended = WIFEXITED(status);
-            const int task_ended_by_signal = WIFSIGNALED(status);
-            const int task_stopped = WIFSTOPPED(status);
-            const int task_continued = WIFCONTINUED(status);
-            const int status_exit = WEXITSTATUS(status);
-            const int status_signal = WTERMSIG(status);
-            const int status_stopped = WSTOPSIG(status);
+            const int task_ended = WIFEXITED(child_status);
+            const int task_ended_by_signal = WIFSIGNALED(child_status);
+            const int task_stopped = WIFSTOPPED(child_status);
+            const int task_continued = WIFCONTINUED(child_status);
+            const int status_exit = WEXITSTATUS(child_status);
+            const int status_signal = WTERMSIG(child_status);
+            const int status_stopped = WSTOPSIG(child_status);
 
             // Update status
             slot->status = status_exit;
@@ -445,7 +445,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     printf("%s Task ended (status: %d)\n", progress, status_exit);
                     tasks_complete++;
                 } else {
-                    SYSWARN("%s Task state is unknown (0x%04X)", progress, status);
+                    SYSWARN("%s Task state is unknown (0x%04X)", progress, child_status);
                 }
 
                 if (globals.enable_task_logging) {
@@ -455,7 +455,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     }
                 }
 
-                if (status >> 8 != 0 || (status & 0xff) != 0) {
+                if (child_status >> 8 != 0 || (child_status & 0xff) != 0) {
                     semaphore_wait(&pool->semaphore);
                     update_task_elapsed(slot);
                     semaphore_post(&pool->semaphore);
