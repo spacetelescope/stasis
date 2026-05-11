@@ -544,6 +544,10 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
     // The pool is shared with children
     pool = mmap(NULL, sizeof(*pool), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (pool == MAP_FAILED) {
+        SYSERROR("unable to memory map pool");
+        return NULL;
+    }
 
     // Set pool identity string
     memset(pool->ident, 0, sizeof(pool->ident));
