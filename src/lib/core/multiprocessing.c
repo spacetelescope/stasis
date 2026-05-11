@@ -62,6 +62,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     (void) pool;
     FILE *fp_log = NULL;
 
+    semaphore_wait(&pool->semaphore);
     // The task starts inside the requested working directory
     if (chdir(task->working_dir)) {
         perror(task->working_dir);
@@ -77,11 +78,13 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - strlen(task->log_file),
             "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
         SYSDEBUG("using log file: %s", task->log_file);
+        semaphore_post(&pool->semaphore);
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
         SYSERROR("unable to open '%s' for writing: %s", task->log_file, strerror(errno));
+        semaphore_post(&pool->semaphore);
         return -1;
     }
 
@@ -90,6 +93,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         SYSERROR("%s", "Unable to redirect stderr to stdout");
         SYSERROR("Unable to redirect stderr to stdout");
         fclose(fp_log);
+        semaphore_post(&pool->semaphore);
         return -1;
     }
 
