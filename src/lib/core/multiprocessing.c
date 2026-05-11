@@ -85,12 +85,20 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         return -1;
     }
 
-    int fd = -1;
-    if ((fd = dup2(STDOUT_FILENO, STDERR_FILENO)) < 0) {
+    const int redirect = dup2(STDOUT_FILENO, STDERR_FILENO);
+    if (redirect < 0) {
         SYSERROR("%s", "Unable to redirect stderr to stdout");
         SYSERROR("Unable to redirect stderr to stdout");
         fclose(fp_log);
         return -1;
+    }
+
+    // Close child file descriptors
+    for (int fd = 3; fd < sysconf(_SC_OPEN_MAX); fd++) {
+        if (fd == redirect) {
+            continue;
+        }
+        close(fd);
     }
 
     // Generate timestamp for log header
@@ -114,7 +122,10 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     fflush(stdout);
     fflush(stderr);
     char *args[] = {"bash", "--norc", task->parent_script, (char *) NULL};
-    return execvp("/bin/bash", args);
+    semaphore_post(&pool->semaphore);
+    execvp("bash", args);
+    SYSERROR("execvp failed (%s)", strerror(errno));
+    _exit(127);
 }
 
 int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {
