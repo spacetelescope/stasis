@@ -97,25 +97,25 @@ void delivery_tests_run(struct Delivery *ctx) {
     snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x; mamba activate ${CONDA_DEFAULT_ENV}; set -x\n");
 
     if (!ctx->tests || !ctx->tests->num_used) {
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "no tests are defined!\n");
+        SYSWARN("no tests are defined!");
     } else {
         pool[PARALLEL] = mp_pool_init("parallel", ctx->storage.tmpdir);
         if (!pool[PARALLEL]) {
-            perror("mp_pool_init/parallel");
+            SYSERROR("mp_pool_init/parallel initialization failed");
             exit(1);
         }
         pool[PARALLEL]->status_interval = globals.pool_status_interval;
 
         pool[SERIAL] = mp_pool_init("serial", ctx->storage.tmpdir);
         if (!pool[SERIAL]) {
-            perror("mp_pool_init/serial");
+            SYSERROR("mp_pool_init/serial initialization failed");
             exit(1);
         }
         pool[SERIAL]->status_interval = globals.pool_status_interval;
 
         pool[SETUP] = mp_pool_init("setup", ctx->storage.tmpdir);
         if (!pool[SETUP]) {
-            perror("mp_pool_init/setup");
+            SYSERROR("mp_pool_init/setup initialization failed");
             exit(1);
         }
         pool[SETUP]->status_interval = globals.pool_status_interval;
@@ -148,8 +148,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
             msg(STASIS_MSG_L2, "Loading tests for %s %s\n", test->name, test->version);
             if (!test->script || !strlen(test->script)) {
-                msg(STASIS_MSG_WARN | STASIS_MSG_L3, "Nothing to do. To fix, declare a 'script' in section: [test:%s]\n",
-                    test->name);
+                SYSWARN("Nothing to do. To fix, declare a 'script' in section: [test:%s]", test->name);
                 continue;
             }
 
@@ -179,14 +178,14 @@ void delivery_tests_run(struct Delivery *ctx) {
             } else {
                 int dep_status = check_python_package_dependencies(".");
                 if (dep_status) {
-                    fprintf(stderr, "\nPlease replace all occurrences above with standard package specs:\n"
+                    SYSERROR("Please replace all occurrences above with standard package specs:\n"
                                     "\n"
                                     "    package==x.y.z\n"
                                     "    package>=x.y.z\n"
                                     "    package<=x.y.z\n"
                                     "    ...\n"
                                     "\n");
-                    COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
+                    COE_CHECK_ABORT(true, "Unreproducible delivery");
                 }
 
                 char *cmd = calloc(strlen(test->script) + STASIS_BUFSIZ, sizeof(*cmd));
@@ -387,7 +386,7 @@ int delivery_fixup_test_results(struct Delivery *ctx) {
         snprintf(path, sizeof(path), "%s/%s", ctx->storage.results_dir, rec->d_name);
         msg(STASIS_MSG_L3, "%s\n", rec->d_name);
         if (xml_pretty_print_in_place(path, STASIS_XML_PRETTY_PRINT_PROG, STASIS_XML_PRETTY_PRINT_ARGS)) {
-            msg(STASIS_MSG_L3 | STASIS_MSG_WARN, "Failed to rewrite file '%s'\n", rec->d_name);
+            SYSWARN("Failed to rewrite file '%s'", rec->d_name);
         }
     }
 

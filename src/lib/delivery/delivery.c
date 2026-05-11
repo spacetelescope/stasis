@@ -449,7 +449,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
                 }
 
                 if (PKG_INDEX_PROVIDES_FAILED(upstream_exists)) {
-                    fprintf(stderr, "%s's existence command failed for '%s': %s\n",
+                    SYSERROR("%s's existence command failed for '%s': %s",
                             mode, name, pkg_index_provides_strerror(upstream_exists));
                     exit(1);
                 }
@@ -474,7 +474,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 
     if (!strlist_count(deferred)) {
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No %s packages were filtered by test definitions\n", mode);
+        SYSWARN("No %s packages were filtered by test definitions\n", mode);
     } else {
         if (DEFER_CONDA == type) {
             guard_strlist_free(&ctx->conda.conda_packages);

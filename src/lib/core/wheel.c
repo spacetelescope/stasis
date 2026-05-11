@@ -139,7 +139,7 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
                     break;
                 }
                 default:
-                    fprintf(stderr, "warning: unhandled wheel key on line %zu:\nbuffer contents: '%s'\n", i, value);
+                    SYSWARN("unhandled wheel key on line %zu:\nbuffer contents: '%s'", i, value);
                     break;
             }
             guard_free(key);
@@ -618,7 +618,7 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
             }
             case WHEEL_KEY_UNKNOWN:
             default:
-                fprintf(stderr, "warning: unhandled metadata key on line %zu:\nbuffer contents: '%s'\n", i, value);
+                SYSWARN("unhandled metadata key on line %zu:\nbuffer contents: '%s'", i, value);
                 break;
         }
         guard_free(key);
@@ -1205,7 +1205,7 @@ int wheel_show_info(const struct Wheel *wheel) {
     for (ssize_t i = 0; i < WHEEL_DIST_END_ENUM; i++) {
         const char *key = wheel_get_key_by_id(WHEEL_FROM_DIST, i);
         if (!key) {
-            fprintf(stderr, "wheel_get_key_by_id(%zi) failed\n", i);
+            SYSERROR("wheel_get_key_by_id(%zi) failed", i);
             return -1;
         }
 
@@ -1213,7 +1213,7 @@ int wheel_show_info(const struct Wheel *wheel) {
         fflush(stdout);
         const struct WheelValue dist = wheel_get_value_by_id(wheel, WHEEL_FROM_DIST, i);
         if (wheel_value_error(&dist)) {
-            fprintf(stderr, "wheel_get_value_by_id(%zi) failed\n", i);
+            SYSERROR("wheel_get_value_by_id(%zi) failed", i);
             return -1;
         }
         switch (dist.type) {
@@ -1274,7 +1274,7 @@ int wheel_show_info(const struct Wheel *wheel) {
     for (ssize_t i = 0; i < WHEEL_META_END_ENUM; i++) {
         const char *key = wheel_get_key_by_id(WHEEL_FROM_METADATA, i);
         if (!key) {
-            fprintf(stderr, "wheel_get_key_by_id(%zi) failed\n", i);
+            SYSERROR("wheel_get_key_by_id(%zi) failed", i);
             return -1;
         }
         printf("%s: ", key);
@@ -1282,7 +1282,7 @@ int wheel_show_info(const struct Wheel *wheel) {
 
         const struct WheelValue pkg = wheel_get_value_by_id(wheel, WHEEL_FROM_METADATA, i);
         if (wheel_value_error(&pkg)) {
-            fprintf(stderr, "wheel_get_value_by_id(%zi) failed\n", i);
+            SYSERROR("wheel_get_value_by_id(%zi) failed", i);
             return -1;
         }
         switch (pkg.type) {

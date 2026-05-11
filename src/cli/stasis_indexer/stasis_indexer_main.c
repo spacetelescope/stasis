@@ -41,7 +41,7 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
 
         if (access(srcdir_bare, F_OK)) {
-            fprintf(stderr, "%s does not exist\n", srcdir_bare);
+            SYSWARN("%s does not exist", srcdir_bare);
             continue;
         }
 
@@ -98,12 +98,12 @@ int indexer_symlinks(struct Delivery **ctx, const size_t nelem) {
 
             if (!access(link_name_spec, F_OK)) {
                 if (unlink(link_name_spec)) {
-                    fprintf(stderr, "Unable to remove spec link: %s\n", link_name_spec);
+                    SYSWARN("Unable to remove spec link: %s", link_name_spec);
                 }
             }
             if (!access(link_name_readme, F_OK)) {
                 if (unlink(link_name_readme)) {
-                    fprintf(stderr, "Unable to remove readme link: %s\n", link_name_readme);
+                    SYSWARN("Unable to remove readme link: %s", link_name_readme);
                 }
             }
 
@@ -111,19 +111,19 @@ int indexer_symlinks(struct Delivery **ctx, const size_t nelem) {
                 printf("%s -> %s\n", file_name_spec, link_name_spec);
             }
             if (symlink(file_name_spec, link_name_spec)) {
-                fprintf(stderr, "Unable to link %s as %s\n", file_name_spec, link_name_spec);
+                SYSWARN("Unable to link %s as %s", file_name_spec, link_name_spec);
             }
 
             if (globals.verbose) {
                 printf("%s -> %s\n", file_name_readme, link_name_readme);
             }
             if (symlink(file_name_readme, link_name_readme)) {
-                fprintf(stderr, "Unable to link %s as %s\n", file_name_readme, link_name_readme);
+                SYSWARN("Unable to link %s as %s", file_name_readme, link_name_readme);
             }
         }
         popd();
     } else {
-        fprintf(stderr, "Unable to enter delivery directory: %s\n", (*ctx)->storage.delivery_dir);
+        SYSERROR("Unable to enter delivery directory: %s", (*ctx)->storage.delivery_dir);
         guard_free(data);
         return -1;
     }
@@ -137,7 +137,7 @@ void indexer_init_dirs(struct Delivery *ctx, const char *workdir) {
     path_store(&ctx->storage.root, PATH_MAX, workdir, "");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
     if (delivery_init_tmpdir(ctx)) {
-        fprintf(stderr, "Failed to configure temporary storage directory\n");
+        SYSERROR("Failed to configure temporary storage directory");
         exit(1);
     }
 
@@ -222,7 +222,7 @@ int main(const int argc, char *argv[]) {
         while (optind < argc) {
             if (argv[optind]) {
                 if (access(argv[optind], F_OK) < 0) {
-                    fprintf(stderr, "%s: %s\n", argv[optind], strerror(errno));
+                    SYSERROR("%s: %s", argv[optind], strerror(errno));
                     exit(1);
                 }
             }
@@ -248,7 +248,7 @@ int main(const int argc, char *argv[]) {
     }
 
     if (!rootdirs || !rootdirs_total) {
-        fprintf(stderr, "You must specify at least one STASIS root directory to index\n");
+        SYSERROR("You must specify at least one STASIS root directory to index");
         exit(1);
     }
 
@@ -274,7 +274,7 @@ int main(const int argc, char *argv[]) {
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to resolve path to configuration directory: %s\n", stasis_sysconfdir_tmp);
+        SYSERROR("Unable to resolve path to configuration directory: %s", stasis_sysconfdir_tmp);
         exit(1);
     }
 

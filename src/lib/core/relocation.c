@@ -112,7 +112,7 @@ int file_replace_text(const char* filename, const char* target, const char* repl
 
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-        fprintf(stderr, "unable to open for reading: %s\n", filename);
+        SYSERROR("unable to open for reading: %s", filename);
         return -1;
     }
 

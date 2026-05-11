@@ -276,7 +276,7 @@ void test_file_readlines() {
     const char *data = "I am\na file\nwith multiple lines\nsee?\n";
     FILE *fp = fopen(filename, "w");
     if (!fp) {
-        perror(filename);
+        SYSERROR("unable to open file: %s, %s", filename, strerror(errno));
         return;
     }
     if (fwrite(data, sizeof(*data), strlen(data), fp) != strlen(data)) {
@@ -375,7 +375,7 @@ void test_rmtree() {
         snprintf(path, sizeof(path), "%s/%s", root, tree[i]);
         snprintf(mockfile, sizeof(mockfile), "%s/%zu.txt", path, i);
         if (mkdir(path, 0755)) {
-            perror(path);
+            SYSERROR("mkdir failed: %s, %s", path, strerror(errno));
             STASIS_ASSERT(false, NULL);
         }
         touch(mockfile);

@@ -5,7 +5,7 @@ int copy2(const char *src, const char *dest, unsigned int op) {
 
     SYSDEBUG("Stat source file: %s", src);
     if (lstat(src, &src_stat) < 0) {
-        perror(src);
+        SYSERROR("unable to stat source file: %s, %s", src, strerror(errno));
         return -1;
     }
 
@@ -37,12 +37,12 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         }
     } else if (S_ISREG(src_stat.st_mode) && src_stat.st_nlink > 2 && src_stat.st_dev == dnamest.st_dev) {
         if (link(src, dest) < 0) {
-            perror(src);
+            SYSERROR("unable to link: %s, %s", src, strerror(errno));
             return -1;
         }
     } else if (S_ISFIFO(src_stat.st_mode) || S_ISBLK(src_stat.st_mode) || S_ISCHR(src_stat.st_mode) || S_ISSOCK(src_stat.st_mode)) {
         if (mknod(dest, src_stat.st_mode, src_stat.st_rdev) < 0) {
-            perror(src);
+            SYSERROR("unable to mknod: %s, %s", dest, strerror(errno));
             return -1;
         }
     } else if (S_ISREG(src_stat.st_mode)) {
@@ -51,14 +51,14 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         SYSDEBUG("Opening source file for reading");
         FILE *fp1 = fopen(src, "rb");
         if (!fp1) {
-            perror(src);
+            SYSERROR("unable to open source file for reading: %s, %s", src, strerror(errno));
             return -1;
         }
 
         SYSDEBUG("Opening destination file for writing");
         FILE *fp2 = fopen(dest, "w+b");
         if (!fp2) {
-            perror(dest);
+            SYSERROR("unable to open destination file for writing: %s, %s", dest, strerror(errno));
             fclose(fp1);
             return -1;
         }
@@ -71,16 +71,16 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         fclose(fp2);
 
         if (bytes_written != (size_t) src_stat.st_size) {
-            fprintf(stderr, "%s: SHORT WRITE (expected %zu bytes, but wrote %zu bytes)\n", dest, src_stat.st_size, bytes_written);
+            SYSDEBUG("%s: SHORT WRITE (expected %zu bytes, but wrote %zu bytes)", dest, src_stat.st_size, bytes_written);
             return -1;
         }
 
         if (op & CT_OWNER && chown(dest, src_stat.st_uid, src_stat.st_gid) < 0) {
-            perror(dest);
+            SYSERROR("unable to change owner: %s, %s", dest, strerror(errno));
         }
 
         if (op & CT_PERM && chmod(dest, src_stat.st_mode) < 0) {
-            perror(dest);
+            SYSERROR("unable to chmod: %s, %s", dest, strerror(errno));
         }
     } else {
         errno = EOPNOTSUPP;

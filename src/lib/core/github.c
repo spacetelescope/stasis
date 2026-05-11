@@ -15,7 +15,7 @@ static size_t writer(const void *contents, size_t size, size_t nmemb, void *resu
 
     char *ptr = realloc(content->data, content->len + newlen + 1);
     if (!ptr) {
-        perror("realloc failed");
+        SYSERROR("realloc failed");
         return 0;
     }
 
@@ -89,8 +89,7 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
     curl_easy_cleanup(curl);
 
     if(res != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                curl_easy_strerror(res));
+        SYSERROR("curl_easy_perform() failed: %s", curl_easy_strerror(res));
         return -1;
     }
 
@@ -122,14 +121,14 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
             if (data_mark) {
                 *data_mark = '\0';
             }
-            fprintf(stderr, "GitHub API Error: '%s'\n", data_offset);
-            fprintf(stderr, "URL: %s\n", endpoint_url);
-            fprintf(stderr, "POST: %s\n", endpoint_post_fields);
+            SYSERROR("GitHub API Error: '%s'", data_offset);
+            SYSERROR("URL: %s", endpoint_url);
+            SYSERROR("POST: %s", endpoint_post_fields);
             guard_free(content.data);
             return -1;
         }
     } else {
-        fprintf(stderr, "Unknown error\n");
+        SYSERROR("Unknown error");
         guard_free(content.data);
         return -1;
     }

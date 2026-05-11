@@ -41,7 +41,7 @@ int shell(struct Process *proc, char *args) {
 
     pid_t pid = fork();
     if (pid == -1) {
-        fprintf(stderr, "fork failed\n");
+        SYSERROR("fork failed");
         guard_free(t_name);
         fclose(tp);
         exit(1);
@@ -52,7 +52,7 @@ int shell(struct Process *proc, char *args) {
         if (strlen(proc->f_stdout)) {
             fp_out = freopen(proc->f_stdout, "w+", stdout);
             if (!fp_out) {
-                fprintf(stderr, "Unable to redirect stdout to %s: %s\n", proc->f_stdout, strerror(errno));
+                SYSERROR("Unable to redirect stdout to %s: %s", proc->f_stdout, strerror(errno));
                 exit(1);
             }
         }
@@ -61,7 +61,7 @@ int shell(struct Process *proc, char *args) {
             if (!proc->redirect_stderr) {
                 fp_err = freopen(proc->f_stderr, "w+", stderr);
                 if (!fp_err) {
-                    fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stdout, strerror(errno));
+                    SYSERROR("Unable to redirect stderr to %s: %s", proc->f_stdout, strerror(errno));
                     if (fp_out) {
                         fclose(fp_out);
                     }
@@ -73,7 +73,7 @@ int shell(struct Process *proc, char *args) {
         if (proc->redirect_stderr) {
             if (fp_err) {
                 if (dup2(fileno(fp_err), STDERR_FILENO) < 0) {
-                    fprintf(stderr, "Unable to redirect stderr to %s: %s\n", proc->f_stderr, strerror(errno));
+                    SYSERROR("Unable to redirect stderr to %s: %s", proc->f_stderr, strerror(errno));
                     if (fp_out) {
                         fclose(fp_out);
                     }
@@ -83,7 +83,7 @@ int shell(struct Process *proc, char *args) {
             } else {
                 // redirect stderr to stdout
                 if (dup2(STDOUT_FILENO, STDERR_FILENO) < 0) {
-                    fprintf(stderr, "Unable to redirect stderr to stdout: %s\n", strerror(errno));
+                    SYSERROR("Unable to redirect stderr to stdout: %s", strerror(errno));
                     if (fp_out) {
                         fclose(fp_out);
                     }
@@ -97,13 +97,13 @@ int shell(struct Process *proc, char *args) {
         if (waitpid(pid, &status, WUNTRACED) > 0) {
             if (WIFEXITED(status) && WEXITSTATUS(status)) {
                 if (WEXITSTATUS(status) == 127) {
-                    fprintf(stderr, "execv failed\n");
+                    SYSERROR("execv failed");
                 }
             } else if (WIFSIGNALED(status))  {
-                fprintf(stderr, "signal received: %d\n", WIFSIGNALED(status));
+                SYSWARN("signal received: %d", WIFSIGNALED(status));
             }
         } else {
-            fprintf(stderr, "waitpid() failed\n");
+            SYSERROR("waitpid() failed");
         }
     }
 

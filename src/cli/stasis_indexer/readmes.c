@@ -16,7 +16,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
 
     FILE *indexfp = fopen(indexfile, "w+");
     if (!indexfp) {
-        fprintf(stderr, "Unable to open %s for writing\n", indexfile);
+        SYSERROR("Unable to open %s for writing", indexfile);
         return -1;
     }
     struct StrList *archs = get_architectures(latest_deliveries, nelem_real);

@@ -49,7 +49,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
     int status = 0;
 
     if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
-        fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+        SYSERROR("Failed to initialize Artifactory authentication context");
         return -1;
     }
 
@@ -60,9 +60,9 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         jfrt_upload_init(&ctx->deploy.jfrog[i].upload_ctx);
 
         if (!globals.jfrog.repo) {
-            msg(STASIS_MSG_WARN, "Artifactory repository path is not configured!\n");
-            fprintf(stderr, "set STASIS_JF_REPO environment variable...\nOr append to configuration file:\n\n");
-            fprintf(stderr, "[deploy:artifactory]\nrepo = example/generic/repo/path\n\n");
+            SYSWARN("Artifactory repository path is not configured!");
+            SYSWARN("set STASIS_JF_REPO environment variable...\nOr append to configuration file:\n");
+            SYSWARN("[deploy:artifactory]\nrepo = example/generic/repo/path\n");
             status++;
             break;
         } else if (!ctx->deploy.jfrog[i].repo) {
@@ -71,7 +71,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
         if (!ctx->deploy.jfrog[i].repo || isempty(ctx->deploy.jfrog[i].repo) || !strlen(ctx->deploy.jfrog[i].repo)) {
             // Unlikely to trigger if the config parser is working correctly
-            msg(STASIS_MSG_ERROR, "Artifactory repository path is empty. Cannot continue.\n");
+            SYSERROR("Artifactory repository path is empty. Cannot continue.");
             status++;
             break;
         }
@@ -81,7 +81,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
         ctx->deploy.jfrog[i].upload_ctx.build_number = ctx->info.build_number;
 
         if (jfrog_cli_rt_ping(&ctx->deploy.jfrog_auth)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to contact artifactory server: %s\n", ctx->deploy.jfrog_auth.url);
+            SYSERROR("Unable to contact artifactory server: %s", ctx->deploy.jfrog_auth.url);
             return -1;
         }
 
@@ -104,7 +104,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
                                        ctx->deploy.jfrog[0].upload_ctx.build_number);
         }
     } else {
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "Artifactory build info upload is disabled by CLI argument\n");
+        SYSWARN("Artifactory build info upload is disabled by CLI argument");
     }
 
     return status;
@@ -112,7 +112,7 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
 int delivery_mission_render_files(struct Delivery *ctx) {
     if (!ctx->storage.mission_dir) {
-        fprintf(stderr, "Mission directory is not configured. Context not initialized?\n");
+        SYSERROR("Mission directory is not configured. Context not initialized?");
         return -1;
     }
     struct Data {
@@ -124,7 +124,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
     memset(&data, 0, sizeof(data));
     data.src = calloc(PATH_MAX, sizeof(*data.src));
     if (!data.src) {
-        perror("data.src");
+        SYSERROR("unable to allocate memory for data.src: %s", strerror(errno));
         return -1;
     }
 
@@ -154,14 +154,14 @@ int delivery_mission_render_files(struct Delivery *ctx) {
 
         char *contents = calloc(st.st_size + 1, sizeof(*contents));
         if (!contents) {
-            perror("template file contents");
+            SYSERROR("unable to allocate memory for template file contents: %s", strerror(errno));
             guard_free(data.dest);
             continue;
         }
 
         FILE *fp = fopen(data.src, "rb");
         if (!fp) {
-            perror(data.src);
+            SYSERROR("unable to open source template file: %s", strerror(errno));
             guard_free(contents);
             guard_free(data.dest);
             continue;
@@ -194,7 +194,7 @@ int delivery_series_sync(struct Delivery *ctx) {
     struct JFRT_Download dl = {0};
 
     if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
-        fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+        SYSERROR("Failed to initialize Artifactory authentication context");
         return -1;  // error
     }
 

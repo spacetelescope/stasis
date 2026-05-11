@@ -182,7 +182,6 @@ char **file_readlines(const char *filename, size_t start, size_t limit, ReaderFn
     }
 
     if (fp == NULL) {
-        perror(filename);
         SYSERROR("failed to open %s for reading", filename);
         return NULL;
     }
@@ -303,7 +302,7 @@ int touch(const char *filename) {
 
     FILE *fp = fopen(filename, "w");
     if (!fp) {
-        perror(filename);
+        SYSERROR("unable to open %s for writing", filename);
         return 1;
     }
     fclose(fp);
@@ -385,7 +384,11 @@ char *git_describe(const char *path) {
     if (!pp) {
         return NULL;
     }
-    fgets(version, sizeof(version) - 1, pp);
+    if (fgets(version, sizeof(version) - 1, pp) == NULL) {
+        pclose(pp);
+        popd();
+        return NULL;
+    }
     strip(version);
     pclose(pp);
     popd();
@@ -398,7 +401,7 @@ char *git_rev_parse(const char *path, char *args) {
 
     memset(version, 0, sizeof(version));
     if (isempty(args)) {
-        fprintf(stderr, "git_rev_parse args cannot be empty\n");
+        SYSERROR("git_rev_parse args cannot be empty");
         return NULL;
     }
 
@@ -514,6 +517,10 @@ char *xmkstemp(FILE **fp, const char *mode) {
     snprintf(t_name, sizeof(t_name), "%s/%s", tmpdir, "STASIS.XXXXXX");
 
     fd = mkstemp(t_name);
+    if (fd < 0) {
+        SYSERROR("unable to create temporary file: %s", t_name);
+        return NULL;
+    }
     *fp = fdopen(fd, mode);
     if (!*fp) {
         // unable to open, die
@@ -632,11 +639,12 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     }
 
     if (copy2(tempfile, filename, CT_PERM)) {
-        goto pretty_print_failed;
+        SYSWARN("unable to copy: '%s' -> '%s'", tempfile, filename);
     }
 
     if (remove(tempfile)) {
         goto pretty_print_failed;
+        SYSWARN("unable to remove temporary file: %s", tempfile);
     }
 
     fclose(fp);
@@ -891,9 +899,15 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     char *system_path_new = NULL;
 
     if (mode & PM_APPEND) {
-        asprintf(&system_path_new, "%s%s%s", system_path_old, PATH_SEP, path);
+        if (asprintf(&system_path_new, "%s%s%s", system_path_old, PATH_SEP, path) < 0 || !system_path_new) {
+            SYSERROR("%s", "Unable to allocate memory to update PATH");
+            return -1;
+        }
     } else if (mode & PM_PREPEND) {
-        asprintf(&system_path_new, "%s%s%s", path, PATH_SEP, system_path_old);
+        if (asprintf(&system_path_new, "%s%s%s", path, PATH_SEP, system_path_old) < 0 || !system_path_new) {
+            SYSERROR("%s", "Unable to allocate memory to update PATH");
+            return -1;
+        }
     }
 
     if (!system_path_new) {
@@ -990,12 +1004,10 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
 
         char *tmp = realloc(*data, new_size);
         if (!tmp) {
-            perror("realloc failed");
+            SYSERROR("realloc failed");
             return -1;
         }
-        if (tmp != *data) {
-            *data = tmp;
-        }
+        *data = tmp;
         *size_orig = new_size;
     }
     return 0;
@@ -1041,7 +1053,7 @@ static int read_vcs_records(const size_t line, char **data) {
         const char *vcs = vcs_name[i];
         char *data_local = strdup(*data);
         if (!data_local) {
-            fprintf(stderr, "Out of memory\n");
+            SYSERROR("out of memory");
             return -1;
         }
 

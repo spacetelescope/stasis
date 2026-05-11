@@ -436,7 +436,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             exit(1);
                         } else if (!whl) {
                             // not found
-                            fprintf(stderr, "No wheel packages found that match the description of '%s'", info->name);
+                            SYSERROR("No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found, replace the original version with newly detected version
                             guard_free(info->version);
@@ -471,7 +471,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                     }
                     snprintf(args + strlen(args), args_alloc_len - strlen(args), fmt, req, info->version);
                 } else {
-                    fprintf(stderr, "Deferred package '%s' is not present in the tested package list!\n", name);
+                    SYSERROR("Deferred package '%s' is not present in the tested package list!", name);
                     guard_free(args);
                     return -1;
                 }

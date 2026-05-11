@@ -4,7 +4,7 @@ static int ascii_file_contains(const char *filename, const char *value) {
     int result = -1;
     char *contents = stasis_testing_read_ascii(filename);
     if (!contents) {
-        perror(filename);
+        SYSERROR("unable to read %s: %s", filename, strerror(errno));
         return result;
     }
     result = strcmp(contents, value) == 0;

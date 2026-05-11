@@ -38,7 +38,7 @@ int artifactory_download_cli(char *dest,
         strncpy(os_ident, "linux", sizeof(os_ident) - 1);
         os_ident[sizeof(os_ident) - 1] = '\0';
     } else {
-        fprintf(stderr, "%s: unknown operating system: %s\n", __FUNCTION__, os_ident);
+        SYSERROR("%s: unknown operating system: %s", __FUNCTION__, os_ident);
         return -1;
     }
 
@@ -59,7 +59,7 @@ int artifactory_download_cli(char *dest,
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
         strncpy(arch_ident, "arm64", sizeof(arch_ident) - 1);
     } else {
-        fprintf(stderr, "%s: unknown architecture: %s\n", __FUNCTION__, arch_ident);
+        SYSERROR("%s: unknown architecture: %s", __FUNCTION__, arch_ident);
         return -1;
     }
     arch_ident[sizeof(arch_ident) - 1] = '\0';
@@ -79,7 +79,7 @@ int artifactory_download_cli(char *dest,
     path[sizeof(path) - 1] = '\0';
 
     if (mkdirs(path, 0755)) {
-        fprintf(stderr, "%s: %s: %s", __FUNCTION__, path, strerror(errno));
+        SYSERROR("%s: %s: %s", __FUNCTION__, path, strerror(errno));
         return -1;
     }
 
@@ -176,8 +176,8 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
     char *client_cert_path = getenv("STASIS_JF_CLIENT_CERT_PATH");
 
     if (!url) {
-        fprintf(stderr, "Artifactory URL is not configured:\n");
-        fprintf(stderr, "please set STASIS_JF_ARTIFACTORY_URL\n");
+        SYSERROR("Artifactory URL is not configured:");
+        SYSERROR("please set STASIS_JF_ARTIFACTORY_URL");
         return -1;
     }
     auth_ctx->url = url;
@@ -208,11 +208,11 @@ int jfrt_auth_init(struct JFRT_Auth *auth_ctx) {
         auth_ctx->client_cert_key_path = client_cert_key_path;
         auth_ctx->client_cert_path = client_cert_path;
     } else {
-        fprintf(stderr, "Artifactory authentication is not configured:\n");
-        fprintf(stderr, "set STASIS_JF_USER and STASIS_JF_PASSWORD\n");
-        fprintf(stderr, "or, set STASIS_JF_ACCESS_TOKEN\n");
-        fprintf(stderr, "or, set STASIS_JF_SSH_KEY_PATH and STASIS_JF_SSH_KEY_PASSPHRASE\n");
-        fprintf(stderr, "or, set STASIS_JF_CLIENT_CERT_KEY_PATH and STASIS_JF_CLIENT_CERT_PATH\n");
+        SYSERROR("Artifactory authentication is not configured:");
+        SYSERROR("set STASIS_JF_USER and STASIS_JF_PASSWORD");
+        SYSERROR("or, set STASIS_JF_ACCESS_TOKEN");
+        SYSERROR("or, set STASIS_JF_SSH_KEY_PATH and STASIS_JF_SSH_KEY_PASSPHRASE");
+        SYSERROR("or, set STASIS_JF_CLIENT_CERT_KEY_PATH and STASIS_JF_CLIENT_CERT_PATH");
         return -1;
     }
     return 0;
@@ -305,7 +305,7 @@ int jfrog_cli_rt_download(struct JFRT_Auth *auth, struct JFRT_Download *ctx, cha
     char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(repo_path)) {
-        fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");
+        SYSERROR("repo_path argument must be a valid artifactory repository path");
         return -1;
     }
 
@@ -371,12 +371,12 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(src)) {
-        fprintf(stderr, "src argument must be a valid file system path\n");
+        SYSERROR("src argument must be a valid file system path");
         return -1;
     }
 
     if (isempty(repo_path)) {
-        fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");
+        SYSERROR("repo_path argument must be a valid artifactory repository path");
         return -1;
     }
 
@@ -469,7 +469,7 @@ int jfrog_cli_rt_search(struct JFRT_Auth *auth, struct JFRT_Search *ctx, char *r
     char cmd[STASIS_BUFSIZ] = {0};
 
     if (isempty(repo_path)) {
-        fprintf(stderr, "repo_path argument must be a valid artifactory repository path\n");
+        SYSERROR("repo_path argument must be a valid artifactory repository path");
         return -1;
     }
 

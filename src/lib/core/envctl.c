@@ -85,9 +85,8 @@ unsigned envctl_get_flags(const struct EnvCtl *envctl, const char *name) {
     envctl_decode_index(poll_index, &state, &id, &name_id);
     if (!state) {
         return 0;
-    } else {
-        fprintf(stderr, "managed environment variable: %s\n", name);
     }
+    SYSINFO("managed environment variable: %s", name);
     return envctl->item[id]->flags;
 }
 
@@ -106,14 +105,15 @@ void envctl_do_required(const struct EnvCtl *envctl, int verbose) {
             continue;
         }
         if (code == STASIS_ENVCTL_RET_FAIL) {
-            msg(STASIS_MSG_ERROR, "\n%s%s must be defined.\n", name, STASIS_COLOR_RESET);
+            SYSERROR("%s%s must be defined.", name, STASIS_COLOR_RESET);
             failed++;
+            continue;
         }
-        msg(STASIS_MSG_ERROR, "\nan unknown envctl callback code occurred: %d\n", code);
+        SYSWARN("an unknown envctl callback code occurred: %d", code);
     }
 
     if (failed) {
-        msg(STASIS_MSG_ERROR, "Environment check failed with %d error(s)\n", failed);
+        SYSERROR("Environment check failed with %d error(s)", failed);
         exit(1);
     }
 }

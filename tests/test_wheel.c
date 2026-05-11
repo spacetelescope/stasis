@@ -80,27 +80,27 @@ static void mock_python_package() {
     mkdir("testpkg/src", 0755);
     mkdir("testpkg/src/testpkg", 0755);
     if (touch("testpkg/src/testpkg/__init__.py")) {
-        fprintf(stderr, "unable to write __init__.py");
+        SYSERROR("unable to write __init__.py");
         exit(1);
     }
     if (touch("testpkg/README.md")) {
-        fprintf(stderr, "unable to write README.md");
+        SYSERROR("unable to write README.md");
         exit(1);
     }
     if (stasis_testing_write_ascii("testpkg/pyproject.toml", pyproject_toml_data)) {
-        perror("unable to write pyproject.toml");
+        SYSERROR("unable to write pyproject.toml");
         exit(1);
     }
     if (stasis_testing_write_ascii("testpkg/README.md", readme)) {
-        perror("unable to write readme");
+        SYSERROR("unable to write readme");
         exit(1);
     }
     if (pip_exec("install build")) {
-        fprintf(stderr, "unable to install build tool using pip\n");
+        SYSERROR("unable to install build tool using pip");
         exit(1);
     }
     if (python_exec("-m build -w ./testpkg")) {
-        fprintf(stderr, "unable build test package");
+        SYSERROR("unable build test package");
         exit(1);
     }
 }
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     char ws[] = "workspace_XXXXXX";
     if (!mkdtemp(ws)) {
-        perror("mkdtemp");
+        SYSERROR("mkdtemp failed: %s, %s", ws, strerror(errno));
         exit(1);
     }
     getcwd(cwd_start, sizeof(cwd_start) - 1);
@@ -145,29 +145,29 @@ int main(int argc, char *argv[]) {
     ctx.storage.root = strdup(cwd_workspace);
     char *cfgfile = join((char *[]) {globals.sysconfdir, "stasis.ini", NULL}, "/");
     if (!cfgfile) {
-        perror("unable to create path to global config");
+        SYSERROR("unable to create path to global config");
         exit(1);
     }
 
     ctx._stasis_ini_fp.cfg = ini_open(cfgfile);
     if (!ctx._stasis_ini_fp.cfg) {
-        fprintf(stderr, "unable to open config file, %s\n", cfgfile);
+        SYSERROR("unable to open config file, %s", cfgfile);
         exit(1);
     }
     ctx._stasis_ini_fp.cfg_path = realpath(cfgfile, NULL);
     if (!ctx._stasis_ini_fp.cfg_path) {
-        fprintf(stderr, "unable to determine absolute path of config, %s\n", cfgfile);
+        SYSERROR("unable to determine absolute path of config, %s", cfgfile);
         exit(1);
     }
     guard_free(cfgfile);
 
     setenv("LANG", "C", 1);
     if (bootstrap_build_info(&ctx)) {
-        fprintf(stderr, "bootstrap_build_info failed\n");
+        SYSERROR("bootstrap_build_info failed");
         exit(1);
     }
     if (delivery_init(&ctx, INI_READ_RENDER)) {
-        fprintf(stderr, "delivery_init failed\n");
+        SYSERROR("delivery_init failed");
         exit(1);
     }
 
@@ -178,23 +178,23 @@ int main(int argc, char *argv[]) {
     guard_free(install_url);
 
     if (conda_activate(ctx.storage.conda_install_prefix, "base")) {
-        fprintf(stderr, "conda_activate failed\n");
+        SYSERROR("conda_activate failed");
         exit(1);
     }
     if (conda_exec("install -y boa conda-build")) {
-        fprintf(stderr, "conda_exec failed\n");
+        SYSERROR("conda_exec failed");
         exit(1);
     }
     if (conda_setup_headless()) {
-        fprintf(stderr, "conda_setup_headless failed\n");
+        SYSERROR("conda_setup_headless failed");
         exit(1);
     }
     if (conda_env_create("testpkg", ctx.meta.python, NULL)) {
-        fprintf(stderr, "conda_env_create failed\n");
+        SYSERROR("conda_env_create failed");
         exit(1);
     }
     if (conda_activate(ctx.storage.conda_install_prefix, "testpkg")) {
-        fprintf(stderr, "conda_activate failed\n");
+        SYSERROR("conda_activate failed");
         exit(1);
     }
 
@@ -203,11 +203,11 @@ int main(int argc, char *argv[]) {
     STASIS_TEST_RUN(tests);
 
     if (chdir(cwd_start) < 0) {
-        fprintf(stderr, "chdir failed\n");
+        SYSERROR("chdir failed: %s, %s", cwd_start, strerror(errno));
         exit(1);
     }
     if (rmtree(cwd_workspace)) {
-        perror(cwd_workspace);
+        SYSERROR("rmtree failed: %s, %s", cwd_workspace, strerror(errno));
     }
     delivery_free(&ctx);
     globals_free();

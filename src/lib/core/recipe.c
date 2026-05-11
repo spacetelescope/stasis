@@ -21,8 +21,8 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
 
     if (!access(destdir, F_OK)) {
         if (!strcmp(destdir, "/")) {
-            fprintf(stderr, "STASIS is misconfigured. Please check your output path(s) immediately.\n");
-            fprintf(stderr, "recipe_dir = '%s'\nreponame = '%s'\ndestdir = '%s'\n",
+            SYSERROR("STASIS is misconfigured. Please check your output path(s) immediately.");
+            SYSERROR("recipe_dir = '%s'\nreponame = '%s'\ndestdir = '%s'",
                     recipe_dir, reponame, destdir);
             exit(1);
         }

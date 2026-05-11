@@ -212,7 +212,8 @@ char *join_ex(char *separator, ...) {
     // Initialize array
     argv = calloc(argc + 1, sizeof(char **));
     if (argv == NULL) {
-        perror("join_ex calloc failed");
+        SYSERROR("calloc failed: %s", strerror(errno));
+        va_end(ap);
         return NULL;
     }
 
@@ -546,7 +547,7 @@ char *normalize_space(char *s) {
     }
 
     if (!(tmp = strdup(s))) {
-        perror("could not allocate memory for temporary string");
+        SYSERROR("could not allocate memory for temporary string");
         return NULL;
     }
     char *tmp_orig = tmp;

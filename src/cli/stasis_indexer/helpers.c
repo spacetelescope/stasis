@@ -89,7 +89,7 @@ int get_pandoc_version(size_t *result) {
 
 int pandoc_exec(const char *in_file, const char *out_file, const char *css_file, const char *title) {
     if (!find_program("pandoc")) {
-        fprintf(stderr, "pandoc is not installed: unable to generate HTML indexes\n");
+        SYSWARN("pandoc is not installed: unable to generate HTML indexes");
         return 0;
     }
 
@@ -227,7 +227,7 @@ struct Delivery **get_latest_deliveries(struct Delivery **ctx, size_t nelem, siz
 
     struct Delivery **result = calloc(nelem + 1, sizeof(*result));
     if (!result) {
-        fprintf(stderr, "Unable to allocate %zu bytes for result delivery array: %s\n", nelem * sizeof(*result), strerror(errno));
+        SYSERROR("Unable to allocate %zu bytes for result delivery array: %s", nelem * sizeof(*result), strerror(errno));
         return NULL;
     }
 
@@ -287,7 +287,7 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
         }
     }
     if (no_match >= strlist_count(list)) {
-        fprintf(stderr, "no files matching the pattern: %s\n", userpattern);
+        SYSERROR("no files matching the pattern: %s", userpattern);
         guard_strlist_free(&list);
         return -1;
     }
@@ -392,7 +392,7 @@ int write_manifest(const char *path, char **exclude_path, FILE *fp) {
     struct dirent *rec = NULL;
     DIR *dp = opendir(path);
     if (!dp) {
-        perror(path);
+        SYSERROR("unable to open directory: %s, %s", path ? path : "NULL", strerror(errno));
         return -1;
     }
     while ((rec = readdir(dp)) != NULL) {

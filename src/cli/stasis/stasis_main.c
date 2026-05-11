@@ -25,7 +25,7 @@ static void setup_sysconfdir() {
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to resolve path to configuration directory: %s\n", stasis_sysconfdir_tmp);
+        SYSERROR("Unable to resolve path to configuration directory: %s", stasis_sysconfdir_tmp);
         exit(1);
     }
 }
@@ -57,15 +57,14 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
         if (!access(cfgfile, F_OK | R_OK)) {
             *config_input = strdup(cfgfile);
         } else {
-            msg(STASIS_MSG_WARN, "STASIS global configuration is not readable, or does not exist: %s", cfgfile);
+            SYSWARN("STASIS global configuration is not readable, or does not exist: %s", cfgfile);
         }
     }
 
     SYSDEBUG("Reading STASIS global configuration: %s", *config_input);
     ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
     if (!ctx->_stasis_ini_fp.cfg) {
-        msg(STASIS_MSG_ERROR, "Failed to read global config file: %s, %s\n", *config_input, strerror(errno));
-        SYSERROR("Failed to read global config file: %s", *config_input);
+        SYSERROR("Failed to read global config file: %s, %s", *config_input, strerror(errno));
         exit(1);
     }
     ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
@@ -80,7 +79,7 @@ static void configure_delivery_ini(struct Delivery *ctx, char **delivery_input) 
     msg(STASIS_MSG_L2, "Reading STASIS delivery configuration: %s\n", *delivery_input);
     ctx->_stasis_ini_fp.delivery = ini_open(*delivery_input);
     if (!ctx->_stasis_ini_fp.delivery) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read delivery file: %s, %s\n", *delivery_input, strerror(errno));
+        SYSERROR("Failed to read delivery file: %s, %s", *delivery_input, strerror(errno));
         exit(1);
     }
     ctx->_stasis_ini_fp.delivery_path = strdup(*delivery_input);
@@ -89,13 +88,13 @@ static void configure_delivery_ini(struct Delivery *ctx, char **delivery_input) 
 static void configure_delivery_context(struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Bootstrapping delivery context\n");
     if (bootstrap_build_info(ctx)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to bootstrap delivery context\n");
+        SYSERROR("Failed to bootstrap delivery context");
         exit(1);
     }
 
     msg(STASIS_MSG_L2, "Initializing delivery context\n");
     if (delivery_init(ctx, INI_READ_RENDER)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to initialize delivery context\n");
+        SYSERROR("Failed to initialize delivery context");
         exit(1);
     }
 }
@@ -103,7 +102,7 @@ static void configure_delivery_context(struct Delivery *ctx) {
 static void configure_jfrog_cli(struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Configuring JFrog CLI\n");
     if (delivery_init_artifactory(ctx)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "JFrog CLI configuration failed\n");
+        SYSERROR("JFrog CLI configuration failed");
         exit(1);
     }
 }
@@ -112,7 +111,7 @@ static void check_release_history(struct Delivery *ctx) {
     // Safety gate: Avoid clobbering a delivered release unless the user wants that behavior
     msg(STASIS_MSG_L2, "Checking release history\n");
     if (!globals.enable_overwrite && delivery_exists(ctx) == DELIVERY_FOUND) {
-        msg(STASIS_MSG_ERROR, "Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.\n", ctx->info.release_name);
+        SYSERROR("Refusing to overwrite release: %s\nUse --overwrite to enable release clobbering.", ctx->info.release_name);
         exit(1);
     }
 
@@ -123,7 +122,7 @@ static void check_conda_install_prefix(const struct Delivery *ctx) {
     // if path is "/" then, die
     // or if empty string, die
     if (!strcmp(ctx->storage.conda_install_prefix, DIR_SEP) || !strlen(ctx->storage.conda_install_prefix)) {
-        fprintf(stderr, "error: ctx.storage.conda_install_prefix is malformed!\n");
+        SYSERROR("error: ctx.storage.conda_install_prefix is malformed!");
         exit(1);
     }
 }
@@ -135,14 +134,14 @@ static void sync_release_history(struct Delivery *ctx) {
         if (ctx->meta.rc > 1) {
             msg(STASIS_MSG_L1, "Syncing delivery artifacts for %s\n", ctx->info.build_name);
             if (delivery_series_sync(ctx) != 0) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to sync artifacts for %s\n", ctx->info.build_name);
-                msg(STASIS_MSG_L3, "Case #1:\n"
-                                   "\tIf this is a new 'version', and 'rc' is greater "
-                                   "than 1, then no previous deliveries exist remotely. "
-                                   "Reset 'rc' to 1.\n");
-                msg(STASIS_MSG_L3, "Case #2:\n"
-                                   "\tThe Artifactory server %s is unreachable, or the credentials used "
-                                   "are invalid.\n", globals.jfrog.url);
+                SYSERROR("Unable to sync artifacts for %s", ctx->info.build_name);
+                SYSERROR("Case #1:\n"
+                         "\tIf this is a new 'version', and 'rc' is greater "
+                         "than 1, then no previous deliveries exist remotely. "
+                         "Reset 'rc' to 1.");
+                SYSERROR("Case #2:\n"
+                         "\tThe Artifactory server %s is unreachable, or the credentials used "
+                         "are invalid.", globals.jfrog.url);
                 // No continue-on-error check. Without the previous delivery nothing can be done.
                 exit(1);
             }
@@ -157,13 +156,10 @@ static void check_conda_prefix_length(const struct Delivery *ctx) {
     const size_t prefix_len_max = 127;
     msg(STASIS_MSG_L2, "Checking length of conda installation prefix\n");
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux") && prefix_len > prefix_len_max) {
-        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
-            "The shebang, '#!%s/bin/python\\n' is too long (%zu > %zu).\n",
+        SYSERROR("The shebang, '#!%s/bin/python\\n' is too long (%zu > %zu).",
             ctx->storage.conda_install_prefix, prefix_len, prefix_len_max);
-        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
-            "Conda's workaround to handle long path names does not work consistently within STASIS.\n");
-        msg(STASIS_MSG_L3 | STASIS_MSG_ERROR,
-            "Please try again from a different, \"shorter\", directory.\n");
+        SYSERROR("Conda's workaround to handle long path names does not work consistently within STASIS.");
+        SYSERROR("Please try again from a different, \"shorter\", directory.");
         exit(1);
     }
 }
@@ -173,7 +169,7 @@ static void setup_conda(struct Delivery *ctx, char *installer_url, const size_t 
     delivery_get_conda_installer_url(ctx, installer_url, maxlen);
     msg(STASIS_MSG_L2, "Downloading: %s\n", installer_url);
     if (delivery_get_conda_installer(ctx, installer_url)) {
-        msg(STASIS_MSG_ERROR, "download failed: %s\n", installer_url);
+        SYSERROR("download failed: %s", installer_url);
         exit(1);
     }
 
@@ -217,7 +213,7 @@ static void configure_conda_base(struct Delivery *ctx, char *envs[]) {
         // Does a base.yml exist in the mission directory?
         // If not, do nothing. Otherwise, use the base.yml in the mission directory.
         if (access(mission_base_orig, F_OK) < 0) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Mission does not provide a base.yml");
+            SYSWARN("Mission does not provide a base.yml");
         } else {
             msg(STASIS_MSG_L2, "Using base environment configuration: %s\n", mission_base_orig);
             if (asprintf(&mission_base, "%s/%s-base.yml", ctx->storage.tmpdir, ctx->info.release_name) < 0) {
@@ -239,18 +235,18 @@ static void configure_conda_base(struct Delivery *ctx, char *envs[]) {
         // If based_on was populated above, or defined in the configuration: install its packages.
         if (!isempty(ctx->meta.based_on)) {
             if (conda_env_exists(ctx->storage.conda_install_prefix, env) && conda_env_remove(env)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to remove %s environment: %s\n", title);
+                SYSERROR("failed to remove %s environment: %s", title);
                 exit(1);
             }
 
             if (conda_env_create_from_uri(env, ctx->meta.based_on, ctx->meta.python)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to install %s environment using configuration file\n", title);
+                SYSERROR("unable to install %s environment using configuration file", title);
                 exit(1);
             }
         } else {
             // Otherwise, create the environments with the requested Python version and move on
             if (conda_env_create(env, ctx->meta.python, NULL)) {
-                msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed to create %s environment\n", title);
+                SYSERROR("failed to create %s environment", title);
                 exit(1);
             }
         }
@@ -282,7 +278,7 @@ static void configure_conda_purge(struct Delivery *ctx, char *envs[]) {
                 const int manager_flag = pkg_manager_use[i];
                 msg(STASIS_MSG_L2, "Purging %s packages from %s\n", manager_str, env);
                 if (delivery_purge_packages(ctx, env, manager_flag)) {
-                    msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "unable to purge requested %s packages from %s\n", manager_str, env);
+                    SYSERROR("unable to purge requested %s packages from %s", manager_str, env);
                     exit(1);
                 }
             }
@@ -294,7 +290,7 @@ static void setup_activate_test_env(const struct Delivery *ctx, const char *env_
     // Activate test environment
     msg(STASIS_MSG_L1, "Activating test environment\n");
     if (conda_activate(ctx->storage.conda_install_prefix, env_name_testing)) {
-        fprintf(stderr, "failed to activate test environment\n");
+        SYSERROR("failed to activate test environment");
         exit(1);
     }
 }
@@ -302,11 +298,11 @@ static void setup_activate_test_env(const struct Delivery *ctx, const char *env_
 static void configure_tool_versions(struct Delivery *ctx) {
     if (delivery_gather_tool_versions(ctx)) {
         if (!ctx->conda.tool_version) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda version\n");
+            SYSERROR("Could not determine conda version");
             exit(1);
         }
         if (!ctx->conda.tool_build_version) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Could not determine conda-build version\n");
+            SYSERROR("Could not determine conda-build version");
             exit(1);
         }
     }
@@ -315,11 +311,11 @@ static void configure_tool_versions(struct Delivery *ctx) {
 static void install_packaging_tools() {
     msg(STASIS_MSG_L1, "Installing packaging tool(s)\n");
     if (pip_exec("install build")) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'build' tool installation failed\n");
+        SYSERROR("'build' tool installation failed");
         exit(1);
     }
     if (pip_exec("install cibuildwheel")) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "'cibuildwheel' tool installation failed\n");
+        SYSERROR("'cibuildwheel' tool installation failed");
         exit(1);
     }
 }
@@ -331,12 +327,12 @@ static void force_conda_package_reinstallation_on_mismatch(struct Delivery *ctx,
         for (size_t i = 0; i < conda_package_count; i++) {
             const char *item = strlist_item(ctx->conda.conda_packages, i);
             if (!item) {
-                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "NULL record in conda package list\n");
+                SYSERROR("NULL record in conda package list");
                 exit(1);
             }
             char *pkg_name = strdup(item);
             if (!pkg_name) {
-                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "unable to allocate memory for package name\n");
+                SYSERROR("unable to allocate memory for package name");
                 exit(1);
             }
             const char *spec = find_version_spec(pkg_name);
@@ -346,7 +342,7 @@ static void force_conda_package_reinstallation_on_mismatch(struct Delivery *ctx,
 
             msg(STASIS_MSG_L2, "%s\n", pkg_name);
             if (delivery_conda_enforce_package_version(ctx, env_name, pkg_name)) {
-                msg(STASIS_MSG_L3 | STASIS_MSG_ERROR, "Failed to determine conda package version: %s\n", pkg_name);
+                SYSERROR("Failed to determine conda package version: %s", pkg_name);
                 guard_free(pkg_name);
                 exit(1);
             }
@@ -359,7 +355,7 @@ static void configure_package_overlay(struct Delivery *ctx, const char *env_name
     if (!isempty(ctx->meta.based_on)) {
         msg(STASIS_MSG_L1, "Generating package overlay from environment: %s\n", env_name);
         if (delivery_overlay_packages_from_env(ctx, env_name)) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "%s", "Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.\n");
+            SYSERROR("Failed to generate package overlay. Resulting environment integrity cannot be guaranteed.");
             exit(1);
         }
     }
@@ -390,7 +386,7 @@ static void run_tests(struct Delivery *ctx) {
         msg(STASIS_MSG_L2, "Rewriting test results\n");
         delivery_fixup_test_results(ctx);
     } else {
-        msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Test execution is disabled\n");
+        SYSWARN("Test execution is disabled");
     }
 }
 
@@ -465,7 +461,7 @@ static void build_docker(struct Delivery *ctx, const int disabled) {
 
     if (want_docker) {
         if (disabled) {
-            msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Docker image building is disabled by CLI argument\n");
+            SYSWARN("Docker image building is disabled by CLI argument");
         } else {
             char dockerfile[PATH_MAX] = {0};
             snprintf(dockerfile, sizeof(dockerfile), "%s/%s", ctx->storage.build_docker_dir, "Dockerfile");
@@ -473,18 +469,18 @@ static void build_docker(struct Delivery *ctx, const int disabled) {
                 if (!access(dockerfile, F_OK)) {
                     msg(STASIS_MSG_L1, "Building Docker image\n");
                     if (delivery_docker(ctx)) {
-                        msg(STASIS_MSG_L1 | STASIS_MSG_ERROR, "Failed to build docker image!\n");
+                        SYSERROR("Failed to build docker image!");
                         COE_CHECK_ABORT(1, "Failed to build docker image");
                     }
                 } else {
-                    msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Docker image building is disabled. No Dockerfile found in %s\n", ctx->storage.build_docker_dir);
+                    SYSWARN("Docker image building is disabled. No Dockerfile found in %s", ctx->storage.build_docker_dir);
                 }
             } else {
-                msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Docker image building is disabled. System configuration error\n");
+                SYSWARN("Docker image building is disabled. System configuration error");
             }
         }
     } else {
-        msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Docker image building is disabled. deploy:docker is not configured\n");
+        SYSWARN("Docker image building is disabled. deploy:docker is not configured");
     }
 }
 
@@ -508,7 +504,7 @@ static void generate_release(struct Delivery *ctx, char *env_name, char *env_nam
 
     msg(STASIS_MSG_L1, "Dumping metadata\n");
     if (delivery_dump_metadata(ctx)) {
-        msg(STASIS_MSG_L1 | STASIS_MSG_ERROR, "Metadata dump failed\n");
+        SYSERROR("Metadata dump failed");
     }
 }
 
@@ -519,10 +515,10 @@ static void transfer_artifacts(struct Delivery *ctx) {
             msg(STASIS_MSG_L1, "Uploading artifacts\n");
             delivery_artifact_upload(ctx);
         } else {
-            msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifactory upload is disabled by CLI argument\n");
+            SYSWARN("Artifactory upload is disabled by CLI argument");
         }
     } else {
-        msg(STASIS_MSG_L1 | STASIS_MSG_WARN, "Artifactory upload is disabled. deploy:artifactory is not configured\n");
+        SYSWARN("Artifactory upload is disabled. deploy:artifactory is not configured");
     }
 }
 
@@ -625,11 +621,11 @@ int main(int argc, char *argv[]) {
             case OPT_TASK_TIMEOUT:
                 globals.task_timeout = str_to_timeout(optarg);
                 if (globals.task_timeout < 0) {
-                    fprintf(stderr, "Invalid timeout: %s\n", optarg);
+                    SYSERROR("Invalid timeout: %s", optarg);
                     if (globals.task_timeout == STR_TO_TIMEOUT_INVALID_TIME_SCALE) {
-                        fprintf(stderr, "Use format '#s' (seconds), '#m' (minutes), '#h' (hours)\n");
+                        SYSERROR("Use format '#s' (seconds), '#m' (minutes), '#h' (hours)");
                     } else if (globals.task_timeout == STR_TO_TIMEOUT_NEGATIVE) {
-                        fprintf(stderr, "Timeout cannot be negative\n");
+                        SYSERROR("Timeout cannot be negative");
                     }
                     exit(1);
                 }
@@ -640,8 +636,8 @@ int main(int argc, char *argv[]) {
                     globals.pool_status_interval = 1;
                 } else if (globals.pool_status_interval > 60 * 10) {
                     // Possible poor choice alert
-                    fprintf(stderr, "Caution: Excessive pausing between status updates may cause third-party CI/CD"
-                                    " jobs to fail if the stdout/stderr streams are idle for too long!\n");
+                    SYSWARN("Excessive pausing between status updates may cause third-party CI/CD"
+                            " jobs to fail if the stdout/stderr streams are idle for too long!");
                 }
                 break;
             case 'U':
@@ -705,7 +701,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!delivery_input) {
-        fprintf(stderr, "error: a DELIVERY_FILE is required\n");
+        SYSERROR("a DELIVERY_FILE is required");
         usage(path_basename(argv[0]));
         exit(1);
     }

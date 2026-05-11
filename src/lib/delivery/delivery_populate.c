@@ -33,18 +33,18 @@ int populate_info(struct Delivery *ctx) {
         if (!ctx->info.time_info) {
             ctx->info.time_info = malloc(sizeof(*ctx->info.time_info));
             if (!ctx->info.time_info) {
-                msg(STASIS_MSG_ERROR, "%s: Unable to allocate memory for time_info\n", strerror(errno));
+                SYSERROR("%s: Unable to allocate memory for time_info", strerror(errno));
                 return -1;
             }
             if (!localtime_r(&ctx->info.time_now, ctx->info.time_info)) {
-                msg(STASIS_MSG_ERROR, "%s: localtime_r failed\n", strerror(errno));
+                SYSERROR("%s: localtime_r failed", strerror(errno));
                 return -1;
             }
         }
 
         ctx->info.time_str_epoch = calloc(STASIS_TIME_STR_MAX, sizeof(*ctx->info.time_str_epoch));
         if (!ctx->info.time_str_epoch) {
-            msg(STASIS_MSG_ERROR, "%s: Unable to allocate memory for Unix epoch string\n", strerror(errno));
+            SYSERROR("%s: Unable to allocate memory for Unix epoch string", strerror(errno));
             return -1;
         }
         snprintf(ctx->info.time_str_epoch, STASIS_TIME_STR_MAX - 1, "%li", ctx->info.time_now);
@@ -89,7 +89,7 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     if (!globals.wheel_builder) {
         globals.wheel_builder = ini_getval_str(cfg, "default", "wheel_builder", render_mode, &err);
         if (err) {
-            msg(STASIS_MSG_WARN, "wheel_builder is undefined. Falling back to system toolchain: 'build'.\n");
+            SYSWARN("wheel_builder is undefined. Falling back to system toolchain: 'build'.");
             globals.wheel_builder = strdup("build");
             if (!globals.wheel_builder) {
                 SYSERROR("unable to allocate memory for default wheel_builder value");
@@ -257,7 +257,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     }
 
     if (delivery_format_str(ctx, &ctx->info.release_name, STASIS_NAME_MAX, ctx->rules.release_fmt)) {
-        fprintf(stderr, "Failed to generate release name. Format used: %s\n", ctx->rules.release_fmt);
+        SYSERROR("Failed to generate release name. Format used: %s", ctx->rules.release_fmt);
         return -1;
     }
 
@@ -387,7 +387,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
     struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Failed to read mission configuration: %s, %s\n", missionfile, strerror(errno));
+        SYSERROR("Failed to read mission configuration: %s, %s", missionfile, strerror(errno));
         return -1;
     }
     (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);

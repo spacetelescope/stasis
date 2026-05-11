@@ -45,7 +45,7 @@ void strlist_append(struct StrList **pStrList, char *str) {
     tmp = realloc((*pStrList)->data, ((*pStrList)->num_alloc + 1) * sizeof(char *));
     if (tmp == NULL) {
         guard_strlist_free(pStrList);
-        perror("failed to append to array");
+        SYSERROR("failed to append to array: %s", strerror(errno));
         exit(1);
     }
     (*pStrList)->data = tmp;
@@ -437,7 +437,7 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value) {
     } else {
         tmp = realloc((*pStrList)->data[index], (strlen(value) + 1) * sizeof(char *));
         if (!tmp) {
-            perror("realloc strlist_set replacement value");
+            SYSERROR("strlist_set replacement realloc failed: %s", strerror(errno));
             return;
         } else if (tmp != (*pStrList)->data[index]) {
             (*pStrList)->data[index] = tmp;
@@ -750,7 +750,7 @@ long double strlist_item_as_long_double(struct StrList *pStrList, size_t index) 
 struct StrList *strlist_init() {
     struct StrList *pStrList = calloc(1, sizeof(struct StrList));
     if (pStrList == NULL) {
-        perror("failed to allocate array");
+        SYSERROR("failed to allocate array: %s", strerror(errno));
         return NULL;
     }
     pStrList->num_inuse = 0;

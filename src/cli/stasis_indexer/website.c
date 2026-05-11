@@ -42,12 +42,12 @@ int indexer_make_website(struct Delivery **ctx) {
 
             // Convert markdown to html
             if (pandoc_exec(fullpath_src, fullpath_dest, have_css ? css_filename : NULL, "STASIS")) {
-                msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Unable to convert %s\n", fullpath_src);
+                SYSWARN("Unable to convert %s", fullpath_src);
             }
 
             if (file_replace_text(fullpath_dest, ".md", ".html", 0)) {
                 // inform-only
-                SYSERROR("%s: failed to rewrite *.md urls with *.html extension", fullpath_dest);
+                SYSWARN("%s: failed to rewrite *.md urls with *.html extension", fullpath_dest);
             }
 
             // Link the nearest README.html to index.html
@@ -58,7 +58,7 @@ int indexer_make_website(struct Delivery **ctx) {
                 link_dest[sizeof(link_dest) - 1] = '\0';
                 snprintf(link_dest, sizeof(link_dest), "%s/%s", root, "index.html");
                 if (symlink(link_from, link_dest)) {
-                    SYSERROR("Warning: symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
+                    SYSWARN("symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
                 }
             }
         }
