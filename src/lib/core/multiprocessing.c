@@ -245,8 +245,12 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Record the command(s)
     SYSDEBUG("%s", "mmap() slot command");
-    slot->cmd_len = (strlen(cmd) * sizeof(*cmd)) + 1;
-    slot->cmd = mmap(NULL, slot->cmd_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    slot->cmd_len = strlen(cmd) + 1;
+    slot->cmd = calloc(slot->cmd_len, sizeof(*slot->cmd));
+    if (!slot->cmd) {
+        SYSERROR("Failed to allocate memory for slot command");
+        return NULL;
+    }
     memset(slot->cmd, 0, slot->cmd_len);
     snprintf(slot->cmd, slot->cmd_len, "%s", cmd);
 
@@ -591,14 +595,14 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
         semaphore_destroy(&(*pool)->semaphore);
     }
 
-    // Unmap all pool tasks
+    // Free all task commands
     if ((*pool)->task) {
-        if ((*pool)->task->cmd) {
-            if (munmap((*pool)->task->cmd, (*pool)->task->cmd_len) < 0) {
-                perror("munmap");
-            }
+        for (size_t i = 0; i < (*pool)->num_alloc + 1; i++) {
+            struct MultiProcessingTask *task = &(*pool)->task[i];
+            guard_free(task->cmd);
         }
-        if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc) < 0) {
+        // Unmap the task array
+        if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc + 1) < 0) {
             perror("munmap");
         }
     }
