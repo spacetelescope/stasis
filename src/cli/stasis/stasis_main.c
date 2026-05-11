@@ -7,6 +7,7 @@
 
 // local includes
 #include "args.h"
+#include "conda.h"
 #include "system_requirements.h"
 #include "tpl.h"
 
@@ -35,13 +36,13 @@ static void setup_python_version_override(struct Delivery *ctx, const char *vers
         guard_free(ctx->meta.python);
         ctx->meta.python = strdup(version);
         if (!ctx->meta.python) {
-            SYSERROR("%s", "Unable to allocate bytes for python version override");
+            SYSERROR("Unable to allocate bytes for python version override");
             exit(1);
         }
         guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
         if (!ctx->meta.python_compact) {
-            SYSERROR("%s", "Unable to allocate bytes for python compact version override");
+            SYSERROR("Unable to allocate bytes for python compact version override");
             exit(1);
         }
     }
@@ -49,7 +50,7 @@ static void setup_python_version_override(struct Delivery *ctx, const char *vers
 
 static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
     if (!*config_input) {
-        SYSDEBUG("%s", "No configuration passed by argument. Using basic config.");
+        SYSDEBUG("No configuration passed by argument. Using basic config.");
         char cfgfile[PATH_MAX * 2];
         snprintf(cfgfile, sizeof(cfgfile), "%s/%s", globals.sysconfdir, "stasis.ini");
         SYSDEBUG("cfgfile: %s", cfgfile);
@@ -60,16 +61,16 @@ static void configure_stasis_ini(struct Delivery *ctx, char **config_input) {
         }
     }
 
-    SYSDEBUG("Reading STASIS global configuration: %s\n", *config_input);
+    SYSDEBUG("Reading STASIS global configuration: %s", *config_input);
     ctx->_stasis_ini_fp.cfg = ini_open(*config_input);
     if (!ctx->_stasis_ini_fp.cfg) {
         msg(STASIS_MSG_ERROR, "Failed to read global config file: %s, %s\n", *config_input, strerror(errno));
-        SYSERROR("Failed to read global config file: %s\n", *config_input);
+        SYSERROR("Failed to read global config file: %s", *config_input);
         exit(1);
     }
     ctx->_stasis_ini_fp.cfg_path = strdup(*config_input);
     if (!ctx->_stasis_ini_fp.cfg_path) {
-        SYSERROR("%s", "Failed to allocate memory delivery context global config file name");
+        SYSERROR("Failed to allocate memory delivery context global config file name");
         exit(1);
     }
     guard_free(*config_input);
@@ -209,7 +210,7 @@ static void configure_conda_base(struct Delivery *ctx, char *envs[]) {
         char *mission_base_orig = NULL;
 
         if (asprintf(&mission_base_orig, "%s/%s/base.yml", ctx->storage.mission_dir, ctx->meta.mission) < 0) {
-            SYSERROR("Unable to allocate bytes for %s/%s/base.yml path\n", ctx->storage.mission_dir, ctx->meta.mission);
+            SYSERROR("Unable to allocate bytes for %s/%s/base.yml path", ctx->storage.mission_dir, ctx->meta.mission);
             exit(1);
         }
 
@@ -220,7 +221,7 @@ static void configure_conda_base(struct Delivery *ctx, char *envs[]) {
         } else {
             msg(STASIS_MSG_L2, "Using base environment configuration: %s\n", mission_base_orig);
             if (asprintf(&mission_base, "%s/%s-base.yml", ctx->storage.tmpdir, ctx->info.release_name) < 0) {
-                SYSERROR("%s", "Unable to allocate bytes for temporary base.yml configuration");
+                SYSERROR("Unable to allocate bytes for temporary base.yml configuration");
                 remove(mission_base);
                 exit(1);
             }
@@ -527,7 +528,7 @@ static void transfer_artifacts(struct Delivery *ctx) {
 
 static char *center_text(const char *s, const size_t maxwidth) {
     if (maxwidth < 2) {
-        SYSERROR("%s", "maximum width must be greater than 0");
+        SYSERROR("maximum width must be greater than 0");
         return NULL;
     }
 
@@ -544,7 +545,7 @@ static char *center_text(const char *s, const size_t maxwidth) {
 
     char *result = calloc(maxwidth + 1, sizeof(*result));
     if (!result) {
-        SYSERROR("%s", "unable to allocate bytes for centered text string");
+        SYSERROR("unable to allocate bytes for centered text string");
         return NULL;
     }
     const size_t middle = (maxwidth / 2) - s_len / 2;
@@ -652,6 +653,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'v':
                 globals.verbose = true;
+                LOG_LEVEL++;
                 break;
             case OPT_OVERWRITE:
                 globals.enable_overwrite = true;
@@ -710,15 +712,17 @@ int main(int argc, char *argv[]) {
 
     char *version = center_text(VERSION, strlen(STASIS_BANNER_HEADER));
     if (!version) {
-        SYSERROR("%s", "version too long?");
+        SYSERROR("version too long?");
         version = strdup(VERSION);
         if (!version) {
-            SYSERROR("%s", "unable to allocate uncentered fallback version string");
+            SYSERROR("unable to allocate uncentered fallback version string");
             exit(1);
         }
     }
     printf(BANNER, version, AUTHOR);
     guard_free(version);
+
+    SYSDEBUG("LOG_LEVEL is %s", log_get_level_str());
 
     setup_python_version_override(&ctx, python_override_version);
     configure_stasis_ini(&ctx, &config_input);

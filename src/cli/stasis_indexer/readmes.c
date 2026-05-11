@@ -66,7 +66,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                     if (asprintf(&pattern, "*%s*%s*",
                              latest_deliveries[i]->info.build_number,
                              strstr((*ctx)->rules.release_fmt, "%p") ? latest_deliveries[i]->meta.python_compact : "" ) < 0) {
-                        SYSERROR("%s", "Unable to allocate bytes for pattern");
+                        SYSERROR("Unable to allocate bytes for pattern");
                         fclose(indexfp);
                         return -1;
                     }
@@ -105,7 +105,7 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
                  current->info.build_number,
                  strstr((*ctx)->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
         if (!pattern) {
-            SYSERROR("%s", "Unable to allocate bytes for pattern");
+            SYSERROR("Unable to allocate bytes for pattern");
             fclose(indexfp);
             return -1;
         }

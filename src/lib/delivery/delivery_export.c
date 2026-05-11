@@ -1,4 +1,5 @@
 #include "delivery.h"
+#include "conda.h"
 
 static void delivery_export_configuration(const struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Exporting delivery configuration\n");
@@ -6,7 +7,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
     SYSDEBUG("Entering configuration directory: %s", ctx->storage.delivery_dir);
     if (!pushd(ctx->storage.cfgdump_dir)) {
         char filename[PATH_MAX] = {0};
-        SYSDEBUG("%s", "Populating filename");
+        SYSDEBUG("Populating filename");
         snprintf(filename, sizeof(filename), "%s.ini", ctx->info.release_name);
         SYSDEBUG("filename: %s", filename);
 
@@ -22,9 +23,9 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
         fclose(spec);
         SYSDEBUG("%s: closing", filename);
 
-        SYSDEBUG("%s", "Zeroing filename");
+        SYSDEBUG("Zeroing filename");
         memset(filename, 0, sizeof(filename));
-        SYSDEBUG("%s", "Populating rendered filename");
+        SYSDEBUG("Populating rendered filename");
         snprintf(filename, sizeof(filename), "%s-rendered.ini", ctx->info.release_name);
         SYSDEBUG("filename: %s", filename);
 

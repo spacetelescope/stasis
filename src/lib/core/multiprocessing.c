@@ -158,7 +158,7 @@ static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessing
 }
 
 struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const char *ident, char *working_dir, char *cmd) {
-    SYSDEBUG("%s", "Finding next available slot");
+    SYSDEBUG("Finding next available slot");
     struct MultiProcessingTask *slot = mp_pool_next_available(pool);
     if (pool->num_used != pool->num_alloc) {
         SYSDEBUG("Using slot %zu of %zu", pool->num_used, pool->num_alloc);
@@ -196,14 +196,14 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     t_name = xmkstemp(&tp, "w");
     if (!t_name) {
-        SYSERROR("%s", "Failed to create temporary file name");
+        SYSERROR("Failed to create temporary file name");
         if (tp) {
             fclose(tp);
         }
         return NULL;
     }
     if (!tp) {
-        SYSERROR("%s", "Failed to create temporary file");
+        SYSERROR("Failed to create temporary file");
         guard_free(t_name);
         return NULL;
     }

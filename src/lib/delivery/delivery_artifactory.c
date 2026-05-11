@@ -5,7 +5,7 @@ int delivery_init_artifactory(struct Delivery *ctx) {
     char dest[PATH_MAX] = {0};
     char filepath[PATH_MAX] = {0};
 
-    SYSDEBUG("%s", "Initializing artifactory tools");
+    SYSDEBUG("Initializing artifactory tools");
     snprintf(dest, sizeof(dest), "%s/bin", ctx->storage.tools_dir);
     SYSDEBUG("dest=%s", dest);
     snprintf(filepath, sizeof(dest), "%s/bin/jf", ctx->storage.tools_dir);
@@ -17,7 +17,7 @@ int delivery_init_artifactory(struct Delivery *ctx) {
         goto delivery_init_artifactory_envsetup;
     }
 
-    SYSDEBUG("%s", "Assign platform");
+    SYSDEBUG("Assign platform");
     char *platform = ctx->system.platform[DELIVERY_PLATFORM];
     msg(STASIS_MSG_L3, "Downloading %s for %s %s\n", globals.jfrog.remote_filename, platform, ctx->system.arch);
     if ((status = artifactory_download_cli(dest,
@@ -200,7 +200,7 @@ int delivery_series_sync(struct Delivery *ctx) {
 
     char *r_fmt = strdup(ctx->rules.release_fmt);
     if (!r_fmt) {
-        SYSERROR("%s", "Unable to allocate bytes for release format string");
+        SYSERROR("Unable to allocate bytes for release format string");
         return -1;
     }
 
@@ -228,7 +228,7 @@ int delivery_series_sync(struct Delivery *ctx) {
                  ctx->meta.mission,
                  ctx->info.build_name,
                  release_pattern) < 0) {
-        SYSERROR("%s", "Unable to allocate bytes for remote directory path");
+        SYSERROR("Unable to allocate bytes for remote directory path");
         guard_free(release_pattern);
         return -1;
     }
@@ -236,7 +236,7 @@ int delivery_series_sync(struct Delivery *ctx) {
 
     char *dest_dir = NULL;
     if (asprintf(&dest_dir, "%s/{1}", ctx->storage.output_dir) < 0) {
-        SYSERROR("%s", "Unable to allocate bytes for destination directory path");
+        SYSERROR("Unable to allocate bytes for destination directory path");
         return -1;
     }
 

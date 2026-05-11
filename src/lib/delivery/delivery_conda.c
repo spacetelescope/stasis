@@ -1,4 +1,5 @@
 #include "delivery.h"
+#include "conda.h"
 
 void delivery_get_conda_installer_url(struct Delivery *ctx, char *result, size_t maxlen) {
     int len = 0;
@@ -45,7 +46,7 @@ int delivery_get_conda_installer(struct Delivery *ctx, char *installer_url) {
         long fetch_status = download(installer_url, script_path, &errmsg);
         if (HTTP_ERROR(fetch_status) || fetch_status < 0) {
             // download failed
-            SYSERROR("download failed: %s: %s\n", errmsg, installer_url);
+            SYSERROR("download failed: %s: %s", errmsg, installer_url);
             guard_free(errmsg);
             return -1;
         }

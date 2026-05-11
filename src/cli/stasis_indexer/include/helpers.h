@@ -2,6 +2,7 @@
 #define HELPERS_H
 
 #include "delivery.h"
+#include "conda.h"
 
 #define ARRAY_COUNT_DYNAMIC(X, COUNTER) \
     do { \

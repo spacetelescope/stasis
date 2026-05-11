@@ -1,4 +1,6 @@
 #include "delivery.h"
+#include "log.h"
+#include "conda.h"
 
 
 const char *release_header = "# delivery_name: %s\n"
@@ -72,7 +74,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
     FILE *tp = NULL;
 
     if (stage == DELIVERY_REWRITE_SPEC_STAGE_1) {
-        SYSDEBUG("%s", "Entering stage 1");
+        SYSDEBUG("Entering stage 1");
         header = delivery_get_release_header(ctx);
         SYSDEBUG("Release header:\n%s", header);
         if (!header) {
@@ -141,38 +143,38 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         remove(tempfile);
         guard_free(tempfile);
     } else if (globals.enable_rewrite_spec_stage_2 && stage == DELIVERY_REWRITE_SPEC_STAGE_2) {
-        SYSDEBUG("%s", "Entering stage 2");
+        SYSDEBUG("Entering stage 2");
         char output[PATH_MAX] = {0};
         // Replace "local" channel with the staging URL
         if (ctx->storage.conda_staging_url) {
-            SYSDEBUG("%s", "Will replace conda channel with staging area url");
+            SYSDEBUG("Will replace conda channel with staging area url");
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_staging_url, 0);
         } else if (globals.jfrog.repo) {
-            SYSDEBUG("%s", "Will replace conda channel with artifactory repo packages/conda url");
+            SYSDEBUG("Will replace conda channel with artifactory repo packages/conda url");
             snprintf(output, sizeof(output), "%s/%s/%s/%s/packages/conda", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
-            SYSDEBUG("%s", "Will replace conda channel with local conda artifact directory");
+            SYSDEBUG("Will replace conda channel with local conda artifact directory");
             msg(STASIS_MSG_WARN, "conda_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.conda_artifact_dir);
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_artifact_dir, 0);
         }
 
         if (ctx->storage.wheel_staging_url) {
-            SYSDEBUG("%s", "Will replace pip arguments with wheel staging url");
+            SYSDEBUG("Will replace pip arguments with wheel staging url");
             snprintf(output, sizeof(output), "--extra-index-url %s/%s/%s/packages/wheels", ctx->storage.wheel_staging_url, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", ctx->storage.wheel_staging_url, 0);
         } else if (globals.enable_artifactory && globals.jfrog.url && globals.jfrog.repo) {
-            SYSDEBUG("%s", "Will replace pip arguments with artifactory repo packages/wheel url");
+            SYSDEBUG("Will replace pip arguments with artifactory repo packages/wheel url");
             snprintf(output, sizeof(output), "--extra-index-url %s/%s/%s/%s/packages/wheels", globals.jfrog.url, globals.jfrog.repo, ctx->meta.mission, ctx->info.build_name);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
-            SYSDEBUG("%s", "Will replace pip arguments with local wheel artifact directory");
+            SYSDEBUG("Will replace pip arguments with local wheel artifact directory");
             msg(STASIS_MSG_WARN, "wheel_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.wheel_artifact_dir);
             snprintf(output, sizeof(output), "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
     }
-    SYSDEBUG("%s", "Rewriting finished");
+    SYSDEBUG("Rewriting finished");
 }
 
 int delivery_copy_conda_artifacts(struct Delivery *ctx) {
@@ -282,6 +284,6 @@ int delivery_index_wheel_artifacts(struct Delivery *ctx) {
     }
     closedir(dp);
     fclose(top_fp);
-    SYSDEBUG("%s", "Wheel indexing complete");
+    SYSDEBUG("Wheel indexing complete");
     return 0;
 }

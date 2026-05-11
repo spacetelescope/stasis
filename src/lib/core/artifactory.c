@@ -8,7 +8,7 @@ int artifactory_download_cli(char *dest,
                              char *os,
                              char *arch,
                              char *remote_filename) {
-    SYSDEBUG("%s", "ARGS follow");
+    SYSDEBUG("ARGS follow");
     SYSDEBUG("dest=%s", dest);
     SYSDEBUG("jfrog_artifactory_base_url=%s", jfrog_artifactory_base_url);
     SYSDEBUG("jfrog_artifactory_product=%s", jfrog_artifactory_product);
@@ -24,7 +24,7 @@ int artifactory_download_cli(char *dest,
     char arch_ident[STASIS_NAME_MAX] = {0};
 
     // convert platform string to lower-case
-    SYSDEBUG("%s", "Set os_ident");
+    SYSDEBUG("Set os_ident");
     strncpy(os_ident, os, sizeof(os_ident) - 1);
     os_ident[sizeof(os_ident) - 1] = '\0';
     tolower_s(os_ident);
@@ -43,7 +43,7 @@ int artifactory_download_cli(char *dest,
     }
 
     // translate ARCH identifier
-    SYSDEBUG("%s", "Set arch_ident");
+    SYSDEBUG("Set arch_ident");
     strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
     arch_ident[sizeof(arch_ident) - 1] = '\0';
     SYSDEBUG("arch_ident=%s", arch_ident);
@@ -65,7 +65,7 @@ int artifactory_download_cli(char *dest,
     arch_ident[sizeof(arch_ident) - 1] = '\0';
 
 
-    SYSDEBUG("%s", "Construct URL");
+    SYSDEBUG("Construct URL");
     snprintf(url, sizeof(url), "%s/%s/%s/%s/%s-%s-%s/%s",
              jfrog_artifactory_base_url,           // https://releases.jfrog.io/artifactory
              jfrog_artifactory_product,            // jfrog-cli
@@ -83,7 +83,7 @@ int artifactory_download_cli(char *dest,
         return -1;
     }
 
-    SYSDEBUG("%s", "Construct path to write data");
+    SYSDEBUG("Construct path to write data");
     SYSDEBUG("path buffer contents: '%s'", path);
     SYSDEBUG("path buffer size: %zu", sizeof(path));
     SYSDEBUG("path strlen: %zu", strlen(path));
@@ -91,10 +91,10 @@ int artifactory_download_cli(char *dest,
 
     snprintf(path + strlen(path), sizeof(path) - strlen(path), "/%s", remote_filename);
     char *errmsg = NULL;
-    SYSDEBUG("%s", "Downloading...");
+    SYSDEBUG("Downloading...");
     long fetch_status = download(url, path, &errmsg);
     if (HTTP_ERROR(fetch_status)) {
-        SYSERROR("download failed: %s: %s\n", errmsg, url);
+        SYSERROR("download failed: %s: %s", errmsg, url);
         return -1;
     }
     chmod(path, 0755);

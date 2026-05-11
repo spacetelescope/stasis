@@ -55,7 +55,7 @@ int populate_info(struct Delivery *ctx) {
 int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     struct INIFILE *cfg = ctx->_stasis_ini_fp.cfg;
     if (!cfg) {
-        SYSDEBUG("%s", "cfg is NULL");
+        SYSDEBUG("cfg is NULL");
         return -1;
     }
     int err = 0;
@@ -92,7 +92,7 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
             msg(STASIS_MSG_WARN, "wheel_builder is undefined. Falling back to system toolchain: 'build'.\n");
             globals.wheel_builder = strdup("build");
             if (!globals.wheel_builder) {
-                SYSERROR("%s", "unable to allocate memory for default wheel_builder value");
+                SYSERROR("unable to allocate memory for default wheel_builder value");
                 return -1;
             }
         }
@@ -104,14 +104,14 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     }
 
     if (err && globals.wheel_builder && strcmp(globals.wheel_builder, "manylinux") == 0) {
-        SYSERROR("%s", "default:wheel_builder is set to 'manylinux', however default:wheel_builder_manylinux_image is not configured");
+        SYSERROR("default:wheel_builder is set to 'manylinux', however default:wheel_builder_manylinux_image is not configured");
         return -1;
     }
 
     if (strcmp(globals.wheel_builder, "manylinux") == 0) {
         char *manifest_inspect_cmd = NULL;
         if (asprintf(&manifest_inspect_cmd, "manifest inspect '%s'", globals.wheel_builder_manylinux_image) < 0) {
-            SYSERROR("%s", "unable to allocate memory for docker command");
+            SYSERROR("unable to allocate memory for docker command");
             guard_free(manifest_inspect_cmd);
             return -1;
         }
@@ -285,7 +285,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             union INIVal val;
             struct Test *test = test_init();
             if (!test) {
-                SYSERROR("%s", "unable to allocate memory for test structure");
+                SYSERROR("unable to allocate memory for test structure");
                 return -1;
             }
 
@@ -383,7 +383,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
                 globals.sysconfdir, "mission", (*ctx)->meta.mission, (*ctx)->meta.mission);
     }
 
-    SYSDEBUG("Reading mission configuration: %s\n", missionfile);
+    SYSDEBUG("Reading mission configuration: %s", missionfile);
     (*ctx)->_stasis_ini_fp.mission = ini_open(missionfile);
     struct INIFILE *ini = (*ctx)->_stasis_ini_fp.mission;
     if (!ini) {
@@ -404,7 +404,7 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
 
 void validate_delivery_ini(struct INIFILE *ini) {
     if (!ini) {
-        SYSERROR("%s", "INIFILE is NULL!");
+        SYSERROR("INIFILE is NULL!");
         exit(1);
     }
     if (ini_section_search(&ini, INI_SEARCH_EXACT, "meta")) {
@@ -414,7 +414,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
         ini_has_key_required(ini, "meta", "mission");
         ini_has_key_required(ini, "meta", "python");
     } else {
-        SYSERROR("%s", "[meta] configuration section is required");
+        SYSERROR("[meta] configuration section is required");
         exit(1);
     }
 
@@ -424,7 +424,7 @@ void validate_delivery_ini(struct INIFILE *ini) {
         ini_has_key_required(ini, "conda", "installer_platform");
         ini_has_key_required(ini, "conda", "installer_arch");
     } else {
-        SYSERROR("%s", "[conda] configuration section is required");
+        SYSERROR("[conda] configuration section is required");
         exit(1);
     }
 

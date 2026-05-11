@@ -214,6 +214,7 @@ inline void stasis_testing_teardown_workspace() {
             SYSERROR("%s", "Unable to determine current working directory"); \
             exit(1); \
         } \
+        LOG_LEVEL = LOG_LEVEL_DEBUG; \
         atexit(stasis_testing_record_result_summary); \
         atexit(stasis_testing_teardown_workspace); \
         stasis_testing_setup_workspace(); \

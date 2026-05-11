@@ -1,3 +1,4 @@
+#include "conda.h"
 #include "delivery.h"
 #include "testing.h"
 #include "str.h"

@@ -9,13 +9,18 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include "relocation.h"
 #include "core.h"
+#include "log.h"
+#include "relocation.h"
 
 #define STASIS_SORT_ALPHA 1 << 0
 #define STASIS_SORT_NUMERIC 1 << 1
 #define STASIS_SORT_LEN_ASCENDING 1 << 2
 #define STASIS_SORT_LEN_DESCENDING 1 << 3
+
+
+char *strdup_maybe_entry(const char * restrict s, struct ExecPoint ep, int exit_code);
+#define strdup_maybe(S) strdup_maybe_entry((S), EXECPOINT, 1)
 
 /**
  * Determine how many times the character `ch` appears in `sptr` string

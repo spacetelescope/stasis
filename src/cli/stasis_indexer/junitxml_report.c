@@ -2,6 +2,8 @@
 // Created by jhunk on 11/15/24.
 //
 
+#include <fnmatch.h>
+
 #include "core.h"
 #include "callbacks.h"
 #include "junitxml.h"
@@ -37,7 +39,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         char result_outfile[PATH_MAX] = {0};
         char *short_name_pattern = NULL;
         if (asprintf(&short_name_pattern, "-%s", ctx->info.release_name) < 0 || !short_name_pattern) {
-            SYSERROR("%s", "unable to allocate bytes for short name pattern");
+            SYSERROR("unable to allocate bytes for short name pattern");
             guard_free(bname);
             return -1;
         }

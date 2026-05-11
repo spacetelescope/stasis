@@ -79,7 +79,7 @@ static struct JUNIT_Failure *testcase_failure_from_attributes(struct StrList *at
             if (!strcmp(attr_name, "message")) {
                 result->message = strdup(attr_value);
                 if (!result->message) {
-                    SYSERROR("%s", "failed to allocate memory for testcase failure message");
+                    SYSERROR("failed to allocate memory for testcase failure message");
                     break;
                 }
             }
@@ -100,7 +100,7 @@ static struct JUNIT_Error *testcase_error_from_attributes(struct StrList *attrs)
             if (!strcmp(attr_name, "message")) {
                 result->message = strdup(attr_value);
                 if (!result->message) {
-                    SYSERROR("%s", "failed to allocate memory for testcase error message");
+                    SYSERROR("failed to allocate memory for testcase error message");
                     break;
                 }
             }
@@ -121,7 +121,7 @@ static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *at
             if (!strcmp(attr_name, "message")) {
                 result->message = strdup(attr_value);
                 if (!result->message) {
-                    SYSERROR("%s", "failed to allocate memory for testcase skip message");
+                    SYSERROR("failed to allocate memory for testcase skip message");
                     break;
                 }
             }
@@ -133,7 +133,7 @@ static struct JUNIT_Skipped *testcase_skipped_from_attributes(struct StrList *at
 static struct JUNIT_Testcase *testcase_from_attributes(struct StrList *attrs) {
     struct JUNIT_Testcase *result = calloc(1, sizeof(*result));
     if(!result) {
-        SYSERROR("%s", "failed to allocate memory for testcase");
+        SYSERROR("failed to allocate memory for testcase");
         return NULL;
     }
     for (size_t x = 0; x < strlist_count(attrs); x += 2) {
@@ -143,14 +143,14 @@ static struct JUNIT_Testcase *testcase_from_attributes(struct StrList *attrs) {
             if (!strcmp(attr_name, "name")) {
                 result->name = strdup(attr_value);
                 if (!result->name) {
-                    SYSERROR("%s", "failed to allocate memory for testcase name");
+                    SYSERROR("failed to allocate memory for testcase name");
                     testcase_free(&result);
                     break;
                 }
             } else if (!strcmp(attr_name, "classname")) {
                 result->classname = strdup(attr_value);
                 if (!result->classname) {
-                    SYSERROR("%s", "failed to allocate memory for testcase class name");
+                    SYSERROR("failed to allocate memory for testcase class name");
                     testcase_free(&result);
                     break;
                 }
@@ -159,7 +159,7 @@ static struct JUNIT_Testcase *testcase_from_attributes(struct StrList *attrs) {
             } else if (!strcmp(attr_name, "message")) {
                 result->message = strdup(attr_value);
                 if (!result->message) {
-                    SYSERROR("%s", "failed to allocate memory for testcase message");
+                    SYSERROR("failed to allocate memory for testcase message");
                     testcase_free(&result);
                     break;
                 }

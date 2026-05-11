@@ -464,7 +464,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode) {
                     }
 
                     if (!render) {
-                        SYSERROR("%s", "rendered string value can never be NULL!\n");
+                        SYSERROR("rendered string value can never be NULL!");
                         return -1;
                     }
 

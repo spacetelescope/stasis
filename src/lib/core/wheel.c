@@ -70,13 +70,13 @@ static ssize_t wheel_parse_wheel(struct Wheel * pkg, const char * data) {
         if (pair) {
             char *key = strdup(strip(pair[0]));
             if (!key) {
-                SYSERROR("%s", "could not allocate memory for pair wheel key");
+                SYSERROR("could not allocate memory for pair wheel key");
                 return -1;
             }
 
             char *value = strdup(lstrip(pair[1]));
             if (!value) {
-                SYSERROR("%s", "could not allocate memory for wheel value");
+                SYSERROR("could not allocate memory for wheel value");
                 guard_free(key);
                 return -1;
             }

@@ -48,14 +48,14 @@ int copy2(const char *src, const char *dest, unsigned int op) {
     } else if (S_ISREG(src_stat.st_mode)) {
         char buf[STASIS_BUFSIZ] = {0};
         size_t bytes_read;
-        SYSDEBUG("%s", "Opening source file for reading");
+        SYSDEBUG("Opening source file for reading");
         FILE *fp1 = fopen(src, "rb");
         if (!fp1) {
             perror(src);
             return -1;
         }
 
-        SYSDEBUG("%s", "Opening destination file for writing");
+        SYSDEBUG("Opening destination file for writing");
         FILE *fp2 = fopen(dest, "w+b");
         if (!fp2) {
             perror(dest);
@@ -86,6 +86,6 @@ int copy2(const char *src, const char *dest, unsigned int op) {
         errno = EOPNOTSUPP;
         return -1;
     }
-    SYSDEBUG("%s", "Data copied");
+    SYSDEBUG("Data copied");
     return 0;
 }

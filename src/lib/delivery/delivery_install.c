@@ -1,4 +1,7 @@
 #include "delivery.h"
+#include "conda.h"
+#include "wheelinfo.h"
+#include "version_compare.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
     struct Test *result = NULL;
@@ -140,11 +143,11 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
     int status = 0;
 
     if (isempty((char *) env_name)) {
-        SYSERROR("%s", "environment name cannot be NULL or empty");
+        SYSERROR("environment name cannot be NULL or empty");
         return -1;
     }
     if (isempty((char *) name)) {
-        SYSERROR("%s", "name cannot be NULL or empty");
+        SYSERROR("name cannot be NULL or empty");
         return -1;
     }
 
@@ -161,14 +164,14 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
 
     struct StrList *lines = strlist_init();
     if (!lines) {
-        SYSERROR("%s", "unable to allocate memory for installed package list");
+        SYSERROR("unable to allocate memory for installed package list");
         guard_free(output);
         status = -1;
         goto cleanup;
     }
 
     if (strlist_append_tokenize(lines, output, LINE_SEP)) {
-        SYSERROR("%s", "unable to tokenize installed package list");
+        SYSERROR("unable to tokenize installed package list");
         guard_free(output);
         strlist_free(&lines);
         status = -1;
@@ -178,7 +181,7 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
     for (size_t i = 0; i < strlist_count(lines); i++) {
         char *line = strlist_item(lines, i);
         if (!line) {
-            SYSERROR("%s", "line is NULL");
+            SYSERROR("line is NULL");
             status = -1;
             goto cleanup;
         }
@@ -190,20 +193,20 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
 
         struct StrList *tokens = strlist_init();
         if (!tokens) {
-            SYSERROR("%s", "unable to allocate memory for tokenized installed package list");
+            SYSERROR("unable to allocate memory for tokenized installed package list");
             status = -1;
             goto cleanup;
         }
 
         if (strlist_append_tokenize(tokens, line, " ")) {
-            SYSERROR("%s", "unable to tokenize installed package list");
+            SYSERROR("unable to tokenize installed package list");
             status = -1;
             goto cleanup;
         }
 
         const char *installed_version = strlist_item(tokens, 1);
         if (!installed_version) {
-            SYSERROR("%s", "not enough data in line (name and version not found)");
+            SYSERROR("not enough data in line (name and version not found)");
             guard_strlist_free(&tokens);
             status = -1;
             goto cleanup;
@@ -212,7 +215,7 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
         if (strstr(line, name)) {
             spec_installed = strdup(installed_version);
             if (!spec_installed) {
-                SYSERROR("%s", "unable to allocated memory for installed package version");
+                SYSERROR("unable to allocated memory for installed package version");
                 guard_strlist_free(&tokens);
                 status = -1;
                 goto cleanup;
@@ -239,7 +242,7 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
 
             spec_request = strdup(spec_tmp);
             if (!spec_request) {
-                SYSERROR("%s", "unable to allocate memory for conda package spec request");
+                SYSERROR("unable to allocate memory for conda package spec request");
                 status = -1;
                 goto cleanup;
             }
@@ -318,7 +321,7 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
         char *package = strlist_item(list, i);
         char *command = NULL;
         if (asprintf(&command, "%s '%s'", subcommand, package) < 0) {
-            SYSERROR("%s", "Unable to allocate bytes for removal command");
+            SYSERROR("Unable to allocate bytes for removal command");
             status = -1;
             break;
         }
@@ -386,7 +389,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     size_t args_alloc_len = STASIS_BUFSIZ;
     char *args = calloc(args_alloc_len + 1, sizeof(*args));
     if (!args) {
-        SYSERROR("%s", "Unable to allocate bytes for command arguments");
+        SYSERROR("Unable to allocate bytes for command arguments");
         return -1;
     }
 
@@ -404,7 +407,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                     if (!strcmp(info->version, "HEAD") || is_git_sha(info->version)) {
                         struct StrList *tag_data = strlist_init();
                         if (!tag_data) {
-                            SYSERROR("%s", "Unable to allocate memory for tag data\n");
+                            SYSERROR("Unable to allocate memory for tag data");
                             guard_free(args);
                             return -1;
                         }
@@ -429,7 +432,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                                                          NULL}, WHEEL_MATCH_ANY);
                         if (!whl && errno) {
                             // error
-                            SYSERROR("Unable to read Python wheel info: %s\n", strerror(errno));
+                            SYSERROR("Unable to read Python wheel info: %s", strerror(errno));
                             exit(1);
                         } else if (!whl) {
                             // not found
@@ -502,7 +505,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         }
         char *command = NULL;
         if (asprintf(&command, "%s %s", command_base, args) < 0) {
-            SYSERROR("%s", "Unable to allocate bytes for command\n");
+            SYSERROR("Unable to allocate bytes for command");
             guard_free(args);
             return -1;
         }

@@ -414,19 +414,19 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
     const ssize_t key_offset = runtime_contains(env, _key);
     char *key = strdup(_key);
     if (!key) {
-        SYSERROR("%s", "unable to allocate memory for key");
+        SYSERROR("unable to allocate memory for key");
         exit(1);
     }
     char *value = runtime_expand_var(env, _value);
     if (!value) {
-        SYSERROR("%s", "unable to allocate memory for value");
+        SYSERROR("unable to allocate memory for value");
         exit(1);
     }
 
     lstrip(value);
     char *now = join((char *[]) {key, value, NULL}, sep);
     if (!now) {
-        SYSERROR("%s", "unable to allocate memory for join");
+        SYSERROR("unable to allocate memory for join");
         exit(1);
     }
 
@@ -448,7 +448,7 @@ void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
         char **pair = split(strlist_item(env, i), "=", 1);
         if (!pair) {
-            SYSERROR("%s", "unable to allocate memory for runtime_apply");
+            SYSERROR("unable to allocate memory for runtime_apply");
             return;
         }
         setenv(pair[0], pair[1], 1);

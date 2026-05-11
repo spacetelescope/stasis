@@ -1,5 +1,6 @@
 add_library(stasis_core STATIC
         globals.c
+        log.c
         timespec.c
         str.c
         strlist.c
