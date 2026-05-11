@@ -14,7 +14,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
         SYSDEBUG("%s: opening", filename);
         FILE *spec = fopen(filename, "w+");
         if (!spec) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
+            SYSERROR("open failed %s", filename);
             exit(1);
         }
         SYSDEBUG("%s: writing", filename);
@@ -32,7 +32,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
         SYSDEBUG("%s: opening", filename);
         spec = fopen(filename, "w+");
         if (!spec) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", filename);
+            SYSERROR("open failed %s", filename);
             exit(1);
         }
         SYSDEBUG("%s: writing", filename);
@@ -55,7 +55,7 @@ void delivery_export(const struct Delivery *ctx, char *envs[]) {
         char *name = envs[i];
         msg(STASIS_MSG_L2, "Exporting %s\n", name);
         if (conda_env_export(name, ctx->storage.delivery_dir, name)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "failed %s\n", name);
+            SYSERROR("export failed %s", name);
             exit(1);
         }
     }

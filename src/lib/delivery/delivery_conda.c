@@ -70,7 +70,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
         if (!access(conda_install_dir, F_OK)) {
             // directory exists so remove it
             if (rmtree(conda_install_dir)) {
-                perror("unable to remove previous installation");
+                SYSERROR("unable to remove previous installation: %s", strerror(errno));
                 exit(1);
             }
 
@@ -82,7 +82,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
                      install_script,
                      conda_install_dir);
             if (shell_safe(&proc, cmd)) {
-                fprintf(stderr, "conda installation failed\n");
+                SYSERROR("conda installation failed");
                 exit(1);
             }
         } else {
@@ -94,7 +94,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
                      install_script,
                      conda_install_dir);
             if (shell_safe(&proc, cmd)) {
-                fprintf(stderr, "conda installation failed\n");
+                SYSERROR("conda installation failed");
                 exit(1);
             }
         }
@@ -105,7 +105,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
 
 void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
     if (conda_activate(conda_install_dir, "base")) {
-        fprintf(stderr, "conda activation failed\n");
+        SYSERROR("conda activation failed");
         exit(1);
     }
 
@@ -116,7 +116,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
     snprintf(rcpath, sizeof(rcpath), "%s/%s", conda_install_dir, ".condarc");
     setenv("CONDARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
-        perror("unable to replace runtime environment after activating conda");
+        SYSERROR("unable to replace runtime environment after activating conda");
         exit(1);
     }
 

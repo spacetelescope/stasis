@@ -146,11 +146,11 @@ void test_pip_index_provides() {
         int result = pkg_index_provides(PKG_USE_PIP, test->pindex, test->name, ".");
         STASIS_ASSERT(result == test->expected, "Unexpected result");
         if (PKG_INDEX_PROVIDES_FAILED(result)) {
-            fprintf(stderr, "error: %s\n", pkg_index_provides_strerror(result));
+            SYSERROR("%s", pkg_index_provides_strerror(result));
         } else if (result == PKG_NOT_FOUND) {
-            fprintf(stderr, "package not found: '%s'\n", test->name);
+            SYSERROR("package not found: '%s'", test->name);
         } else {
-            printf("package found: '%s'\n", test->name);
+            SYSDEBUG("package found: '%s'", test->name);
         }
     }
 }
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
 
     char ws[] = "workspace_XXXXXX";
     if (!mkdtemp(ws)) {
-        perror("mkdtemp");
+        SYSERROR("unable to mkdtemp: %s", strerror(errno));
         exit(1);
     }
     getcwd(cwd_start, sizeof(cwd_start) - 1);

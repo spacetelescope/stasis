@@ -40,7 +40,7 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         char *errmsg = NULL;
         const long http_code = download(url, installer_path, &errmsg);
         if (HTTP_ERROR(http_code)) {
-            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            SYSERROR("download failed: %ld: %s", http_code, errmsg);
             guard_free(errmsg);
             return -1;
         }
@@ -176,7 +176,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
 
     int logfd = mkstemp(logfile);
     if (logfd < 0) {
-        perror(logfile);
+        SYSERROR("unable to create log file: %s", logfile);
         remove(logfile);  // fail harmlessly if not present
         return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
     }
@@ -330,7 +330,7 @@ static int conda_prepend_condabin(const char *root) {
 static int env0_to_runtime(const char *logfile) {
     FILE *fp = fopen(logfile, "r");
     if (!fp) {
-        perror(logfile);
+        SYSERROR("unable to open log file for reading: %s, %s", logfile, strerror(errno));
         return -1;
     }
 
@@ -355,14 +355,14 @@ static int env0_to_runtime(const char *logfile) {
 
         char **part = split(buf, "=", 1);
         if (!part) {
-            perror("unable to split environment variable buffer");
+            SYSERROR("unable to split environment variable buffer: %s", strerror(errno));
             fclose(fp);
             return -1;
         }
         if (!part[0]) {
-            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable key ignored: '%s'\n", buf);
+            SYSWARN("Invalid environment variable key ignored: '%s'", buf);
         } else if (!part[1]) {
-            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Invalid environment variable value ignored: '%s'\n", buf);
+            SYSWARN("Invalid environment variable value ignored: '%s'", buf);
         } else {
             setenv(part[0], part[1], 1);
         }
@@ -391,7 +391,7 @@ int conda_activate(const char *root, const char *env_name) {
 
     int fd = mkstemp(logfile);
     if (fd < 0) {
-       perror(logfile);
+       SYSERROR("log file creation failed: %s, %s", logfile, strerror(errno));
        return -1;
     }
     close(fd);
@@ -402,13 +402,13 @@ int conda_activate(const char *root, const char *env_name) {
 
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
-        perror(path_conda);
+        SYSERROR("conda is missing: %s, %s", path_conda, strerror(errno));
         remove(logfile);
         return -1;
     }
 
     if (access(path_mamba, F_OK) < 0) {
-        perror(path_mamba);
+        SYSERROR("mamba is missing: %s, %s", path_mamba, strerror(errno));
         remove(logfile);
         return -1;
     }
@@ -514,7 +514,7 @@ int conda_check_required() {
         guard_free(cmd_out);
         guard_strlist_free(&result);
     } else {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "The base package requirement check could not be performed\n");
+        SYSERROR("The base package requirement check could not be performed");
         return 2;
     }
     return 0;
@@ -559,7 +559,7 @@ int conda_setup_headless() {
         }
 
         if (conda_exec(cmd)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (conda)\n");
+            SYSERROR("Unable to install user-defined base packages (conda)");
             return 1;
         }
     }
@@ -582,21 +582,21 @@ int conda_setup_headless() {
         }
 
         if (pip_exec(cmd)) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Unable to install user-defined base packages (pip)\n");
+            SYSERROR("Unable to install user-defined base packages (pip)");
             return 1;
         }
     }
 
     if (conda_check_required()) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "Your STASIS configuration lacks the bare"
-                                                  " minimum software required to build conda packages."
-                                                  " Please fix it.\n");
+        SYSERROR("Your STASIS configuration lacks the bare"
+                 " minimum software required to build conda packages."
+                 " Please fix it.");
         return 1;
     }
 
     if (globals.always_update_base_environment) {
         if (conda_exec("update --all")) {
-            fprintf(stderr, "conda update was unsuccessful\n");
+            SYSERROR("conda update was unsuccessful");
             return 1;
         }
     }
@@ -630,7 +630,7 @@ int conda_env_create_from_uri(char *name, char *uri, char *python_version) {
     const long http_code = download(uri_fs ? uri_fs : uri, tempfile, &errmsg);
     if (HTTP_ERROR(http_code)) {
         if (errmsg) {
-            fprintf(stderr, "download failed: %ld: %s\n", http_code, errmsg);
+            SYSERROR("download failed: %ld: %s", http_code, errmsg);
             guard_free(errmsg);
         }
         guard_free(uri_fs);

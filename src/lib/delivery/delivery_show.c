@@ -108,7 +108,7 @@ void delivery_runtime_show(struct Delivery *ctx) {
         char *item = strlist_item(rt, i);
         if (!item) {
             // not supposed to occur
-            msg(STASIS_MSG_WARN | STASIS_MSG_L1, "Encountered unexpected NULL at record %zu of %zu of runtime array.\n", i);
+            SYSWARN("Encountered unexpected NULL in record %zu of %zu in runtime array.", i, total);
             return;
         }
         printf("%s\n", item);

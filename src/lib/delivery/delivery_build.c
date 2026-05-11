@@ -9,11 +9,11 @@ int delivery_build_recipes(struct Delivery *ctx) {
         char *recipe_dir = NULL;
         if (ctx->tests->test[i]->build_recipe) { // build a conda recipe
             if (recipe_clone(ctx->storage.build_recipes_dir, ctx->tests->test[i]->build_recipe, NULL, &recipe_dir)) {
-                fprintf(stderr, "Encountered an issue while cloning recipe for: %s\n", ctx->tests->test[i]->name);
+                SYSERROR("Encountered an issue while cloning recipe for: %s", ctx->tests->test[i]->name);
                 return -1;
             }
             if (!recipe_dir) {
-                fprintf(stderr, "BUG: recipe_clone() succeeded but recipe_dir is NULL: %s\n", strerror(errno));
+                SYSERROR("BUG: recipe_clone() succeeded but recipe_dir is NULL: %s", strerror(errno));
                 return -1;
             }
             int recipe_type = recipe_get_type(recipe_dir);
@@ -114,7 +114,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 }
                 popd();
             } else {
-                fprintf(stderr, "Unable to enter recipe directory %s: %s\n", recipe_dir, strerror(errno));
+                SYSERROR("Unable to enter recipe directory %s: %s", recipe_dir, strerror(errno));
                 guard_free(recipe_dir);
                 return -1;
             }
@@ -360,7 +360,7 @@ int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
         outdir);
 
     if (manylinux_build_status) {
-        msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "manylinux build failed (%d)", manylinux_build_status);
+        SYSERROR("manylinux build failed (%d)", manylinux_build_status);
         guard_free(script);
         return -1;
     }
@@ -376,8 +376,8 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     const int use_builder_manylinux = strcmp(globals.wheel_builder, "manylinux") == 0 && on_linux && docker_usable;
 
     if (!use_builder_build && !use_builder_cibuildwheel && !use_builder_manylinux) {
-        msg(STASIS_MSG_WARN, "Cannot build wheel for platform using: %s\n", globals.wheel_builder);
-        msg(STASIS_MSG_WARN, "Falling back to native toolchain.\n", globals.wheel_builder);
+        SYSWARN("Cannot build wheel for platform using: %s", globals.wheel_builder);
+        SYSWARN("Falling back to native toolchain.", globals.wheel_builder);
         use_builder_build = 1;
     }
 
@@ -386,7 +386,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
 
     result = strlist_init();
     if (!result) {
-        perror("unable to allocate memory for string list");
+        SYSERROR("unable to allocate memory for string list");
         return NULL;
     }
 
@@ -434,14 +434,14 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
 
                     const int dep_status = check_python_package_dependencies(".");
                     if (dep_status) {
-                        fprintf(stderr, "\nPlease replace all occurrences above with standard package specs:\n"
+                        SYSERROR("Please replace all occurrences above with standard package specs:\n"
                                         "\n"
                                         "    package==x.y.z\n"
                                         "    package>=x.y.z\n"
                                         "    package<=x.y.z\n"
                                         "    ...\n"
                                         "\n");
-                        COE_CHECK_ABORT(dep_status, "Unreproducible delivery");
+                        COE_CHECK_ABORT(true, "Unreproducible delivery");
                     }
 
                     strncpy(dname, ctx->tests->test[i]->name, sizeof(dname) - 1);
@@ -449,13 +449,13 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     tolower_s(dname);
                     snprintf(outdir, sizeof(outdir), "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                     if (mkdirs(outdir, 0755)) {
-                        fprintf(stderr, "failed to create output directory: %s\n", outdir);
+                        SYSERROR("failed to create output directory: %s", outdir);
                         guard_strlist_free(&result);
                         return NULL;
                     }
                     if (use_builder_manylinux) {
                         if (delivery_build_wheels_manylinux(ctx, outdir)) {
-                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests->test[i]->name,
+                            SYSERROR("failed to generate wheel package for %s-%s", ctx->tests->test[i]->name,
                                     ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
@@ -476,7 +476,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         }
 
                         if (python_exec(cmd)) {
-                            fprintf(stderr, "failed to generate wheel package for %s-%s\n", ctx->tests->test[i]->name,
+                            SYSERROR("failed to generate wheel package for %s-%s", ctx->tests->test[i]->name,
                                     ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
@@ -490,7 +490,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     guard_free(cmd);
                     popd();
                 } else {
-                    fprintf(stderr, "Unable to enter source directory %s: %s\n", srcdir, strerror(errno));
+                    SYSERROR("Unable to enter source directory %s: %s", srcdir, strerror(errno));
                     guard_strlist_free(&result);
                     return NULL;
                 }

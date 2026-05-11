@@ -11,12 +11,12 @@ int delivery_docker(struct Delivery *ctx) {
     size_t total_build_args = strlist_count(ctx->deploy.docker.build_args);
 
     if (!has_registry) {
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker registry defined. You will need to manually re-tag the resulting image.\n");
+        SYSWARN("No docker registry defined. You will need to manually re-tag the resulting image.");
     }
 
     if (!total_tags) {
         char default_tag[PATH_MAX];
-        msg(STASIS_MSG_WARN | STASIS_MSG_L2, "No docker tags defined by configuration. Generating default tag(s).\n");
+        SYSWARN("No docker tags defined by configuration. Generating default tag(s).");
         // generate local tag
         memset(default_tag, 0, sizeof(default_tag));
         snprintf(default_tag, sizeof(default_tag), "%s:%s-py%s", ctx->meta.name, ctx->info.build_name, ctx->meta.python_compact);
@@ -68,13 +68,13 @@ int delivery_docker(struct Delivery *ctx) {
 
     snprintf(delivery_file, sizeof(delivery_file), "%s/%s.yml", ctx->storage.delivery_dir, ctx->info.release_name);
     if (access(delivery_file, F_OK) < 0) {
-        fprintf(stderr, "docker build cannot proceed without delivery file: %s\n", delivery_file);
+        SYSERROR("docker build cannot proceed without delivery file: %s", delivery_file);
         return -1;
     }
 
     snprintf(dest, sizeof(dest), "%s/%s.yml", ctx->storage.build_docker_dir, ctx->info.release_name);
     if (copy2(delivery_file, dest, CT_PERM)) {
-        fprintf(stderr, "Failed to copy delivery file to %s: %s\n", dest, strerror(errno));
+        SYSERROR("Failed to copy delivery file to %s: %s", dest, strerror(errno));
         return -1;
     }
 
@@ -85,7 +85,7 @@ int delivery_docker(struct Delivery *ctx) {
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
     snprintf(rsync_cmd, sizeof(rsync_cmd), "rsync -avi --progress '%s' '%s'", ctx->storage.conda_artifact_dir, dest);
     if (system(rsync_cmd)) {
-        fprintf(stderr, "Failed to copy conda artifacts to docker build directory\n");
+        SYSERROR("Failed to copy conda artifacts to docker build directory");
         return -1;
     }
 
@@ -93,7 +93,7 @@ int delivery_docker(struct Delivery *ctx) {
     memset(rsync_cmd, 0, sizeof(rsync_cmd));
     snprintf(rsync_cmd, sizeof(rsync_cmd), "rsync -avi --progress '%s' '%s'", ctx->storage.wheel_artifact_dir, dest);
     if (system(rsync_cmd)) {
-        fprintf(stderr, "Failed to copy wheel artifacts to docker build directory\n");
+        SYSWARN("Failed to copy wheel artifacts to docker build directory. No wheels produced?");
     }
 
     if (docker_build(ctx->storage.build_docker_dir, args, ctx->deploy.docker.capabilities.build)) {
@@ -110,17 +110,17 @@ int delivery_docker(struct Delivery *ctx) {
     msg(STASIS_MSG_L2, "Executing image test script for %s\n", tag);
     if (ctx->deploy.docker.test_script) {
         if (isempty(ctx->deploy.docker.test_script)) {
-            msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Image test script has no content\n");
+            SYSWARN("Image test script has no content");
         } else {
             int state;
             if ((state = docker_script(tag, "--rm", ctx->deploy.docker.test_script, 0))) {
-                msg(STASIS_MSG_L2 | STASIS_MSG_ERROR, "Non-zero exit (%d) from test script. %s image archive will not be generated.\n", state >> 8, tag);
+                SYSERROR("Non-zero exit (%d) from test script. %s image archive will not be generated.", state >> 8, tag);
                 // test failed -- don't save the image
                 return -1;
             }
         }
     } else {
-        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "No image test script defined\n");
+        SYSWARN("No image test script defined");
     }
 
     // Test successful, save image

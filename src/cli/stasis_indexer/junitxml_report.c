@@ -98,7 +98,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         junitxml_testsuite_free(&testsuite);
         fclose(resultfp);
     } else {
-        fprintf(stderr, "bad test suite: %s: %s\n", strerror(errno), xmlfilename);
+        SYSWARN("bad test suite: %s: %s", strerror(errno), xmlfilename);
     }
     return 0;
 }
@@ -116,7 +116,7 @@ int indexer_junitxml_report(struct Delivery **ctx, const size_t nelem) {
     if (!pushd((*ctx)->storage.results_dir)) {
         FILE *indexfp = fopen(indexfile, "w+");
         if (!indexfp) {
-            fprintf(stderr, "Unable to open %s for writing\n", indexfile);
+            SYSERROR("Unable to open %s for writing", indexfile);
             return -1;
         }
         printf("Index %s opened for writing\n", indexfile);
@@ -157,7 +157,7 @@ int indexer_junitxml_report(struct Delivery **ctx, const size_t nelem) {
         fclose(indexfp);
         popd();
     } else {
-        fprintf(stderr, "Unable to enter delivery directory: %s\n", (*ctx)->storage.delivery_dir);
+        SYSERROR("Unable to enter delivery directory: %s", (*ctx)->storage.delivery_dir);
         guard_strlist_free(&file_listing);
         return -1;
     }

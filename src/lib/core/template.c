@@ -168,7 +168,7 @@ char *tpl_render(char *str) {
 
     output = calloc(output_bytes, sizeof(*output));
     if (!output) {
-        perror("unable to allocate output buffer");
+        SYSERROR("unable to allocate output buffer: %s", strerror(errno));
         return NULL;
     }
 
@@ -218,7 +218,7 @@ char *tpl_render(char *str) {
             // Find closing brace
             b_close = strstr(&pos[off], "}}");
             if (!b_close) {
-                fprintf(stderr, "error while templating '%s'\n\nunbalanced brace at position %zu\n", str, z);
+                SYSERROR("while templating '%s'\n\nunbalanced brace at position %zu", str, z);
                 guard_free(output);
                 return NULL;
             } else {
@@ -240,7 +240,7 @@ char *tpl_render(char *str) {
 
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {
-                    fprintf(stderr, "At position %zu in %s\nfunction name must be followed by a '('\n", off, key);
+                    SYSERROR("At position %zu in %s\nfunction name must be followed by a '('", off, key);
                     guard_free(output);
                     return NULL;
                 }
@@ -248,7 +248,7 @@ char *tpl_render(char *str) {
                 param_begin++;
                 char *param_end = strrchr(param_begin, ')');
                 if (!param_end) {
-                    fprintf(stderr, "At position %zu in %s\nfunction arguments must be closed with a ')'\n", off, key);
+                    SYSERROR("At position %zu in %s\nfunction arguments must be closed with a ')'", off, key);
                     guard_free(output);
                     return NULL;
                 }
@@ -265,7 +265,7 @@ char *tpl_render(char *str) {
                     return NULL;
                 }
                 if (params_count > frame->argc || params_count < frame->argc) {
-                    fprintf(stderr, "At position %zu in %s\nIncorrect number of arguments for function: %s (expected %d, got %d)\n", off, key, frame->key, frame->argc, params_count);
+                    SYSERROR("At position %zu in %s\nIncorrect number of arguments for function: %s (expected %d, got %d)", off, key, frame->key, frame->argc, params_count);
                     value = strdup("");
                 } else {
                     for (size_t p = 0; p < sizeof(frame->argv) / sizeof(*frame->argv) && params[p] != NULL; p++) {
@@ -276,7 +276,7 @@ char *tpl_render(char *str) {
                     char *func_result = NULL;
                     int func_status = 0;
                     if ((func_status = frame->func(frame, &func_result))) {
-                        fprintf(stderr, "%s returned non-zero status: %d\n", frame->key, func_status);
+                        SYSERROR("%s returned non-zero status: %d", frame->key, func_status);
                     }
                     value = strdup(func_result ? func_result : "");
                     SYSDEBUG("Returned from function: %s (status: %d)\nData OUT\n--------\n'%s'", k, func_status, value);

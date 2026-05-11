@@ -601,7 +601,8 @@ struct INIFILE *ini_open(const char *filename) {
 
             char *section_name = substring_between(line, "[]");
             if (!section_name) {
-                fprintf(stderr, "error: invalid section syntax, line %zu: '%s'\n", i + 1, line);
+                SYSERROR("invalid section syntax, line %zu: '%s'", i + 1, line);
+                ini_free(&ini);
                 return NULL;
             }
 

@@ -54,14 +54,14 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
     // If the directory doesn't exist, create it
     if (access(tmpdir, F_OK) < 0) {
         if (mkdirs(tmpdir, 0755) < 0) {
-            msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Unable to create temporary storage directory: %s (%s)\n", tmpdir, strerror(errno));
+            SYSERROR("Unable to create temporary storage directory: %s (%s)", tmpdir, strerror(errno));
             goto l_delivery_init_tmpdir_fatal;
         }
     }
 
     // If we can't read, write, or execute, then die
     if (access(tmpdir, R_OK | W_OK | X_OK) < 0) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s requires at least 0755 permissions.\n");
+        SYSERROR("%s requires at least 0755 permissions.");
         goto l_delivery_init_tmpdir_fatal;
     }
 
@@ -73,12 +73,12 @@ int delivery_init_tmpdir(struct Delivery *ctx) {
 #if defined(STASIS_OS_LINUX)
     // If we can't execute programs, or write data to the file system at all, then die
     if ((st.f_flag & ST_NOEXEC) != 0) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s is mounted with noexec\n", tmpdir);
+        SYSERROR("%s is mounted with noexec", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
 #endif
     if ((st.f_flag & ST_RDONLY) != 0) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "%s is mounted read-only\n", tmpdir);
+        SYSERROR("%s is mounted read-only", tmpdir);
         goto l_delivery_init_tmpdir_fatal;
     }
 
@@ -129,7 +129,7 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
     char *rootdir = getenv("STASIS_ROOT");
     if (rootdir) {
         if (isempty(rootdir)) {
-            fprintf(stderr, "STASIS_ROOT is set, but empty. Please assign a file system path to this environment variable.\n");
+            SYSERROR("STASIS_ROOT is set, but empty. Please assign a file system path to this environment variable.");
             exit(1);
         }
         path_store(&ctx->storage.root, PATH_MAX, rootdir, ctx->info.build_name);
@@ -140,9 +140,10 @@ void delivery_init_dirs_stage1(struct Delivery *ctx) {
     path_store(&ctx->storage.tools_dir, PATH_MAX, ctx->storage.root, "tools");
     path_store(&ctx->storage.tmpdir, PATH_MAX, ctx->storage.root, "tmp");
     if (delivery_init_tmpdir(ctx)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L1, "Set $TMPDIR to a location other than %s\n", globals.tmpdir);
-        if (globals.tmpdir)
+        SYSERROR("Set $TMPDIR to a location other than %s", globals.tmpdir);
+        if (globals.tmpdir) {
             guard_free(globals.tmpdir);
+        }
         exit(1);
     }
 
@@ -189,7 +190,7 @@ int delivery_init_platform(struct Delivery *ctx) {
     char archsuffix[20];
     struct utsname uts;
     if (uname(&uts)) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "uname() failed: %s\n", strerror(errno));
+        SYSERROR("uname() failed: %s", strerror(errno));
         return -1;
     }
 
@@ -242,7 +243,7 @@ int delivery_init_platform(struct Delivery *ctx) {
 
     long cpu_count = get_cpu_count();
     if (!cpu_count) {
-        fprintf(stderr, "Unable to determine CPU count. Falling back to 1.\n");
+        SYSERROR("Unable to determine CPU count. Falling back to 1.");
         cpu_count = 1;
     }
     char ncpus[100] = {0};
@@ -391,7 +392,7 @@ int delivery_exists(struct Delivery *ctx) {
 
     if (globals.enable_artifactory) {
         if (jfrt_auth_init(&ctx->deploy.jfrog_auth)) {
-            fprintf(stderr, "Failed to initialize Artifactory authentication context\n");
+            SYSERROR("Failed to initialize Artifactory authentication context");
             return -1;  // error
         }
 

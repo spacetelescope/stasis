@@ -78,12 +78,12 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         header = delivery_get_release_header(ctx);
         SYSDEBUG("Release header:\n%s", header);
         if (!header) {
-            msg(STASIS_MSG_ERROR, "failed to generate release header string\n", filename);
+            SYSERROR("failed to generate release header string", filename);
             exit(1);
         }
         tempfile = xmkstemp(&tp, "w+");
         if (!tempfile || !tp) {
-            msg(STASIS_MSG_ERROR, "%s: unable to create temporary file\n", strerror(errno));
+            SYSERROR("%s: unable to create temporary file", strerror(errno));
             exit(1);
         }
         SYSDEBUG("Writing header to temporary file: %s", tempfile);
@@ -92,7 +92,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
         // Read the original file
         char **contents = file_readlines(filename, 0, 0, NULL);
         if (!contents) {
-            msg(STASIS_MSG_ERROR, "%s: unable to read %s", filename);
+            SYSERROR("%s: unable to read %s", filename);
             exit(1);
         }
 
@@ -136,7 +136,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
 
         // Replace the original file with our temporary data
         if (copy2(tempfile, filename, CT_PERM) < 0) {
-            fprintf(stderr, "%s: could not rename '%s' to '%s'\n", strerror(errno), tempfile, filename);
+            SYSERROR("%s: could not rename '%s' to '%s'", strerror(errno), tempfile, filename);
             exit(1);
         }
         SYSDEBUG("Removing file: %s", tempfile);
@@ -155,7 +155,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             file_replace_text(filename, "@CONDA_CHANNEL@", output, 0);
         } else {
             SYSDEBUG("Will replace conda channel with local conda artifact directory");
-            msg(STASIS_MSG_WARN, "conda_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.conda_artifact_dir);
+            SYSWARN("conda_staging_dir is not configured. Using fallback: '%s'", ctx->storage.conda_artifact_dir);
             file_replace_text(filename, "@CONDA_CHANNEL@", ctx->storage.conda_artifact_dir, 0);
         }
 
@@ -169,7 +169,7 @@ void delivery_rewrite_spec(struct Delivery *ctx, char *filename, unsigned stage)
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         } else {
             SYSDEBUG("Will replace pip arguments with local wheel artifact directory");
-            msg(STASIS_MSG_WARN, "wheel_staging_dir is not configured. Using fallback: '%s'\n", ctx->storage.wheel_artifact_dir);
+            SYSWARN("wheel_staging_dir is not configured. Using fallback: '%s'", ctx->storage.wheel_artifact_dir);
             snprintf(output, sizeof(output), "--extra-index-url file://%s", ctx->storage.wheel_artifact_dir);
             file_replace_text(filename, "@PIP_ARGUMENTS@", output, 0);
         }
@@ -189,8 +189,7 @@ int delivery_copy_conda_artifacts(struct Delivery *ctx) {
     // One must run conda build at least once to create the "conda-bld" directory.
     // When this directory is missing there can be no build artifacts.
     if (access(conda_build_dir, F_OK) < 0) {
-        msg(STASIS_MSG_RESTRICT | STASIS_MSG_WARN | STASIS_MSG_L3,
-            "Skipped: 'conda build' has never been executed.\n");
+        SYSWARN("Skipped: 'conda build' has never been executed.");
         return 0;
     }
 

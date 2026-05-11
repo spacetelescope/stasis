@@ -74,7 +74,7 @@ void runtime_export(RuntimeEnv *env, char **keys) {
     char *_sh = getenv("SHELL");
     char *sh = path_basename(_sh);
     if (sh == NULL) {
-        fprintf(stderr, "echo SHELL environment variable is not defined");
+        SYSERROR("echo SHELL environment variable is not defined");
         exit(1);
     }
 

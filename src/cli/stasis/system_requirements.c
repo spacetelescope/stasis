@@ -32,7 +32,7 @@ void check_system_requirements(struct Delivery *ctx) {
     for (size_t i = 0; tools_required[i] != NULL; i++) {
         msg(STASIS_MSG_L3, "%s: ", tools_required[i]);
         if (!find_program(tools_required[i])) {
-            msg(STASIS_MSG_ERROR, "'%s' must be installed.\n", tools_required[i]);
+            SYSERROR("'%s' must be installed.", tools_required[i]);
             exit(1);
         }
         msg(STASIS_MSG_RESTRICT, "found\n");
@@ -62,7 +62,7 @@ void check_system_requirements(struct Delivery *ctx) {
             globals.enable_docker = false;
         }
     } else {
-        msg(STASIS_MSG_L2 | STASIS_MSG_WARN, "Docker is broken\n");
+        SYSWARN("Docker is broken");
         // disable docker builds
         globals.enable_docker = false;
     }
@@ -77,7 +77,7 @@ void check_system_path() {
     char *pathvar = NULL;
     pathvar = getenv("PATH");
     if (!pathvar) {
-        msg(STASIS_MSG_ERROR | STASIS_MSG_L2, "PATH variable is not set. Cannot continue.\n");
+        SYSERROR("PATH variable is not set. Cannot continue.");
         exit(1);
     }
 }
