@@ -415,7 +415,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             guard_free(args);
                             return -1;
                         }
-                        SYSDEBUG("%s", "Tokenizing repository info tag: %s\n", info->repository_info_tag);
+                        SYSDEBUG("Tokenizing repository info tag: %s\n", info->repository_info_tag);
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
                         struct WheelInfo *whl = NULL;
