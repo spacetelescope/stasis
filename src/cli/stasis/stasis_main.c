@@ -522,40 +522,6 @@ static void transfer_artifacts(struct Delivery *ctx) {
     }
 }
 
-static char *center_text(const char *s, const size_t maxwidth) {
-    if (maxwidth < 2) {
-        SYSERROR("maximum width must be greater than 0");
-        return NULL;
-    }
-
-    if (maxwidth % 2 != 0) {
-        SYSERROR("maximum width (%zu) must be even", maxwidth);
-        return NULL;
-    }
-
-    const size_t s_len = strlen(s);
-    if (s_len + 1 > maxwidth) {
-        SYSERROR("length of input string (%zu) exceeds maximum width (%zu)", s_len, maxwidth);
-        return NULL;
-    }
-
-    char *result = calloc(maxwidth + 1, sizeof(*result));
-    if (!result) {
-        SYSERROR("unable to allocate bytes for centered text string");
-        return NULL;
-    }
-    const size_t middle = (maxwidth / 2) - s_len / 2;
-    size_t i = 0;
-    for (; i < middle; i++) {
-        result[i] = ' ';
-    }
-    result[i++] = 'v';
-    strncpy(&result[i], s, maxwidth - middle - 1);
-    result[maxwidth] = '\0';
-
-    return result;
-}
-
 int main(int argc, char *argv[]) {
     struct Delivery ctx;
     struct Process proc = {
