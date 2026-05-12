@@ -1012,7 +1012,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
     }
     if (size_new >= *size_orig) {
         const size_t new_size = *size_orig + size_new + 1;
-        SYSDEBUG("template data buffer new size: %zu\n", new_size);
+        SYSDEBUG("template data buffer new size: %zu", new_size);
 
         char *tmp = realloc(*data, new_size);
         if (!tmp) {
