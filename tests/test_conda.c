@@ -110,13 +110,13 @@ void test_conda_setup_headless() {
 
 void test_conda_env_create_from_uri() {
     const char *url = "https://ssb.stsci.edu/jhunk/stasis_test/test_conda_env_create_from_uri.yml";
-    char *name = strdup(__FUNCTION__);
+    char *name = strdup(__func__);
     STASIS_ASSERT(conda_env_create_from_uri(name, (char *) url, "3.11") == 0, "creating an environment from a remote source failed");
     free(name);
 }
 
 void test_conda_env_create_export_remove() {
-    char *name = strdup(__FUNCTION__);
+    char *name = strdup(__func__);
     STASIS_ASSERT(conda_env_create(name, "3", "fitsverify") == 0, "unable to create a simple environment");
     STASIS_ASSERT(conda_env_export(name, ".", name) == 0, "unable to export an environment");
     STASIS_ASSERT(conda_env_remove(name) == 0, "unable to remove an environment");
