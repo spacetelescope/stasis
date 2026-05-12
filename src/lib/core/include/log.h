@@ -16,7 +16,7 @@ struct ExecPoint {
     const char *function;  // function of origin
 };
 
-#define EXECPOINT (struct ExecPoint) {.line = __LINE__, .file = __FILE__, .function = __FUNCTION__}
+#define EXECPOINT (struct ExecPoint) {.line = __LINE__, .file = __FILE__, .function = __func__}
 
 void log_print_error(struct ExecPoint ep, const char *fmt, ...);
 void log_print_warning(struct ExecPoint ep, const char *fmt, ...);

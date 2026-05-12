@@ -8,6 +8,7 @@ struct Tests *tests_init(const size_t num_tests) {
 
     tests->test = calloc(num_tests, sizeof(*tests->test));
     if (!tests->test) {
+        guard_free(tests);
         return NULL;
     }
     tests->num_used = 0;
@@ -41,6 +42,7 @@ struct Test *test_init() {
     
     result->runtime = calloc(1, sizeof(*result->runtime));
     if (!result->runtime) {
+        guard_free(result);
         return NULL;
     }
 
@@ -176,7 +178,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
             } else {
-                int dep_status = check_python_package_dependencies(".");
+                const int dep_status = check_python_package_dependencies(".");
                 if (dep_status) {
                     SYSERROR("Please replace all occurrences above with standard package specs:\n"
                                     "\n"

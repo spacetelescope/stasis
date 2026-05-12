@@ -61,7 +61,8 @@ int delivery_artifact_upload(struct Delivery *ctx) {
 
         if (!globals.jfrog.repo) {
             SYSWARN("Artifactory repository path is not configured!");
-            SYSWARN("set STASIS_JF_REPO environment variable...\nOr append to configuration file:\n");
+            SYSWARN("set STASIS_JF_REPO environment variable...\nOr append to configuration file:");
+            SYSWARN("");
             SYSWARN("[deploy:artifactory]\nrepo = example/generic/repo/path\n");
             status++;
             break;

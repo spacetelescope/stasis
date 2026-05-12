@@ -415,7 +415,11 @@ char *git_rev_parse(const char *path, char *args) {
     if (!pp) {
         return NULL;
     }
-    fgets(version, sizeof(version) - 1, pp);
+    if (fgets(version, sizeof(version) - 1, pp) == NULL) {
+        pclose(pp);
+        popd();
+        return NULL;
+    }
     strip(version);
     pclose(pp);
     popd();
@@ -423,25 +427,27 @@ char *git_rev_parse(const char *path, char *args) {
 }
 
 void msg(unsigned type, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
     FILE *stream = NULL;
     char header[255];
     char status[20];
 
     if (type & STASIS_MSG_NOP) {
         // quiet mode
+        va_end(args);
         return;
     }
 
     if (!globals.verbose && type & STASIS_MSG_RESTRICT) {
         // Verbose mode is not active
+        va_end(args);
         return;
     }
 
     memset(header, 0, sizeof(header));
     memset(status, 0, sizeof(status));
-
-    va_list args;
-    va_start(args, fmt);
 
     stream = stdout;
     fprintf(stream, "%s", STASIS_COLOR_RESET);
@@ -498,14 +504,10 @@ void debug_shell() {
 
 char *xmkstemp(FILE **fp, const char *mode) {
     int fd = -1;
-    char tmpdir[PATH_MAX];
-    char t_name[PATH_MAX * 2];
+    char tmpdir[PATH_MAX] = {0};
+    char t_name[PATH_MAX * 2] = {0};
 
-    if (globals.tmpdir) {
-        strncpy(tmpdir, globals.tmpdir, sizeof(tmpdir) - 1);
-    } else {
-        strncpy(tmpdir, "/tmp/stasis", sizeof(tmpdir) - 1);
-    }
+    strncpy(tmpdir, globals.tmpdir ? globals.tmpdir : "/tmp/stasis", sizeof(tmpdir) - 1);
     tmpdir[sizeof(tmpdir) - 1] = '\0';
 
     if (mkdirs(tmpdir, 0700) < 0) {
@@ -523,23 +525,19 @@ char *xmkstemp(FILE **fp, const char *mode) {
     }
     *fp = fdopen(fd, mode);
     if (!*fp) {
-        // unable to open, die
-        if (fd > 0)
-            close(fd);
-        *fp = NULL;
+        close(fd);
         return NULL;
     }
 
     char *path = strdup(t_name);
     if (!path) {
         // strdup failed, die
-        if (*fp) {
-            // close the file handle
-            fclose(*fp);
-            *fp = NULL;
-        }
-        // fall through. path is NULL.
+        // close the file handle
+        fclose(*fp);
+        *fp = NULL;
+        return NULL;
     }
+
     return path;
 }
 
@@ -607,10 +605,7 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
 
 int xml_pretty_print_in_place(const char *filename, const char *pretty_print_prog, const char *pretty_print_args) {
     int status = 0;
-    char *tempfile = NULL;
     char *result = NULL;
-    FILE *fp = NULL;
-    FILE *tmpfp = NULL;
     char cmd[PATH_MAX];
     if (!find_program(pretty_print_prog)) {
         // Pretty printing is optional. 99% chance the XML data will
@@ -621,11 +616,18 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
-        goto pretty_print_failed;
+        return status;
     }
 
-    tempfile = xmkstemp(&tmpfp, "w+");
-    if (!tmpfp || !tempfile) {
+    int clean_up_fp = 0;
+    FILE *tmpfp = NULL;
+    char *tempfile = xmkstemp(&tmpfp, "w+");
+    if (!tempfile || !tmpfp) {
+        guard_free(tempfile);
+        if (tmpfp) {
+            fclose(tmpfp);
+        }
+        status = -1;
         goto pretty_print_failed;
     }
 
@@ -633,10 +635,12 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     fflush(tmpfp);
     fclose(tmpfp);
 
-    fp = fopen(filename, "w+");
+    FILE *fp = fopen(filename, "w+");
     if (!fp) {
+        status = -1;
         goto pretty_print_failed;
     }
+    clean_up_fp = 1;
 
     if (copy2(tempfile, filename, CT_PERM)) {
         SYSWARN("unable to copy: '%s' -> '%s'", tempfile, filename);
@@ -653,15 +657,16 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     return 0;
 
     pretty_print_failed:
-        if (fp) {
-            fclose(fp);
-        }
-        if (tmpfp) {
-            fclose(tmpfp);
-        }
-        guard_free(tempfile);
-        guard_free(result);
-        return -1;
+    if (tempfile && remove(tempfile)) {
+        SYSWARN("unable to remove temporary file: %s", tempfile);
+    }
+    guard_free(tempfile);
+    guard_free(result);
+    if (clean_up_fp) {
+        fclose(fp);
+    }
+
+    return status;
 }
 
 /**
@@ -673,12 +678,15 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  */
 int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     struct INIFILE *toxini;
-    FILE *fptemp;
+    FILE *fptemp = NULL;
 
     // Create new temporary tox configuration file
     char *tempfile = xmkstemp(&fptemp, "w+");
     if (!tempfile) {
         SYSERROR("unable to create temporary file");
+        if (fptemp) {
+            fclose(fptemp);
+        }
         return -1;
     }
 
@@ -687,6 +695,9 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
         *result = calloc(maxlen, sizeof(**result));
         if (!*result) {
             guard_free(tempfile);
+            if (fptemp) {
+                fclose(fptemp);
+            }
             return -1;
         }
     }
@@ -724,6 +735,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                                          strlen(value) + strlen(with_posargs) + 1);
                                 guard_free(*result);
                                 guard_free(tempfile);
+                                fclose(fptemp);
                                 return -1;
                             }
                             value = tmp;
@@ -1217,3 +1229,56 @@ int get_random_bytes(char *result, size_t maxlen) {
     result[bytes ? bytes - 1 : 0] = '\0';
     return 0;
 }
+
+int non_format_len(const char *s) {
+    int len = 0;
+    int until_space = 0;
+    for (size_t i = 0; i < strlen(s); i++) {
+        if (until_space && isspace(s[i])) {
+            until_space = 0;
+        }
+        if (until_space && !isspace(s[i])) {
+            continue;
+        }
+        if (s[i] == '%') {
+            until_space = 1;
+            continue;
+        }
+        len++;
+    }
+    return len;
+}
+
+char *center_text(const char *s, const size_t maxwidth) {
+    if (maxwidth < 2) {
+        SYSERROR("%s", "maximum width must be greater than 0");
+        return NULL;
+    }
+
+    if (maxwidth % 2 != 0) {
+        SYSERROR("maximum width (%zu) must be even", maxwidth);
+        return NULL;
+    }
+
+    const size_t s_len = strlen(s);
+    if (s_len + 1 > maxwidth) {
+        SYSERROR("length of input string (%zu) exceeds maximum width (%zu)", s_len, maxwidth);
+        return NULL;
+    }
+
+    char *result = calloc(maxwidth + 1, sizeof(*result));
+    if (!result) {
+        SYSERROR("%s", "unable to allocate bytes for centered text string");
+        return NULL;
+    }
+    const size_t middle = (maxwidth / 2) - s_len / 2;
+    size_t i = 0;
+    for (; i < middle; i++) {
+        result[i] = ' ';
+    }
+    strncpy(&result[i], s, maxwidth - middle - 1);
+    result[maxwidth] = '\0';
+
+    return result;
+}
+

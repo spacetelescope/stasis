@@ -62,6 +62,7 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     (void) pool;
     FILE *fp_log = NULL;
 
+    semaphore_wait(&pool->semaphore);
     // The task starts inside the requested working directory
     if (chdir(task->working_dir)) {
         perror(task->working_dir);
@@ -77,20 +78,30 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - strlen(task->log_file),
             "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
         SYSDEBUG("using log file: %s", task->log_file);
+        semaphore_post(&pool->semaphore);
     }
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
-        fprintf(stderr, "unable to open '%s' for writing: %s\n", task->log_file, strerror(errno));
         SYSERROR("unable to open '%s' for writing: %s", task->log_file, strerror(errno));
+        semaphore_post(&pool->semaphore);
         return -1;
     }
 
-    int fd = -1;
-    if ((fd = dup2(STDOUT_FILENO, STDERR_FILENO)) < 0) {
+    const int redirect = dup2(STDOUT_FILENO, STDERR_FILENO);
+    if (redirect < 0) {
         SYSERROR("%s", "Unable to redirect stderr to stdout");
         SYSERROR("Unable to redirect stderr to stdout");
         fclose(fp_log);
+        semaphore_post(&pool->semaphore);
         return -1;
+    }
+
+    // Close child file descriptors
+    for (int fd = 3; fd < sysconf(_SC_OPEN_MAX); fd++) {
+        if (fd == redirect) {
+            continue;
+        }
+        close(fd);
     }
 
     // Generate timestamp for log header
@@ -114,7 +125,10 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     fflush(stdout);
     fflush(stderr);
     char *args[] = {"bash", "--norc", task->parent_script, (char *) NULL};
-    return execvp("/bin/bash", args);
+    semaphore_post(&pool->semaphore);
+    execvp("bash", args);
+    SYSERROR("execvp failed (%s)", strerror(errno));
+    _exit(127);
 }
 
 int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {
@@ -182,7 +196,9 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
     if (globals.enable_task_logging) {
-        snprintf(slot->log_file, sizeof(slot->log_file) - strlen(slot->log_file), "%s/", pool->log_root);
+        snprintf(slot->log_file, sizeof(slot->log_file), "%s", pool->log_root);
+        // FORTIFY_SOURCE won't leave snprintf alone. The chance for truncation is slim anyway.
+        strncat(slot->log_file, "/", sizeof(slot->log_file) - strlen(slot->log_file));
     } else {
         snprintf(slot->log_file, sizeof(slot->log_file), "/dev/stdout");
     }
@@ -230,8 +246,12 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
 
     // Record the command(s)
     SYSDEBUG("%s", "mmap() slot command");
-    slot->cmd_len = (strlen(cmd) * sizeof(*cmd)) + 1;
-    slot->cmd = mmap(NULL, slot->cmd_len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    slot->cmd_len = strlen(cmd) + 1;
+    slot->cmd = calloc(slot->cmd_len, sizeof(*slot->cmd));
+    if (!slot->cmd) {
+        SYSERROR("Failed to allocate memory for slot command");
+        return NULL;
+    }
     memset(slot->cmd, 0, slot->cmd_len);
     snprintf(slot->cmd, slot->cmd_len, "%s", cmd);
 
@@ -335,7 +355,7 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
 }
 
 int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
-    int status = 0;
+    int child_status = 0;
     int failures = 0;
     size_t tasks_complete = 0;
     size_t lower_i = 0;
@@ -376,7 +396,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             }
 
             // Is the process finished?
-            pid_t pid = waitpid(slot->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+            const pid_t pid = waitpid(slot->pid, &child_status, WNOHANG | WUNTRACED | WCONTINUED);
 
             char progress[1024] = {0};
             const double percent = ((double) (tasks_complete + 1) / (double) pool->num_used) * 100;
@@ -389,7 +409,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     seconds_to_human_readable(slot->timeout, duration, sizeof(duration));
                     printf("%s Task timed out after %s (pid: %d)\n", progress, duration, slot->pid);
                     if (kill(slot->pid, SIGKILL) == 0) {
-                        status = SIGKILL;
+                        child_status = SIGKILL;
                     } else {
                         SYSERROR("Timeout reached, however pid %d could not be killed.", slot->pid);
                         return -1;
@@ -397,13 +417,13 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
             }
 
-            const int task_ended = WIFEXITED(status);
-            const int task_ended_by_signal = WIFSIGNALED(status);
-            const int task_stopped = WIFSTOPPED(status);
-            const int task_continued = WIFCONTINUED(status);
-            const int status_exit = WEXITSTATUS(status);
-            const int status_signal = WTERMSIG(status);
-            const int status_stopped = WSTOPSIG(status);
+            const int task_ended = WIFEXITED(child_status);
+            const int task_ended_by_signal = WIFSIGNALED(child_status);
+            const int task_stopped = WIFSTOPPED(child_status);
+            const int task_continued = WIFCONTINUED(child_status);
+            const int status_exit = WEXITSTATUS(child_status);
+            const int status_signal = WTERMSIG(child_status);
+            const int status_stopped = WSTOPSIG(child_status);
 
             // Update status
             slot->status = status_exit;
@@ -427,7 +447,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     printf("%s Task ended (status: %d)\n", progress, status_exit);
                     tasks_complete++;
                 } else {
-                    SYSWARN("%s Task state is unknown (0x%04X)", progress, status);
+                    SYSWARN("%s Task state is unknown (0x%04X)", progress, child_status);
                 }
 
                 if (globals.enable_task_logging) {
@@ -437,7 +457,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                     }
                 }
 
-                if (status >> 8 != 0 || (status & 0xff) != 0) {
+                if (child_status >> 8 != 0 || (child_status & 0xff) != 0) {
                     semaphore_wait(&pool->semaphore);
                     update_task_elapsed(slot);
                     semaphore_post(&pool->semaphore);
@@ -526,6 +546,10 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
     // The pool is shared with children
     pool = mmap(NULL, sizeof(*pool), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    if (pool == MAP_FAILED) {
+        SYSERROR("unable to memory map pool");
+        return NULL;
+    }
 
     // Set pool identity string
     memset(pool->ident, 0, sizeof(pool->ident));
@@ -576,21 +600,21 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
         semaphore_destroy(&(*pool)->semaphore);
     }
 
-    // Unmap all pool tasks
+    // Free all task commands
     if ((*pool)->task) {
-        if ((*pool)->task->cmd) {
-            if (munmap((*pool)->task->cmd, (*pool)->task->cmd_len) < 0) {
-                perror("munmap");
-            }
+        for (size_t i = 0; i < (*pool)->num_alloc + 1; i++) {
+            struct MultiProcessingTask *task = &(*pool)->task[i];
+            guard_free(task->cmd);
         }
-        if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc) < 0) {
-            perror("munmap");
+        // Unmap the task array
+        if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc + 1) < 0) {
+            SYSWARN("munmap pool task failed: %s", strerror(errno));
         }
     }
     // Unmap the pool
     if ((*pool)) {
         if (munmap((*pool), sizeof(*(*pool))) < 0) {
-            SYSWARN("munmap failed: %s", strerror(errno));
+            SYSWARN("munmap pool failed: %s", strerror(errno));
         }
         (*pool) = NULL;
     }

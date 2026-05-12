@@ -38,7 +38,7 @@ int artifactory_download_cli(char *dest,
         strncpy(os_ident, "linux", sizeof(os_ident) - 1);
         os_ident[sizeof(os_ident) - 1] = '\0';
     } else {
-        SYSERROR("%s: unknown operating system: %s", __FUNCTION__, os_ident);
+        SYSERROR("unknown operating system: %s", os_ident);
         return -1;
     }
 
@@ -59,7 +59,7 @@ int artifactory_download_cli(char *dest,
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
         strncpy(arch_ident, "arm64", sizeof(arch_ident) - 1);
     } else {
-        SYSERROR("%s: unknown architecture: %s", __FUNCTION__, arch_ident);
+        SYSERROR("unknown architecture: %s", arch_ident);
         return -1;
     }
     arch_ident[sizeof(arch_ident) - 1] = '\0';
@@ -79,7 +79,7 @@ int artifactory_download_cli(char *dest,
     path[sizeof(path) - 1] = '\0';
 
     if (mkdirs(path, 0755)) {
-        SYSERROR("%s: %s: %s", __FUNCTION__, path, strerror(errno));
+        SYSERROR("%s: %s", path, strerror(errno));
         return -1;
     }
 

@@ -101,10 +101,9 @@ int indexer_readmes(struct Delivery **ctx, const size_t nelem) {
         fprintf(indexfp, "- Receipt: [STASIS input file](../config/%s.ini)\n", current->info.release_name);
 
         char *pattern = NULL;
-        asprintf(&pattern, "*%s*%s*",
+        if (asprintf(&pattern, "*%s*%s*",
                  current->info.build_number,
-                 strstr((*ctx)->rules.release_fmt, "%p") ? current->meta.python_compact : "" );
-        if (!pattern) {
+                 strstr((*ctx)->rules.release_fmt, "%p") ? current->meta.python_compact : "" ) < 0) {
             SYSERROR("Unable to allocate bytes for pattern");
             fclose(indexfp);
             return -1;

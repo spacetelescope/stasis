@@ -1,7 +1,7 @@
 #include "delivery.h"
 #include "conda.h"
 
-struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
+struct Delivery *delivery_duplicate(struct Delivery *ctx) {
     struct Delivery *result = calloc(1, sizeof(*result));
     if (!result) {
         return NULL;
@@ -56,12 +56,16 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
         result->rules._handle = malloc(sizeof(*result->rules._handle));
         if (!result->rules._handle) {
             SYSERROR("unable to allocate space for INIFILE handle");
+            SYSERROR("%s", "unable to allocate space for INIFILE handle");
+            delivery_free(ctx);
             return NULL;
         }
         result->rules._handle->section = malloc(ctx->rules._handle->section_count * sizeof(**ctx->rules._handle->section));
         if (!result->rules._handle->section) {
             guard_free(result->rules._handle);
             SYSERROR("unable to allocate space for INIFILE section");
+            SYSERROR("%s", "unable to allocate space for INIFILE section");
+            delivery_free(ctx);
             return NULL;
         }
         memcpy(result->rules._handle, &ctx->rules._handle, sizeof(*ctx->rules._handle));
@@ -102,10 +106,18 @@ struct Delivery *delivery_duplicate(const struct Delivery *ctx) {
         result->system.platform = malloc(DELIVERY_PLATFORM_MAX * sizeof(*result->system.platform));
         if (!result->system.platform) {
             SYSERROR("unable to allocate space for system platform array");
+            SYSERROR("%s", "unable to allocate space for system platform array");
+            delivery_free(ctx);
             return NULL;
         }
         for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
             result->system.platform[i] = strdup_maybe(ctx->system.platform[i]);
+            if (!result->system.platform[i]) {
+                SYSERROR("%s", "unable to allocate record in system platform array");
+                guard_array_n_free(result->system.platform, DELIVERY_PLATFORM_MAX);
+                delivery_free(ctx);
+                return NULL;
+            }
         }
     }
 
@@ -245,6 +257,9 @@ void delivery_free(struct Delivery *ctx) {
     guard_free(ctx->rules.release_fmt);
     guard_free(ctx->rules.build_name_fmt);
     guard_free(ctx->rules.build_number_fmt);
+    if (ctx->rules._handle) {
+        ini_free(&ctx->rules._handle);
+    }
 
     guard_free(ctx->deploy.docker.test_script);
     guard_free(ctx->deploy.docker.registry);
@@ -474,7 +489,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 
     if (!strlist_count(deferred)) {
-        SYSWARN("No %s packages were filtered by test definitions\n", mode);
+        SYSWARN("No %s packages were filtered by test definitions", mode);
     } else {
         if (DEFER_CONDA == type) {
             guard_strlist_free(&ctx->conda.conda_packages);

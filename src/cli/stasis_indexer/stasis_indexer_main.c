@@ -48,9 +48,9 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         if (!access(srcdir_with_output, F_OK)) {
             srcdir = srcdir_with_output;
         }
-        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), "'%s'/ ", srcdir);
+        snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - non_format_len("'%s'/ "), "'%s'/ ", srcdir);
     }
-    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), " %s/", destdir);
+    snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd) - non_format_len(" %s/"), " %s/", destdir);
 
     if (globals.verbose) {
         puts(cmd);
@@ -304,7 +304,17 @@ int main(const int argc, char *argv[]) {
 
     struct Delivery ctx = {0};
 
-    printf(BANNER, VERSION, AUTHOR);
+    char *version = center_text(VERSION, strlen(STASIS_BANNER_HEADER));
+    if (!version) {
+        SYSERROR("%s", "version too long?");
+        version = strdup(VERSION);
+        if (!version) {
+            SYSERROR("%s", "unable to allocate uncentered fallback version string");
+            exit(1);
+        }
+    }
+    printf(BANNER, version, AUTHOR);
+    guard_free(version);
 
     indexer_init_dirs(&ctx, workdir);
 
@@ -325,6 +335,7 @@ int main(const int argc, char *argv[]) {
         mkdirs(ctx.storage.wheel_artifact_dir, 0755);
     }
 
+    msg(STASIS_MSG_L1, "Configure Micromamba\n");
     struct MicromambaInfo m;
     if (micromamba_configure(&ctx, &m)) {
         SYSERROR("Unable to configure micromamba");

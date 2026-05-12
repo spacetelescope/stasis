@@ -14,8 +14,9 @@ struct INIFILE *ini_init() {
     return ini;
 }
 
-void ini_section_init(struct INIFILE **ini) {
-    (*ini)->section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
+struct INISection **ini_section_init(struct INIFILE **ini) {
+    struct INISection **section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
+    return section;
 }
 
 struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value) {
@@ -219,80 +220,82 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
 
 #define getval_returns(t) return result.t
 #define getval_setup(t, f) \
-    union INIVal result; \
+    union INIVal result = {0}; \
+    do {\
     int state_local = 0; \
     state_local = ini_getval(ini, section_name, key, t, f, &result); \
     if (state != NULL) { \
         *state = state_local; \
-    }
+    } \
+} while (0)
 
 int ini_getval_int(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_INT, flags)
+    getval_setup(INIVAL_TYPE_INT, flags);
     getval_returns(as_int);
 }
 
 unsigned int ini_getval_uint(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_UINT, flags)
+    getval_setup(INIVAL_TYPE_UINT, flags);
     getval_returns(as_uint);
 }
 
 long ini_getval_long(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_LONG, flags)
+    getval_setup(INIVAL_TYPE_LONG, flags);
     getval_returns(as_long);
 }
 
 unsigned long ini_getval_ulong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_ULONG, flags)
+    getval_setup(INIVAL_TYPE_ULONG, flags);
     getval_returns(as_ulong);
 }
 
 long long ini_getval_llong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_LLONG, flags)
+    getval_setup(INIVAL_TYPE_LLONG, flags);
     getval_returns(as_llong);
 }
 
 unsigned long long ini_getval_ullong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_ULLONG, flags)
+    getval_setup(INIVAL_TYPE_ULLONG, flags);
     getval_returns(as_ullong);
 }
 
 float ini_getval_float(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_FLOAT, flags)
+    getval_setup(INIVAL_TYPE_FLOAT, flags);
     getval_returns(as_float);
 }
 
 double ini_getval_double(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_DOUBLE, flags)
+    getval_setup(INIVAL_TYPE_DOUBLE, flags);
     getval_returns(as_double);
 }
 
 bool ini_getval_bool(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_BOOL, flags)
+    getval_setup(INIVAL_TYPE_BOOL, flags);
     getval_returns(as_bool);
 }
 
 short ini_getval_short(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_SHORT, flags)
+    getval_setup(INIVAL_TYPE_SHORT, flags);
     getval_returns(as_short);
 }
 
 unsigned short ini_getval_ushort(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_USHORT, flags)
+    getval_setup(INIVAL_TYPE_USHORT, flags);
     getval_returns(as_ushort);
 }
 
 char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_CHAR, flags)
+    getval_setup(INIVAL_TYPE_CHAR, flags);
     getval_returns(as_char);
 }
 
 unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_UCHAR, flags)
+    getval_setup(INIVAL_TYPE_UCHAR, flags);
     getval_returns(as_uchar);
 }
 
 char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR, flags)
+    getval_setup(INIVAL_TYPE_STR, flags);
     getval_returns(as_char_p);
 }
 
@@ -301,7 +304,7 @@ char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int fla
 }
 
 char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
+    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
     getval_returns(as_char_p);
 }
 
@@ -310,7 +313,7 @@ char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, i
 }
 
 struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags)
+    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
     struct StrList *list = strlist_init();
     strlist_append_tokenize(list, result.as_char_p, tok);
     guard_free(result.as_char_p);
@@ -401,20 +404,22 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
 }
 
 int ini_section_create(struct INIFILE **ini, char *key) {
-    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof(**(*ini)->section));
-    if (tmp == NULL) {
+    struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof (*(*ini)->section));
+    if (!tmp) {
+        ini_free(ini);
         return 1;
-    } else {
-        (*ini)->section = tmp;
     }
+    (*ini)->section = tmp;
 
-    (*ini)->section[(*ini)->section_count] = calloc(1, sizeof(*(*ini)->section[0]));
-    if (!(*ini)->section[(*ini)->section_count]) {
+    struct INISection **section = &(*ini)->section[(*ini)->section_count];
+    //[(*ini)->section_count];
+    *section = calloc(1, sizeof(*(*ini)->section[0]));
+    if (!*section) {
         return -1;
     }
 
-    (*ini)->section[(*ini)->section_count]->key = strdup(key);
-    if (!(*ini)->section[(*ini)->section_count]->key) {
+    (*section)->key = strdup(key);
+    if (!(*section)->key) {
         return -1;
     }
 
@@ -512,6 +517,9 @@ char *unquote(char *s) {
 }
 
 void ini_free(struct INIFILE **ini) {
+    if (!(*ini)) {
+        return;
+    }
     for (size_t section = 0; section < (*ini)->section_count; section++) {
         for (size_t data = 0; data < (*ini)->section[section]->data_count; data++) {
             if ((*ini)->section[section]->data[data]) {
@@ -538,10 +546,19 @@ struct INIFILE *ini_open(const char *filename) {
         return NULL;
     }
 
-    ini_section_init(&ini);
+    ini->section = ini_section_init(&ini);
+    if (!ini->section) {
+        ini_free(&ini);
+        return NULL;
+    }
 
     // Create an implicit section. [default] does not need to be present in the INI config
-    ini_section_create(&ini, "default");
+    if (ini_section_create(&ini, "default")) {
+        SYSERROR("%s", "unable to create default section");
+        ini_free(&ini);
+        ini = NULL;
+        return NULL;
+    }
     strncpy(current_section, "default", sizeof(current_section) - 1);
     current_section[sizeof(current_section) - 1] = '\0';
 
@@ -614,7 +631,12 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Create new named section
             strip(section_name);
-            ini_section_create(&ini, section_name);
+            if (ini_section_create(&ini, section_name)) {
+                SYSERROR("unable to create section: %s", section_name);
+                guard_free(section_name);
+                ini_free(&ini);
+                return NULL;
+            }
 
             // Record the name of the section. This is used until another section is found.
             memset(current_section, 0, sizeof(current_section));
@@ -631,7 +653,7 @@ struct INIFILE *ini_open(const char *filename) {
             continue;
         }
 
-        char *operator = strchr(line, '=');
+        const char *operator = strchr(line, '=');
 
         // a value continuation line
         if (multiline_data && (startswith(line, " ") || startswith(line, "\t"))) {
@@ -639,7 +661,7 @@ struct INIFILE *ini_open(const char *filename) {
         }
 
         if (operator) {
-            size_t key_len = operator - line;
+            const size_t key_len = operator - line;
             memset(key, 0, key_size);
 
             strncpy(key, line, key_len);

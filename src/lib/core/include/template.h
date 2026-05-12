@@ -40,7 +40,9 @@ char *tpl_render(char *str);
  */
 int tpl_render_to_file(char *str, const char *filename);
 
-typedef int tplfunc(void *frame, void *data_out);
+struct tplfunc_frame;
+
+typedef int tplfunc(struct tplfunc_frame *frame, void *data_out);
 
 struct tplfunc_frame {
     char *key;                 ///< Name of the function
@@ -68,8 +70,9 @@ struct tplfunc_frame {
  * @param key function name to expose to "func:" interface
  * @param tplfunc_ptr pointer to function of type tplfunc
  * @param argc number of function arguments to accept
+ * @param data_in pointer to function input data
  */
-void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in);
+void tpl_register_func(char *key, tplfunc *tplfunc_ptr, int argc, void *data_in);
 
 /**
  * Get the function frame associated with a template function

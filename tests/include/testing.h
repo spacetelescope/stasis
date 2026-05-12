@@ -224,7 +224,7 @@ inline void stasis_testing_teardown_workspace() {
 #define STASIS_ASSERT(COND, REASON) do { \
         stasis_testing_record_result((struct stasis_test_result_t) { \
             .filename = __FILE_NAME__, \
-            .funcname = __FUNCTION__,  \
+            .funcname = __func__,  \
             .lineno = __LINE__,        \
             .status = (COND),             \
             .msg_assertion = "ASSERT(" #COND ")",                 \
@@ -234,7 +234,7 @@ inline void stasis_testing_teardown_workspace() {
 #define STASIS_ASSERT_FATAL(COND, REASON) do { \
         stasis_testing_record_result((struct stasis_test_result_t) { \
             .filename = __FILE_NAME__, \
-            .funcname = __FUNCTION__,  \
+            .funcname = __func__,  \
             .lineno = __LINE__,        \
             .status = (COND),             \
             .msg_assertion = "ASSERT FATAL (" #COND ")",                 \
@@ -248,7 +248,7 @@ inline void stasis_testing_teardown_workspace() {
 #define STASIS_SKIP_IF(COND, REASON) do { \
         stasis_testing_record_result((struct stasis_test_result_t) { \
             .filename = __FILE_NAME__, \
-            .funcname = __FUNCTION__,  \
+            .funcname = __func__,  \
             .lineno = __LINE__,        \
             .status = true, \
             .skip = (COND), \

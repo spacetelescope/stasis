@@ -11,7 +11,7 @@ char *strdup_maybe_entry(const char * restrict s, const struct ExecPoint ep, con
     if (s != NULL) {
         char *x = strdup(s);
         if (!x) {
-            SYSERROR("unable to duplicate string");
+            // We want to trace the origin of the allocation so SYSERROR can't be used here.
             log_print_error(ep, "out of memory");
             exit(exit_code);
         }
@@ -93,7 +93,6 @@ char** split(char *_sptr, const char* delim, size_t max)
     // Duplicate the input string and save a copy of the pointer to be freed later
     char *orig = _sptr;
     char *sptr = strdup(orig);
-
     if (!sptr) {
         return NULL;
     }
@@ -134,6 +133,8 @@ char** split(char *_sptr, const char* delim, size_t max)
         }
         result[i] = calloc(STASIS_BUFSIZ, sizeof(char));
         if (!result[i]) {
+            guard_free(sptr);
+            guard_array_n_free(result, i);
             return NULL;
         }
         strncpy(result[i], token, STASIS_BUFSIZ - 1);
@@ -145,6 +146,8 @@ char** split(char *_sptr, const char* delim, size_t max)
         // append the remaining string contents to array
         result[i] = calloc(STASIS_BUFSIZ, sizeof(char));
         if (!result[i]) {
+            guard_free(sptr);
+            guard_array_n_free(result, i);
             return NULL;
         }
         strncpy(result[i], &orig[pos], STASIS_BUFSIZ - 1);
@@ -172,7 +175,7 @@ char *join(char **arr, const char *separator) {
 
     result = (char *)calloc(total_bytes, sizeof(char));
     for (int i = 0; i < records; i++) {
-        strncat(result, arr[i], total_bytes - strlen(result) - 1);
+        strncat(result, arr[i], total_bytes - (result ? strlen(result) - 1 : 0));
         if (i < (records - 1)) {
             strncat(result, separator, total_bytes - strlen(result) - 1);
         }
@@ -227,7 +230,7 @@ char *join_ex(char *separator, ...) {
     result = calloc(size + 1, sizeof(char));
     for (size_t i = 0; i < argc; i++) {
         // Append argument to string
-        strncat(result, argv[i], size - strlen(result)); // no -1 because +1 above
+        strncat(result, argv[i], size - (result ? strlen(result) - 1 : 0)); // no -1 because +1 above
 
         // Do not append a trailing separator when we reach the last argument
         if (i < (argc - 1)) {

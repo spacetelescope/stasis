@@ -257,7 +257,7 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
         return -1;
     }
     if ((size_t) len > sizeof(userpattern)) {
-        SYSWARN("%s: userpattern truncated!", __FUNCTION__);
+        SYSWARN("userpattern truncated!");
     }
     va_end(args);
     if (!strlen(userpattern)) {
@@ -297,7 +297,10 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
 
 struct StrList *get_docker_images(struct Delivery *ctx, char *pattern) {
     char *tarball = NULL;
-    asprintf(&tarball, "%s*.tar*", pattern);
+    if (asprintf(&tarball, "%s*.tar*", pattern) < 0) {
+        SYSERROR("unable to allocate bytes for tarball pattern: %s", pattern);
+        return NULL;
+    }
     if (!tarball) {
         SYSERROR("Unable to allocate bytes for docker image wildcard pattern");
         return NULL;

@@ -235,12 +235,16 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
             goto cleanup;
         }
         if (strstr(item, name)) {
-            char *spec_tmp = find_version_spec((char *) item);
-            while (!isalnum(*spec_tmp)) {
-                spec_tmp++;
+            const char *spec_tmp = find_version_spec((char *) item);
+            if (spec_tmp) {
+                while (!isalnum(*spec_tmp)) {
+                    spec_tmp++;
+                }
+                spec_request = strdup(spec_tmp);
+            } else {
+                spec_request = strdup(item);
             }
 
-            spec_request = strdup(spec_tmp);
             if (!spec_request) {
                 SYSERROR("unable to allocate memory for conda package spec request");
                 status = -1;
@@ -261,9 +265,17 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
     }
 
     snprintf(cmd, PATH_MAX, "remove --name %s %s", env_name, name);
-    conda_exec(cmd);
+    if (conda_exec(cmd)) {
+        SYSERROR("unable to remove package %s from %s", name, env_name);
+        status = -1;
+        goto cleanup;
+    }
     snprintf(cmd, PATH_MAX, "install --name %s %s=%s", env_name, name, spec_request);
-    conda_exec(cmd);
+    if (conda_exec(cmd)) {
+        SYSERROR("unable to install package %s into %s", name, env_name);
+        status = -1;
+        goto cleanup;
+    }
 
     cleanup:
     guard_free(spec_request);
@@ -376,14 +388,16 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
         strncat(command_base, " --use-local", sizeof(command_base) - strlen(command_base) - 1);
+        command_base[sizeof(command_base) - 1] = '\0';
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
         // as possible between releases.
         if (!ctx->meta.based_on) {
             strncat(command_base, " --upgrade", sizeof(command_base) - strlen(command_base) - 1);
+            command_base[sizeof(command_base) - 1] = '\0';
         }
-        snprintf(command_base + strlen(command_base), sizeof(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
+        snprintf(command_base + strlen(command_base), sizeof(command_base) - strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
 
     size_t args_alloc_len = STASIS_BUFSIZ;
@@ -402,15 +416,18 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 continue;
             }
             if (INSTALL_PKG_PIP_DEFERRED & type) {
+                SYSDEBUG("Getting requirements for test: %s", name);
                 struct Test *info = requirement_from_test(ctx, name);
                 if (info) {
                     if (!strcmp(info->version, "HEAD") || is_git_sha(info->version)) {
+                        SYSDEBUG("Using version: %s", info->version);
                         struct StrList *tag_data = strlist_init();
                         if (!tag_data) {
                             SYSERROR("Unable to allocate memory for tag data");
                             guard_free(args);
                             return -1;
                         }
+                        SYSDEBUG("Tokenizing repository info tag: %s", info->repository_info_tag);
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
                         struct WheelInfo *whl = NULL;
@@ -418,13 +435,16 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         char *hash = NULL;
                         if (strlist_count(tag_data) > 1) {
                             post_commit = strlist_item(tag_data, 1);
+                            SYSDEBUG("post_commit: %s", post_commit);
                             hash = strlist_item(tag_data, 2);
+                            SYSDEBUG("hash: %s", hash);
                         }
 
                         // We can't match on version here (index 0). The wheel's version is not guaranteed to be
                         // equal to the tag; setuptools_scm auto-increments the value, the user can change it manually,
                         // etc.
                         errno = 0;
+                        SYSDEBUG("%s", "Getting wheel information");
                         whl = wheelinfo_get(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
@@ -439,8 +459,10 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             SYSERROR("No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found, replace the original version with newly detected version
+                            SYSDEBUG("Replacing version: %s", whl->version);
                             guard_free(info->version);
                             info->version = strdup(whl->version);
+                            SYSDEBUG("Version replaced with: %s", whl->version);
                         }
                         guard_strlist_free(&tag_data);
                         wheelinfo_free(&whl);

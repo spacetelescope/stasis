@@ -172,7 +172,7 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
         return -1;
     }
 
-    pkg->provides_extra = calloc(WHEEL_MAXELEM + 1, sizeof(pkg->provides_extra[0]));
+    pkg->provides_extra = calloc(WHEEL_MAXELEM + 1, sizeof(*pkg->provides_extra));
     if (!pkg->provides_extra) {
         // memory error
         return -1;
@@ -539,6 +539,10 @@ static ssize_t wheel_parse_metadata(struct WheelMetadata * const pkg, const char
                     return -1;
                 }
                 current_extra = pkg->provides_extra[provides_extra_i];
+                if (!current_extra) {
+                    SYSERROR("%s", "provides_extra array cannot have a NULL record");
+                    return -1;
+                }
                 current_extra->target = strdup(value);
                 if (!current_extra->target) {
                     // memory error
@@ -688,8 +692,8 @@ static int wheel_metadata_get(const struct Wheel *pkg, const char *wheel_filenam
     if (wheel_get_file_contents(wheel_filename, "*.dist-info/METADATA", &data)) {
         return -1;
     }
-    const ssize_t result = wheel_parse_metadata(pkg->metadata, data);
     char *data_orig = data;
+    const ssize_t result = wheel_parse_metadata(pkg->metadata, data);
     guard_free(data_orig);
     return (int) result;
 }
@@ -953,6 +957,9 @@ void wheel_entry_point_free(struct WheelEntryPoint **entry) {
 }
 
 void wheel_metadata_free(struct WheelMetadata *meta) {
+    if (!meta) {
+        return;
+    }
     guard_free(meta->license);
     guard_free(meta->license_expression);
     guard_free(meta->version);
@@ -975,18 +982,22 @@ void wheel_metadata_free(struct WheelMetadata *meta) {
     guard_strlist_free(&meta->requires_dist);
     guard_strlist_free(&meta->keywords);
     guard_strlist_free(&meta->license_file);
-
-    for (size_t i = 0; meta->provides_extra[i] != NULL; i++) {
-        guard_free(meta->provides_extra[i]->target);
-        guard_strlist_free(&meta->provides_extra[i]->requires_dist);
-        guard_free(meta->provides_extra[i]);
+    if (meta->provides_extra) {
+        for (size_t i = 0; meta->provides_extra[i] != NULL; i++) {
+            guard_free(meta->provides_extra[i]->target);
+            guard_strlist_free(&meta->provides_extra[i]->requires_dist);
+            guard_free(meta->provides_extra[i]);
+        }
+        guard_free(meta->provides_extra);
     }
-    guard_free(meta->provides_extra);
 
     guard_free(meta);
 }
 
 void wheel_package_free(struct Wheel **pkg) {
+    if (!*pkg) {
+        return;
+    }
     guard_free((*pkg)->wheel_version);
     guard_free((*pkg)->generator);
     guard_free((*pkg)->root_is_pure_lib);
@@ -997,7 +1008,7 @@ void wheel_package_free(struct Wheel **pkg) {
     for (size_t i = 0; (*pkg)->record && (*pkg)->record[i] != NULL; i++) {
         wheel_record_free(&(*pkg)->record[i]);
     }
-    guard_free((*pkg)->record);
+    guard_array_n_free((*pkg)->record, (*pkg)->num_record);
 
     for (size_t i = 0; (*pkg)->entry_point && (*pkg)->entry_point[i] != NULL; i++) {
         wheel_entry_point_free(&(*pkg)->entry_point[i]);
@@ -1122,13 +1133,14 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
             usable_lines--;
         }
     }
+    pkg->num_entry_point = usable_lines;
 
-    pkg->entry_point = calloc(usable_lines + 1, sizeof(*pkg->entry_point));
+    pkg->entry_point = calloc(pkg->num_entry_point + 1, sizeof(*pkg->entry_point));
     if (!pkg->entry_point) {
         goto GEP_FAIL;
     }
 
-    for (size_t i = 0; i < usable_lines; i++) {
+    for (size_t i = 0; i < pkg->num_entry_point; i++) {
         pkg->entry_point[i] = calloc(1, sizeof(*pkg->entry_point[0]));
         if (!pkg->entry_point[i]) {
             goto GEP_FAIL;
@@ -1186,6 +1198,9 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
     return 0;
 
     GEP_FAIL:
+    if (pkg->entry_point) {
+        guard_array_n_free(pkg->entry_point, pkg->num_entry_point);
+    }
     guard_strlist_free(&lines);
     guard_free(data);
     return -1;
@@ -1332,41 +1347,54 @@ int wheel_show_info(const struct Wheel *wheel) {
 }
 
 int wheel_package(struct Wheel **pkg, const char *filename) {
+    int status = 0;
     if (!filename) {
-        return WHEEL_PACKAGE_E_FILENAME;
+        status = WHEEL_PACKAGE_E_FILENAME;
+        goto fail;
     }
     if (!*pkg) {
         *pkg = calloc(1, sizeof(**pkg));
         if (!*pkg) {
-            return WHEEL_PACKAGE_E_ALLOC;
+            status = WHEEL_PACKAGE_E_ALLOC;
+            goto fail;
         }
 
         (*pkg)->metadata = calloc(1, sizeof(*(*pkg)->metadata));
         if (!(*pkg)->metadata) {
-            guard_free(*pkg);
-            return WHEEL_PACKAGE_E_ALLOC;
+            status = WHEEL_PACKAGE_E_ALLOC;
+            goto fail;
         }
     }
     if (wheel_get(pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET;
+        status = WHEEL_PACKAGE_E_GET;
+        goto fail;
     }
     if (wheel_metadata_get(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_METADATA;
+        status = WHEEL_PACKAGE_E_GET_METADATA;
+        goto fail;
     }
     if (wheel_get_top_level(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_TOP_LEVEL;
+        status = WHEEL_PACKAGE_E_GET_TOP_LEVEL;
+        goto fail;
     }
     if (wheel_get_records(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_RECORDS;
+        status = WHEEL_PACKAGE_E_GET_RECORDS;
+        goto fail;
     }
     if (wheel_get_entry_point(*pkg, filename) < 0) {
-        return WHEEL_PACKAGE_E_GET_ENTRY_POINT;
+        status = WHEEL_PACKAGE_E_GET_ENTRY_POINT;
+        goto fail;
     }
 
     // Optional marker
     wheel_get_zip_safe(*pkg, filename);
 
-    return WHEEL_PACKAGE_E_SUCCESS;
+    status = WHEEL_PACKAGE_E_SUCCESS;
+    return status;
+
+    fail:
+    wheel_package_free(pkg);
+    return status;
 }
 
 

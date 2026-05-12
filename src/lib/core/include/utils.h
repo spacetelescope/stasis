@@ -210,17 +210,17 @@ int path_store(char **destptr, size_t maxlen, const char *base, const char *path
 #define STASIS_COLOR_RESET ""
 #else
 //! Set output color to red
-#define STASIS_COLOR_RED "\e[1;91m"
+#define STASIS_COLOR_RED "\x1b[1;91m"
 //! Set output color to green
-#define STASIS_COLOR_GREEN "\e[1;92m"
+#define STASIS_COLOR_GREEN "\x1b[1;92m"
 //! Set output color to yellow
-#define STASIS_COLOR_YELLOW "\e[1;93m"
+#define STASIS_COLOR_YELLOW "\x1b[1;93m"
 //! Set output color to blue
-#define STASIS_COLOR_BLUE "\e[1;94m"
+#define STASIS_COLOR_BLUE "\x1b[1;94m"
 //! Set output color to white
-#define STASIS_COLOR_WHITE "\e[1;97m"
+#define STASIS_COLOR_WHITE "\x1b[1;97m"
 //! Reset output color to terminal default
-#define STASIS_COLOR_RESET "\e[0;37m\e[0m"
+#define STASIS_COLOR_RESET "\x1b[0;37m\x1b[0m"
 #endif
 
 #define STASIS_MSG_SUCCESS 0
@@ -484,4 +484,12 @@ int str_to_timeout(char *s);
 const char *get_random_generator_file();
 int get_random_bytes(char *result, size_t maxlen);
 
+/**
+ * Get length of `s` as if any formatters are not present
+ * @param s format string
+ * @return length
+ */
+int non_format_len(const char *s);
+
+char *center_text(const char *s, size_t maxwidth);
 #endif //STASIS_UTILS_H

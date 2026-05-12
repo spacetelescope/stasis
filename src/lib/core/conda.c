@@ -207,42 +207,30 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         return PKG_INDEX_PROVIDES_E_INTERNAL_MODE_UNKNOWN;
     }
 
-#if defined(DEBUG)
-    const int debug_log = 1;
-#else
-    const int debug_log = 0;
-#endif
-
     // Print errors only when shell() itself throws one
     // If some day we want to see the errors thrown by pip too, use this
     // condition instead:  (status != 0)
-    if (debug_log) {
-        SYSDEBUG("Executing: %s", cmd);
-    }
+    SYSDEBUG("Executing: %s", cmd);
     status = shell(&proc, cmd);
 
-    if (debug_log) {
-        SYSDEBUG("Log file: %s", logfile);
-    }
-    if (status < 0 || debug_log) {
+    SYSDEBUG("Log file: %s", logfile);
+    if (status != 0) {
         FILE *fp = fdopen(logfd, "r");
         if (!fp) {
             remove(logfile);
             return -1;
-        } else {
-            char line[STASIS_BUFSIZ] = {0};
-            fflush(stdout);
-            fflush(stderr);
-            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-                if (debug_log) {
-                    SYSDEBUG("%s", strip(line));
-                } else {
-                    fprintf(stderr, "%s", line);
-                }
-            }
-            fflush(stderr);
-            fclose(fp);
         }
+
+        fflush(stdout);
+        fflush(stderr);
+
+        char line[STASIS_BUFSIZ] = {0};
+        while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+            SYSDEBUG("%s", strip(line));
+        }
+
+        fflush(stderr);
+        fclose(fp);
     }
     remove(logfile);
 
