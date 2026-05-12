@@ -265,9 +265,17 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
     }
 
     snprintf(cmd, PATH_MAX, "remove --name %s %s", env_name, name);
-    conda_exec(cmd);
+    if (conda_exec(cmd)) {
+        SYSERROR("unable to remove package %s from %s", name, env_name);
+        status = -1;
+        goto cleanup;
+    }
     snprintf(cmd, PATH_MAX, "install --name %s %s=%s", env_name, name, spec_request);
-    conda_exec(cmd);
+    if (conda_exec(cmd)) {
+        SYSERROR("unable to install package %s into %s", name, env_name);
+        status = -1;
+        goto cleanup;
+    }
 
     cleanup:
     guard_free(spec_request);
