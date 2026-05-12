@@ -214,7 +214,7 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
     status = shell(&proc, cmd);
 
     SYSDEBUG("Log file: %s", logfile);
-    if (status < 0) {
+    if (status != 0) {
         FILE *fp = fdopen(logfd, "r");
         if (!fp) {
             remove(logfile);
