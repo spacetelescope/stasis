@@ -95,7 +95,7 @@ void test_tpl_register_func() {
     struct testcase {
         const char *key;
         int argc;
-        void *func;
+        tplfunc *func;
     };
     struct testcase tc[] = {
             {.key = "add", .argc = 2, .func = &adder},

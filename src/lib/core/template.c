@@ -26,7 +26,7 @@ extern void tpl_reset() {
     tpl_pool_func_used = 0;
 }
 
-void tpl_register_func(char *key, void *tplfunc_ptr, int argc, void *data_in) {
+void tpl_register_func(char *key, tplfunc *tplfunc_ptr, int argc, void *data_in) {
     struct tplfunc_frame *frame = calloc(1, sizeof(*frame));
     if (!frame) {
         SYSERROR("unable to allocate memory for function frame");
