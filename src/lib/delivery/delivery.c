@@ -489,7 +489,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     }
 
     if (!strlist_count(deferred)) {
-        SYSWARN("No %s packages were filtered by test definitions\n", mode);
+        SYSWARN("No %s packages were filtered by test definitions", mode);
     } else {
         if (DEFER_CONDA == type) {
             guard_strlist_free(&ctx->conda.conda_packages);
