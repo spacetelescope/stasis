@@ -257,7 +257,7 @@ int get_files(struct StrList **out, const char *path, const char *pattern, ...) 
         return -1;
     }
     if ((size_t) len > sizeof(userpattern)) {
-        SYSWARN("%s: userpattern truncated!", __FUNCTION__);
+        SYSWARN("userpattern truncated!");
     }
     va_end(args);
     if (!strlen(userpattern)) {
