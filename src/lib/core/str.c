@@ -11,7 +11,7 @@ char *strdup_maybe_entry(const char * restrict s, const struct ExecPoint ep, con
     if (s != NULL) {
         char *x = strdup(s);
         if (!x) {
-            SYSERROR("unable to duplicate string");
+            // We want to trace the origin of the allocation so SYSERROR can't be used here.
             log_print_error(ep, "out of memory");
             exit(exit_code);
         }
