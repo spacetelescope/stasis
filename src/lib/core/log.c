@@ -42,19 +42,38 @@ void log_print_debug(const struct ExecPoint ep, const char *fmt, ...) {
 
 int log_msgv(FILE *stream, const struct ExecPoint ep, const char *preface_color, const char *preface, const char *fmt, va_list ap) {
     char header[STASIS_BUFSIZ] = {0};
+    const int no_info = LOG_LEVEL < LOG_LEVEL_INFO;
+    const int some_info = LOG_LEVEL < LOG_LEVEL_DEBUG;
 
     int len = snprintf(header, sizeof(header),
         STASIS_COLOR_RESET
         "%s%s: "
-        STASIS_COLOR_RESET
-        STASIS_COLOR_WHITE
-        "%s:%d: %s(): "
         STASIS_COLOR_RESET,
         preface_color ? preface_color : STASIS_COLOR_RED,
-        preface ? preface : "UNKNOWN",
-        path_basename((char *) ep.file),
-        ep.line,
-        ep.function);
+        preface ? preface : "UNKNOWN");
+
+    if (no_info) {
+        len += snprintf(header + strlen(header), sizeof(header) - len,
+            STASIS_COLOR_WHITE
+            ""
+            STASIS_COLOR_RESET);
+    } else if (some_info) {
+        len += snprintf(header + strlen(header), sizeof(header) - len,
+            STASIS_COLOR_WHITE
+            "%s(): "
+            STASIS_COLOR_RESET,
+            ep.function);
+    } else {
+        // everything
+        len += snprintf(header + strlen(header), sizeof(header) - len,
+            STASIS_COLOR_WHITE
+            "%s:%d: %s(): "
+            STASIS_COLOR_RESET,
+            path_basename((char *) ep.file),
+            ep.line,
+            ep.function);
+    }
+
     if (len >= (int) sizeof(header)) {
         SYSERROR("header format truncated (%d >= %d)", len, (int) sizeof(header));
         return len;
