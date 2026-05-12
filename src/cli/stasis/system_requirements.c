@@ -10,72 +10,72 @@ void check_system_env_requirements() {
 
     int status = 0;
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "TMPDIR");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_ROOT");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_SYSCONFDIR");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_CPU_COUNT");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED | STASIS_ENVCTL_REDACT, callback_except_gh, "STASIS_GH_TOKEN");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_ARTIFACTORY_URL");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_ACCESS_TOKEN");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_PASSTHRU, NULL, "STASIS_JF_USER");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_PASSWORD");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_KEY_PATH");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_SSH_PASSPHRASE");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_CERT_PATH");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REDACT, NULL, "STASIS_JF_CLIENT_CERT_KEY_PATH");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
     status = envctl_register(&globals.envctl, STASIS_ENVCTL_REQUIRED, callback_except_jf, "STASIS_JF_REPO");
-    if (!status) {
+    if (status) {
         SYSERROR("envctl_register failed");
         exit(1);
     }
