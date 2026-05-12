@@ -1133,16 +1133,16 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
             usable_lines--;
         }
     }
+    pkg->num_entry_point = usable_lines;
 
-    pkg->entry_point = calloc(usable_lines + 1, sizeof(*pkg->entry_point));
+    pkg->entry_point = calloc(pkg->num_entry_point + 1, sizeof(*pkg->entry_point));
     if (!pkg->entry_point) {
         goto GEP_FAIL;
     }
 
-    for (size_t i = 0; i < usable_lines; i++) {
+    for (size_t i = 0; i < pkg->num_entry_point; i++) {
         pkg->entry_point[i] = calloc(1, sizeof(*pkg->entry_point[0]));
         if (!pkg->entry_point[i]) {
-            guard_array_n_free(pkg->entry_point, usable_lines + 1);
             goto GEP_FAIL;
         }
     }
@@ -1198,6 +1198,9 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
     return 0;
 
     GEP_FAIL:
+    if (pkg->entry_point) {
+        guard_array_n_free(pkg->entry_point, pkg->num_entry_point);
+    }
     guard_strlist_free(&lines);
     guard_free(data);
     return -1;
