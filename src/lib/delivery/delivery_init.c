@@ -203,6 +203,7 @@ int delivery_init_platform(struct Delivery *ctx) {
         ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
         if (!ctx->system.platform[i]) {
             SYSERROR("Unable to allocate record %zu in platform array", i);
+            guard_array_n_free(ctx->system.platform, i);
             return -1;
         }
     }
@@ -210,6 +211,8 @@ int delivery_init_platform(struct Delivery *ctx) {
     ctx->system.arch = strdup(uts.machine);
     if (!ctx->system.arch) {
         // memory error
+        guard_array_n_free(ctx->system.platform, DELIVERY_PLATFORM_MAX);
+        ctx->system.platform = NULL;
         return -1;
     }
 
