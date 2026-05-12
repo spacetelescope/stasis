@@ -178,7 +178,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
             } else {
-                int dep_status = check_python_package_dependencies(".");
+                const int dep_status = check_python_package_dependencies(".");
                 if (dep_status) {
                     SYSERROR("Please replace all occurrences above with standard package specs:\n"
                                     "\n"
