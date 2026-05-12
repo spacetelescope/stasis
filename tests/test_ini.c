@@ -205,7 +205,7 @@ void test_ini_getall() {
     STASIS_ASSERT_FATAL(ini != NULL, "failed to open ini file");
 
     const struct INIData *d = NULL;
-    for (size_t i = 0; (d = ini_getall(ini, "default")) != NULL; i++) {
+    while ((d = ini_getall(ini, "default")) != NULL) {
         STASIS_ASSERT(d->key != NULL, "INIData key should not be NULL");
         STASIS_ASSERT(d->value != NULL, "INIData key should not be NULL");
     }
