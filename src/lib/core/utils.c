@@ -658,7 +658,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
 
     pretty_print_failed:
     if (tempfile && remove(tempfile)) {
-        SYSERROR("unable to remove temporary file: %s", tempfile);
+        SYSWARN("unable to remove temporary file: %s", tempfile);
     }
     guard_free(tempfile);
     guard_free(result);
