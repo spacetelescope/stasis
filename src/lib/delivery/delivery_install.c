@@ -235,12 +235,16 @@ int delivery_conda_enforce_package_version(struct Delivery *ctx, const char *env
             goto cleanup;
         }
         if (strstr(item, name)) {
-            char *spec_tmp = find_version_spec((char *) item);
-            while (!isalnum(*spec_tmp)) {
-                spec_tmp++;
+            const char *spec_tmp = find_version_spec((char *) item);
+            if (spec_tmp) {
+                while (!isalnum(*spec_tmp)) {
+                    spec_tmp++;
+                }
+                spec_request = strdup(spec_tmp);
+            } else {
+                spec_request = strdup(item);
             }
 
-            spec_request = strdup(spec_tmp);
             if (!spec_request) {
                 SYSERROR("unable to allocate memory for conda package spec request");
                 status = -1;
