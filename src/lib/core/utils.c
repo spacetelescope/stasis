@@ -1200,7 +1200,7 @@ int get_random_bytes(char *result, size_t maxlen) {
     if (filename != NULL) {
         fp = fopen(filename, "rb");
         if (!fp) {
-            SYSERROR("%s", "unable to open random generator");
+            SYSERROR("unable to open random generator");
             return -1;
         }
     }
@@ -1213,7 +1213,7 @@ int get_random_bytes(char *result, size_t maxlen) {
             ch = rand() % 255;
         }
         if (fp && ferror(fp)) {
-            SYSERROR("%s", "unable to read from random generator");
+            SYSERROR("unable to read from random generator");
             fclose(fp);
             return -1;
         }
