@@ -606,13 +606,13 @@ void mp_pool_free(struct MultiProcessingPool **pool) {
         }
         // Unmap the task array
         if (munmap((*pool)->task, sizeof(*(*pool)->task) * (*pool)->num_alloc + 1) < 0) {
-            perror("munmap");
+            SYSWARN("munmap pool task failed: %s", strerror(errno));
         }
     }
     // Unmap the pool
     if ((*pool)) {
         if (munmap((*pool), sizeof(*(*pool))) < 0) {
-            SYSWARN("munmap failed: %s", strerror(errno));
+            SYSWARN("munmap pool failed: %s", strerror(errno));
         }
         (*pool) = NULL;
     }
