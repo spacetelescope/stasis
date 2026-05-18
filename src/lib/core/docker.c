@@ -1,6 +1,5 @@
 #include "docker.h"
 
-
 int docker_exec(const char *args, const unsigned flags) {
     struct Process proc;
     char cmd[PATH_MAX];
@@ -42,13 +41,13 @@ int docker_script(const char *image, char *args, char *data, const unsigned flag
 
     FILE *outfile = popen(cmd, "w");
     if (!outfile) {
-        // opening command pipe for writing failed
+        SYSERROR("opening command pipe for writing failed");
         return -1;
     }
 
     FILE *infile = fmemopen(data, strlen(data), "r");
     if (!infile) {
-        // opening memory file for reading failed
+        SYSERROR("opening memory file for reading failed");
         pclose(outfile);
         return -1;
     }
@@ -108,9 +107,13 @@ int docker_save(const char *image, const char *destdir, const char *compression_
 }
 
 static int docker_exists() {
-    if (find_program("docker")) {
+    const char *prog = find_program("docker");
+    if (prog) {
+        SYSDEBUG("Found in PATH: %s", prog);
         return true;
     }
+    const char *pathvar = getenv(PATH_ENV_VAR);
+    SYSDEBUG("Not found in PATH: %s", pathvar ? pathvar : "PATH UNDEFINED");
     return false;
 }
 
@@ -122,6 +125,7 @@ static char *docker_ident() {
 
     tempfile = xmkstemp(&fp, "w+");
     if (!fp || !tempfile) {
+        SYSERROR("unable to open temporary file for writing");
         return NULL;
     }
 
@@ -135,12 +139,13 @@ static char *docker_ident() {
     shell(&proc, "docker --version");
 
     if (!freopen(tempfile, "r", fp)) {
+        SYSERROR("unable to open temporary file for reading");
         remove(tempfile);
-        guard_free(tempfile);
         return NULL;
     }
 
     if (!fgets(line, sizeof(line) - 1, fp)) {
+        SYSERROR("unable to read version from docker output");
         fclose(fp);
         remove(tempfile);
         guard_free(tempfile);
@@ -155,17 +160,25 @@ static char *docker_ident() {
 }
 
 int docker_capable(struct DockerCapabilities *result) {
+    const int quiet = LOG_LEVEL < LOG_LEVEL_DEBUG;
     char *version = NULL;
     memset(result, 0, sizeof(*result));
 
+    int flags = 0;
+    if (quiet) {
+        flags |= STASIS_DOCKER_QUIET_STDOUT;
+    }
+
     if (!docker_exists()) {
         // docker isn't available
+        SYSDEBUG("docker not found in PATH");
         return false;
     }
     result->available = true;
 
-    if (docker_exec("ps", STASIS_DOCKER_QUIET)) {
+    if (docker_exec("ps", flags)) {
         // user cannot connect to the socket
+        SYSERROR("unable to run a basic docker command");
         return false;
     }
 
@@ -175,13 +188,16 @@ int docker_capable(struct DockerCapabilities *result) {
     }
     guard_free(version);
 
-    if (!docker_exec("buildx build --help", STASIS_DOCKER_QUIET)) {
+    if (!docker_exec("buildx build --help >/dev/null", flags)) {
+        SYSDEBUG("buildx plugin is present");
         result->build |= STASIS_DOCKER_BUILD_X;
     }
-    if (!docker_exec("build --help", STASIS_DOCKER_QUIET)) {
+    if (!docker_exec("build --help >/dev/null", STASIS_DOCKER_QUIET)) {
+        SYSDEBUG("build plugin is present");
         result->build |= STASIS_DOCKER_BUILD;
     }
     if (!result->build) {
+        SYSDEBUG("docker has no build plugin(s) installed!");
         // can't use docker without a build plugin
         return false;
     }
@@ -212,6 +228,7 @@ int docker_validate_compression_program(char *prog) {
         goto invalid;
     }
     result = find_program(parts[0]) ? 0 : -1;
+    SYSDEBUG("result = %d", result);
 
     invalid:
     guard_array_free(parts);
