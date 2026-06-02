@@ -13,14 +13,11 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
     char destdir_with_output[PATH_MAX] = {0};
     char *destdir = destdir_bare;
 
-    strncpy(destdir_bare, dest, sizeof(destdir_bare) - 1);
-    destdir[sizeof(destdir_bare) - 1] = '\0';
+    safe_strncpy(destdir_bare, dest, sizeof(destdir_bare));
 
-    strncpy(destdir_with_output, dest, sizeof(destdir_with_output) - 1);
-    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
+    safe_strncpy(destdir_with_output, dest, sizeof(destdir_with_output));
 
-    strncat(destdir_with_output, "/output", sizeof(destdir_with_output) - strlen(destdir_with_output) - 1);
-    destdir_with_output[sizeof(destdir_with_output) - 1] = '\0';
+    safe_strncat(destdir_with_output, "/output", sizeof(destdir_with_output));
 
     if (!access(destdir_with_output, F_OK)) {
         destdir = destdir_with_output;
@@ -266,9 +263,9 @@ int main(const int argc, char *argv[]) {
 
     char stasis_sysconfdir_tmp[PATH_MAX];
     if (getenv("STASIS_SYSCONFDIR")) {
-        strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp) - 1);
+        safe_strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp));
     } else {
-        strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
+        safe_strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp));
     }
     stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
@@ -281,9 +278,9 @@ int main(const int argc, char *argv[]) {
     char workdir_template[PATH_MAX] = {0};
     const char *system_tmp = getenv("TMPDIR");
     if (system_tmp) {
-        strncat(workdir_template, system_tmp, sizeof(workdir_template) - strlen(workdir_template) - 1);
+        safe_strncat(workdir_template, system_tmp, sizeof(workdir_template));
     } else {
-        strncat(workdir_template, "/tmp/stasis", sizeof(workdir_template) - strlen(workdir_template) - 1);
+        safe_strncat(workdir_template, "/tmp/stasis", sizeof(workdir_template));
     }
 
     if (mkdirs(workdir_template, 0700)) {
@@ -291,7 +288,7 @@ int main(const int argc, char *argv[]) {
         exit(1);
     }
 
-    strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template) - strlen(workdir_template) - 1);
+    safe_strncat(workdir_template, "/stasis-combine.XXXXXX", sizeof(workdir_template));
     char *workdir = mkdtemp(workdir_template);
     if (!workdir) {
         SYSERROR("Unable to create temporary directory: %s", workdir_template);
