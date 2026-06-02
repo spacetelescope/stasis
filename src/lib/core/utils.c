@@ -37,8 +37,7 @@ int rmtree(char *_path) {
     char path[PATH_MAX] = {0};
     struct dirent *d_entity;
 
-    strncpy(path, _path, sizeof(path) - 1);
-    path[sizeof(path) - 1] = '\0';
+    safe_strncpy(path, _path, sizeof(path));
 
     DIR *dir = opendir(path);
     if (!dir) {
@@ -47,9 +46,9 @@ int rmtree(char *_path) {
 
     while ((d_entity = readdir(dir)) != NULL) {
         char abspath[PATH_MAX] = {0};
-        strncat(abspath, path, sizeof(abspath) - strlen(abspath) - 1);
-        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
-        strncat(abspath, d_entity->d_name, sizeof(abspath) - strlen(abspath) - 1);
+        safe_strncat(abspath, path, sizeof(abspath));
+        safe_strncat(abspath, DIR_SEP, sizeof(abspath));
+        safe_strncat(abspath, d_entity->d_name, sizeof(abspath));
 
         if (!strcmp(d_entity->d_name, ".") || !strcmp(d_entity->d_name, "..") || !strcmp(abspath, path)) {
             continue;
@@ -93,7 +92,7 @@ char *expandpath(const char *_path) {
     memset(ptmp, '\0', sizeof(tmp));
     memset(result, '\0', sizeof(result));
 
-    strncpy(ptmp, _path, PATH_MAX - 1);
+    safe_strncpy(ptmp, _path, PATH_MAX);
 
     // Check whether there's a reason to continue processing the string
     if (*ptmp != '~') {
@@ -107,8 +106,7 @@ char *expandpath(const char *_path) {
     for (size_t i = 0; i < sizeof(homes) / sizeof(*homes); i++) {
         char *tmphome;
         if ((tmphome = getenv(homes[i])) != NULL) {
-            strncpy(home, tmphome, PATH_MAX - 1);
-            home[PATH_MAX - 1] = '\0';
+            safe_strncpy(home, tmphome, PATH_MAX);
             break;
         }
     }
@@ -125,10 +123,10 @@ char *expandpath(const char *_path) {
     }
 
     // Construct the new path
-    strncat(result, home, sizeof(result) - strlen(home) + 1);
+    safe_strncat(result, home, sizeof(result));
     if (sep) {
-        strncat(result, DIR_SEP, sizeof(result) - strlen(home) + 1);
-        strncat(result, ptmp, sizeof(result) - strlen(home) + 1);
+        safe_strncat(result, DIR_SEP, sizeof(result));
+        safe_strncat(result, ptmp, sizeof(result));
     }
 
     return strdup(result);
@@ -280,14 +278,13 @@ char *find_program(const char *name) {
     result[0] = '\0';
     while ((path_elem = strsep(&path, PATH_SEP))) {
         char abspath[PATH_MAX] = {0};
-        strncat(abspath, path_elem, sizeof(abspath) - strlen(abspath) - 1);
-        strncat(abspath, DIR_SEP, sizeof(abspath) - strlen(abspath) - 1);
-        strncat(abspath, name, sizeof(abspath) - strlen(abspath) - 1);
+        safe_strncat(abspath, path_elem, sizeof(abspath));
+        safe_strncat(abspath, DIR_SEP, sizeof(abspath));
+        safe_strncat(abspath, name, sizeof(abspath));
         if (access(abspath, F_OK) < 0) {
             continue;
         }
-        strncpy(result, abspath, sizeof(result) - 1);
-        result[sizeof(result) - 1] = '\0';
+        safe_strncpy(result, abspath, sizeof(result));
         break;
     }
     path = path_orig;
@@ -455,14 +452,14 @@ void msg(unsigned type, char *fmt, ...) {
         // for error output
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_RED);
-        strncpy(status, " ERROR: ", sizeof(status) - 1);
+        safe_strncpy(status, " ERROR: ", sizeof(status));
     } else if (type & STASIS_MSG_WARN) {
         stream = stderr;
         fprintf(stream, "%s", STASIS_COLOR_YELLOW);
-        strncpy(status, " WARNING: ", sizeof(status) - 1);
+        safe_strncpy(status, " WARNING: ", sizeof(status));
     } else {
         fprintf(stream, "%s", STASIS_COLOR_GREEN);
-        strncpy(status, " ", sizeof(status) - 1);
+        safe_strncpy(status, " ", sizeof(status));
     }
     status[sizeof(status) - 1] = '\0';
 
@@ -507,8 +504,7 @@ char *xmkstemp(FILE **fp, const char *mode) {
     char tmpdir[PATH_MAX] = {0};
     char t_name[PATH_MAX * 2] = {0};
 
-    strncpy(tmpdir, globals.tmpdir ? globals.tmpdir : "/tmp/stasis", sizeof(tmpdir) - 1);
-    tmpdir[sizeof(tmpdir) - 1] = '\0';
+    safe_strncpy(tmpdir, globals.tmpdir ? globals.tmpdir : "/tmp/stasis", sizeof(tmpdir));
 
     if (mkdirs(tmpdir, 0700) < 0) {
         SYSERROR("unable to create sub-directories in %s", tmpdir);
@@ -739,7 +735,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                                 return -1;
                             }
                             value = tmp;
-                            strncat(value, with_posargs, (strlen(value) + strlen(with_posargs)) - strlen(value) - 1);
+                            safe_strncat(value, with_posargs, (strlen(value) + strlen(with_posargs)));
                             ini_setval(&toxini, INI_SETVAL_REPLACE, section_name, key, value);
                         }
                     }
@@ -754,7 +750,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     fclose(fptemp);
 
     // Store path to modified config
-    strncpy(*result, tempfile, maxlen - 1);
+    safe_strncpy(*result, tempfile, maxlen);
     (*result)[maxlen - 1] = '\0';
     guard_free(tempfile);
 
@@ -807,8 +803,7 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
     if (!tmp) {
         return -1;
     }
-    strncpy(tmp, src, maxlen);
-    tmp[maxlen] = '\0';
+    safe_strncpy(tmp, src, maxlen);
 
     for (size_t i = 0; i < to_redact_size; i++) {
         if (to_redact[i] && strstr(tmp, to_redact[i])) {
@@ -818,8 +813,7 @@ int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, c
     }
 
     memset(dest, 0, maxlen);
-    strncpy(dest, tmp, maxlen);
-    dest[maxlen] = '\0';
+    safe_strncpy(dest, tmp, maxlen);
     guard_free(tmp);
 
     return 0;
@@ -872,16 +866,15 @@ long get_cpu_count() {
 int mkdirs(const char *_path, mode_t mode) {
     char *token;
     char pathbuf[PATH_MAX] = {0};
-    strncpy(pathbuf, _path, sizeof(pathbuf) - 1);
-    pathbuf[sizeof(pathbuf) - 1] = '\0';
+    safe_strncpy(pathbuf, _path, sizeof(pathbuf));
     char *path = pathbuf;
     errno = 0;
 
     char result[PATH_MAX] = {0};
     int status = 0;
     while ((token = strsep(&path, "/")) != NULL && !status) {
-        strncat(result, token, sizeof result - strlen(result) - 1);
-        strncat(result, "/", sizeof result - strlen(result) - 1);
+        safe_strncat(result, token, sizeof result);
+        safe_strncat(result, "/", sizeof result);
         status = mkdir(result, mode);
         if (status && errno == EEXIST) {
             status = 0;
@@ -946,7 +939,7 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
 int gen_file_extension_str(char *filename, const size_t maxlen, const char *extension) {
     char *ext_orig = strrchr(filename, '.');
     if (!ext_orig) {
-        strncat(filename, extension, maxlen - strlen(filename) - 1);
+        safe_strncat(filename, extension, maxlen);
         return 0;
     }
 
@@ -974,7 +967,7 @@ void debug_hexdump(char *data, int len) {
             snprintf(addr + strlen(addr), sizeof(addr) - strlen(addr), "%p", pos);
         }
         if (count == 8) {
-            strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
+            safe_strncat(bytes, " ", sizeof(bytes));
         }
         if (count > 15) {
             snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
@@ -996,11 +989,11 @@ void debug_hexdump(char *data, int len) {
 
     if (count <= 8) {
         // Add group padding
-        strncat(bytes, " ", sizeof(bytes) - strlen(bytes) - 1);
+        safe_strncat(bytes, " ", sizeof(bytes));
     }
     const int padding = 16 - count;
     for (int i = 0; i < padding; i++) {
-        strncat(bytes, "   ", sizeof(bytes) - strlen(bytes) - 1);
+        safe_strncat(bytes, "   ", sizeof(bytes));
     }
     snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
     puts(output);
@@ -1276,8 +1269,7 @@ char *center_text(const char *s, const size_t maxwidth) {
     for (; i < middle; i++) {
         result[i] = ' ';
     }
-    strncpy(&result[i], s, maxwidth - middle - 1);
-    result[maxwidth] = '\0';
+    safe_strncpy(&result[i], s, maxwidth - middle);
 
     return result;
 }
