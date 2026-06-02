@@ -199,8 +199,8 @@ void delivery_tests_run(struct Delivery *ctx) {
                 msg(STASIS_MSG_L3, "Queuing task for %s\n", test->name);
                 memset(&proc, 0, sizeof(proc));
 
-                strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ - 1);
-                cmd[strlen(test->script) + STASIS_BUFSIZ - 1] = '\0';
+                safe_strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ);
+                cmd[strlen(test->sript) + STASIS_BUFSIZ - 1] = '\0';
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
@@ -229,8 +229,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 if (!globals.enable_parallel || !test->parallel) {
                     selected = SERIAL;
                     memset(pool_name, 0, sizeof(pool_name));
-                    strncpy(pool_name, "serial", sizeof(pool_name) - 1);
-                    pool_name[sizeof(pool_name) - 1] = '\0';
+                    safe_strncpy(pool_name, "serial", sizeof(pool_name));
                 }
 
                 if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
@@ -281,14 +280,12 @@ void delivery_tests_run(struct Delivery *ctx) {
                         exit(1);
                     }
 
-                    strncpy(cmd, test->script_setup, cmd_len - 1);
-                    cmd[cmd_len - 1] = '\0';
+                    safe_strncpy(cmd, test->script_setup, cmd_len);
 
                     char *cmd_rendered = tpl_render(cmd);
                     if (cmd_rendered) {
                         if (strcmp(cmd_rendered, cmd) != 0) {
-                            strncpy(cmd, cmd_rendered, cmd_len - 1);
-                            cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = '\0';
+                            safe_strncpy(cmd, cmd_rendered, cmd_len);
                         }
                         guard_free(cmd_rendered);
                     } else {
