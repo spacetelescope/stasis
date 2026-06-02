@@ -21,8 +21,7 @@ struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to
         }
 
         char filename[NAME_MAX];
-        strncpy(filename, rec->d_name, sizeof(filename) - 1);
-        filename[sizeof(filename) - 1] = '\0';
+        safe_strncpy(filename, rec->d_name, sizeof(filename));
 
         char *ext = strstr(filename, ".whl");
         if (ext) {
