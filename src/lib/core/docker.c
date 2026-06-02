@@ -74,7 +74,6 @@ int docker_build(const char *dirpath, const char *args, int engine) {
     if (engine & STASIS_DOCKER_BUILD_X) {
         safe_strncpy(build, "buildx build", sizeof(build));
     }
-    build[sizeof(build) - 1] = '\0';
 
     snprintf(cmd, sizeof(cmd), "%s %s %s", build, args, dirpath);
     return docker_exec(cmd, 0);
