@@ -14,8 +14,7 @@ void test_replace_text() {
         const char *target = targets[i];
         const char *expected = targets[i + 1];
         char input[STASIS_BUFSIZ] = {0};
-        strncpy(input, test_string, sizeof(input) - 1);
-        input[sizeof(input) - 1] = '\0';
+        safe_strncpy(input, test_string, sizeof(input));
 
         printf("input: %s\n", input);
         printf("target: %s\n", target);
