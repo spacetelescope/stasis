@@ -217,36 +217,27 @@ int delivery_init_platform(struct Delivery *ctx) {
     }
 
     if (!strcmp(ctx->system.arch, "x86_64")) {
-        strncpy(archsuffix, "64", sizeof(archsuffix) - 1);
+        safe_strncpy(archsuffix, "64", sizeof(archsuffix));
     } else {
-        strncpy(archsuffix, ctx->system.arch, sizeof(archsuffix) - 1);
+        safe_strncpy(archsuffix, ctx->system.arch, sizeof(archsuffix));
     }
-    archsuffix[sizeof(archsuffix) - 1] = '\0';
 
     SYSDEBUG("Setting platform");
-    strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN - 1);
-    ctx->system.platform[DELIVERY_PLATFORM][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
+    safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM], uts.sysname, DELIVERY_PLATFORM_MAXLEN);
 
     if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Darwin")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "osx-%s", archsuffix);
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos", DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "MacOSX", DELIVERY_PLATFORM_MAXLEN);
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "macos", DELIVERY_PLATFORM_MAXLEN);
     } else if (!strcmp(ctx->system.platform[DELIVERY_PLATFORM], "Linux")) {
         snprintf(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], DELIVERY_PLATFORM_MAXLEN, "linux-%s", archsuffix);
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux", DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux", DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], "Linux", DELIVERY_PLATFORM_MAXLEN);
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], "linux", DELIVERY_PLATFORM_MAXLEN);
     } else {
         // Not explicitly supported systems
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
-        strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN - 1);
-        ctx->system.platform[DELIVERY_PLATFORM_RELEASE][DELIVERY_PLATFORM_MAXLEN - 1] = '\0';
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN);
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN);
+        safe_strncpy(ctx->system.platform[DELIVERY_PLATFORM_RELEASE], ctx->system.platform[DELIVERY_PLATFORM], DELIVERY_PLATFORM_MAXLEN);
         tolower_s(ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
     }
 
