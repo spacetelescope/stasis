@@ -200,7 +200,6 @@ void delivery_tests_run(struct Delivery *ctx) {
                 memset(&proc, 0, sizeof(proc));
 
                 safe_strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ);
-                cmd[strlen(test->sript) + STASIS_BUFSIZ - 1] = '\0';
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
