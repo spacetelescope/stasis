@@ -17,11 +17,10 @@ static void setup_sysconfdir() {
     // environment variable
     char stasis_sysconfdir_tmp[PATH_MAX];
     if (getenv("STASIS_SYSCONFDIR")) {
-        strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp) - 1);
+        safe_strncpy(stasis_sysconfdir_tmp, getenv("STASIS_SYSCONFDIR"), sizeof(stasis_sysconfdir_tmp));
     } else {
-        strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp) - 1);
+        safe_strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp));
     }
-    stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
@@ -567,8 +566,7 @@ int main(int argc, char *argv[]) {
                 globals.continue_on_error = true;
                 break;
             case 'p':
-                strncpy(python_override_version, optarg, sizeof(python_override_version) - 1);
-                python_override_version[sizeof(python_override_version) - 1] = '\0';
+                safe_strncpy(python_override_version, optarg, sizeof(python_override_version));
                 break;
             case 'l':
                 globals.cpu_limit = strtol(optarg, NULL, 10);
@@ -699,22 +697,10 @@ int main(int argc, char *argv[]) {
     check_requirements(&ctx);
 
     configure_jfrog_cli(&ctx);
-    /*
-    delivery_free(&ctx);
-    tpl_free();
-    globals_free();
-    return 0;
-    */
-
     runtime_apply(ctx.runtime.environ);
-    strncpy(env_name, ctx.info.release_name, sizeof(env_name) - 1);
-    env_name[sizeof(env_name) - 1] = '\0';
-
-    strncpy(env_name_testing, env_name, sizeof(env_name_testing) - 1);
-    env_name_testing[sizeof(env_name_testing) - 1] = '\0';
-
-    strncat(env_name_testing, "-test", sizeof(env_name_testing) - strlen(env_name_testing) - 1);
-    env_name_testing[sizeof(env_name_testing) - 1] = '\0';
+    safe_strncpy(env_name, ctx.info.release_name, sizeof(env_name));
+    safe_strncpy(env_name_testing, env_name, sizeof(env_name_testing));
+    safe_strncat(env_name_testing, "-test", sizeof(env_name_testing));
 
     char *envs[] = {
         "release", env_name,
