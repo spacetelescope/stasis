@@ -80,8 +80,7 @@ int get_junitxml_file_entrypoint(struct tplfunc_frame *frame, void *data_out) {
         return -1;
     }
     char nametmp[PATH_MAX] = {0};
-    strncpy(nametmp, cwd, sizeof(nametmp) - 1);
-    nametmp[sizeof(nametmp) - 1] = '\0';
+    safe_strncpy(nametmp, cwd, sizeof(nametmp));
 
     char *name = path_basename(nametmp);
 
@@ -107,8 +106,7 @@ int get_basetemp_dir_entrypoint(struct tplfunc_frame *frame, void *data_out) {
         return -1;
     }
     char nametmp[PATH_MAX] = {0};
-    strncpy(nametmp, cwd, sizeof(nametmp) - 1);
-    nametmp[sizeof(nametmp) - 1] = '\0';
+    safe_strncpy(nametmp, cwd, sizeof(nametmp));
     char *name = path_basename(nametmp);
 
     *output = calloc(PATH_MAX, sizeof(**output));
