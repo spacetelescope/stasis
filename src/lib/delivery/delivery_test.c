@@ -204,8 +204,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 char *cmd_rendered = tpl_render(cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
-                        strncpy(cmd, cmd_rendered, strlen(test->script) + STASIS_BUFSIZ - 1);
-                        cmd[strlen(cmd_rendered) ? strlen(cmd_rendered) - 1 : 0] = 0;
+                        safe_strncpy(cmd, cmd_rendered, strlen(test->script) + STASIS_BUFSIZ);
                     }
                     guard_free(cmd_rendered);
                 } else {
