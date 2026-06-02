@@ -461,7 +461,6 @@ void msg(unsigned type, char *fmt, ...) {
         fprintf(stream, "%s", STASIS_COLOR_GREEN);
         safe_strncpy(status, " ", sizeof(status));
     }
-    status[sizeof(status) - 1] = '\0';
 
     if (type & STASIS_MSG_L1) {
         snprintf(header, sizeof(header), "==>%s" STASIS_COLOR_RESET STASIS_COLOR_WHITE, status);
