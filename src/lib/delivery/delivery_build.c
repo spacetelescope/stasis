@@ -81,7 +81,6 @@ int delivery_build_recipes(struct Delivery *ctx) {
                         memset(platform, 0, sizeof(platform));
                         safe_strncpy(platform, "osx", sizeof(platform));
                     }
-                    platform[sizeof(platform) - 1] = '\0';
                     tolower_s(platform);
 
                     if (strstr(ctx->system.arch, "arm64")) {
