@@ -183,8 +183,7 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
         case INIVAL_TYPE_STR_ARRAY:
             // TODO: data_copy should be at least equal to the length of the data. The use of STASIS_BUFSIZ below is
             // the root cause of crashes when stasis reads long arrays.
-            strncpy(tbufp, data_copy, sizeof(tbuf) - 1);
-            tbuf[sizeof(tbuf) - 1] = '\0';
+            safe_strncpy(tbufp, data_copy, sizeof(tbuf));
             guard_free(data_copy);
 
             data_copy = calloc(STASIS_BUFSIZ, sizeof(*data_copy));
@@ -194,11 +193,10 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             while ((token = strsep(&tbufp, "\n")) != NULL) {
                 //lstrip(token);
                 if (!isempty(token)) {
-                    strncat(data_copy, token, STASIS_BUFSIZ - strlen(data_copy) - 1);
-                    strncat(data_copy, "\n", STASIS_BUFSIZ - strlen(data_copy) - 1);
+                    safe_strncat(data_copy, token, STASIS_BUFSIZ);
+                    safe_strncat(data_copy, "\n", STASIS_BUFSIZ);
                 }
             }
-            data_copy[STASIS_BUFSIZ - 1] = '\0';
             strip(data_copy);
             result->as_char_p = strdup(data_copy);
             break;
@@ -359,7 +357,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         }
         size_t value_len_old = strlen(data->value);
         size_t value_len = strlen(value);
-        size_t value_len_new = value_len_old + value_len;
+        size_t value_len_new = value_len_old + value_len + 1;
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
@@ -368,7 +366,7 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
         }
         data->value = value_tmp;
 
-        strncat(data->value, value, value_len_new - strlen(data->value));
+        safe_strncat(data->value, value, value_len_new);
     }
     return 0;
 }
@@ -559,8 +557,7 @@ struct INIFILE *ini_open(const char *filename) {
         ini = NULL;
         return NULL;
     }
-    strncpy(current_section, "default", sizeof(current_section) - 1);
-    current_section[sizeof(current_section) - 1] = '\0';
+    safe_strncpy(current_section, "default", sizeof(current_section));
 
     // Open the configuration file for reading
     FILE *fp = fopen(filename, "r");
@@ -640,8 +637,7 @@ struct INIFILE *ini_open(const char *filename) {
 
             // Record the name of the section. This is used until another section is found.
             memset(current_section, 0, sizeof(current_section));
-            strncpy(current_section, section_name, sizeof(current_section) - 1);
-            current_section[sizeof(current_section) - 1] = '\0';
+            safe_strncpy(current_section, section_name, sizeof(current_section));
 
             guard_free(section_name);
             memset(line, 0, sizeof(line));
@@ -664,22 +660,19 @@ struct INIFILE *ini_open(const char *filename) {
             const size_t key_len = operator - line;
             memset(key, 0, key_size);
 
-            strncpy(key, line, key_len);
-            key[key_size - 1] = '\0';
+            safe_strncpy(key, line, key_len + 1);
             lstrip(key);
             strip(key);
 
             memset(key_last, 0, key_last_size);
-            strncpy(key_last, key, key_last_size - 1);
-            key_last[key_last_size - 1] = '\0';
+            safe_strncpy(key_last, key, key_last_size + 1);
 
             reading_value = 1;
             if (strlen(operator) > 1) {
-                strncpy(value, &operator[1], sizeof(value) - 1);
+                safe_strncpy(value, &operator[1], sizeof(value));
             } else {
-                strncpy(value, "", sizeof(value) - 1);
+                safe_strncpy(value, "", sizeof(value));
             }
-            value[sizeof(value) - 1] = '\0';
 
             if (isempty(value)) {
                 //printf("%s is probably long raw data\n", key);
@@ -693,10 +686,8 @@ struct INIFILE *ini_open(const char *filename) {
             }
             strip(value);
         } else {
-            strncpy(key, key_last, key_size - 1);
-            key[key_size - 1] = '\0';
-            strncpy(value, line, sizeof(value) - 1);
-            value[sizeof(value) - 1] = '\0';
+            safe_strncpy(key, key_last, key_size + 1);
+            safe_strncpy(value, line, sizeof(value));
         }
         memset(line, 0, sizeof(line));
 

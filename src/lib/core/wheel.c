@@ -1159,8 +1159,7 @@ int wheel_get_entry_point(struct Wheel *pkg, const char *filename) {
             const size_t start = strcspn((char *) item, "[") + 1;
             if (start) {
                 const size_t len = strcspn((char *) item, "]");
-                strncpy(section, item + start, len - start);
-                section[len - start] = '\0';
+                safe_strncpy(section, item + start, len - start);
                 continue;
             }
         }

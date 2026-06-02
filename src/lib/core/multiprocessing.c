@@ -198,7 +198,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     if (globals.enable_task_logging) {
         snprintf(slot->log_file, sizeof(slot->log_file), "%s", pool->log_root);
         // FORTIFY_SOURCE won't leave snprintf alone. The chance for truncation is slim anyway.
-        strncat(slot->log_file, "/", sizeof(slot->log_file) - strlen(slot->log_file));
+        safe_strncat(slot->log_file, "/", sizeof(slot->log_file));
     } else {
         snprintf(slot->log_file, sizeof(slot->log_file), "/dev/stdout");
     }

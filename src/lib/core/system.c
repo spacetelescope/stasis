@@ -182,7 +182,7 @@ char *shell_output(const char *command, int *status) {
             }
             result = tmp;
         }
-        strncat(result, line, current_size - strlen(result) - 1);
+        safe_strncat(result, line, current_size);
         memset(line, 0, sizeof(line));
     }
     *status = pclose(pp);

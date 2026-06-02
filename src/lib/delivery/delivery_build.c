@@ -34,15 +34,12 @@ int delivery_build_recipes(struct Delivery *ctx) {
                     const int is_long_tag = num_chars(ctx->tests->test[i]->repository_info_tag, '-') > 1;
                     if (is_long_tag) {
                         const size_t len = strcspn(ctx->tests->test[i]->repository_info_tag, "-");
-                        strncpy(tag, ctx->tests->test[i]->repository_info_tag, len);
-                        tag[len] = '\0';
+                        safe_strncpy(tag, ctx->tests->test[i]->repository_info_tag, len);
                     } else {
-                        strncpy(tag, ctx->tests->test[i]->repository_info_tag, sizeof(tag) - 1);
-                        tag[sizeof(tag) - 1] = '\0';
+                        safe_strncpy(tag, ctx->tests->test[i]->repository_info_tag, sizeof(tag));
                     }
                 } else {
-                    strncpy(tag, ctx->tests->test[i]->version, sizeof(tag) - 1);
-                    tag[sizeof(tag) - 1] = '\0';
+                    safe_strncpy(tag, ctx->tests->test[i]->version, sizeof(tag));
                 }
 
                 //sprintf(recipe_version, "{%% set version = GIT_DESCRIBE_TAG ~ \".dev\" ~ GIT_DESCRIBE_NUMBER ~ \"+\" ~ GIT_DESCRIBE_HASH %%}");
@@ -55,8 +52,7 @@ int delivery_build_recipes(struct Delivery *ctx) {
 
                 snprintf(recipe_version, sizeof(recipe_version), "{%% set version = \"%s\" %%}", tag);
                 snprintf(recipe_git_url, sizeof(recipe_git_url), "  url: %s/archive/refs/tags/{{ version }}.tar.gz", ctx->tests->test[i]->repository);
-                strncpy(recipe_git_rev, "", sizeof(recipe_git_rev) - 1);
-                recipe_git_rev[sizeof(recipe_git_rev) - 1] = '\0';
+                safe_strncpy(recipe_git_rev, "", sizeof(recipe_git_rev));
                 snprintf(recipe_buildno, sizeof(recipe_buildno), "  number: 0");
 
                 unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
@@ -80,22 +76,20 @@ int delivery_build_recipes(struct Delivery *ctx) {
                     char arch[STASIS_NAME_MAX] = {0};
                     char platform[STASIS_NAME_MAX] = {0};
 
-                    strncpy(platform, ctx->system.platform[DELIVERY_PLATFORM], sizeof(platform) - 1);
+                    safe_strncpy(platform, ctx->system.platform[DELIVERY_PLATFORM], sizeof(platform));
                     if (strstr(platform, "Darwin")) {
                         memset(platform, 0, sizeof(platform));
-                        strncpy(platform, "osx", sizeof(platform) - 1);
+                        safe_strncpy(platform, "osx", sizeof(platform));
                     }
-                    platform[sizeof(platform) - 1] = '\0';
                     tolower_s(platform);
 
                     if (strstr(ctx->system.arch, "arm64")) {
-                        strncpy(arch, "arm64", sizeof(arch) - 1);
+                        safe_strncpy(arch, "arm64", sizeof(arch));
                     } else if (strstr(ctx->system.arch, "64")) {
-                        strncpy(arch, "64", sizeof(arch) - 1);
+                        safe_strncpy(arch, "64", sizeof(arch));
                     } else {
-                        strncat(arch, "32", sizeof(arch) - strlen(arch) - 1); // blind guess
+                        safe_strncat(arch, "32", sizeof(arch)); // blind guess
                     }
-                    arch[sizeof(arch) - 1] = '\0';
                     tolower_s(arch);
 
                     snprintf(command, sizeof(command), "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
@@ -393,8 +387,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     for (size_t p = 0; p < strlist_count(ctx->conda.pip_packages_defer); p++) {
         char name[100] = {0};
         char *fullspec = strlist_item(ctx->conda.pip_packages_defer, p);
-        strncpy(name, fullspec, sizeof(name) - 1);
-        name[sizeof(name) - 1] = '\0';
+        safe_strncpy(name, fullspec, sizeof(name));
         remove_extras(name);
         char *spec = find_version_spec(name);
         if (spec) {
@@ -444,8 +437,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                         COE_CHECK_ABORT(true, "Unreproducible delivery");
                     }
 
-                    strncpy(dname, ctx->tests->test[i]->name, sizeof(dname) - 1);
-                    dname[sizeof(dname) - 1] = '\0';
+                    safe_strncpy(dname, ctx->tests->test[i]->name, sizeof(dname));
                     tolower_s(dname);
                     snprintf(outdir, sizeof(outdir), "%s/%s", ctx->storage.wheel_artifact_dir, dname);
                     if (mkdirs(outdir, 0755)) {

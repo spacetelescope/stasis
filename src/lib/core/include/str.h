@@ -324,4 +324,7 @@ char *to_short_version(const char *s);
 
 void unindent(char *s);
 
+int safe_strncpy(char *dst, const char *src, size_t dsize);
+int safe_strncat(char *dst, const char *src, size_t dsize);
+
 #endif //STASIS_STR_H

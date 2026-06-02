@@ -34,11 +34,9 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
         char *op = find_version_spec(config_spec);
         char package[255] = {0};
         if (op) {
-            strncpy(package, config_spec, op - config_spec);
-            package[op - config_spec] = '\0';
+            safe_strncpy(package, config_spec, op - config_spec);
         } else {
-            strncpy(package, config_spec, sizeof(package) - 1);
-            package[sizeof(package) - 1] = '\0';
+            safe_strncpy(package, config_spec, sizeof(package));
         }
         remove_extras(package);
         if (strncmp(package, name, strlen(name)) == 0) {
@@ -85,11 +83,9 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         char spec_name[255] = {0};
         char *op = find_version_spec(spec);
         if (op) {
-            strncpy(spec_name, spec, op - spec);
-            spec_name[op - spec] = '\0';
+            safe_strncpy(spec_name, spec, op - spec);
         } else {
-            strncpy(spec_name, spec, sizeof(spec_name) - 1);
-            spec_name[sizeof(spec_name) - 1] = '\0';
+            safe_strncpy(spec_name, spec, sizeof(spec_name));
         }
 
         struct Test *test_block = requirement_from_test(ctx, spec_name);
@@ -108,11 +104,9 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         char *op = find_version_spec(frozen_spec);
         // we only care about packages with specs here. if something else arrives, ignore it
         if (op) {
-            strncpy(frozen_name, frozen_spec, op - frozen_spec);
-            frozen_name[op - frozen_spec] = '\0';
+            safe_strncpy(frozen_name, frozen_spec, op - frozen_spec);
         } else {
-            strncpy(frozen_name, frozen_spec, sizeof(frozen_name) - 1);
-            frozen_name[sizeof(frozen_name) - 1] = '\0';
+            safe_strncpy(frozen_name, frozen_spec, sizeof(frozen_name));
         }
         struct Test *test = requirement_from_test(ctx, frozen_name);
         if (test && strcmp(test->name, frozen_name) == 0) {
@@ -307,20 +301,16 @@ int delivery_purge_packages(struct Delivery *ctx, const char *env_name, int use_
         case PKG_USE_CONDA:
             fn = conda_exec;
             list = ctx->conda.conda_packages_purge;
-            strncpy(package_manager, "conda", sizeof(package_manager) - 1);
-            package_manager[sizeof(package_manager) - 1] = '\0';
+            safe_strncpy(package_manager, "conda", sizeof(package_manager));
             // conda is already configured for "always_yes"
-            strncpy(subcommand, "remove", sizeof(subcommand) - 1);
-            subcommand[sizeof(subcommand) - 1] = '\0';
+            safe_strncpy(subcommand, "remove", sizeof(subcommand));
             break;
         case PKG_USE_PIP:
             fn = pip_exec;
             list = ctx->conda.pip_packages_purge;
-            strncpy(package_manager, "pip", sizeof(package_manager) - 1);
-            package_manager[sizeof(package_manager) - 1] = '\0';
+            safe_strncpy(package_manager, "pip", sizeof(package_manager));
             // avoid user prompt to remove packages
-            strncpy(subcommand, "uninstall -y", sizeof(subcommand) - 1);
-            subcommand[sizeof(subcommand) - 1] = '\0';
+            safe_strncpy(subcommand, "uninstall -y", sizeof(subcommand));
             break;
         default:
             SYSERROR("Unknown package manager: %d", use_pkg_manager);
@@ -371,7 +361,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     memset(command_base, 0, sizeof(command_base));
-    strncat(command_base, "install", sizeof(command_base) - strlen(command_base) - 1);
+    safe_strncat(command_base, "install", sizeof(command_base));
 
     typedef int (*Runner)(const char *);
     Runner runner = NULL;
@@ -387,15 +377,17 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
-        strncat(command_base, " --use-local", sizeof(command_base) - strlen(command_base) - 1);
-        command_base[sizeof(command_base) - 1] = '\0';
+        //if (ctx->conda.capabilities.missing_use_local) {
+        //    safe_strncat(command_base, " -c local", sizeof(command_base));
+        //} else {
+            safe_strncat(command_base, " --use-local", sizeof(command_base));
+        //}
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
         // as possible between releases.
         if (!ctx->meta.based_on) {
-            strncat(command_base, " --upgrade", sizeof(command_base) - strlen(command_base) - 1);
-            command_base[sizeof(command_base) - 1] = '\0';
+            safe_strncat(command_base, " --upgrade", sizeof(command_base));
         }
         snprintf(command_base + strlen(command_base), sizeof(command_base) - strlen(command_base), " --extra-index-url 'file://%s'", ctx->storage.wheel_artifact_dir);
     }
@@ -470,11 +462,9 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
 
                     char req[255] = {0};
                     if (!strcmp(name, info->name)) {
-                        strncpy(req, info->name, sizeof(req) - 1);
-                        req[sizeof(req) - 1] = '\0';
+                        safe_strncpy(req, info->name, sizeof(req));
                     } else {
-                        strncpy(req, name, sizeof(req) - 1);
-                        req[sizeof(req) - 1] = '\0';
+                        safe_strncpy(req, name, sizeof(req));
                         char *spec = find_version_spec(req);
                         if (spec) {
                             *spec = 0;

@@ -235,8 +235,7 @@ char *tpl_render(char *str) {
                 value = strdup(env_val ? env_val : "");
             } else if (do_func) { // {{ func:NAME(a, ...) }}
                 char func_name_temp[STASIS_NAME_MAX] = {0};
-                strncpy(func_name_temp, type_stop + 1, sizeof(func_name_temp) - 1);
-                func_name_temp[sizeof(func_name_temp) - 1] = '\0';
+                safe_strncpy(func_name_temp, type_stop + 1, sizeof(func_name_temp));
 
                 char *param_begin = strchr(func_name_temp, '(');
                 if (!param_begin) {
@@ -296,7 +295,7 @@ char *tpl_render(char *str) {
 
             // Append replacement value
             grow(z, &output_bytes, &output);
-            strncat(output, value, output_bytes - strlen(output) - 1);
+            safe_strncat(output, value, output_bytes);
             guard_free(value);
             output[z] = 0;
         }

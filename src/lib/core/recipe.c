@@ -16,8 +16,7 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
             return -1;
         }
     }
-    strncpy(*result, destdir, PATH_MAX - 1);
-    (*result)[PATH_MAX - 1] = '\0';
+    safe_strncpy(*result, destdir, PATH_MAX);
 
     if (!access(destdir, F_OK)) {
         if (!strcmp(destdir, "/")) {

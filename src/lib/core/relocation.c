@@ -10,7 +10,7 @@
  * ~~~{.c}
  * size_t str_maxlen = 100;
  * char *str = calloc(str_maxlen, sizeof(char));
- * strncpy(str, "This are a test.", str_maxlen - 1);
+ * safe_strncpy(str, "This are a test.", str_maxlen);
  * if (replace_text(str, "are", "is")) {
  *     fprintf(stderr, "string replacement failed\n");
  *     exit(1);
@@ -84,6 +84,7 @@ int replace_text(char *original, const char *target, const char *replacement, un
         // truncate whatever remains of the original buffer
         memset(original + buffer_len, 0, original_len - buffer_len);
     }
+
     // replace original with contents of buffer
     strncpy(original, buffer, buffer_len + 1);
     original[buffer_len] = '\0';

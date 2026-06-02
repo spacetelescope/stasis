@@ -78,9 +78,8 @@ void strchrdel(char *sptr, const char *chars) {
 
     for (size_t i = 0; i < strlen(chars); i++) {
         char ch[2] = {0};
-        strncpy(ch, &chars[i], 1);
-        ch[sizeof(ch) - 1] = '\0';
-        replace_text(sptr, ch, "", 0);
+        safe_strncpy(ch, &chars[i], sizeof(ch));
+        replace_text(sptr, (char *) ch, "", 0);
     }
 }
 
@@ -137,8 +136,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             guard_array_n_free(result, i);
             return NULL;
         }
-        strncpy(result[i], token, STASIS_BUFSIZ - 1);
-        result[i][STASIS_BUFSIZ - 1] = '\0';
+        safe_strncpy(result[i], token, STASIS_BUFSIZ);
     }
 
     // pos is non-zero when maximum split is reached
@@ -150,8 +148,7 @@ char** split(char *_sptr, const char* delim, size_t max)
             guard_array_n_free(result, i);
             return NULL;
         }
-        strncpy(result[i], &orig[pos], STASIS_BUFSIZ - 1);
-        result[i][STASIS_BUFSIZ - 1] = '\0';
+        safe_strncpy(result[i], &orig[pos], STASIS_BUFSIZ);
     }
 
     guard_free(sptr);
@@ -175,9 +172,9 @@ char *join(char **arr, const char *separator) {
 
     result = (char *)calloc(total_bytes, sizeof(char));
     for (int i = 0; i < records; i++) {
-        strncat(result, arr[i], total_bytes - (result ? strlen(result) - 1 : 0));
+        safe_strncat(result, arr[i], total_bytes);
         if (i < (records - 1)) {
-            strncat(result, separator, total_bytes - strlen(result) - 1);
+            safe_strncat(result, separator, total_bytes);
         }
     }
     return result;
@@ -230,11 +227,11 @@ char *join_ex(char *separator, ...) {
     result = calloc(size + 1, sizeof(char));
     for (size_t i = 0; i < argc; i++) {
         // Append argument to string
-        strncat(result, argv[i], size - (result ? strlen(result) - 1 : 0)); // no -1 because +1 above
+        safe_strncat(result, argv[i], size + 1); // no -1 because +1 above
 
         // Do not append a trailing separator when we reach the last argument
         if (i < (argc - 1)) {
-            strncat(result, separator, size - strlen(result)); // no -1 because +1 above
+            safe_strncat(result, separator, size + 1); // no -1 because +1 above
         }
         guard_free(argv[i]);
     }
@@ -586,8 +583,7 @@ char *normalize_space(char *s) {
 
     // Rewrite the input string
     const size_t result_len = strlen(result) + 1;
-    strncpy(result, tmp_orig, result_len);
-    result[result_len] = '\0';
+    safe_strncpy(result, tmp_orig, result_len);
 
     guard_free(tmp_orig);
     return result;
@@ -750,3 +746,22 @@ char *remove_extras(char *s) {
     return s;
 }
 
+int safe_strncpy(char *dst, const char *src, const size_t dsize) {
+    return snprintf(dst, dsize, "%s", src);
+}
+
+int safe_strncat(char *dst, const char *src, const size_t dsize) {
+    const size_t used = strnlen(dst, dsize);
+    if (used == dsize) {
+        SYSERROR("destination is not NUL terminated: %p", dst);
+        return -1;
+    }
+    const size_t maxlen = dsize - used;
+    const int len = snprintf(dst + strlen(dst), maxlen, "%s", src);
+    if (len < 0) {
+        SYSERROR("encoding error");
+    } else if ((size_t) len >= maxlen) {
+        SYSWARN("destination truncated: %p", dst);
+    }
+    return len;
+}
