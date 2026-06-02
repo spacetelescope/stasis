@@ -28,14 +28,11 @@ int indexer_combine_rootdirs(const char *dest, char **rootdirs, const size_t roo
         char srcdir_bare[PATH_MAX] = {0};
         char srcdir_with_output[PATH_MAX] = {0};
         char *srcdir = srcdir_bare;
-        strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare) - 1);
-        srcdir_bare[sizeof(srcdir_bare) - 1] = '\0';
+        safe_strncpy(srcdir_bare, rootdirs[i], sizeof(srcdir_bare));
 
-        strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output) - 1);
-        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
+        safe_strncpy(srcdir_with_output, rootdirs[i], sizeof(srcdir_with_output));
 
-        strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output) - strlen(srcdir_with_output) - 1);
-        srcdir_with_output[sizeof(srcdir_with_output) - 1] = '\0';
+        safe_strncat(srcdir_with_output, "/output", sizeof(srcdir_with_output));
 
         if (access(srcdir_bare, F_OK)) {
             SYSWARN("%s does not exist", srcdir_bare);
@@ -267,7 +264,6 @@ int main(const int argc, char *argv[]) {
     } else {
         safe_strncpy(stasis_sysconfdir_tmp, STASIS_SYSCONFDIR, sizeof(stasis_sysconfdir_tmp));
     }
-    stasis_sysconfdir_tmp[sizeof(stasis_sysconfdir_tmp) - 1] = '\0';
 
     globals.sysconfdir = realpath(stasis_sysconfdir_tmp, NULL);
     if (!globals.sysconfdir) {
