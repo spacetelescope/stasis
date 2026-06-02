@@ -313,8 +313,7 @@ void test_path_dirname() {
         const char *input = data[i];
         const char *expected = data[i + 1];
         char tmp[PATH_MAX] = {0};
-        strncpy(tmp, input, sizeof(tmp) - 1);
-        tmp[sizeof(tmp) - 1] = '\0';
+        safe_strncpy(tmp, input, sizeof(tmp));
 
         char *result = path_dirname(tmp);
         STASIS_ASSERT(strcmp(expected, result) == 0, NULL);
@@ -349,8 +348,8 @@ void test_expandpath() {
     STASIS_ASSERT_FATAL(home != NULL, "cannot expand without knowing the user's home directory path");
 
     char path[PATH_MAX] = {0};
-    strncat(path, "~", sizeof(path) - strlen(path) - 1);
-    strncat(path, DIR_SEP, sizeof(path) - strlen(path) - 1);
+    safe_strncat(path, "~", sizeof(path));
+    safe_strncat(path, DIR_SEP, sizeof(path));
 
     char *expanded = expandpath(path);
     STASIS_ASSERT(startswith(expanded, home) > 0, expanded);
