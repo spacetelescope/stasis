@@ -377,11 +377,11 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
     }
 
     if (INSTALL_PKG_CONDA_DEFERRED & type) {
-        if (ctx->conda.capabilities.missing_use_local) {
-            safe_strncat(command_base, " -c local", sizeof(command_base));
-        } else {
+        //if (ctx->conda.capabilities.missing_use_local) {
+        //    safe_strncat(command_base, " -c local", sizeof(command_base));
+        //} else {
             safe_strncat(command_base, " --use-local", sizeof(command_base));
-        }
+        //}
     } else if (INSTALL_PKG_PIP_DEFERRED & type) {
         // Don't change the baseline package set unless we're working with a
         // new build. Release candidates will need to keep packages as stable
