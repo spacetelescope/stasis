@@ -750,3 +750,22 @@ char *remove_extras(char *s) {
     return s;
 }
 
+int safe_strncpy(char *dst, const char *src, const size_t dsize) {
+    return snprintf(dst, dsize, "%s", src);
+}
+
+int safe_strncat(char *dst, const char *src, const size_t dsize) {
+    const size_t used = strnlen(dst, dsize);
+    if (used == dsize) {
+        SYSERROR("destination is not NUL terminated: %p", dst);
+        return -1;
+    }
+    const size_t maxlen = dsize - used;
+    const int len = snprintf(dst + strlen(dst), maxlen, "%s", src);
+    if (len < 0) {
+        SYSERROR("encoding error");
+    } else if ((size_t) len >= maxlen) {
+        SYSWARN("destination truncated: %p", dst);
+    }
+    return len;
+}
