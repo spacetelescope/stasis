@@ -80,17 +80,16 @@ void runtime_export(RuntimeEnv *env, char **keys) {
 
     for (size_t i = 0; borne[i] != NULL; i++) {
         if (strcmp(sh, borne[i]) == 0) {
-            strncpy(export_command, "export", sizeof(export_command) - 1);
+            safe_strncpy(export_command, "export", sizeof(export_command));
             break;
         }
     }
     for (size_t i = 0; unborne[i] != NULL; i++) {
         if (strcmp(sh, unborne[i]) == 0) {
-            strncpy(export_command, "setenv", sizeof(export_command) - 1);
+            safe_strncpy(export_command, "setenv", sizeof(export_command));
             break;
         }
     }
-    export_command[sizeof(export_command) - 1] = '\0';
 
     for (size_t i = 0; i < strlist_count(env); i++) {
         char output[STASIS_BUFSIZ] = {0};
@@ -309,7 +308,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
         // Handle literal statement "$$var"
         // Value becomes "$var" (unexpanded)
         if (strncmp(&input[i], delim_literal, strlen(delim_literal)) == 0) {
-            strncat(expanded, &delim, 2);
+            safe_strncat(expanded, &delim, 2);
             i += strlen(delim_literal);
             // Ignore opening brace
             if (input[i] == '{') {
@@ -356,7 +355,7 @@ char *runtime_expand_var(RuntimeEnv *env, char *input) {
                 continue;
             }
             // Append expanded environment variable to output
-            strncat(expanded, tmp, STASIS_BUFSIZ - 1);
+            safe_strncat(expanded, tmp, STASIS_BUFSIZ);
             guard_free(tmp);
         }
 
