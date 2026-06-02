@@ -88,8 +88,7 @@ int strlist_append_file(struct StrList *pStrList, char *_path, ReaderFn *readerF
     if (is_url) {
         int fd;
         char tempfile[PATH_MAX] = {0};
-        strncpy(tempfile, "/tmp/.remote_file.XXXXXX", sizeof(tempfile) - 1);
-        tempfile[sizeof(tempfile) - 1] = '\0';
+        safe_strncpy(tempfile, "/tmp/.remote_file.XXXXXX", sizeof(tempfile));
 
         if ((fd = mkstemp(tempfile)) < 0) {
             retval = -1;
@@ -449,8 +448,7 @@ void strlist_set(struct StrList **pStrList, size_t index, char *value) {
 
         const size_t len = strlen(value) + 1;
         memset((*pStrList)->data[index], '\0', len);
-        strncpy((*pStrList)->data[index], value, len);
-        (*pStrList)->data[index][len] = '\0';
+        safe_strncpy((*pStrList)->data[index], value, len);
     }
 }
 
