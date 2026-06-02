@@ -25,18 +25,15 @@ int artifactory_download_cli(char *dest,
 
     // convert platform string to lower-case
     SYSDEBUG("Set os_ident");
-    strncpy(os_ident, os, sizeof(os_ident) - 1);
-    os_ident[sizeof(os_ident) - 1] = '\0';
+    safe_strncpy(os_ident, os, sizeof(os_ident));
     tolower_s(os_ident);
     SYSDEBUG("os_ident=%s", os_ident);
 
     // translate OS identifier
     if (!strcmp(os_ident, "darwin") || startswith(os_ident, "macos")) {
-        strncpy(os_ident, "mac", sizeof(os_ident) - 1);
-        os_ident[sizeof(os_ident) - 1] = '\0';
+        safe_strncpy(os_ident, "mac", sizeof(os_ident));
     } else if (!strcmp(os_ident, "linux")) {
-        strncpy(os_ident, "linux", sizeof(os_ident) - 1);
-        os_ident[sizeof(os_ident) - 1] = '\0';
+        safe_strncpy(os_ident, "linux", sizeof(os_ident));
     } else {
         SYSERROR("unknown operating system: %s", os_ident);
         return -1;
@@ -44,25 +41,23 @@ int artifactory_download_cli(char *dest,
 
     // translate ARCH identifier
     SYSDEBUG("Set arch_ident");
-    strncpy(arch_ident, arch, sizeof(arch_ident) - 1);
-    arch_ident[sizeof(arch_ident) - 1] = '\0';
+    safe_strncpy(arch_ident, arch, sizeof(arch_ident));
     SYSDEBUG("arch_ident=%s", arch_ident);
 
     if (startswith(arch_ident, "i") && endswith(arch_ident, "86")) {
-        strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
+        safe_strncpy(arch_ident, "386", sizeof(arch_ident));
     } else if (!strcmp(arch_ident, "amd64") || !strcmp(arch_ident, "x86_64") || !strcmp(arch_ident, "x64")) {
         if (!strcmp(os_ident, "mac")) {
-            strncpy(arch_ident, "386", sizeof(arch_ident) - 1);
+            safe_strncpy(arch_ident, "386", sizeof(arch_ident));
         } else {
-            strncpy(arch_ident, "amd64", sizeof(arch_ident) - 1);
+            safe_strncpy(arch_ident, "amd64", sizeof(arch_ident));
         }
     } else if (!strcmp(arch_ident, "arm64") || !strcmp(arch_ident, "aarch64")) {
-        strncpy(arch_ident, "arm64", sizeof(arch_ident) - 1);
+        safe_strncpy(arch_ident, "arm64", sizeof(arch_ident));
     } else {
         SYSERROR("unknown architecture: %s", arch_ident);
         return -1;
     }
-    arch_ident[sizeof(arch_ident) - 1] = '\0';
 
 
     SYSDEBUG("Construct URL");
@@ -75,8 +70,7 @@ int artifactory_download_cli(char *dest,
              os_ident,                             // ...
              arch_ident,                           // jfrog-cli-linux-x86_64
              remote_filename);                     // jf
-    strncpy(path, dest, sizeof(path) - 1);
-    path[sizeof(path) - 1] = '\0';
+    safe_strncpy(path, dest, sizeof(path));
 
     if (mkdirs(path, 0755)) {
         SYSERROR("%s: %s", path, strerror(errno));
@@ -272,11 +266,9 @@ int jfrog_cli(struct JFRT_Auth *auth, const char *subsystem, const char *task, c
     }
 
     if (!globals.verbose) {
-        strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout) - 1);
-        proc.f_stdout[sizeof(proc.f_stdout) - 1] = '\0';
+        safe_strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout));
 
-        strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr) - 1);
-        proc.f_stderr[sizeof(proc.f_stderr) - 1] = '\0';
+        safe_strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr));
     }
     return shell(&proc, cmd);
 }
@@ -444,7 +436,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
         if (base) {
             src = base;
         } else {
-            strncat(src, "/", sizeof(src) - strlen(src) - 1);
+            safe_strncat(src, "/", sizeof(src));
         }
         pushd(new_src);
     }
