@@ -6,8 +6,7 @@ struct WheelInfo *wheelinfo_get(const char *basepath, const char *name, char *to
     char package_path[PATH_MAX];
     char package_name[NAME_MAX];
 
-    strncpy(package_name, name, sizeof(package_name) - 1);
-    package_name[sizeof(package_name) - 1] = '\0';
+    safe_strncpy(package_name, name, sizeof(package_name));
     tolower_s(package_name);
     snprintf(package_path, sizeof(package_path), "%s/%s", basepath, package_name);
 
