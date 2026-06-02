@@ -113,7 +113,7 @@ int get_github_release_notes(const char *api_token, const char *repo, const char
             // Extract release notes
             *output = calloc(strlen(data_offset) + 1, sizeof(**output));
             // Copy output (including terminator)
-            strncpy(*output, data_offset, strlen(data_offset) + 1);
+            safe_strncpy(*output, data_offset, strlen(data_offset) + 1);
         } else if ((data_offset = strstr(line, field_message))) {
             // Skip past the message field
             data_offset += strlen(field_message);
