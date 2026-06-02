@@ -89,20 +89,20 @@ void usage(char *progname) {
         char opt_long[50] = {0};        // --? [ARG]?
         char opt_short[50] = {0};        // -? [ARG]?
 
-        strncat(opt_long, "--", sizeof(opt_long) - strlen(opt_long) - 1);
-        strncat(opt_long, long_options[x].name, sizeof(opt_long) - strlen(opt_long) - 1);
+        safe_strncat(opt_long, "--", sizeof(opt_long));
+        safe_strncat(opt_long, long_options[x].name, sizeof(opt_long));
         if (long_options[x].has_arg) {
-            strncat(opt_long, " ARG", sizeof(opt_long) - strlen(opt_long) - 1);
+            safe_strncat(opt_long, " ARG", sizeof(opt_long));
         }
 
         if (long_options[x].val <= 'z') {
-            strncat(opt_short, "-", sizeof(opt_short) - strlen(opt_short) - 1);
+            safe_strncat(opt_short, "-", sizeof(opt_short));
             opt_short[1] = (char) long_options[x].val;
             if (long_options[x].has_arg) {
-                strncat(opt_short, " ARG", sizeof(opt_short) - strlen(opt_short) - 1);
+                safe_strncat(opt_short, " ARG", sizeof(opt_short));
             }
         } else {
-            strncat(opt_short, "  ", sizeof(opt_short) - strlen(opt_short) - 1);
+            safe_strncat(opt_short, "  ", sizeof(opt_short));
         }
 
         snprintf(tmp, sizeof(tmp) - strlen(tmp), "  %%-%ds\t%%s\t\t%%s", width + 4);
