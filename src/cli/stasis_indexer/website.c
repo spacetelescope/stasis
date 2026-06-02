@@ -35,9 +35,7 @@ int indexer_make_website(struct Delivery **ctx) {
             }
 
             // Replace *.md extension with *.html.
-            strncpy(fullpath_dest, fullpath_src, sizeof(fullpath_dest) - 1);
-            fullpath_dest[sizeof(fullpath_dest) - 1] = '\0';
-
+            safe_strncpy(fullpath_dest, fullpath_src, sizeof(fullpath_dest));
             gen_file_extension_str(fullpath_dest, sizeof(fullpath_dest), ".html");
 
             // Convert markdown to html
@@ -54,8 +52,7 @@ int indexer_make_website(struct Delivery **ctx) {
             if (!strcmp(filename, "README.md")) {
                 char link_from[PATH_MAX] = {0};
                 char link_dest[PATH_MAX] = {0};
-                strncpy(link_from, "README.html", sizeof(link_from) - 1);
-                link_dest[sizeof(link_dest) - 1] = '\0';
+                safe_strncpy(link_from, "README.html", sizeof(link_from));
                 snprintf(link_dest, sizeof(link_dest), "%s/%s", root, "index.html");
                 if (symlink(link_from, link_dest)) {
                     SYSWARN("symlink(%s, %s) failed: %s", link_from, link_dest, strerror(errno));
