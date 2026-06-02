@@ -55,8 +55,7 @@ static int write_report_output(struct Delivery *ctx, FILE *destfp, const char *x
         }
 
         char short_name[PATH_MAX] = {0};
-        strncpy(short_name, bname, sizeof(short_name) - 1);
-        short_name[sizeof(short_name) - 1] = '\0';
+        safe_strncpy(short_name, bname, sizeof(short_name));
 
         replace_text(short_name, short_name_pattern, "", 0);
         replace_text(short_name, "results-", "", 0);
