@@ -120,7 +120,17 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
-    if (conda_setup_headless()) {
+    if (conda_capable(&ctx->conda.capabilities)) {
+        SYSERROR("Conda capability check failed");
+        exit(1);
+    }
+
+    if (!ctx->conda.capabilities.usable) {
+        SYSERROR("Conda is broken");
+        exit(1);
+    }
+
+    if (conda_setup_headless(&ctx->conda.capabilities)) {
         // no COE check. this call must succeed.
         exit(1);
     }
