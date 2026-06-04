@@ -34,8 +34,26 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result) {
     return git_clone(&proc, url, destdir, gitref);
 }
 
+int recipe_get_build_system(const char *repopath, const int style) {
+    char filename[PATH_MAX] = {0};
+    safe_strncat(filename, repopath, sizeof(filename));
 
-int recipe_get_type(char *repopath) {
+    if (style == RECIPE_STYLE_CONDA_FORGE) {
+        safe_strncat(filename, "/recipe/recipe.yaml", sizeof(filename));
+        if (!access(filename, F_OK)) {
+            return RECIPE_BUILD_RATTLER;
+        }
+        return RECIPE_BUILD_CONDA_BUILD;
+    }
+
+    if (style == RECIPE_STYLE_ASTROCONDA || style == RECIPE_STYLE_GENERIC) {
+        return RECIPE_BUILD_CONDA_BUILD;
+    }
+
+    return RECIPE_BUILD_UNKNOWN;
+}
+
+int recipe_get_style(char *repopath) {
     // conda-forge is a collection of repositories
     // "conda-forge.yml" is guaranteed to exist
     const char *marker[] = {
@@ -44,10 +62,10 @@ int recipe_get_type(char *repopath) {
             "meta.yaml",
             NULL
     };
-    const int type[] = {
-            RECIPE_TYPE_CONDA_FORGE,
-            RECIPE_TYPE_ASTROCONDA,
-            RECIPE_TYPE_GENERIC
+    const int style[] = {
+            RECIPE_STYLE_CONDA_FORGE,
+            RECIPE_STYLE_ASTROCONDA,
+            RECIPE_STYLE_GENERIC
     };
 
     for (size_t i = 0; marker[i] != NULL; i++) {
@@ -55,9 +73,9 @@ int recipe_get_type(char *repopath) {
         snprintf(path, sizeof(path), "%s/%s", repopath, marker[i]);
         int result = access(path, F_OK);
         if (!result) {
-            return type[i];
+            return style[i];
         }
     }
 
-    return RECIPE_TYPE_UNKNOWN;
+    return RECIPE_STYLE_UNKNOWN;
 }
