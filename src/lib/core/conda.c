@@ -503,7 +503,7 @@ int conda_check_required() {
     return 0;
 }
 
-int conda_setup_headless() {
+int conda_setup_headless(struct CondaCapabilities *cc) {
     if (globals.verbose) {
         conda_exec("config --system --set quiet false");
     } else {
