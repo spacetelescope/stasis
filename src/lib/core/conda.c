@@ -691,3 +691,72 @@ int conda_env_exists(const char *root, const char *name) {
     snprintf(path, sizeof(path), "%s/envs/%s", root, name);
     return access(path, F_OK) == 0;
 }
+
+void conda_capable_free(struct CondaCapabilities *ccap) {
+    guard_free(ccap->conda_version);
+    guard_free(ccap->mamba_version);
+    memset(ccap, 0, sizeof(*ccap));
+}
+
+int conda_capable(struct CondaCapabilities *ccap) {
+    struct CondaCapabilities *cc = ccap;
+    memset(cc, 0, sizeof(*cc));
+
+    if (find_program("conda")) {
+        cc->available = true;
+    }
+
+    if (cc->available) {
+        int status = 0;
+        char *conda_version = shell_output("python3 -c 'import conda; print(conda._version.__version__)'", &status);
+        if (status) {
+            SYSERROR("conda version detection failed");
+            guard_free(conda_version);
+            return -1;
+        }
+        if (!conda_version) {
+            SYSERROR("unable to allocate conda_version_raw");
+            return -1;
+        }
+        strip(conda_version);
+
+        char *mamba_version = shell_output("python3 -c 'import libmambapy; print(libmambapy.version.__version__)'", &status);
+        if (status) {
+            SYSERROR("mamba version detection failed");
+            guard_free(conda_version);
+            guard_free(mamba_version);
+            return -1;
+        }
+        if (!mamba_version) {
+            SYSERROR("unable to allocate mamba_version");
+            guard_free(conda_version);
+            guard_free(mamba_version);
+            return -1;
+        }
+        strip(mamba_version);
+
+        cc->conda_version = strdup(conda_version);
+        cc->mamba_version = strdup(mamba_version);
+        if (version_compare(GT | EQ, cc->conda_version, "25.3.0")) {
+            cc->require_explicit_export_format = true;
+            cc->require_boa = false;
+        } else {
+            cc->require_explicit_export_format = false;
+            cc->require_manual_activation_shim = true;
+            cc->require_boa = true;
+            cc->require_libmamba_solver = true;
+        }
+
+        struct Process proc = {0};
+        safe_strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr));
+        if (shell(&proc, "mamba install --use-local --dry-run conda")) {
+            cc->missing_use_local = true;
+        }
+
+        cc->usable = true;
+
+        guard_free(mamba_version);
+        guard_free(conda_version);
+    }
+    return 0;
+}
