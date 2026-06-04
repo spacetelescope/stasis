@@ -171,6 +171,10 @@ char *join(char **arr, const char *separator) {
     total_bytes += (records * strlen(separator)) + 1;
 
     result = (char *)calloc(total_bytes, sizeof(char));
+    if (!result) {
+        return NULL;
+    }
+
     for (int i = 0; i < records; i++) {
         safe_strncat(result, arr[i], total_bytes);
         if (i < (records - 1)) {
