@@ -225,6 +225,11 @@ char *join_ex(char *separator, ...) {
 
     // Generate output string
     result = calloc(size + 1, sizeof(char));
+    if (!result) {
+        guard_array_free_by_count(argv, argc);
+        return NULL;
+    }
+
     for (size_t i = 0; i < argc; i++) {
         // Append argument to string
         safe_strncat(result, argv[i], size + 1); // no -1 because +1 above
