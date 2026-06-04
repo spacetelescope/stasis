@@ -308,37 +308,38 @@ int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const 
             i++;
             switch (fmt[i]) {
                 case 'n':   // name
-                    strncat(*dest, ctx->meta.name, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.name, maxlen);
                     break;
                 case 'c':   // codename
-                    strncat(*dest, ctx->meta.codename, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.codename, maxlen);
                     break;
                 case 'm':   // mission
-                    strncat(*dest, ctx->meta.mission, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.mission, maxlen);
                     break;
                 case 'r':   // revision
                     snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
                     break;
                 case 'R':   // "final"-aware revision
-                    if (ctx->meta.final)
-                        strncat(*dest, "final", maxlen);
-                    else
+                    if (ctx->meta.final) {
+                        safe_strncat(*dest, "final", maxlen);
+                    } else {
                         snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%d", ctx->meta.rc);
+                    }
                     break;
                 case 'v':   // version
-                    strncat(*dest, ctx->meta.version, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.version, maxlen);
                     break;
                 case 'P':   // python version
-                    strncat(*dest, ctx->meta.python, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.python, maxlen);
                     break;
                 case 'p':   // python version major/minor
-                    strncat(*dest, ctx->meta.python_compact, maxlen - 1);
+                    safe_strncat(*dest, ctx->meta.python_compact, maxlen);
                     break;
                 case 'a':   // system architecture name
-                    strncat(*dest, ctx->system.arch, maxlen - 1);
+                    safe_strncat(*dest, ctx->system.arch, maxlen);
                     break;
                 case 'o':   // system platform (OS) name
-                    strncat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], maxlen - 1);
+                    safe_strncat(*dest, ctx->system.platform[DELIVERY_PLATFORM_RELEASE], maxlen);
                     break;
                 case 't':   // unix epoch
                     snprintf(*dest + strlen(*dest), maxlen - strlen(*dest), "%ld", ctx->info.time_now);
@@ -363,11 +364,11 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
     if (DEFER_CONDA == type) {
         dataptr = ctx->conda.conda_packages;
         deferred = ctx->conda.conda_packages_defer;
-        strncpy(mode, "conda", sizeof(mode) - 1);
+        safe_strncpy(mode, "conda", sizeof(mode));
     } else if (DEFER_PIP == type) {
         dataptr = ctx->conda.pip_packages;
         deferred = ctx->conda.pip_packages_defer;
-        strncpy(mode, "pip", sizeof(mode) - 1);
+        safe_strncpy(mode, "pip", sizeof(mode));
     } else {
         SYSERROR("BUG: type %d does not map to a supported package manager!", type);
         exit(1);
@@ -397,11 +398,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             while (*spec_end != '\0' && !isalnum(*spec_end)) {
                 spec_end++;
             }
-            strncpy(package_name, name, spec_begin - name);
-            package_name[spec_begin - name] = '\0';
+            size_t spec_len = spec_begin - name;
+            safe_strncpy(package_name, name, spec_len ? spec_len + 1 : sizeof(package_name));
         } else {
-            strncpy(package_name, name, sizeof(package_name) - 1);
-            package_name[sizeof(package_name) - 1] = '\0';
+            safe_strncpy(package_name, name, sizeof(package_name));
         }
         remove_extras(package_name);
 
@@ -412,8 +412,7 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             struct Test *test = ctx->tests->test[x];
             char nametmp[STASIS_NAME_MAX] = {0};
 
-            strncpy(nametmp, package_name, sizeof(nametmp) - 1);
-            nametmp[sizeof(nametmp) - 1] = '\0';
+            safe_strncpy(nametmp, package_name, sizeof(nametmp));
 
             // Is the [test:NAME] in the package name?
             if (!strcmp(nametmp, test->name)) {
