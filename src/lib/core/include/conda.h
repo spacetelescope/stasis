@@ -156,7 +156,7 @@ int conda_activate(const char *root, const char *env_name);
 /**
  * Configure the active conda installation for headless operation
  */
-int conda_setup_headless();
+int conda_setup_headless(struct CondaCapabilities *cc);
 
 /**
  * Creates a Conda environment from a YAML config
