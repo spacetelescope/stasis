@@ -120,6 +120,30 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
+    char pinned[PATH_MAX];
+    snprintf(pinned, sizeof(pinned), "%s/conda-meta/pinned", conda_install_dir);
+    touch(pinned);
+    if (errno == ENOENT) {
+        errno = 0;
+    }
+
+    char *conda_version = strdup(ctx->conda.installer_version);
+    if (conda_version) {
+        char *rev = strpbrk(conda_version, "-");
+        if (rev) {
+            *rev = '\0';
+        }
+
+        FILE *pinned_fp = fopen(pinned, "w+");
+        if (!pinned_fp) {
+            SYSERROR("unable to open conda-meta/pinned file for writing: %s", strerror(errno));
+            exit(1);
+        }
+        fprintf(pinned_fp, "conda=%s\n", conda_version);
+        fclose(pinned_fp);
+        guard_free(conda_version);
+    }
+
     if (conda_capable(&ctx->conda.capabilities)) {
         SYSERROR("Conda capability check failed");
         exit(1);
