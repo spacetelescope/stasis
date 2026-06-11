@@ -104,6 +104,7 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
 }
 
 void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
+    setenv("MAMBA_ROOT_PREFIX", ctx->storage.conda_install_prefix, 1);
     if (conda_activate(conda_install_dir, "base")) {
         SYSERROR("conda activation failed");
         exit(1);
@@ -115,6 +116,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
     char rcpath[PATH_MAX];
     snprintf(rcpath, sizeof(rcpath), "%s/%s", conda_install_dir, ".condarc");
     setenv("CONDARC", rcpath, 1);
+    setenv("MAMBARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
         SYSERROR("unable to replace runtime environment after activating conda");
         exit(1);
