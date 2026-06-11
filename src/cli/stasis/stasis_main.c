@@ -521,13 +521,8 @@ static void transfer_artifacts(struct Delivery *ctx) {
     }
 }
 
-int main(int argc, char *argv[]) {
-    struct Delivery ctx;
-    struct Process proc = {
-            .f_stdout = "",
-            .f_stderr = "",
-            .redirect_stderr = 0,
-    };
+int main(const int argc, char *argv[]) {
+    struct Delivery ctx = {0};
     char env_name[STASIS_NAME_MAX] = {0};
     char env_name_testing[STASIS_NAME_MAX] = {0};
     char *delivery_input = NULL;
