@@ -445,9 +445,14 @@ void runtime_set(RuntimeEnv *env, const char *_key, char *_value) {
  */
 void runtime_apply(RuntimeEnv *env) {
     for (size_t i = 0; i < strlist_count(env); i++) {
-        char **pair = split(strlist_item(env, i), "=", 1);
+        const char *item = strlist_item(env, i);
+        if (!item) {
+            SYSERROR("failed to read from env list");
+            return;
+        }
+        char **pair = split((char *) item, "=", 1);
         if (!pair) {
-            SYSERROR("unable to allocate memory for runtime_apply");
+            SYSERROR("unable to allocate memory for key/value pair");
             return;
         }
         setenv(pair[0], pair[1], 1);
