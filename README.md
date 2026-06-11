@@ -207,6 +207,7 @@ stasis mydelivery.ini
 | STASIS_DOWNLOAD_TIMEOUT         | Number of seconds before timing out a remote file download              |
 | STASIS_DOWNLOAD_RETRY_MAX       | Number of retries before giving up on a remote file download            |
 | STASIS_DOWNLOAD_RETRY_SECONDS   | Number of seconds to wait before retrying a remote file download        |
+| STASIS_ALWAYS_BUILD_FOR_HOST    | If set, build all software from source (for debugging)                  |
 
 ## Main configuration (stasis.ini)
 

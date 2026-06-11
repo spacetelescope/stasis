@@ -480,6 +480,10 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
             }
         }
 
+        if (getenv("STASIS_ALWAYS_BUILD_FOR_HOST")) {
+            build_for_host = 1;
+        }
+
         if (build_for_host) {
             printf("BUILD FOR HOST\n");
             strlist_append(&deferred, name);
