@@ -611,6 +611,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
+        guard_free(result);
         return status;
     }
 
