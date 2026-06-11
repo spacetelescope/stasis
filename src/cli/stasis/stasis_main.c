@@ -523,12 +523,13 @@ static void transfer_artifacts(struct Delivery *ctx) {
 
 int main(const int argc, char *argv[]) {
     struct Delivery ctx = {0};
+
     char env_name[STASIS_NAME_MAX] = {0};
     char env_name_testing[STASIS_NAME_MAX] = {0};
     char *delivery_input = NULL;
     char *config_input = NULL;
-    char installer_url[PATH_MAX];
-    char python_override_version[STASIS_NAME_MAX];
+    char installer_url[PATH_MAX] = {0};
+    char python_override_version[STASIS_NAME_MAX] = {0};
     int user_disabled_docker = false;
     globals.cpu_limit = get_cpu_count();
     if (globals.cpu_limit > 1) {
