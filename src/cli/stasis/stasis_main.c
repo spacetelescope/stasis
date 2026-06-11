@@ -536,13 +536,6 @@ int main(const int argc, char *argv[]) {
         globals.cpu_limit--; // max - 1
     }
 
-    memset(env_name, 0, sizeof(env_name));
-    memset(env_name_testing, 0, sizeof(env_name_testing));
-    memset(installer_url, 0, sizeof(installer_url));
-    memset(python_override_version, 0, sizeof(python_override_version));
-    memset(&proc, 0, sizeof(proc));
-    memset(&ctx, 0, sizeof(ctx));
-
     setup_sysconfdir();
 
     int c;
