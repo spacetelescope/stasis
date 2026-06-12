@@ -122,6 +122,24 @@ int python_exec(const char *args);
 int pip_exec(const char *args);
 
 /**
+ * Use importlib to resolve the version of an installed package
+ *
+ * ```c
+ * char *numpy_version = python_importlib_metadata_version("numpy");
+ * if (!numpy_version) {
+ *     fprintf(stderr, "failed to get numpy version\n");
+ *     exit(1);
+ * }
+ *
+ * printf("numpy version: %s\n", numpy_version);
+ * free(numpy_version);
+ * ```
+ * @param package_name of installed python package
+ * @return
+ */
+char *python_importlib_metadata_version(const char *package_name);
+
+/**
  * Execute conda (or if possible, mamba)
  * Conda/Mamba is determined by PATH
  *
