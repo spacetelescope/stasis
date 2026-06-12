@@ -33,27 +33,27 @@ void test_recipe_clone() {
         {.recipe_dir = "recipe_condaforge",
          .url = "https://github.com/conda-forge/fitsverify-feedstock",
          .gitref = "HEAD",
-         .expect_type = RECIPE_TYPE_CONDA_FORGE,
+         .expect_type = RECIPE_STYLE_CONDA_FORGE,
          .expect_return = 0},
         {.recipe_dir = "recipe_astroconda",
          .url = "https://github.com/astroconda/astroconda-contrib",
          .gitref = "HEAD",
-         .expect_type = RECIPE_TYPE_ASTROCONDA,
+         .expect_type = RECIPE_STYLE_ASTROCONDA,
          .expect_return = 0},
         {.recipe_dir = "recipe_generic",
          .url = "local_repo",
          .gitref = "HEAD",
-         .expect_type = RECIPE_TYPE_GENERIC,
+         .expect_type = RECIPE_STYLE_GENERIC,
          .expect_return = 0},
         {.recipe_dir = "recipe_unknown",
          .url = "https://github.com/astroconda/firewatch",
          .gitref = "HEAD",
-         .expect_type = RECIPE_TYPE_UNKNOWN,
+         .expect_type = RECIPE_STYLE_UNKNOWN,
          .expect_return = 0},
         {.recipe_dir = "recipe_broken",
          .url = "123_BAD_BAD_BAD_456",
          .gitref = "HEAD",
-         .expect_type = RECIPE_TYPE_UNKNOWN,
+         .expect_type = RECIPE_STYLE_UNKNOWN,
          .expect_return = 128},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
@@ -76,7 +76,7 @@ void test_recipe_clone() {
         // Ensure a path to the repository was returned in the result argument
         STASIS_ASSERT(result_path != NULL, "result path should not be NULL");
         // Verify the repository was detected as the correct recipe type
-        STASIS_ASSERT(recipe_get_type(result_path) == test->expect_type, "repository detected as the wrong type");
+        STASIS_ASSERT(recipe_get_style(result_path) == test->expect_type, "repository detected as the wrong type");
 
         if (test->expect_return == 0) {
             // Verify the result path exists
