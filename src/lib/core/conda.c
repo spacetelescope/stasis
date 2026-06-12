@@ -268,14 +268,22 @@ int conda_exec(const char *args) {
     };
     char conda_as[10] = {0};
 
+    const char *last_mamba_command = NULL;
     safe_strncpy(conda_as, "conda", sizeof(conda_as));
     for (size_t i = 0; mamba_commands[i] != NULL; i++) {
         if (startswith(args, mamba_commands[i])) {
+            last_mamba_command = mamba_commands[i];
             safe_strncpy(conda_as, "mamba", sizeof(conda_as));
             break;
         }
     }
 
+    const int boa_present = find_program("boa") != NULL;
+    if (!boa_present) {
+        if (last_mamba_command && !strcmp(last_mamba_command, "build")) {
+            safe_strncpy(conda_as, "conda", sizeof(conda_as));
+        }
+    }
 
     const char *command_fmt = "%s %s";
     const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
@@ -358,15 +366,12 @@ static int env0_to_runtime(const char *logfile) {
 
 int conda_activate(const char *root, const char *env_name) {
     const char *init_script_conda = "/etc/profile.d/conda.sh";
-    const char *init_script_mamba = "/etc/profile.d/mamba.sh";
     char path_conda[PATH_MAX] = {0};
-    char path_mamba[PATH_MAX] = {0};
     char logfile[PATH_MAX] = {0};
     struct Process proc = {0};
 
     // Where to find conda's init scripts
     snprintf(path_conda, sizeof(path_conda), "%s%s", root, init_script_conda);
-    snprintf(path_mamba, sizeof(path_mamba), "%s%s", root, init_script_mamba);
 
     // Set the path to our stdout log
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
@@ -386,12 +391,6 @@ int conda_activate(const char *root, const char *env_name) {
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
         SYSERROR("conda is missing: %s, %s", path_conda, strerror(errno));
-        remove(logfile);
-        return -1;
-    }
-
-    if (access(path_mamba, F_OK) < 0) {
-        SYSERROR("mamba is missing: %s, %s", path_mamba, strerror(errno));
         remove(logfile);
         return -1;
     }
@@ -417,20 +416,19 @@ int conda_activate(const char *root, const char *env_name) {
     snprintf(command, sizeof(command),
         "set -a\n"
         "source %s\n"
-        "__conda_exe() (\n"
-        "    \"$CONDA_PYTHON_EXE\" \"$CONDA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
-        ")\n\n"
-        "export -f __conda_exe\n"
-        "source %s\n"
-        "__mamba_exe() (\n"
-        "    \\local MAMBA_CONDA_EXE_BACKUP=$CONDA_EXE\n"
-        "    \\local MAMBA_EXE=$(\\dirname \"${CONDA_EXE}\")/mamba\n"
-        "    \"$CONDA_PYTHON_EXE\" \"$MAMBA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
-        ")\n\n"
-        "export -f __mamba_exe\n"
+        "tempfile=$(mktemp)\n"
+        "chmod 600 \"${tempfile}\"\n"
+        "%s/bin/mamba shell init --shell bash --dry-run 2>/dev/null\\\n"
+        "| (ignore=1; \\\n"
+        "    while read line; do \\\n"
+        "        if [[ \"$line\" == \"#\"* ]]; then ignore=0; fi; \\\n"
+        "        if (( ignore == 0 )); then echo $line; fi; \\\n"
+        "    done) 1> \"${tempfile}\"\n"
+        "source \"${tempfile}\"\n"
+        "rm -f \"${tempfile}\"\n"
         "%s\n"
         "conda activate %s 1>&2\n"
-        "env -0\n", path_conda, path_mamba, conda_shlvl ? "conda deactivate" : ":", env_name);
+        "env -0\n", path_conda, root, conda_shlvl ? "conda deactivate" : ":", env_name);
 
     int retval = shell(&proc, command);
     if (retval) {
@@ -524,6 +522,29 @@ int conda_setup_headless(struct CondaCapabilities *cc) {
     size_t total = 0;
     const char *cmd_fmt = "'%s'";
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
+        // Push or pop build packages based on capabilities
+        size_t boa_index = 0;
+        const int boa_requested = strlist_contains(globals.conda_packages, "boa", &boa_index);
+        if (boa_requested && !cc->require_boa) {
+            SYSWARN("Removing boa from global package list due to incompatible conda version (too new): %s", cc->conda_version);
+            strlist_remove(globals.conda_packages, boa_index);
+        } else if (!boa_requested && cc->require_boa) {
+            SYSWARN("Adding boa to global package list");
+            strlist_append(&globals.conda_packages, "boa");
+        }
+
+        if (cc->require_boa) {
+            if (!boa_requested) {
+                SYSWARN("Adding boa to global package list");
+                strlist_append(&globals.conda_packages, "boa");
+            }
+        } else {
+            if (boa_requested) {
+                SYSWARN("Removing boa from global package list due to incompatible conda version (too new): %s", cc->conda_version);
+                strlist_remove(globals.conda_packages, boa_index);
+            }
+        }
+
         memset(cmd, 0, sizeof(cmd));
         safe_strncpy(cmd, "install ", sizeof(cmd));
 
@@ -661,7 +682,18 @@ int conda_env_remove(char *name) {
 
 int conda_env_export(char *name, char *output_dir, char *output_filename) {
     char env_command[PATH_MAX];
-    snprintf(env_command, sizeof(env_command), "env export -n %s -f %s/%s.yml", name, output_dir, output_filename);
+    int vr = 0;
+    const char *env_format = NULL;
+    char *version = shell_output("conda --version", &vr);
+    if (version) {
+        const size_t v_offset = strlen("conda ");
+        if (version_compare(GT, version + v_offset, "25.1.0")) {
+            env_format = "--format=yml";
+        }
+        guard_free(version);
+    }
+
+    snprintf(env_command, sizeof(env_command), "env export %s -n %s -f %s/%s.yml", env_format ? env_format : "", name, output_dir, output_filename);
     return conda_exec(env_command);
 }
 
