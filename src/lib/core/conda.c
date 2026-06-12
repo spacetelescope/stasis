@@ -558,17 +558,6 @@ int conda_setup_headless(struct CondaCapabilities *cc) {
             strlist_append(&globals.conda_packages, "boa");
         }
 
-        if (cc->require_boa) {
-            if (!boa_requested) {
-                SYSWARN("Adding boa to global package list");
-                strlist_append(&globals.conda_packages, "boa");
-            }
-        } else {
-            if (boa_requested) {
-                SYSWARN("Removing boa from global package list due to incompatible conda version (too new): %s", cc->conda_version);
-                strlist_remove(globals.conda_packages, boa_index);
-            }
-        }
 
         memset(cmd, 0, sizeof(cmd));
         safe_strncpy(cmd, "install ", sizeof(cmd));
