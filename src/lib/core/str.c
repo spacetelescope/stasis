@@ -171,6 +171,10 @@ char *join(char **arr, const char *separator) {
     total_bytes += (records * strlen(separator)) + 1;
 
     result = (char *)calloc(total_bytes, sizeof(char));
+    if (!result) {
+        return NULL;
+    }
+
     for (int i = 0; i < records; i++) {
         safe_strncat(result, arr[i], total_bytes);
         if (i < (records - 1)) {
@@ -225,6 +229,11 @@ char *join_ex(char *separator, ...) {
 
     // Generate output string
     result = calloc(size + 1, sizeof(char));
+    if (!result) {
+        guard_array_free_by_count(argv, argc);
+        return NULL;
+    }
+
     for (size_t i = 0; i < argc; i++) {
         // Append argument to string
         safe_strncat(result, argv[i], size + 1); // no -1 because +1 above

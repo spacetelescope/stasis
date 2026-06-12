@@ -26,6 +26,45 @@
 #define PKG_INDEX_PROVIDES_E_MANAGER_EXEC (PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET + 5)
 #define PKG_INDEX_PROVIDES_FAILED(ECODE) ((ECODE) <= PKG_INDEX_PROVIDES_ERROR_MESSAGE_OFFSET)
 
+/**
+ * @struct CondaCapabilities
+ * @brief Collection of feature flags to support older, newer, and transitional versions of conda/mamba.
+ * @see implementation in `conda_capable`
+ */
+struct CondaCapabilities {
+    /// Currently installed version of Conda
+    char *conda_version;
+    /// Currently installed version of Mamba
+    char *mamba_version;
+    /// Is conda available in the runtime environment?
+    bool available;
+    /// Can conda execute?
+    bool usable;
+    /// Do we need to pass extra arguments to "conda env export"?
+    bool require_explicit_export_format;
+    /// Do we need to inject our own shim to make Conda available?
+    bool require_manual_activation_shim;
+    /// Does this version of Conda support building with boa?
+    bool require_boa;
+    /// Does this version of Conda need to be configured to use libmamba?
+    bool require_libmamba_solver;
+    /// Does "mamba install --use-local" work on this version of mamba?
+    bool missing_use_local;
+};
+
+/**
+ * Check for the existence of "Conda" and set flags based on the availability of features
+ * @param ccap a pointer to an empty `struct CondaCapabilities`
+ * @return 0 on success
+ */
+int conda_capable(struct CondaCapabilities *ccap);
+
+/**
+ * Free memory allocated by `conda_capable`
+ * @param ccap a pointer to a populated `struct CondaCapabilities`
+ */
+void conda_capable_free(struct CondaCapabilities *ccap);
+
 struct MicromambaInfo {
     char *micromamba_prefix;    //!< Path to write micromamba binary
     char *conda_prefix;         //!< Path to install conda base tree
@@ -74,6 +113,24 @@ int python_exec(const char *args);
 int pip_exec(const char *args);
 
 /**
+ * Use importlib to resolve the version of an installed package
+ *
+ * ```c
+ * char *numpy_version = python_importlib_metadata_version("numpy");
+ * if (!numpy_version) {
+ *     fprintf(stderr, "failed to get numpy version\n");
+ *     exit(1);
+ * }
+ *
+ * printf("numpy version: %s\n", numpy_version);
+ * free(numpy_version);
+ * ```
+ * @param package_name of installed python package
+ * @return
+ */
+char *python_importlib_metadata_version(const char *package_name);
+
+/**
  * Execute conda (or if possible, mamba)
  * Conda/Mamba is determined by PATH
  *
@@ -108,7 +165,7 @@ int conda_activate(const char *root, const char *env_name);
 /**
  * Configure the active conda installation for headless operation
  */
-int conda_setup_headless();
+int conda_setup_headless(struct CondaCapabilities *cc);
 
 /**
  * Creates a Conda environment from a YAML config

@@ -171,11 +171,15 @@ int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_
     for (size_t i = 0; i < strlist_count(pStrList); i++) {
         const char *item = strlist_item(pStrList, i);
         if (!item) {
-            *index_of = 0;
+            if (index_of) {
+                *index_of = 0;
+            }
             break;
         }
         if (!strcmp(item, value)) {
-            *index_of = i;
+            if (index_of) {
+                *index_of = i;
+            }
             return 1;
         }
     }

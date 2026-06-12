@@ -194,6 +194,44 @@ static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, ch
     (*listp) = list;
 }
 
+static int check_package_spec_list(struct StrList *list, const char *ini_section, const char *ini_key) {
+    if (!list) {
+        // empty lists are OK
+        return 0;
+    }
+    for (size_t i = 0; i < strlist_count(list); i++) {
+        const char *item = strlist_item(list, i);
+        if (!item) {
+            continue;
+        }
+        const char *invalid_chars = "@:/<>!~";
+        const char *invalid_spec = strpbrk(item, invalid_chars);
+        if (invalid_spec) {
+            SYSERROR("Invalid version specification detected at %s:%s[%zu], \"%s\"", ini_section, ini_key, i, item);
+            SYSERROR("Package specification may not contain the operator '%c' (or any of \"%s\")", *invalid_spec, invalid_chars);
+            SYSERROR("");
+            SYSERROR("%s:%s supports:", ini_section, ini_key);
+            SYSERROR("    {package}[=={version|tag|branch|ref}]");
+            SYSERROR("");
+            char *reported_name = strdup(item);
+            if (!reported_name) {
+                SYSERROR("unable to allocate memory for reported_name");
+                return -1;
+            }
+            const char *reported_name_end = reported_name;
+            while (!ispunct(*reported_name_end)) {
+                reported_name_end++;
+            }
+            reported_name[reported_name_end - reported_name] = '\0';
+            SYSERROR("Set test:%s.repository to point to a valid Git repository URL to enable [tag|branch|ref]", reported_name);
+
+            guard_free(reported_name);
+            return -1;
+        }
+    }
+    return 0;
+}
+
 int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
@@ -230,12 +268,22 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", render_mode, &err);
     ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err);
     ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err);
+
     ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.conda_packages, "conda", "conda_packages", render_mode);
+    if (check_package_spec_list(ctx->conda.conda_packages, "conda", "conda_packages")) {
+        return -1;
+    }
+
     ctx->conda.conda_packages_purge = ini_getval_strlist(ini, "conda", "conda_packages_purge", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.conda_packages_purge, "conda", "conda_package_purge", render_mode);
+
     ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode);
+    if (check_package_spec_list(ctx->conda.pip_packages, "conda", "pip_packages")) {
+        return -1;
+    }
+
     ctx->conda.pip_packages_purge = ini_getval_strlist(ini, "conda", "pip_packages_purge", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
 
