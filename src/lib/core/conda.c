@@ -136,6 +136,31 @@ int pip_exec(const char *args) {
     return result;
 }
 
+char *python_importlib_metadata_version(const char *package_name) {
+    int status = 0;
+    char cmd[PATH_MAX] = {0};
+
+    if (strpbrk(package_name, "\\/*{}()|;&\"'\r\n")) {
+        SYSERROR("package name is invalid: '%s'", package_name);
+        return NULL;
+    }
+    snprintf(cmd, sizeof(cmd), "python3 -c 'from importlib.metadata import version; print(version(r\x22%s\x22))'", package_name);
+
+    char *version = shell_output(cmd, &status);
+    if (status) {
+        SYSERROR("version detection failed");
+        guard_free(version);
+        return NULL;
+    }
+    if (!version) {
+        SYSERROR("unable to allocate version");
+        return NULL;
+    }
+    strip(version);
+    return version;
+}
+
+
 static const char *PKG_ERROR_STR[] = {
     "success",
     "[internal] unhandled package manager mode",
@@ -739,33 +764,18 @@ int conda_capable(struct CondaCapabilities *ccap) {
     }
 
     if (cc->available) {
-        int status = 0;
-        char *conda_version = shell_output("python3 -c 'import conda; print(conda._version.__version__)'", &status);
-        if (status) {
-            SYSERROR("conda version detection failed");
-            guard_free(conda_version);
-            return -1;
-        }
+        char *conda_version = python_importlib_metadata_version("conda");
         if (!conda_version) {
-            SYSERROR("unable to allocate conda_version_raw");
+            SYSERROR("conda version detection failed");
             return -1;
         }
-        strip(conda_version);
 
-        char *mamba_version = shell_output("python3 -c 'import libmambapy; print(libmambapy.version.__version__)'", &status);
-        if (status) {
-            SYSERROR("mamba version detection failed");
-            guard_free(conda_version);
-            guard_free(mamba_version);
-            return -1;
-        }
+        char *mamba_version = python_importlib_metadata_version("libmambapy");
         if (!mamba_version) {
             SYSERROR("unable to allocate mamba_version");
             guard_free(conda_version);
-            guard_free(mamba_version);
             return -1;
         }
-        strip(mamba_version);
 
         cc->conda_version = strdup(conda_version);
         cc->mamba_version = strdup(mamba_version);
