@@ -16,11 +16,13 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 SYSERROR("BUG: recipe_clone() succeeded but recipe_dir is NULL: %s", strerror(errno));
                 return -1;
             }
-            int recipe_type = recipe_get_type(recipe_dir);
+            const int recipe_style = recipe_get_style(recipe_dir);
+            const int recipe_build_system = recipe_get_build_system(recipe_dir, recipe_style);
+
             if(!pushd(recipe_dir)) {
-                if (RECIPE_TYPE_ASTROCONDA == recipe_type) {
+                if (RECIPE_STYLE_ASTROCONDA == recipe_style) {
                     pushd(path_basename(ctx->tests->test[i]->repository));
-                } else if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
+                } else if (RECIPE_STYLE_CONDA_FORGE == recipe_style) {
                     pushd("recipe");
                 }
 
@@ -56,23 +58,28 @@ int delivery_build_recipes(struct Delivery *ctx) {
                 snprintf(recipe_buildno, sizeof(recipe_buildno), "  number: 0");
 
                 unsigned flags = REPLACE_TRUNCATE_AFTER_MATCH;
-                //file_replace_text("meta.yaml", "{% set version = ", recipe_version);
-                if (ctx->meta.final) { // remove this. i.e. statis cannot deploy a release to conda-forge
-                    snprintf(recipe_version, sizeof(recipe_version), "{%% set version = \"%s\" %%}", ctx->tests->test[i]->version);
-                    // TODO: replace sha256 of tagged archive
-                    // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
-                    // For now, remove the sha256 requirement
-                    file_replace_text("meta.yaml", "sha256:", "\n", flags);
-                } else {
-                    file_replace_text("meta.yaml", "{% set version = ", recipe_version, flags);
-                    file_replace_text("meta.yaml", "  url:", recipe_git_url, flags);
-                    //file_replace_text("meta.yaml", "sha256:", recipe_git_rev);
-                    file_replace_text("meta.yaml", "  sha256:", "\n", flags);
-                    file_replace_text("meta.yaml", "  number:", recipe_buildno, flags);
+                if (recipe_build_system == RECIPE_BUILD_CONDA_BUILD) {
+                    if (ctx->meta.final) { // remove this. i.e. statis cannot deploy a release to conda-forge
+                        snprintf(recipe_version, sizeof(recipe_version), "{%% set version = \"%s\" %%}", ctx->tests->test[i]->version);
+                        // TODO: replace sha256 of tagged archive
+                        // TODO: leave the recipe unchanged otherwise. in theory this should produce the same conda package hash as conda forge.
+                        // For now, remove the sha256 requirement
+                        file_replace_text("meta.yaml", "sha256:", "\n", flags);
+                    } else {
+                        file_replace_text("meta.yaml", "{% set version = ", recipe_version, flags);
+                        file_replace_text("meta.yaml", "  url:", recipe_git_url, flags);
+                        file_replace_text("meta.yaml", "  sha256:", "\n", flags);
+                        file_replace_text("meta.yaml", "  number:", recipe_buildno, flags);
+                    }
+                } else if (recipe_build_system == RECIPE_BUILD_RATTLER) {
+                    file_replace_text("recipe.yaml", "  version:", ctx->tests->test[i]->version, flags);
+                    file_replace_text("recipe.yaml", "  url:", recipe_git_url, flags);
+                    file_replace_text("recipe.yaml", "  sha256:", "\n", flags);
+                    file_replace_text("recipe.yaml", "  number:", recipe_buildno, flags);
                 }
 
                 char command[PATH_MAX];
-                if (RECIPE_TYPE_CONDA_FORGE == recipe_type) {
+                if (RECIPE_STYLE_CONDA_FORGE == recipe_style) {
                     char arch[STASIS_NAME_MAX] = {0};
                     char platform[STASIS_NAME_MAX] = {0};
 
@@ -92,18 +99,34 @@ int delivery_build_recipes(struct Delivery *ctx) {
                     }
                     tolower_s(arch);
 
-                    snprintf(command, sizeof(command), "mambabuild --python=%s -m ../.ci_support/%s_%s_.yaml .",
-                            ctx->meta.python, platform, arch);
+                    // default build tool is "conda build" aka "build"
+                    char tool[STASIS_NAME_MAX] = "build";
+                    if (recipe_build_system == RECIPE_BUILD_CONDA_BUILD) {
+                        if (strlist_contains(globals.conda_packages, "boa", NULL)) {
+                            safe_strncpy(tool, "mambabuild", sizeof(tool));
+                        }
+                    } else if (recipe_build_system == RECIPE_BUILD_RATTLER) {
+                        snprintf(tool, sizeof(tool), "rattler-build");
+                    }
+                    snprintf(command, sizeof(command), "%s --python=%s -m ../.ci_support/%s_%s_.yaml .",
+                            tool, ctx->meta.python, platform, arch);
                 } else {
-                    snprintf(command, sizeof(command), "mambabuild --python=%s .", ctx->meta.python);
+                    snprintf(command, sizeof(command), "build --python=%s .", ctx->meta.python);
                 }
-                int status = conda_exec(command);
+
+                int status = 0;
+                if (recipe_build_system == RECIPE_BUILD_RATTLER) {
+                    // rattler-build is a standalone program, not a conda sub-command
+                    status = system(command);
+                } else {
+                    status = conda_exec(command);
+                }
                 if (status) {
                     guard_free(recipe_dir);
                     return -1;
                 }
 
-                if (RECIPE_TYPE_GENERIC != recipe_type) {
+                if (RECIPE_STYLE_GENERIC != recipe_style) {
                     popd();
                 }
                 popd();
