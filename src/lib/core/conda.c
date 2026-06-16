@@ -852,6 +852,7 @@ int conda_capable(struct CondaCapabilities *ccap, const char *root) {
 
         struct Process proc = {0};
         safe_strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr));
+        safe_strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout));
         if (shell(&proc, "mamba install --use-local --dry-run conda")) {
             cc->missing_use_local = true;
         }
