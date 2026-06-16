@@ -76,6 +76,7 @@ inline void stasis_testing_record_result_summary() {
             do_message = 1;
 #endif
             strcpy(status_msg, "PASS");
+            do_reason = 0;
             passed++;
         }
         if (do_message) {
