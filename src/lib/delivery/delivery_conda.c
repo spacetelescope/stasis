@@ -146,7 +146,7 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         guard_free(conda_version);
     }
 
-    if (conda_capable(&ctx->conda.capabilities)) {
+    if (conda_capable(&ctx->conda.capabilities, ctx->storage.conda_install_prefix)) {
         SYSERROR("Conda capability check failed");
         exit(1);
     }

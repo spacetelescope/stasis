@@ -32,6 +32,8 @@
  * @see implementation in `conda_capable`
  */
 struct CondaCapabilities {
+    /// Conda installation prefix
+    const char *prefix;
     /// Currently installed version of Conda
     char *conda_version;
     /// Currently installed version of Mamba
@@ -55,9 +57,10 @@ struct CondaCapabilities {
 /**
  * Check for the existence of "Conda" and set flags based on the availability of features
  * @param ccap a pointer to an empty `struct CondaCapabilities`
+ * @param root conda installation root directory
  * @return 0 on success
  */
-int conda_capable(struct CondaCapabilities *ccap);
+int conda_capable(struct CondaCapabilities *ccap, const char *root);
 
 /**
  * Free memory allocated by `conda_capable`

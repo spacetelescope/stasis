@@ -802,7 +802,7 @@ void conda_capable_free(struct CondaCapabilities *ccap) {
     memset(ccap, 0, sizeof(*ccap));
 }
 
-int conda_capable(struct CondaCapabilities *ccap) {
+int conda_capable(struct CondaCapabilities *ccap, const char *root) {
     struct CondaCapabilities *cc = ccap;
     memset(cc, 0, sizeof(*cc));
 
@@ -824,6 +824,7 @@ int conda_capable(struct CondaCapabilities *ccap) {
             return -1;
         }
 
+        cc->prefix = root;
         cc->conda_version = strdup(conda_version);
         cc->mamba_version = strdup(mamba_version);
         if (version_compare(GT | EQ, cc->conda_version, "25.3.0")) {
