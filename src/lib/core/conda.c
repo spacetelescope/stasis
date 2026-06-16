@@ -585,6 +585,19 @@ int conda_check_required() {
 }
 
 int conda_setup_headless(struct CondaCapabilities *cc) {
+    mkdirs(cc->prefix, 0755);
+
+    char rcpath[PATH_MAX];
+    snprintf(rcpath, sizeof(rcpath), "%s/.condarc", cc->prefix);
+    touch(rcpath);
+    if (errno == ENOENT) {
+        errno = 0;
+    }
+
+    setenv("CONDARC", rcpath, 1);
+    setenv("MAMBARC", rcpath, 1);
+    setenv("MAMBA_ROOT_PREFIX", cc->prefix, 1);
+
     if (globals.verbose) {
         conda_exec("config --system --set quiet false");
     } else {
