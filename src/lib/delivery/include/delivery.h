@@ -356,9 +356,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type);
 /**
  * Configure and activate a Conda installation based on Delivery context
  * @param ctx pointer to Delivery context
- * @param conda_install_dir path to Conda installation
  */
-void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir);
+void delivery_conda_enable(struct Delivery *ctx);
 
 /**
  * Install Conda

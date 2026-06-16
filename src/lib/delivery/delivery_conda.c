@@ -103,18 +103,14 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
     }
 }
 
-void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
+void delivery_conda_enable(struct Delivery *ctx) {
     setenv("MAMBA_ROOT_PREFIX", ctx->storage.conda_install_prefix, 1);
-    if (conda_activate(conda_install_dir, "base")) {
-        SYSERROR("conda activation failed");
-        exit(1);
-    }
 
     // Setting the CONDARC environment variable appears to be the only consistent
     // way to make sure the file is used. Not setting this variable leads to strange
     // behavior, especially if a conda environment is already active when STASIS is loaded.
     char rcpath[PATH_MAX];
-    snprintf(rcpath, sizeof(rcpath), "%s/%s", conda_install_dir, ".condarc");
+    snprintf(rcpath, sizeof(rcpath), "%s/%s", ctx->storage.conda_install_prefix, ".condarc");
     setenv("CONDARC", rcpath, 1);
     setenv("MAMBARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
@@ -122,8 +118,13 @@ void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
         exit(1);
     }
 
+    if (conda_activate(ctx->storage.conda_install_prefix, "base")) {
+        SYSERROR("conda activation failed");
+        exit(1);
+    }
+
     char pinned[PATH_MAX];
-    snprintf(pinned, sizeof(pinned), "%s/conda-meta/pinned", conda_install_dir);
+    snprintf(pinned, sizeof(pinned), "%s/conda-meta/pinned", ctx->storage.conda_install_prefix);
     touch(pinned);
     if (errno == ENOENT) {
         errno = 0;
