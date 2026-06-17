@@ -5,7 +5,11 @@
 #include "conda.h"
 #include "version_compare.h"
 
-int micromamba(const struct MicromambaInfo *info, char *command, ...) {
+int micromamba_install(const struct MicromambaInfo *info) {
+    if (access(info->micromamba_prefix, F_OK) == 0) {
+        SYSINFO("micromamba already installed: %s", info->micromamba_prefix);
+        return 0;
+    }
     struct utsname sys;
     uname(&sys);
 
@@ -28,21 +32,52 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         return -1;
     }
 
+    // If we ever want an exact version instead of "latest", we need to use this format instead:
+    // https://github.com/mamba-org/micromamba-releases/releases/download/${version}/micromamba-${arch}
+
+    // Micromamba hosts binaries on github and on their own website. Prefer github.
+    const char *url_fmts[] = {
+        info->download_url,
+        "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-%s-%s",
+        "https://micro.mamba.pm/api/micromamba/%s-%s/latest",
+    };
+    const size_t url_fmts_max = sizeof(url_fmts) / sizeof(url_fmts[0]);
+
     char url[PATH_MAX] = {0};
-    snprintf(url, sizeof(url), "https://micro.mamba.pm/api/micromamba/%s-%s/latest", sys.sysname, sys.machine);
-
-    const char installer_name[] = "mm_latest";
     char installer_path[PATH_MAX] = {0};
-    snprintf(installer_path, sizeof(installer_path), "%s/%s", info->download_dir, installer_name);
+    const char *installer_name = "mm_latest";
 
-    if (access(installer_path, F_OK)) {
-        char *errmsg = NULL;
-        const long http_code = download(url, installer_path, &errmsg);
-        if (HTTP_ERROR(http_code)) {
-            SYSERROR("download failed: %ld: %s", http_code, errmsg);
-            guard_free(errmsg);
-            return -1;
+    size_t fail_count = 0;
+    for (size_t url_i = 0; url_i < url_fmts_max; url_i++) {
+        if (url_i == 0 && info->download_url) {
+            // If the caller supplies a download_url, use it
+            snprintf(url, sizeof(url), "%s", info->download_url);
+        } else if (url_i == 0 && isempty(info->download_url)) {
+            // No download_url has been defined, or is an empty string
+            continue;
+        } else {
+            snprintf(url, sizeof(url), url_fmts[url_i], sys.sysname, sys.machine);
         }
+
+        snprintf(installer_path, sizeof(installer_path), "%s/%s", info->download_dir, installer_name);
+
+        if (access(installer_path, F_OK)) {
+            char *errmsg = NULL;
+            const long http_code = download(url, installer_path, &errmsg);
+            if (HTTP_ERROR(http_code)) {
+                SYSERROR("download failed: %ld: %s", http_code, errmsg);
+                guard_free(errmsg);
+                remove(installer_path);
+                fail_count++;
+                continue;
+            }
+            break;
+        }
+    }
+
+    if (fail_count >= url_fmts_max) {
+        SYSERROR("all download attempts failed");
+        return -1;
     }
 
     char mmbin[PATH_MAX];
@@ -58,6 +93,16 @@ int micromamba(const struct MicromambaInfo *info, char *command, ...) {
         if (untarcmd_status) {
             return -1;
         }
+    }
+    return 0;
+}
+
+int micromamba(const struct MicromambaInfo *info, char *command, ...) {
+    char mmbin[PATH_MAX] = {0};
+    snprintf(mmbin, sizeof(mmbin), "%s/micromamba", info->micromamba_prefix);
+    if (access(mmbin, F_OK) < 0) {
+        SYSERROR("Unable to run micromamba. Not installed?");
+        return -1;
     }
 
     char cmd[STASIS_BUFSIZ] = {0};

@@ -29,6 +29,7 @@ struct STASIS_GLOBAL globals = {
         .verbose = false, ///< Toggle verbose mode
         .continue_on_error = false, ///< Do not stop program on error
         .always_update_base_environment = false, ///< Run "conda update --all" after installing Conda
+        .micromamba_download_url = NULL,
         .conda_fresh_start = true, ///< Remove/reinstall Conda at startup
         .conda_install_prefix = NULL, ///< Path to install Conda
         .conda_packages = NULL, ///< Conda packages to install

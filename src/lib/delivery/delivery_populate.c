@@ -99,6 +99,11 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     }
 
     err = 0;
+    if (!globals.micromamba_download_url) {
+        globals.micromamba_download_url = ini_getval_str(cfg, "indexer", "micromamba_download_url", render_mode, &err);
+    }
+
+    err = 0;
     if (!globals.wheel_builder_manylinux_image) {
         globals.wheel_builder_manylinux_image = ini_getval_str(cfg, "default", "wheel_builder_manylinux_image", render_mode, &err);
     }

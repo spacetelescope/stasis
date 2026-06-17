@@ -30,7 +30,16 @@ struct MicromambaInfo {
     char *micromamba_prefix;    //!< Path to write micromamba binary
     char *conda_prefix;         //!< Path to install conda base tree
     char *download_dir;         //!< Path to store micromamba installer
+    char *download_url;         //!< Raw URL to a remotely hosted micromamba-platform-arch file
 };
+
+/**
+ * Download and install Micromamba
+ *
+ * @param info MicromambaInfo data structure (must be populated before use)
+ * @return 0 on successful installation
+ */
+int micromamba_install(const struct MicromambaInfo *info);
 
 /**
  * Execute micromamba

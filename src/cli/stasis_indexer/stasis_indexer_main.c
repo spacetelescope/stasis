@@ -309,6 +309,23 @@ int main(const int argc, char *argv[]) {
     printf(BANNER, version, AUTHOR);
     guard_free(version);
 
+    char *cfg_path = NULL;
+    if (asprintf(&cfg_path, "%s/stasis.ini", globals.sysconfdir) < 0) {
+        SYSERROR("Unable to allocate memory for cfg path");
+        exit(1);
+    }
+    ctx._stasis_ini_fp.cfg_path = cfg_path;
+    ctx._stasis_ini_fp.cfg = ini_open(ctx._stasis_ini_fp.cfg_path);
+    if (ctx._stasis_ini_fp.cfg) {
+        if (populate_delivery_cfg(&ctx, INI_READ_RENDER)) {
+            SYSERROR("Unable to apply stasis configuration");
+            exit(1);
+        }
+    }
+    else {
+        SYSWARN("Unable to open stasis configuration file: %s", cfg_path);
+    }
+
     indexer_init_dirs(&ctx, workdir);
 
     msg(STASIS_MSG_L1, "%s delivery root %s\n",

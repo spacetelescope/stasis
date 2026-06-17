@@ -172,6 +172,11 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     setenv("PATH", pathvar, 1);
     guard_free(pathvar);
 
+    if (micromamba_install(m)) {
+        SYSERROR("Micromamba installation failed");
+        return -1;
+    }
+
     status += micromamba(m, "config prepend --env channels conda-forge");
     if (!globals.verbose) {
         status += micromamba(m, "config set --env quiet true");
