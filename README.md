@@ -177,13 +177,14 @@ stasis mydelivery.ini
 
 ## Indexer Command Line Options
 
-| Long Option  | Short Option | Purpose                                 |
-|:-------------|:------------:|:----------------------------------------|
-| --help       |      -h      | Display this usage statement            |
-| --destdir    |      -d      | Destination directory                   |
-| --verbose    |      -v      | Increase output verbosity               |
-| --unbuffered |      -U      | Disable line buffering                  |
-| --web        |      -w      | Generate HTML indexes (requires pandoc) |
+| Long Option               | Short Option | Purpose                                 |
+|:--------------------------|:------------:|:----------------------------------------|
+| --help                    |      -h      | Display this usage statement            |
+| --destdir                 |      -d      | Destination directory                   |
+| --verbose                 |      -v      | Increase output verbosity               |
+| --unbuffered              |      -U      | Disable line buffering                  |
+| --web                     |      -w      | Generate HTML indexes (requires pandoc) |
+| --micromamba-download-url |     n/a      | Set micromamba download URL             |
 
 ## Environment variables
 

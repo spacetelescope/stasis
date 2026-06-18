@@ -197,6 +197,13 @@ int main(const int argc, char *argv[]) {
             case 'w':
                 do_html = 1;
                 break;
+            case OPT_MICROMAMBA_DOWNLOAD_URL:
+                globals.micromamba_download_url = strdup(optarg);
+                if (!globals.micromamba_download_url) {
+                    SYSERROR("unable to allocate memory for micromamba_download_url");
+                    exit(1);
+                }
+                break;
             case '?':
             default:
                 exit(1);
@@ -308,6 +315,30 @@ int main(const int argc, char *argv[]) {
     }
     printf(BANNER, version, AUTHOR);
     guard_free(version);
+
+    char *cfg_path = NULL;
+    if (asprintf(&cfg_path, "%s/stasis.ini", globals.sysconfdir) < 0) {
+        SYSERROR("Unable to allocate memory for cfg path");
+        exit(1);
+    }
+    ctx._stasis_ini_fp.cfg_path = cfg_path;
+    ctx._stasis_ini_fp.cfg = ini_open(ctx._stasis_ini_fp.cfg_path);
+    if (ctx._stasis_ini_fp.cfg) {
+        if (populate_delivery_cfg(&ctx, INI_READ_RENDER)) {
+            SYSERROR("Unable to apply stasis configuration");
+            exit(1);
+        }
+    }
+    else {
+        SYSWARN("Unable to open stasis configuration file: %s", cfg_path);
+    }
+
+    if (globals.micromamba_download_url && isempty(globals.micromamba_download_url)) {
+        // safeguard against supplying a zero-length URL
+        // this covers the case where the user supplied it as an argument and/or in the config file
+        SYSERROR("micromamba download URL cannot be empty");
+        exit(1);
+    }
 
     indexer_init_dirs(&ctx, workdir);
 

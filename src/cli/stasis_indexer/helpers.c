@@ -157,6 +157,7 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     m->conda_prefix = globals.conda_install_prefix;
     m->micromamba_prefix = micromamba_prefix;
     m->download_dir = ctx->storage.tmpdir;
+    m->download_url = globals.micromamba_download_url;
 
     const size_t pathvar_len = strlen(getenv("PATH")) + strlen(m->micromamba_prefix) + strlen(m->conda_prefix) + 3 + 4 + 1;
     // ^^^^^^^^^^^^^^^^^^
@@ -171,6 +172,11 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     snprintf(pathvar, pathvar_len, "%s/bin:%s:%s", m->conda_prefix, m->micromamba_prefix, getenv("PATH"));
     setenv("PATH", pathvar, 1);
     guard_free(pathvar);
+
+    if (micromamba_install(m)) {
+        SYSERROR("Micromamba installation failed");
+        return -1;
+    }
 
     status += micromamba(m, "config prepend --env channels conda-forge");
     if (!globals.verbose) {

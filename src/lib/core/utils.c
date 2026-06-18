@@ -1273,3 +1273,49 @@ char *center_text(const char *s, const size_t maxwidth) {
     return result;
 }
 
+int is_file_compressed(const char *filename) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+        SYSERROR("Unable to open for reading: %s", filename);
+        return -1;
+    }
+
+    // Container for magic bytes
+    struct Magic {
+        const unsigned char *byte;
+        const size_t size;
+    };
+
+    // Array of magic bytes for different compression types
+    const struct Magic magic[] = {
+        {(unsigned char *) "BZh", 3},                       // bzip2
+        {(unsigned char *) "\x1f\x8b", 2},                  // gzip
+        {(unsigned char *) "\xfd\x37\x7a\x58\x5a\x00", 6},  // xz
+        {(unsigned char *) "PK\03\04", 3},                  // zip
+        {(unsigned char *) "PK\05\06", 3},                  // zip (empty)
+        {(unsigned char *) "PK\07\08", 3},                  // zip (spanned)
+        {(unsigned char *) "\xfd\x2f\xb5\x28", 4}           // zstd
+    };
+    unsigned char buf[8] = {0}; // unsigned long
+    size_t bytes_read = 0;
+    bytes_read = fread(buf, 1, sizeof(buf), fp);
+    if (bytes_read < sizeof(buf)) {
+        SYSWARN("consumed fewer than %zu bytes (%zu) from %s", sizeof(buf), bytes_read, filename);
+        fclose(fp);
+        // well, the file isn't compressed.
+        return 0;
+    }
+    fclose(fp);
+
+    // Compare known magic bytes to consumed data
+    for (size_t i = 0; i < sizeof(magic) / sizeof(magic[0]); i++) {
+        if (memcmp(buf, magic[i].byte, magic[i].size) == 0) {
+            // match
+            return 1;
+        }
+    }
+
+    // no match
+    return 0;
+}
+

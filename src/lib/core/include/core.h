@@ -35,6 +35,7 @@ struct STASIS_GLOBAL {
     bool verbose; //!< Enable verbose output
     bool always_update_base_environment; //!< Update base environment immediately after activation
     bool continue_on_error; //!< Do not stop on test failures
+    char *micromamba_download_url; //!< Override download URL for micromamba
     bool conda_fresh_start; //!< Always install a new copy of Conda
     bool enable_docker; //!< Enable docker image builds
     bool enable_artifactory; //!< Enable artifactory uploads
