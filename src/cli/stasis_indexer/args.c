@@ -31,7 +31,7 @@ void usage(char *name) {
     for (int i = 0; i < maxopts; i++) {
         opts[i] = (char) long_options[i].val;
     }
-    printf("usage: %s [-%s] {{STASIS_ROOT}...}\n", name, opts);
+    printf("usage: %s [-%s] {{STASIS_ROOT} ...}\n", name, opts);
     guard_free(opts);
 
     for (int i = 0; i < maxopts - 1; i++) {
