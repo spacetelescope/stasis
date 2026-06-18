@@ -28,17 +28,23 @@ void usage(char *name) {
         SYSERROR("Unable to allocate memory for options array");
         exit(1);
     }
-    for (int i = 0; i < maxopts; i++) {
-        opts[i] = (char) long_options[i].val;
+    for (int i = 0, n = 0; i < maxopts; i++) {
+        if (isalnum(long_options[i].val)) {
+            opts[n] = (char) long_options[i].val;
+            n++;
+        }
     }
     printf("usage: %s [-%s] {{STASIS_ROOT} ...}\n", name, opts);
     guard_free(opts);
 
     for (int i = 0; i < maxopts - 1; i++) {
         char line[255] = {0};
-        snprintf(line, sizeof(line), "  --%s  -%c  %-20s", long_options[i].name, long_options[i].val, long_options_help[i]);
+        snprintf(line, sizeof(line), "  --%s  %s%c  %s",
+            long_options[i].name,
+            isalnum(long_options[i].val) ? "-" : "",
+            isalnum(long_options[i].val) ? long_options[i].val : ' ',
+            long_options_help[i]);
         puts(line);
     }
 
 }
-
