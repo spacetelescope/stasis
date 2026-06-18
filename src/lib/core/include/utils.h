@@ -492,4 +492,22 @@ int get_random_bytes(char *result, size_t maxlen);
 int non_format_len(const char *s);
 
 char *center_text(const char *s, size_t maxwidth);
+
+/**
+ * Check magic bytes against known compression formats
+ *
+ * ```c
+ * const char *filename = "/path/to/file.zip";
+ * if (is_file_compressed(filename)) {
+ *     // file is compressed
+ * } else {
+ *     // file is not compressed
+ * }
+ * ```
+ *
+ * @param filename path to maybe-compressed file
+ * @return 0 if not compressed
+ * @return 1 if compressed
+ */
+int is_file_compressed(const char *filename);
 #endif //STASIS_UTILS_H

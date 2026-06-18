@@ -7,6 +7,7 @@ struct option long_options[] = {
     {"verbose", no_argument, 0, 'v'},
     {"unbuffered", no_argument, 0, 'U'},
     {"web", no_argument, 0, 'w'},
+    {"micromamba-download-url", required_argument, 0, OPT_MICROMAMBA_DOWNLOAD_URL},
     {0, 0, 0, 0},
 };
 
@@ -16,6 +17,7 @@ const char *long_options_help[] = {
     "Increase output verbosity",
     "Disable line buffering",
     "Generate HTML indexes (requires pandoc)",
+    "Set micromamba download URL",
     NULL,
 };
 

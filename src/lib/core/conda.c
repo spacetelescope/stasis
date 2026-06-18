@@ -36,9 +36,10 @@ int micromamba_install(const struct MicromambaInfo *info) {
     // https://github.com/mamba-org/micromamba-releases/releases/download/${version}/micromamba-${arch}
 
     // Micromamba hosts binaries on github and on their own website. Prefer github.
+    // The "latest" binary from micromamba's site is compressed with bzip2 (06/2026)
     const char *url_fmts[] = {
         info->download_url,
-        "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-%s-%s",
+        "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-%s-%s.tar.bz2",
         "https://micro.mamba.pm/api/micromamba/%s-%s/latest",
     };
     const size_t url_fmts_max = sizeof(url_fmts) / sizeof(url_fmts[0]);
@@ -84,14 +85,26 @@ int micromamba_install(const struct MicromambaInfo *info) {
     snprintf(mmbin, sizeof(mmbin), "%s/micromamba", info->micromamba_prefix);
 
     if (access(mmbin, F_OK)) {
-        char untarcmd[PATH_MAX * 2];
         mkdirs(info->micromamba_prefix, 0755);
-        snprintf(untarcmd, sizeof(untarcmd),
-            "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null",
-            installer_path, info->micromamba_prefix);
-        int untarcmd_status = system(untarcmd);
-        if (untarcmd_status) {
-            return -1;
+
+        if (is_file_compressed(installer_path)) {
+            char untarcmd[PATH_MAX * 2] = {0};
+            snprintf(untarcmd, sizeof(untarcmd),
+                "tar -xvf %s -C %s --strip-components=1 bin/micromamba 1>/dev/null",
+                installer_path, info->micromamba_prefix);
+            int untarcmd_status = system(untarcmd);
+            if (untarcmd_status) {
+                return -1;
+            }
+        } else {
+            if (copy2(installer_path, mmbin, CT_PERM)) {
+                SYSERROR("unable to copy %s to %s", installer_path, mmbin);
+                return -1;
+            }
+            if (chmod(mmbin, 0755)) {
+                SYSERROR("unable to set permissions: %s (%s)", mmbin, strerror(errno));
+                return -1;
+            }
         }
     }
     return 0;

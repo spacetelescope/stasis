@@ -26,6 +26,7 @@ void test_micromamba() {
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *item = &tc[i];
+        STASIS_ASSERT(micromamba_install(&item->mminfo) == 0, "micromamba installation failed");
         int result = micromamba(&item->mminfo, (char *) item->cmd);
         if (result > 0) {
             result = result >> 8;

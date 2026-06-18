@@ -157,6 +157,7 @@ int micromamba_configure(const struct Delivery *ctx, struct MicromambaInfo *m) {
     m->conda_prefix = globals.conda_install_prefix;
     m->micromamba_prefix = micromamba_prefix;
     m->download_dir = ctx->storage.tmpdir;
+    m->download_url = globals.micromamba_download_url;
 
     const size_t pathvar_len = strlen(getenv("PATH")) + strlen(m->micromamba_prefix) + strlen(m->conda_prefix) + 3 + 4 + 1;
     // ^^^^^^^^^^^^^^^^^^

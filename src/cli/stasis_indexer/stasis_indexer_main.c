@@ -197,6 +197,13 @@ int main(const int argc, char *argv[]) {
             case 'w':
                 do_html = 1;
                 break;
+            case OPT_MICROMAMBA_DOWNLOAD_URL:
+                globals.micromamba_download_url = strdup(optarg);
+                if (!globals.micromamba_download_url) {
+                    SYSERROR("unable to allocate memory for micromamba_download_url");
+                    exit(1);
+                }
+                break;
             case '?':
             default:
                 exit(1);
@@ -324,6 +331,13 @@ int main(const int argc, char *argv[]) {
     }
     else {
         SYSWARN("Unable to open stasis configuration file: %s", cfg_path);
+    }
+
+    if (globals.micromamba_download_url && isempty(globals.micromamba_download_url)) {
+        // safeguard against supplying a zero-length URL
+        // this covers the case where the user supplied it as an argument and/or in the config file
+        SYSERROR("micromamba download URL cannot be empty");
+        exit(1);
     }
 
     indexer_init_dirs(&ctx, workdir);
