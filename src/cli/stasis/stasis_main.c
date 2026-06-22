@@ -176,7 +176,7 @@ static void setup_conda(struct Delivery *ctx, char *installer_url, const size_t 
     delivery_install_conda(ctx->conda.installer_path, ctx->storage.conda_install_prefix);
 
     msg(STASIS_MSG_L2, "Configuring: %s\n", ctx->storage.conda_install_prefix);
-    delivery_conda_enable(ctx, ctx->storage.conda_install_prefix);
+    delivery_conda_enable(ctx);
 }
 
 static void configure_conda_base(struct Delivery *ctx, char *envs[]) {
