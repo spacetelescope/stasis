@@ -16,7 +16,7 @@ void test_to_short_version() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = to_short_version(tc[i].data);
         STASIS_ASSERT_FATAL(result != NULL, "should not be NULL");
-        //printf("%s[%zu], result: %s, expected: %s\n", __FUNCTION__, i, result, tc[i].expected);
+        printf("%s[%zu], result: %s, expected: %s\n", __func__, i, result, tc[i].expected);
         STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "unexpected result");
         guard_free(result);
     }
