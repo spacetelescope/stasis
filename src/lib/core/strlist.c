@@ -176,7 +176,7 @@ int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_
             }
             break;
         }
-        if (!strcmp(item, value)) {
+        if (strstr(item, value)) {
             if (index_of) {
                 *index_of = i;
             }
