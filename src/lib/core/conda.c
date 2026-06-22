@@ -252,21 +252,30 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         SYSERROR("Unable to create log directory: %s", logdir ? logdir : "NULL");
         return -1;
     }
-    const char logfile_template[] = "STASIS-package_exists.XXXXXX";
-    char logfile[PATH_MAX] = {0};
-    snprintf(logfile, sizeof(logfile), "%s/%s", logdir, logfile_template);
 
-    int logfd = mkstemp(logfile);
-    if (logfd < 0) {
-        SYSERROR("unable to create log file: %s", logfile);
-        remove(logfile);  // fail harmlessly if not present
-        return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
+    const int stdout_stream = 0;
+    const int stderr_stream = 1;
+    const int stdout_st = 0;
+    //const int stderr_st = 1;
+    char logfile[2][PATH_MAX] = {0};
+    int logfile_fd[2] = {-1, -1};
+    struct stat logfile_st[2] = {0};
+
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        const char logfile_template[] = "STASIS-package_exists.XXXXXX";
+        snprintf(logfile[i], sizeof(logfile[i]), "%s/%s", logdir, logfile_template);
+        logfile_fd[i] = mkstemp(logfile[i]);
+        if (logfile_fd[i] < 0) {
+            SYSERROR("unable to create log file: %s", logfile[i]);
+            remove(logfile[i]);  // fail harmlessly if not present
+            return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
+        }
     }
 
     int status = 0;
     struct Process proc = {0};
-    proc.redirect_stderr = 1;
-    snprintf(proc.f_stdout, sizeof(proc.f_stdout), "%s", logfile);
+    snprintf(proc.f_stdout, sizeof(proc.f_stdout), "%s", logfile[stdout_stream]);
+    snprintf(proc.f_stderr, sizeof(proc.f_stderr), "%s", logfile[stderr_stream]);
 
     if (mode == PKG_USE_PIP) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
@@ -293,26 +302,40 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
     SYSDEBUG("Executing: %s", cmd);
     status = shell(&proc, cmd);
 
-    SYSDEBUG("Log file: %s", logfile);
-    if (status != 0) {
-        FILE *fp = fdopen(logfd, "r");
-        if (!fp) {
-            remove(logfile);
+    // Populate stat data for log files
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        if (stat(logfile[i], &logfile_st[i])) {
+            SYSERROR("Unable to stat %s", logfile[i]);
             return -1;
         }
-
-        fflush(stdout);
-        fflush(stderr);
-
-        char line[STASIS_BUFSIZ] = {0};
-        while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-            SYSDEBUG("%s", strip(line));
-        }
-
-        fflush(stderr);
-        fclose(fp);
     }
-    remove(logfile);
+
+    if (status != 0) {
+        SYSERROR("Command exited non-zero (%d)", status);
+        for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+            const char *stream_name = i == 0 ? "stdout" : "stderr";
+            if (!logfile_st[i].st_size) {
+                continue;
+            }
+            SYSDEBUG("(%s): %s", stream_name, logfile[i]);
+            FILE *fp = fdopen(logfile_fd[i], "r");
+            if (!fp) {
+                remove(logfile[i]);
+                return -1;
+            }
+
+            fflush(stdout);
+            fflush(stderr);
+
+            char line[STASIS_BUFSIZ] = {0};
+            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+                SYSINFO("(%s): %s", stream_name, strip(line));
+            }
+
+            fflush(stderr);
+            fclose(fp);
+        }
+    }
 
     if (WTERMSIG(proc.returncode)) {
         // This gets its own return value because if the external program
@@ -320,18 +343,40 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         return PKG_INDEX_PROVIDES_E_MANAGER_SIGNALED;
     }
 
+    int final = PKG_FOUND;
     if (status < 0) {
-        return PKG_INDEX_PROVIDES_E_MANAGER_EXEC;
+        final = PKG_INDEX_PROVIDES_E_MANAGER_EXEC;
     } else if (WEXITSTATUS(proc.returncode) > 1) {
         // Pip and conda both return 2 on argument parsing errors
-        return PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME;
+        final = PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME;
+    } else if (logfile_st[stdout_st].st_size > 1 && WEXITSTATUS(proc.returncode) == 0) {
+        // modern mamba return zero when a package not found.
+        // even more ridiculous; the error messages are written to stdout, not stderr
+        struct StrList *output = strlist_init();
+        if (!output) {
+            SYSERROR("unable to allocate memory for stdout log list");
+            return -1;
+        }
+        if (strlist_append_file(output, logfile[stdout_stream], NULL)) {
+            strlist_free(&output);
+            SYSERROR("unable to append stdout log to list: %s", logfile[stdout_stream]);
+            return -1;
+        }
+        if (strlist_contains(output, "No entries", NULL)) {
+            final = PKG_NOT_FOUND;
+        }
+        strlist_free(&output);
     } else if (WEXITSTATUS(proc.returncode) == 1) {
         // Pip and conda both return 1 when a package is not found.
         // Unfortunately this applies to botched version specs, too.
-        return PKG_NOT_FOUND;
-    } else {
-        return PKG_FOUND;
+        final = PKG_NOT_FOUND;
     }
+
+    // Remove log files
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        remove(logfile[stdout_stream]);
+    }
+    return final;
 }
 
 int conda_exec(const char *args) {
