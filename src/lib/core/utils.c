@@ -611,6 +611,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
     snprintf(cmd, sizeof(cmd), "%s %s %s", pretty_print_prog, pretty_print_args, filename);
     result = shell_output(cmd, &status);
     if (status || !result) {
+        guard_free(result);
         return status;
     }
 
@@ -920,7 +921,7 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     }
 
     if (mode & PM_ONCE) {
-        if (!strstr(system_path_old, path)) {
+        if (strstr(system_path_old, path)) {
             guard_free(system_path_new);
             return 0;
         }

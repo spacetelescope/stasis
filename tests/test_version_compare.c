@@ -147,7 +147,7 @@ void run_cases_version_compare(void) {
         result = version_compare(op, test->a, test->b);
         STASIS_ASSERT(test->expected == result, "unexpected result");
 
-        fprintf(stderr, "'%s' '%s' '%s' is %s (%d)",
+        fprintf(stderr, "'%s' '%s' '%s' is %s (%d)\n",
             test->a ? test->a : "NULL",
             test->op ? test->op : "NULL",
             test->b ? test->b : "NULL",

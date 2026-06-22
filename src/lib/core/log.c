@@ -89,7 +89,7 @@ int log_msgv(FILE *stream, const struct ExecPoint ep, const char *preface_color,
         SYSERROR("\nvfprintf failed");
         return len;
     }
-    fprintf(stderr, LINE_SEP);
+    fprintf(stream, LINE_SEP);
     return len;
 }
 
