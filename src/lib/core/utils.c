@@ -920,7 +920,7 @@ int env_manipulate_pathstr(const char *key, char *path, int mode) {
     }
 
     if (mode & PM_ONCE) {
-        if (!strstr(system_path_old, path)) {
+        if (strstr(system_path_old, path)) {
             guard_free(system_path_new);
             return 0;
         }
