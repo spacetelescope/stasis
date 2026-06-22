@@ -946,57 +946,43 @@ int gen_file_extension_str(char *filename, const size_t maxlen, const char *exte
     return replace_text(ext_orig, ext_orig, extension, 0);
 }
 
-#define DEBUG_HEXDUMP_FMT_BYTES 6
-#define DEBUG_HEXDUMP_ADDR_MAXLEN 20
-#define DEBUG_HEXDUMP_BYTES_MAXLEN (16 * 3 + 2)
-#define DEBUG_HEXDUMP_ASCII_MAXLEN (16 + 1)
-#define DEBUG_HEXDUMP_OUTPUT_MAXLEN (DEBUG_HEXDUMP_FMT_BYTES + DEBUG_HEXDUMP_ADDR_MAXLEN + DEBUG_HEXDUMP_BYTES_MAXLEN + DEBUG_HEXDUMP_ASCII_MAXLEN + 1)
-
-void debug_hexdump(char *data, int len) {
-    int count = 0;
-    char addr[DEBUG_HEXDUMP_ADDR_MAXLEN] = {0};
-    char bytes[DEBUG_HEXDUMP_BYTES_MAXLEN] = {0};
-    char ascii[DEBUG_HEXDUMP_ASCII_MAXLEN] = {0};
-    char output[DEBUG_HEXDUMP_OUTPUT_MAXLEN] = {0};
+void debug_hexdump(char *data, const size_t len) {
+    if (!data) {
+        SYSWARN("DATA NULL\n");
+        return;
+    }
+    if (len <= 0) {
+        SYSWARN("ZERO LENGTH\n");
+        return;
+    }
+    const size_t window = 16;
+    size_t avail = len;
+    const size_t chunk = avail / window ? window : avail;
     char *start = data;
-    char *end = data + len;
-
-    char *pos = start;
-    while (pos != end) {
-        if (count == 0) {
-            snprintf(addr + strlen(addr), sizeof(addr) - strlen(addr), "%p", pos);
+    while (avail > 0) {
+        const size_t need = chunk > avail ? avail : chunk;
+        char *p = start;
+        printf("%p | ", p);
+        size_t j = 0;
+        for (j = 0; j < need; j++) {
+            printf("%02x ", p[j]);
         }
-        if (count == 8) {
-            safe_strncat(bytes, " ", sizeof(bytes));
+        const size_t padding = window - j;
+        for (size_t i = 0; i < padding; i++) {
+            printf("00 ");
         }
-        if (count > 15) {
-            snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
-            puts(output);
-            memset(output, 0, sizeof(output));
-            memset(addr, 0, sizeof(addr));
-            memset(bytes, 0, sizeof(bytes));
-            memset(ascii, 0, sizeof(ascii));
-            count = 0;
-            continue;
+        printf("| ");
+        for (j = 0; j < need; j++) {
+            char *c = p + j;
+            printf("%c", isprint(*c) ? *c : '.');
         }
-
-        snprintf(bytes + strlen(bytes), sizeof(bytes) - strlen(bytes), "%02X ", (unsigned char) *pos);
-        snprintf(ascii + strlen(ascii), sizeof(ascii) - strlen(ascii), "%c", isprint(*pos) ? *pos : '.');
-
-        pos++;
-        count++;
+        for (size_t i = 0; i < padding; i++) {
+            printf(".");
+        }
+        printf(" |\n");
+        avail -= need;
+        start += need;
     }
-
-    if (count <= 8) {
-        // Add group padding
-        safe_strncat(bytes, " ", sizeof(bytes));
-    }
-    const int padding = 16 - count;
-    for (int i = 0; i < padding; i++) {
-        safe_strncat(bytes, "   ", sizeof(bytes));
-    }
-    snprintf(output, sizeof(output), "%s | %s | %s", addr, bytes, ascii);
-    puts(output);
 }
 
 int grow(const size_t size_new, size_t *size_orig, char **data) {

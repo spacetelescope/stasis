@@ -429,7 +429,7 @@ int gen_file_extension_str(char *filename, size_t maxlen, const char *extension)
  */
 char *remove_extras(char *s);
 
-void debug_hexdump(char *data, int len);
+void debug_hexdump(char *data, size_t len);
 
 /**
  * Realloc helper
