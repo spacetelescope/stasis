@@ -102,30 +102,28 @@ void check_system_requirements(struct Delivery *ctx) {
     }
 
     msg(STASIS_MSG_L2, "Docker\n");
-    if (docker_capable(&ctx->deploy.docker.capabilities)) {
-        struct DockerCapabilities *dcap = &ctx->deploy.docker.capabilities;
-        msg(STASIS_MSG_L3, "Available: %s%s%s\n", dcap->available ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->available ? "Yes" : "No", STASIS_COLOR_RESET);
-        msg(STASIS_MSG_L3, "Usable: %s%s%s\n", dcap->usable ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->usable ? "Yes" : "No", STASIS_COLOR_RESET);
-        msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap->podman ? "Yes" : "No");
-        msg(STASIS_MSG_L3, "Build plugin(s): ");
-        if (dcap->build) {
-            if (dcap->build & STASIS_DOCKER_BUILD) {
-                msg(STASIS_MSG_RESTRICT, "build ");
-            }
-            if (dcap->build & STASIS_DOCKER_BUILD_X) {
-                msg(STASIS_MSG_RESTRICT, "buildx ");
-            }
-            msg(STASIS_MSG_RESTRICT,"\n");
-        } else {
-            msg(STASIS_MSG_RESTRICT, "%sN/A%s\n", STASIS_COLOR_YELLOW, STASIS_COLOR_RESET);
+    struct DockerCapabilities *dcap = &ctx->deploy.docker.capabilities;
+    docker_capable(dcap);
+    if (!globals.enable_docker) {
+        dcap->usable = false;
+    }
+    msg(STASIS_MSG_L3, "Available: %s%s%s\n", dcap->available ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->available ? "Yes" : "No", STASIS_COLOR_RESET);
+    msg(STASIS_MSG_L3, "Usable: %s%s%s %s\n", dcap->usable ? STASIS_COLOR_GREEN : STASIS_COLOR_RED, dcap->usable ? "Yes" : "No", STASIS_COLOR_RESET, globals.enable_docker ? "" : STASIS_COLOR_GREEN "(disabled by CLI argument)" STASIS_COLOR_RESET);
+    msg(STASIS_MSG_L3, "Podman [Docker Emulation]: %s\n", dcap->podman ? "Yes" : "No");
+    msg(STASIS_MSG_L3, "Build plugin(s): ");
+    if (dcap->build) {
+        if (dcap->build & STASIS_DOCKER_BUILD) {
+            msg(STASIS_MSG_RESTRICT, "build ");
         }
-
-        if (!dcap->usable) {
-            // disable docker builds
-            globals.enable_docker = false;
+        if (dcap->build & STASIS_DOCKER_BUILD_X) {
+            msg(STASIS_MSG_RESTRICT, "buildx ");
         }
+        msg(STASIS_MSG_RESTRICT,"\n");
     } else {
-        SYSWARN("Docker is broken");
+        msg(STASIS_MSG_RESTRICT, "%sN/A%s\n", STASIS_COLOR_YELLOW, STASIS_COLOR_RESET);
+    }
+    if (!dcap->usable) {
+        SYSWARN("Docker related tasks are now disabled");
         // disable docker builds
         globals.enable_docker = false;
     }
