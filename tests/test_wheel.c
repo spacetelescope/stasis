@@ -175,17 +175,19 @@ int main(int argc, char *argv[]) {
     delivery_get_conda_installer_url(&ctx, install_url, PATH_MAX);
     delivery_get_conda_installer(&ctx, install_url);
     delivery_install_conda(ctx.conda.installer_path, ctx.storage.conda_install_prefix);
+    delivery_conda_enable(&ctx);
     guard_free(install_url);
 
     if (conda_activate(ctx.storage.conda_install_prefix, "base")) {
         SYSERROR("conda_activate failed");
         exit(1);
     }
-    if (conda_exec("install -y boa conda-build")) {
+    if (conda_exec("install -y conda-build")) {
         SYSERROR("conda_exec failed");
         exit(1);
     }
-    if (conda_setup_headless()) {
+
+    if (conda_setup_headless(&ctx.conda.capabilities)) {
         SYSERROR("conda_setup_headless failed");
         exit(1);
     }
