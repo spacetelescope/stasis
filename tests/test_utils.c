@@ -463,13 +463,16 @@ void test_is_file_compressed() {
     char datadir[PATH_MAX] = {0};
     snprintf(datadir, sizeof(datadir), "%s/compression", TEST_DATA_DIR);
 
-    char filename[PATH_MAX] = {0};
+    char inputfile[PATH_MAX] = {0};
     for (size_t i = 0; i < sizeof(filenames) / sizeof(*filenames); i++) {
-        snprintf(filename, sizeof(filename), "%s/%s", datadir, filenames[i]);
-        const int compressed = is_file_compressed(filename);
-        SYSDEBUG("[%zu] is %s compressed? => %s", i, filename, compressed ? "Yes" : "No");
+        snprintf(inputfile, sizeof(inputfile), "%s/%s", datadir, filenames[i]);
+        const int compressed = is_file_compressed(inputfile);
+        SYSDEBUG("[%zu] is %s compressed? => %s", i, inputfile, compressed ? "Yes" : "No");
         STASIS_ASSERT(compressed == true, "compression should have been detected");
     }
+
+    snprintf(inputfile, sizeof(inputfile), "%s/none", datadir);
+    STASIS_ASSERT(is_file_compressed(inputfile) == false, "'none' file should not be detected as compressed data");
 
     for (size_t i = 0; i < sizeof(filenames) / sizeof(*filenames); i++) {
         char bytes[128];
