@@ -16,7 +16,7 @@ void test_to_short_version() {
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = to_short_version(tc[i].data);
         STASIS_ASSERT_FATAL(result != NULL, "should not be NULL");
-        //printf("%s[%zu], result: %s, expected: %s\n", __FUNCTION__, i, result, tc[i].expected);
+        printf("%s[%zu], result: %s, expected: %s\n", __func__, i, result, tc[i].expected);
         STASIS_ASSERT(strcmp(result, tc[i].expected) == 0, "unexpected result");
         guard_free(result);
     }
@@ -110,12 +110,17 @@ void test_strchrdel() {
     const struct testcase tc[] = {
             {.data ="aaaabbbbcccc", .input = "ac", .expected = "bbbb"},
             {.data = "1I 2have 3a 4pencil 5box.", .input = "1245", .expected = "I have 3a pencil box."},
+            {.data = "1I 2have 3a 4pencil 5box.", .input = "12345", .expected = "I have a pencil box."},
             {.data = "\v\v\vI\t\f  ha\tve   a\t    pen\tcil     b\tox.", .input = " \f\t\v", "Ihaveapencilbox."},
     };
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *data = strdup(tc[i].data);
+        printf("data before: %s\n", data);
+        debug_hexdump(data, strlen(data) + 1);
         strchrdel(data, tc[i].input);
+        printf("data after: %s\n", data);
+        debug_hexdump(data, strlen(data) + 1);
         STASIS_ASSERT(strcmp(data, tc[i].expected) == 0, "wrong status for condition");
         guard_free(data);
     }
@@ -184,7 +189,10 @@ void test_num_chars() {
             {.data = "abc\t\ndef\nabc\ndef\n", .input = '\t', .expected = 1},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        STASIS_ASSERT(num_chars(tc[i].data, tc[i].input) == tc[i].expected, "incorrect number of characters detected");
+        const int count = num_chars(tc[i].data, tc[i].input);
+        SYSDEBUG("input[%zu] = '%s'", i, tc[i].data);
+        SYSDEBUG("result[%zu:'%c'] = %d", i, tc[i].input, count);
+        STASIS_ASSERT(count == tc[i].expected, "incorrect number of characters detected");
     }
 }
 
@@ -207,6 +215,13 @@ void test_split() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result = split((char *) tc[i].data, tc[i].delim, tc[i].max_split);
+        if (tc[i].data) {
+            SYSDEBUG("input[%zu] = %s", i, tc[i].data);
+            for (size_t j = 0; result[j] != NULL; j++) {
+                SYSDEBUG("result[%zu][%zu] = %s", i, j, result[j]);
+                debug_hexdump(result[j], strlen(result[j]) + 1);
+            }
+        }
         STASIS_ASSERT(strcmp_array((const char **) result, tc[i].expected) == 0, "Split failed");
         guard_array_free(result);
     }
@@ -225,8 +240,9 @@ void test_join() {
             {.data = NULL, .delim = NULL, .expected = ""},
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char *result;
-        result = join((char **) tc[i].data, tc[i].delim);
+        char *result = join((char **) tc[i].data, tc[i].delim);
+        SYSDEBUG("result[%zu] = '%s'", i, result ? result : "NULL");
+        debug_hexdump(result, strlen(result ? result : ""));
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }
@@ -245,6 +261,8 @@ void test_join_ex() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = join_ex((char *) tc[i].delim, "a", "b", "c", "d", "e", NULL);
+        SYSDEBUG("result[%zu] = '%s'\n", i, result);
+        debug_hexdump(result, (int) strlen(result) + 1);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "failed to join array");
         guard_free(result);
     }
@@ -271,6 +289,9 @@ void test_substring_between() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char *result = substring_between((char *) tc[i].data, tc[i].delim);
+        SYSDEBUG("input[%zu] = '%s'", i, tc[i].data ? tc[i].data : "NULL");
+        SYSDEBUG("result[%zu] = '%s'", i, result ? result : "NULL");
+        debug_hexdump(result, result ? strlen(result) + 1 : 0);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "unable to extract substring");
         guard_free(result);
     }
@@ -290,6 +311,16 @@ void test_strdeldup() {
     };
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         char **result = strdeldup(tc[i].data);
+        if (tc[i].data && result) {
+            char *input_str = join((char **) tc[i].data, " ");
+            SYSDEBUG("input[%zu] = '%s'", i, input_str);
+            guard_free(input_str);
+
+            char *result_str = join(result, " ");
+            SYSDEBUG("result[%zu] = '%s'", i, result_str);
+            debug_hexdump(result_str, strlen(result_str));
+            guard_free(result_str);
+        }
         STASIS_ASSERT(strcmp_array((const char **) result, tc[i].expected) == 0, "incorrect number of duplicates removed");
         guard_array_free(result);
     }
@@ -316,11 +347,14 @@ void test_lstrip() {
     };
 
     STASIS_ASSERT(lstrip(NULL) == NULL, "incorrect return type");
+    const size_t maxlen = 64;
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char *buf = calloc(255, sizeof(*buf));
-        strncpy(buf, tc[i].data, 254);
-        buf[254] = '\0';
+        char *buf = calloc(maxlen + 1, sizeof(*buf));
+        strncpy(buf, tc[i].data, maxlen);
         char *result = lstrip(buf);
+        SYSDEBUG("input[%zu] = '%s'", i, buf);
+        SYSDEBUG("result[%zu] = '%s'", i, result ? result : "NULL");
+        debug_hexdump(result, maxlen);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-left");
         guard_free(buf);
     }
@@ -341,11 +375,14 @@ void test_strip() {
     };
 
     STASIS_ASSERT(strip(NULL) == NULL, "incorrect return type");
+    const ssize_t maxlen = 64;
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
-        char *buf = calloc(255, sizeof(*buf));
-        strncpy(buf, tc[i].data, 254);
-        buf[254] = '\0';
+        char *buf = calloc(maxlen + 1, sizeof(*buf));
+        strncpy(buf, tc[i].data, maxlen);
         char *result = strip(buf);
+        SYSDEBUG("input[%zu] = '%s'", i, buf);
+        SYSDEBUG("result[%zu] = '%s'", i, result ? result : "NULL");
+        debug_hexdump(result, maxlen);
         STASIS_ASSERT(strcmp(result ? result : "", tc[i].expected) == 0, "incorrect strip-from-right");
         guard_free(buf);
     }

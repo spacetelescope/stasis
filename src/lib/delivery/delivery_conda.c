@@ -103,24 +103,61 @@ void delivery_install_conda(char *install_script, char *conda_install_dir) {
     }
 }
 
-void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir) {
-    if (conda_activate(conda_install_dir, "base")) {
-        SYSERROR("conda activation failed");
-        exit(1);
-    }
+void delivery_conda_enable(struct Delivery *ctx) {
+    setenv("MAMBA_ROOT_PREFIX", ctx->storage.conda_install_prefix, 1);
 
     // Setting the CONDARC environment variable appears to be the only consistent
     // way to make sure the file is used. Not setting this variable leads to strange
     // behavior, especially if a conda environment is already active when STASIS is loaded.
     char rcpath[PATH_MAX];
-    snprintf(rcpath, sizeof(rcpath), "%s/%s", conda_install_dir, ".condarc");
+    snprintf(rcpath, sizeof(rcpath), "%s/%s", ctx->storage.conda_install_prefix, ".condarc");
     setenv("CONDARC", rcpath, 1);
+    setenv("MAMBARC", rcpath, 1);
     if (runtime_replace(&ctx->runtime.environ, __environ)) {
         SYSERROR("unable to replace runtime environment after activating conda");
         exit(1);
     }
 
-    if (conda_setup_headless()) {
+    if (conda_activate(ctx->storage.conda_install_prefix, "base")) {
+        SYSERROR("conda activation failed");
+        exit(1);
+    }
+
+    char pinned[PATH_MAX];
+    snprintf(pinned, sizeof(pinned), "%s/conda-meta/pinned", ctx->storage.conda_install_prefix);
+    touch(pinned);
+    if (errno == ENOENT) {
+        errno = 0;
+    }
+
+    char *conda_version = strdup(ctx->conda.installer_version);
+    if (conda_version) {
+        char *rev = strpbrk(conda_version, "-");
+        if (rev) {
+            *rev = '\0';
+        }
+
+        FILE *pinned_fp = fopen(pinned, "w+");
+        if (!pinned_fp) {
+            SYSERROR("unable to open conda-meta/pinned file for writing: %s", strerror(errno));
+            exit(1);
+        }
+        fprintf(pinned_fp, "conda=%s\n", conda_version);
+        fclose(pinned_fp);
+        guard_free(conda_version);
+    }
+
+    if (conda_capable(&ctx->conda.capabilities, ctx->storage.conda_install_prefix)) {
+        SYSERROR("Conda capability check failed");
+        exit(1);
+    }
+
+    if (!ctx->conda.capabilities.usable) {
+        SYSERROR("Conda is broken");
+        exit(1);
+    }
+
+    if (conda_setup_headless(&ctx->conda.capabilities)) {
         // no COE check. this call must succeed.
         exit(1);
     }

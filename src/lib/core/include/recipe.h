@@ -6,13 +6,20 @@
 #include "utils.h"
 
 //! Unable to determine recipe repo type
-#define RECIPE_TYPE_UNKNOWN 0
+#define RECIPE_STYLE_UNKNOWN 0
 //! Recipe repo is from conda-forge
-#define RECIPE_TYPE_CONDA_FORGE 1
+#define RECIPE_STYLE_CONDA_FORGE 1
 //! Recipe repo is from astroconda
-#define RECIPE_TYPE_ASTROCONDA 2
+#define RECIPE_STYLE_ASTROCONDA 2
 //! Recipe repo provides the required build configurations but doesn't match conda-forge or astroconda's signature
-#define RECIPE_TYPE_GENERIC 3
+#define RECIPE_STYLE_GENERIC 3
+
+//! Unable to determine required build system
+#define RECIPE_BUILD_UNKNOWN 0
+//! Build uses meta.yaml
+#define RECIPE_BUILD_CONDA_BUILD 1
+//! Build uses recipe.yaml
+#define RECIPE_BUILD_RATTLER 2
 
 /**
  * Download a Conda package recipe
@@ -46,18 +53,18 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result);
  * }
  *
  * int recipe_type;
- * recipe_type = recipe_get_type(recipe);
+ * recipe_type = recipe_get_style(recipe);
  * switch (recipe_type) {
- *     case RECIPE_TYPE_CONDA_FORGE:
+ *     case RECIPE_STYLE_CONDA_FORGE:
  *         // do something specific for conda-forge directory structure
  *         break;
- *     case RECIPE_TYPE_ASTROCONDA:
+ *     case RECIPE_STYLE_ASTROCONDA:
  *         // do something specific for astroconda directory structure
  *         break;
- *     case RECIPE_TYPE_GENERIC:
+ *     case RECIPE_STYLE_GENERIC:
  *         // do something specific for a directory containing a meta.yaml config
  *         break;
- *     case RECIPE_TYPE_UNKNOWN:
+ *     case RECIPE_STYLE_UNKNOWN:
  *     default:
  *         // the structure is foreign or the path doesn't contain a conda recipe
  *         break;
@@ -67,6 +74,7 @@ int recipe_clone(char *recipe_dir, char *url, char *gitref, char **result);
  * @param repopath path to git repository containing conda recipe(s)
  * @return One of RECIPE_TYPE_UNKNOWN, RECIPE_TYPE_CONDA_FORGE, RECIPE_TYPE_ASTROCONDA, RECIPE_TYPE_GENERIC
  */
-int recipe_get_type(char *repopath);
+int recipe_get_style(char *repopath);
+int recipe_get_build_system(const char *repopath, int style);
 
 #endif //STASIS_RECIPE_H

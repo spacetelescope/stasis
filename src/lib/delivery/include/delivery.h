@@ -10,6 +10,7 @@
 #include "environment.h"
 #include "ini.h"
 #include "multiprocessing.h"
+#include "conda.h"
 
 #define DELIVERY_PLATFORM_MAX 4
 #define DELIVERY_PLATFORM_MAXLEN 65
@@ -157,6 +158,7 @@ struct Delivery {
         struct StrList *pip_packages_defer;     ///< Python packages to be built for delivery
         struct StrList *pip_packages_purge;     ///< Python packages to remove from a delivery (for: based_on)
         struct StrList *wheels_packages;        ///< Wheel packages built for delivery
+        struct CondaCapabilities capabilities; ///< Capability information
     } conda;
 
     /*! \struct Runtime
@@ -354,9 +356,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type);
 /**
  * Configure and activate a Conda installation based on Delivery context
  * @param ctx pointer to Delivery context
- * @param conda_install_dir path to Conda installation
  */
-void delivery_conda_enable(struct Delivery *ctx, char *conda_install_dir);
+void delivery_conda_enable(struct Delivery *ctx);
 
 /**
  * Install Conda

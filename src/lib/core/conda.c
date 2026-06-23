@@ -194,6 +194,31 @@ int pip_exec(const char *args) {
     return result;
 }
 
+char *python_importlib_metadata_version(const char *package_name) {
+    int status = 0;
+    char cmd[PATH_MAX] = {0};
+
+    if (strpbrk(package_name, "\\/*{}()|;&\"'\r\n")) {
+        SYSERROR("package name is invalid: '%s'", package_name);
+        return NULL;
+    }
+    snprintf(cmd, sizeof(cmd), "python3 -c 'from importlib.metadata import version; print(version(r\x22%s\x22))'", package_name);
+
+    char *version = shell_output(cmd, &status);
+    if (status) {
+        SYSERROR("version detection failed");
+        guard_free(version);
+        return NULL;
+    }
+    if (!version) {
+        SYSERROR("unable to allocate version");
+        return NULL;
+    }
+    strip(version);
+    return version;
+}
+
+
 static const char *PKG_ERROR_STR[] = {
     "success",
     "[internal] unhandled package manager mode",
@@ -227,21 +252,30 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         SYSERROR("Unable to create log directory: %s", logdir ? logdir : "NULL");
         return -1;
     }
-    const char logfile_template[] = "STASIS-package_exists.XXXXXX";
-    char logfile[PATH_MAX] = {0};
-    snprintf(logfile, sizeof(logfile), "%s/%s", logdir, logfile_template);
 
-    int logfd = mkstemp(logfile);
-    if (logfd < 0) {
-        SYSERROR("unable to create log file: %s", logfile);
-        remove(logfile);  // fail harmlessly if not present
-        return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
+    const int stdout_stream = 0;
+    const int stderr_stream = 1;
+    const int stdout_st = 0;
+    //const int stderr_st = 1;
+    char logfile[2][PATH_MAX] = {0};
+    int logfile_fd[2] = {-1, -1};
+    struct stat logfile_st[2] = {0};
+
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        const char logfile_template[] = "STASIS-package_exists.XXXXXX";
+        snprintf(logfile[i], sizeof(logfile[i]), "%s/%s", logdir, logfile_template);
+        logfile_fd[i] = mkstemp(logfile[i]);
+        if (logfile_fd[i] < 0) {
+            SYSERROR("unable to create log file: %s", logfile[i]);
+            remove(logfile[i]);  // fail harmlessly if not present
+            return PKG_INDEX_PROVIDES_E_INTERNAL_LOG_HANDLE;
+        }
     }
 
     int status = 0;
     struct Process proc = {0};
-    proc.redirect_stderr = 1;
-    snprintf(proc.f_stdout, sizeof(proc.f_stdout), "%s", logfile);
+    snprintf(proc.f_stdout, sizeof(proc.f_stdout), "%s", logfile[stdout_stream]);
+    snprintf(proc.f_stderr, sizeof(proc.f_stderr), "%s", logfile[stderr_stream]);
 
     if (mode == PKG_USE_PIP) {
         // Do an installation in dry-run mode to see if the package exists in the given index.
@@ -268,26 +302,40 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
     SYSDEBUG("Executing: %s", cmd);
     status = shell(&proc, cmd);
 
-    SYSDEBUG("Log file: %s", logfile);
-    if (status != 0) {
-        FILE *fp = fdopen(logfd, "r");
-        if (!fp) {
-            remove(logfile);
+    // Populate stat data for log files
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        if (stat(logfile[i], &logfile_st[i])) {
+            SYSERROR("Unable to stat %s", logfile[i]);
             return -1;
         }
-
-        fflush(stdout);
-        fflush(stderr);
-
-        char line[STASIS_BUFSIZ] = {0};
-        while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-            SYSDEBUG("%s", strip(line));
-        }
-
-        fflush(stderr);
-        fclose(fp);
     }
-    remove(logfile);
+
+    if (status != 0) {
+        SYSERROR("Command exited non-zero (%d)", status);
+        for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+            const char *stream_name = i == 0 ? "stdout" : "stderr";
+            if (!logfile_st[i].st_size) {
+                continue;
+            }
+            SYSDEBUG("(%s): %s", stream_name, logfile[i]);
+            FILE *fp = fdopen(logfile_fd[i], "r");
+            if (!fp) {
+                remove(logfile[i]);
+                return -1;
+            }
+
+            fflush(stdout);
+            fflush(stderr);
+
+            char line[STASIS_BUFSIZ] = {0};
+            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+                SYSINFO("(%s): %s", stream_name, strip(line));
+            }
+
+            fflush(stderr);
+            fclose(fp);
+        }
+    }
 
     if (WTERMSIG(proc.returncode)) {
         // This gets its own return value because if the external program
@@ -295,18 +343,40 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         return PKG_INDEX_PROVIDES_E_MANAGER_SIGNALED;
     }
 
+    int final = PKG_FOUND;
     if (status < 0) {
-        return PKG_INDEX_PROVIDES_E_MANAGER_EXEC;
+        final = PKG_INDEX_PROVIDES_E_MANAGER_EXEC;
     } else if (WEXITSTATUS(proc.returncode) > 1) {
         // Pip and conda both return 2 on argument parsing errors
-        return PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME;
+        final = PKG_INDEX_PROVIDES_E_MANAGER_RUNTIME;
+    } else if (logfile_st[stdout_st].st_size > 1 && WEXITSTATUS(proc.returncode) == 0) {
+        // modern mamba return zero when a package not found.
+        // even more ridiculous; the error messages are written to stdout, not stderr
+        struct StrList *output = strlist_init();
+        if (!output) {
+            SYSERROR("unable to allocate memory for stdout log list");
+            return -1;
+        }
+        if (strlist_append_file(output, logfile[stdout_stream], NULL)) {
+            strlist_free(&output);
+            SYSERROR("unable to append stdout log to list: %s", logfile[stdout_stream]);
+            return -1;
+        }
+        if (strlist_contains(output, "No entries", NULL)) {
+            final = PKG_NOT_FOUND;
+        }
+        strlist_free(&output);
     } else if (WEXITSTATUS(proc.returncode) == 1) {
         // Pip and conda both return 1 when a package is not found.
         // Unfortunately this applies to botched version specs, too.
-        return PKG_NOT_FOUND;
-    } else {
-        return PKG_FOUND;
+        final = PKG_NOT_FOUND;
     }
+
+    // Remove log files
+    for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+        remove(logfile[stdout_stream]);
+    }
+    return final;
 }
 
 int conda_exec(const char *args) {
@@ -326,14 +396,22 @@ int conda_exec(const char *args) {
     };
     char conda_as[10] = {0};
 
+    const char *last_mamba_command = NULL;
     safe_strncpy(conda_as, "conda", sizeof(conda_as));
     for (size_t i = 0; mamba_commands[i] != NULL; i++) {
         if (startswith(args, mamba_commands[i])) {
+            last_mamba_command = mamba_commands[i];
             safe_strncpy(conda_as, "mamba", sizeof(conda_as));
             break;
         }
     }
 
+    const int boa_present = find_program("boa") != NULL;
+    if (!boa_present) {
+        if (last_mamba_command && !strcmp(last_mamba_command, "build")) {
+            safe_strncpy(conda_as, "conda", sizeof(conda_as));
+        }
+    }
 
     const char *command_fmt = "%s %s";
     const int len = snprintf(NULL, 0, command_fmt, conda_as, args);
@@ -416,15 +494,12 @@ static int env0_to_runtime(const char *logfile) {
 
 int conda_activate(const char *root, const char *env_name) {
     const char *init_script_conda = "/etc/profile.d/conda.sh";
-    const char *init_script_mamba = "/etc/profile.d/mamba.sh";
     char path_conda[PATH_MAX] = {0};
-    char path_mamba[PATH_MAX] = {0};
     char logfile[PATH_MAX] = {0};
     struct Process proc = {0};
 
     // Where to find conda's init scripts
     snprintf(path_conda, sizeof(path_conda), "%s%s", root, init_script_conda);
-    snprintf(path_mamba, sizeof(path_mamba), "%s%s", root, init_script_mamba);
 
     // Set the path to our stdout log
     // Emulate mktemp()'s behavior. Give us a unique file name, but don't use
@@ -444,12 +519,6 @@ int conda_activate(const char *root, const char *env_name) {
     // Verify conda's init scripts are available
     if (access(path_conda, F_OK) < 0) {
         SYSERROR("conda is missing: %s, %s", path_conda, strerror(errno));
-        remove(logfile);
-        return -1;
-    }
-
-    if (access(path_mamba, F_OK) < 0) {
-        SYSERROR("mamba is missing: %s, %s", path_mamba, strerror(errno));
         remove(logfile);
         return -1;
     }
@@ -475,20 +544,19 @@ int conda_activate(const char *root, const char *env_name) {
     snprintf(command, sizeof(command),
         "set -a\n"
         "source %s\n"
-        "__conda_exe() (\n"
-        "    \"$CONDA_PYTHON_EXE\" \"$CONDA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
-        ")\n\n"
-        "export -f __conda_exe\n"
-        "source %s\n"
-        "__mamba_exe() (\n"
-        "    \\local MAMBA_CONDA_EXE_BACKUP=$CONDA_EXE\n"
-        "    \\local MAMBA_EXE=$(\\dirname \"${CONDA_EXE}\")/mamba\n"
-        "    \"$CONDA_PYTHON_EXE\" \"$MAMBA_EXE\" $_CE_M $_CE_CONDA \"$@\"\n"
-        ")\n\n"
-        "export -f __mamba_exe\n"
+        "tempfile=$(mktemp)\n"
+        "chmod 600 \"${tempfile}\"\n"
+        "%s/bin/mamba shell init --shell bash --dry-run 2>/dev/null\\\n"
+        "| (ignore=1; \\\n"
+        "    while read line; do \\\n"
+        "        if [[ \"$line\" == \"#\"* ]]; then ignore=0; fi; \\\n"
+        "        if (( ignore == 0 )); then echo $line; fi; \\\n"
+        "    done) 1> \"${tempfile}\"\n"
+        "source \"${tempfile}\"\n"
+        "rm -f \"${tempfile}\"\n"
         "%s\n"
         "conda activate %s 1>&2\n"
-        "env -0\n", path_conda, path_mamba, conda_shlvl ? "conda deactivate" : ":", env_name);
+        "env -0\n", path_conda, root, conda_shlvl ? "conda deactivate" : ":", env_name);
 
     int retval = shell(&proc, command);
     if (retval) {
@@ -561,7 +629,20 @@ int conda_check_required() {
     return 0;
 }
 
-int conda_setup_headless() {
+int conda_setup_headless(struct CondaCapabilities *cc) {
+    mkdirs(cc->prefix, 0755);
+
+    char rcpath[PATH_MAX];
+    snprintf(rcpath, sizeof(rcpath), "%s/.condarc", cc->prefix);
+    touch(rcpath);
+    if (errno == ENOENT) {
+        errno = 0;
+    }
+
+    setenv("CONDARC", rcpath, 1);
+    setenv("MAMBARC", rcpath, 1);
+    setenv("MAMBA_ROOT_PREFIX", cc->prefix, 1);
+
     if (globals.verbose) {
         conda_exec("config --system --set quiet false");
     } else {
@@ -582,6 +663,18 @@ int conda_setup_headless() {
     size_t total = 0;
     const char *cmd_fmt = "'%s'";
     if (globals.conda_packages && strlist_count(globals.conda_packages)) {
+        // Push or pop build packages based on capabilities
+        size_t boa_index = 0;
+        const int boa_requested = strlist_contains(globals.conda_packages, "boa", &boa_index);
+        if (boa_requested && !cc->require_boa) {
+            SYSWARN("Removing boa from global package list due to incompatible conda version (too new): %s", cc->conda_version);
+            strlist_remove(globals.conda_packages, boa_index);
+        } else if (!boa_requested && cc->require_boa) {
+            SYSWARN("Adding boa to global package list");
+            strlist_append(&globals.conda_packages, "boa");
+        }
+
+
         memset(cmd, 0, sizeof(cmd));
         safe_strncpy(cmd, "install ", sizeof(cmd));
 
@@ -719,7 +812,18 @@ int conda_env_remove(char *name) {
 
 int conda_env_export(char *name, char *output_dir, char *output_filename) {
     char env_command[PATH_MAX];
-    snprintf(env_command, sizeof(env_command), "env export -n %s -f %s/%s.yml", name, output_dir, output_filename);
+    int vr = 0;
+    const char *env_format = NULL;
+    char *version = shell_output("conda --version", &vr);
+    if (version) {
+        const size_t v_offset = strlen("conda ");
+        if (version_compare(GT, version + v_offset, "25.1.0")) {
+            env_format = "--format=yml";
+        }
+        guard_free(version);
+    }
+
+    snprintf(env_command, sizeof(env_command), "env export %s -n %s -f %s/%s.yml", env_format ? env_format : "", name, output_dir, output_filename);
     return conda_exec(env_command);
 }
 
@@ -748,4 +852,60 @@ int conda_env_exists(const char *root, const char *name) {
     char path[PATH_MAX] = {0};
     snprintf(path, sizeof(path), "%s/envs/%s", root, name);
     return access(path, F_OK) == 0;
+}
+
+void conda_capable_free(struct CondaCapabilities *ccap) {
+    guard_free(ccap->conda_version);
+    guard_free(ccap->mamba_version);
+    memset(ccap, 0, sizeof(*ccap));
+}
+
+int conda_capable(struct CondaCapabilities *ccap, const char *root) {
+    struct CondaCapabilities *cc = ccap;
+    memset(cc, 0, sizeof(*cc));
+
+    if (find_program("conda")) {
+        cc->available = true;
+    }
+
+    if (cc->available) {
+        char *conda_version = python_importlib_metadata_version("conda");
+        if (!conda_version) {
+            SYSERROR("conda version detection failed");
+            return -1;
+        }
+
+        char *mamba_version = python_importlib_metadata_version("libmambapy");
+        if (!mamba_version) {
+            SYSERROR("unable to allocate mamba_version");
+            guard_free(conda_version);
+            return -1;
+        }
+
+        cc->prefix = root;
+        cc->conda_version = strdup(conda_version);
+        cc->mamba_version = strdup(mamba_version);
+        if (version_compare(GT | EQ, cc->conda_version, "25.3.0")) {
+            cc->require_explicit_export_format = true;
+            cc->require_boa = false;
+        } else {
+            cc->require_explicit_export_format = false;
+            cc->require_manual_activation_shim = true;
+            cc->require_boa = true;
+            cc->require_libmamba_solver = true;
+        }
+
+        struct Process proc = {0};
+        safe_strncpy(proc.f_stderr, "/dev/null", sizeof(proc.f_stderr));
+        safe_strncpy(proc.f_stdout, "/dev/null", sizeof(proc.f_stdout));
+        if (shell(&proc, "mamba install --use-local --dry-run conda")) {
+            cc->missing_use_local = true;
+        }
+
+        cc->usable = true;
+
+        guard_free(mamba_version);
+        guard_free(conda_version);
+    }
+    return 0;
 }

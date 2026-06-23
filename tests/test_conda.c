@@ -2,15 +2,14 @@
 #include "conda.h"
 #include "delivery.h"
 
-char cwd_start[PATH_MAX];
-char cwd_workspace[PATH_MAX];
 int conda_is_installed = 0;
 
 void test_micromamba() {
+    const char *cwd_workspace = TEST_WORKSPACE_DIR;
     char mm_prefix[PATH_MAX] = {0};
     char c_prefix[PATH_MAX] = {0};
-    snprintf(mm_prefix, strlen(cwd_workspace) + strlen("micromamba") + 2, "%s/%s", cwd_workspace, "micromamba");
-    snprintf(c_prefix, strlen(mm_prefix) + strlen("conda") + 2, "%s/%s", mm_prefix, "conda");
+    snprintf(mm_prefix, sizeof(mm_prefix), "%s/%s/%s", cwd_workspace, "tools", "micromamba");
+    snprintf(c_prefix, sizeof(c_prefix), "%s/%s", mm_prefix, "conda");
 
     struct testcase {
         struct MicromambaInfo mminfo;
@@ -18,10 +17,10 @@ void test_micromamba() {
         int result;
     };
     struct testcase tc[] = {
-            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "info", .result = 0},
-            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "env list", .result = 0},
-            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python3 -V", .result = 0},
-            {.mminfo = {.download_dir = cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "no_such_option", .result = 109},
+            {.mminfo = {.download_dir = (char *) cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "info", .result = 0},
+            {.mminfo = {.download_dir = (char *) cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "env list", .result = 0},
+            {.mminfo = {.download_dir = (char *) cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "run python3 -V", .result = 0},
+            {.mminfo = {.download_dir = (char *) cwd_workspace, .micromamba_prefix = mm_prefix, .conda_prefix = c_prefix}, .cmd = "no_such_option", .result = 109},
     };
 
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
@@ -67,7 +66,7 @@ void test_conda_activate() {
 
     STASIS_SKIP_IF(!conda_is_installed, "cannot run without conda");
     STASIS_ASSERT_FATAL(conda_activate(ctx.storage.conda_install_prefix, "base") == 0, "unable to activate base environment");
-
+    runtime_replace(&ctx.runtime.environ, __environ);
     for (size_t i = 0; i < sizeof(tc) / sizeof(*tc); i++) {
         struct testcase *item = &tc[i];
         char *value = getenv(item->key);
@@ -102,11 +101,13 @@ void test_python_exec() {
 void test_conda_setup_headless() {
     globals.conda_packages = strlist_init();
     globals.pip_packages = strlist_init();
-    strlist_append(&globals.conda_packages, "boa");
     strlist_append(&globals.conda_packages, "conda-build");
-    strlist_append(&globals.conda_packages, "conda-verify");
     strlist_append(&globals.pip_packages, "pytest");
-    STASIS_ASSERT(conda_setup_headless() == 0, "headless configuration failed");
+    struct CondaCapabilities cc;
+    int capable = conda_capable(&cc, ctx.storage.conda_install_prefix);
+    STASIS_ASSERT_FATAL(capable == EXIT_SUCCESS, "conda capability check function should not fail");
+    STASIS_ASSERT(conda_setup_headless(&cc) == 0, "headless configuration failed");
+    conda_capable_free(&cc);
 }
 
 void test_conda_env_create_from_uri() {
@@ -207,18 +208,10 @@ int main(int argc, char *argv[]) {
         test_delivery_gather_tool_versions,
     };
 
-    char ws[] = "workspace_XXXXXX";
-    if (!mkdtemp(ws)) {
-        SYSERROR("unable to mkdtemp: %s", strerror(errno));
-        exit(1);
-    }
-    getcwd(cwd_start, sizeof(cwd_start) - 1);
-    mkdir(ws, 0755);
-    chdir(ws);
-    getcwd(cwd_workspace, sizeof(cwd_workspace) - 1);
 
-    snprintf(conda_prefix, strlen(cwd_workspace) + strlen("conda") + 2, "%s/conda", cwd_workspace);
+    snprintf(conda_prefix, strlen(TEST_WORKSPACE_DIR) + strlen("conda") + 2, "%s/conda", TEST_WORKSPACE_DIR);
 
+    const char *installer_version = "26.3.2-2";
     const char *mockinidata = "[meta]\n"
                               "name = mock\n"
                               "version = 1.0.0\n"
@@ -227,18 +220,21 @@ int main(int argc, char *argv[]) {
                               "python = 3.11\n"
                               "[conda]\n"
                               "installer_name = Miniforge3\n"
-                              "installer_version = 24.3.0-0\n"
+                              "installer_version = %s\n"
                               "installer_platform = {{env:STASIS_CONDA_PLATFORM}}\n"
                               "installer_arch = {{env:STASIS_CONDA_ARCH}}\n"
-                              "installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/24.3.0-0\n";
-    stasis_testing_write_ascii("mock.ini", mockinidata);
+                              "installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/%s\n";
+    char mockinidata_final[STASIS_BUFSIZ] = {0};
+    snprintf(mockinidata_final, sizeof(mockinidata_final), mockinidata, installer_version, installer_version);
+
+    stasis_testing_write_ascii("mock.ini", mockinidata_final);
     struct INIFILE *ini = ini_open("mock.ini");
     ctx._stasis_ini_fp.delivery = ini;
     ctx._stasis_ini_fp.delivery_path = realpath("mock.ini", NULL);
 
     const char *sysconfdir = getenv("STASIS_SYSCONFDIR");
     globals.sysconfdir = strdup(sysconfdir ? sysconfdir : STASIS_SYSCONFDIR);
-    ctx.storage.root = strdup(cwd_workspace);
+    ctx.storage.root = strdup(TEST_WORKSPACE_DIR);
 
     setenv("LANG", "C", 1);
     bootstrap_build_info(&ctx);
@@ -246,10 +242,6 @@ int main(int argc, char *argv[]) {
 
     STASIS_TEST_RUN(tests);
 
-    chdir(cwd_start);
-    if (rmtree(cwd_workspace)) {
-        perror(cwd_workspace);
-    }
     delivery_free(&ctx);
     globals_free();
     STASIS_TEST_END_MAIN();

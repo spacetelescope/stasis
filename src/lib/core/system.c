@@ -37,7 +37,9 @@ int shell(struct Process *proc, char *args) {
     // Set the script's permissions so that only the calling user can use it
     // This should help prevent eavesdropping if keys are applied in plain-text
     // somewhere.
-    chmod(t_name, 0700);
+    if (chmod(t_name, 0700)) {
+        SYSWARN("unable to change script permissions: %s, %s", t_name, strerror(errno));
+    }
 
     pid_t pid = fork();
     if (pid == -1) {

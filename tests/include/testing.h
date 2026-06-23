@@ -11,7 +11,7 @@
 
 #ifdef STASIS_TEST_VERBOSE
 #define STASIS_TEST_MSG(MSG, ...) do { \
-fprintf(stderr, "%s:%d:%s(): ", path_basename(__FILE__), __LINE__, __FUNCTION__); \
+fprintf(stderr, "%s:%d:%s(): ", path_basename(__FILE__), __LINE__, __func__); \
 fprintf(stderr, MSG LINE_SEP, __VA_ARGS__); \
 } while (0)
 #else
@@ -76,6 +76,7 @@ inline void stasis_testing_record_result_summary() {
             do_message = 1;
 #endif
             strcpy(status_msg, "PASS");
+            do_reason = 0;
             passed++;
         }
         if (do_message) {

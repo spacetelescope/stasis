@@ -456,6 +456,52 @@ void test_pushd_popd_suggested_workflow() {
     }
 }
 
+void test_is_file_compressed() {
+    const char *filenames[] = {
+        "zstd", "bz2", "gz", "xz", "zip",
+    };
+    char datadir[PATH_MAX] = {0};
+    snprintf(datadir, sizeof(datadir), "%s/compression", TEST_DATA_DIR);
+
+    char inputfile[PATH_MAX] = {0};
+    for (size_t i = 0; i < sizeof(filenames) / sizeof(*filenames); i++) {
+        snprintf(inputfile, sizeof(inputfile), "%s/%s", datadir, filenames[i]);
+        const int compressed = is_file_compressed(inputfile);
+        SYSDEBUG("[%zu] is %s compressed? => %s", i, inputfile, compressed ? "Yes" : "No");
+        STASIS_ASSERT(compressed == true, "compression should have been detected");
+    }
+
+    snprintf(inputfile, sizeof(inputfile), "%s/none", datadir);
+    STASIS_ASSERT(is_file_compressed(inputfile) == false, "'none' file should not be detected as compressed data");
+
+    for (size_t i = 0; i < sizeof(filenames) / sizeof(*filenames); i++) {
+        char bytes[128];
+        if (get_random_bytes(bytes, sizeof(bytes))) {
+            SYSERROR("get_random_bytes failed: %s, %s", bytes, strerror(errno));
+            STASIS_ASSERT_FATAL(false, "get_random_bytes failed");
+            return;
+        }
+
+        FILE *fp = fopen(filenames[i], "wb");
+        if (!fp) {
+            SYSERROR("fopen failed: %s, %s", filenames[i], strerror(errno));
+            STASIS_ASSERT_FATAL(false, "fopen failed");
+            return;
+        }
+
+        bytes[0] = 'J';
+        const size_t bytes_written = fwrite(bytes, 1, sizeof(bytes), fp);
+        if (bytes_written != sizeof(bytes)) {
+            SYSERROR("fwrite failed: %s, %s", bytes, strerror(errno));
+            STASIS_ASSERT_FATAL(false, "fwrite failed");
+            return;
+        }
+        fclose(fp);
+
+        STASIS_ASSERT(is_file_compressed(filenames[i]) == false, "random data should not be detected as compressed");
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     STASIS_TEST_BEGIN_MAIN();
@@ -479,6 +525,7 @@ int main(int argc, char *argv[]) {
             test_dirstack,
             test_pushd_popd,
             test_pushd_popd_suggested_workflow,
+            test_is_file_compressed,
     };
     const char *ws = "workspace";
     getcwd(cwd_start, sizeof(cwd_start) - 1);
