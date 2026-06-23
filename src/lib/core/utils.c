@@ -1281,7 +1281,7 @@ int is_file_compressed(const char *filename) {
         {(unsigned char *) "PK\03\04", 3},                  // zip
         {(unsigned char *) "PK\05\06", 3},                  // zip (empty)
         {(unsigned char *) "PK\07\08", 3},                  // zip (spanned)
-        {(unsigned char *) "\xfd\x2f\xb5\x28", 4}           // zstd
+        {(unsigned char *) "\x28\xb5\x2f\xfd", 4}           // zstd
     };
     unsigned char buf[8] = {0}; // unsigned long
     size_t bytes_read = 0;
