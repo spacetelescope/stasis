@@ -973,6 +973,7 @@ void wheel_metadata_free(struct WheelMetadata *meta) {
 
     guard_strlist_free(&meta->author_email);
     guard_strlist_free(&meta->author);
+    guard_strlist_free(&meta->dynamic);
     guard_strlist_free(&meta->maintainer);
     guard_strlist_free(&meta->maintainer_email);
     guard_strlist_free(&meta->requires_python);
@@ -1214,133 +1215,234 @@ int wheel_value_error(struct WheelValue const *val) {
     return 0;
 }
 
-int wheel_show_info(const struct Wheel *wheel) {
-    printf("WHEEL INFO\n\n");
-    for (ssize_t i = 0; i < WHEEL_DIST_END_ENUM; i++) {
-        const char *key = wheel_get_key_by_id(WHEEL_FROM_DIST, i);
-        if (!key) {
-            SYSERROR("wheel_get_key_by_id(%zi) failed", i);
+bool *wheel_get_dist_display_map(struct WheelDisplay opt) {
+    bool *map = calloc(1, sizeof(struct WheelDisplay));
+    if (!map) {
+        return NULL;
+    }
+    
+    map[WHEEL_DIST_VERSION] = opt.dist.wheel_version;
+    map[WHEEL_DIST_GENERATOR] = opt.dist.generator;
+    map[WHEEL_DIST_ROOT_IS_PURELIB] = opt.dist.root_is_pure_lib;
+    map[WHEEL_DIST_TAG] = opt.dist.tag;
+    map[WHEEL_DIST_ZIP_SAFE] = opt.dist.zip_safe;
+    map[WHEEL_DIST_TOP_LEVEL] = opt.dist.top_level;
+    map[WHEEL_DIST_ENTRY_POINT] = opt.dist.entry_point;
+    map[WHEEL_DIST_RECORD] = opt.dist.record;
+
+    return map;
+}
+
+bool *wheel_get_metadata_display_map(struct WheelDisplay opt) {
+    bool *map = calloc(1, sizeof(struct WheelDisplay));
+    if (!map) {
+        return NULL;
+    }
+    map[WHEEL_META_METADATA_VERSION] = opt.metadata.version;
+    map[WHEEL_META_NAME] = opt.metadata.name;
+    map[WHEEL_META_VERSION] = opt.metadata.version;
+    map[WHEEL_META_AUTHOR] = opt.metadata.author;
+    map[WHEEL_META_AUTHOR_EMAIL] = opt.metadata.author_email;
+    map[WHEEL_META_MAINTAINER] = opt.metadata.maintainer;
+    map[WHEEL_META_MAINTAINER_EMAIL] = opt.metadata.maintainer_email;
+    map[WHEEL_META_SUMMARY] = opt.metadata.summary;
+    map[WHEEL_META_LICENSE] = opt.metadata.license;
+    map[WHEEL_META_LICENSE_EXPRESSION] = opt.metadata.license_expression;
+    map[WHEEL_META_LICENSE_FILE] = opt.metadata.license_file;
+    map[WHEEL_META_HOME_PAGE] = opt.metadata.home_page;
+    map[WHEEL_META_DOWNLOAD_URL] = opt.metadata.download_url;
+    map[WHEEL_META_PROJECT_URL] = opt.metadata.project_url;
+    map[WHEEL_META_CLASSIFIER] = opt.metadata.classifier;
+    map[WHEEL_META_REQUIRES_PYTHON] = opt.metadata.requires_python;
+    map[WHEEL_META_REQUIRES_EXTERNAL] = opt.metadata.requires_external;
+    map[WHEEL_META_IMPORT_NAME] = opt.metadata.import_name;
+    map[WHEEL_META_IMPORT_NAMESPACE] = opt.metadata.import_namespace;
+    map[WHEEL_META_REQUIRES_DIST] = opt.metadata.requires_dist;
+    map[WHEEL_META_PROVIDES] = opt.metadata.provides;
+    map[WHEEL_META_PROVIDES_DIST] = opt.metadata.provides_dist;
+    map[WHEEL_META_PROVIDES_EXTRA] = opt.metadata.provides_extra;
+    map[WHEEL_META_OBSOLETES] = opt.metadata.obsoletes;
+    map[WHEEL_META_OBSOLETES_DIST] = opt.metadata.obsoletes_dist;
+    map[WHEEL_META_PLATFORM] = opt.metadata.platform;
+    map[WHEEL_META_SUPPORTED_PLATFORM] = opt.metadata.platform;
+    map[WHEEL_META_KEYWORDS] = opt.metadata.keywords;
+    map[WHEEL_META_DYNAMIC] = opt.metadata.dynamic;
+    map[WHEEL_META_DESCRIPTION_CONTENT_TYPE] = opt.metadata.description_content_type;
+    map[WHEEL_META_DESCRIPTION] = opt.metadata.description;
+
+    return map;
+}
+
+int wheel_show_info(const struct Wheel *wheel, struct WheelDisplay opt) {
+    if (opt.dist._enable) {
+        if (opt.dist._enable_header) {
+            printf("WHEEL INFO\n\n");
+        }
+        bool *optmap = wheel_get_dist_display_map(opt);
+        if (!optmap) {
+            SYSERROR("wheel_get_dist_display_map failed");
             return -1;
         }
 
-        printf("%s: ", key);
-        fflush(stdout);
-        const struct WheelValue dist = wheel_get_value_by_id(wheel, WHEEL_FROM_DIST, i);
-        if (wheel_value_error(&dist)) {
-            SYSERROR("wheel_get_value_by_id(%zi) failed", i);
-            return -1;
-        }
-        switch (dist.type) {
-            case WHEELVAL_STR: {
-                char *s = dist.data;
-                if (s != NULL && !isempty(s)) {
-                    printf("%s\n", s);
-                } else {
-                    printf("[N/A]\n");
+        for (ssize_t i = 0; i < WHEEL_DIST_END_ENUM; i++) {
+            if (optmap[i]) {
+                const char *key = wheel_get_key_by_id(WHEEL_FROM_DIST, i);
+                if (!key) {
+                    SYSERROR("wheel_get_key_by_id(%zi) failed", i);
+                    guard_free(optmap);
+                    return -1;
                 }
-                break;
-            }
-            case WHEELVAL_STRLIST: {
-                struct StrList *list = dist.data;
-                if (list) {
-                    printf("\n");
-                    for (size_t x = 0; x < strlist_count(list); x++) {
-                        const char *item = strlist_item(list, x);
-                        printf("    %s\n", item);
-                    }
-                } else {
-                    printf("[N/A]\n");
-                }
-                break;
-            }
-            case WHEELVAL_OBJ_RECORD: {
-                struct WheelRecord **record = dist.data;
-                if (record && *record) {
-                    printf("\n");
-                    for (size_t x = 0; x < dist.count; x++) {
-                        printf("    [%zu] %s (size: %zu bytes, checksum: %s)\n", x, wheel->record[x]->filename, wheel->record[x]->size, strlen(wheel->record[x]->checksum) ? wheel->record[x]->checksum : "N/A");
-                    }
-                } else {
-                    printf("[N/A]\n");
-                }
-                break;
-            }
-            case WHEELVAL_OBJ_ENTRY_POINT: {
-                struct WheelEntryPoint **entry = dist.data;
-                if (entry && *entry) {
-                    printf("\n");
-                    for (size_t x = 0; x < dist.count; x++) {
-                        printf("    [%zu] type: %s, name: %s, function: %s\n", x, entry[x]->type, entry[x]->name, entry[x]->function);
-                    }
-                } else {
-                    printf("[N/A]\n");
-                }
-                break;
-            }
-            default:
-                printf("[no handler]\n");
-                break;
-        }
 
+                const struct WheelValue dist = wheel_get_value_by_id(wheel, WHEEL_FROM_DIST, i);
+                if (wheel_value_error(&dist)) {
+                    SYSERROR("wheel_get_value_by_id(%zi) failed", i);
+                    guard_free(optmap);
+                    return -1;
+                }
+
+                if (isempty(dist.data)) {
+                    // skip printing when no value is set
+                    continue;
+                }
+
+                printf("%s: ", key);
+                fflush(stdout);
+
+                switch (dist.type) {
+                    case WHEELVAL_STR: {
+                        char *s = dist.data;
+                        if (s != NULL && !isempty(s)) {
+                            printf("%s\n", s);
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    case WHEELVAL_STRLIST: {
+                        struct StrList *list = dist.data;
+                        if (list) {
+                            printf("\n");
+                            for (size_t x = 0; x < strlist_count(list); x++) {
+                                const char *item = strlist_item(list, x);
+                                printf("    %s\n", item);
+                            }
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    case WHEELVAL_OBJ_RECORD: {
+                        struct WheelRecord **record = dist.data;
+                        if (record && *record) {
+                            printf("\n");
+                            for (size_t x = 0; x < dist.count; x++) {
+                                printf("    [%zu] %s (size: %zu bytes, checksum: %s)\n", x, wheel->record[x]->filename, wheel->record[x]->size, strlen(wheel->record[x]->checksum) ? wheel->record[x]->checksum : "N/A");
+                            }
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    case WHEELVAL_OBJ_ENTRY_POINT: {
+                        struct WheelEntryPoint **entry = dist.data;
+                        if (entry && *entry) {
+                            printf("\n");
+                            for (size_t x = 0; x < dist.count; x++) {
+                                printf("    [%zu] type: %s, name: %s, function: %s\n", x, entry[x]->type, entry[x]->name, entry[x]->function);
+                            }
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    default:
+                        printf("[no handler]\n");
+                        break;
+                }
+            }
+        }
+        guard_free(optmap);
     }
 
-    printf("\nPACKAGE INFO\n\n");
-    for (ssize_t i = 0; i < WHEEL_META_END_ENUM; i++) {
-        const char *key = wheel_get_key_by_id(WHEEL_FROM_METADATA, i);
-        if (!key) {
-            SYSERROR("wheel_get_key_by_id(%zi) failed", i);
+    if (opt.metadata._enable) {
+        bool *optmap = wheel_get_metadata_display_map(opt);
+        if (!optmap) {
+            SYSERROR("wheel_get_metadata_display_map failed");
             return -1;
         }
-        printf("%s: ", key);
-        fflush(stdout);
 
-        const struct WheelValue pkg = wheel_get_value_by_id(wheel, WHEEL_FROM_METADATA, i);
-        if (wheel_value_error(&pkg)) {
-            SYSERROR("wheel_get_value_by_id(%zi) failed", i);
-            return -1;
+        if (opt.metadata._enable_header) {
+            printf("\nPACKAGE INFO\n\n");
         }
-        switch (pkg.type) {
-            case WHEELVAL_STR: {
-                char *s = pkg.data;
-                if (s != NULL && !isempty(s)) {
-                    printf("%s\n", s);
-                } else {
-                    printf("[N/A]\n");
+
+        for (ssize_t i = 0; i < WHEEL_META_END_ENUM; i++) {
+            if (optmap[i]) {
+                const char *key = wheel_get_key_by_id(WHEEL_FROM_METADATA, i);
+                if (!key) {
+                    SYSERROR("wheel_get_key_by_id(%zi) failed", i);
+                    guard_free(optmap);
+                    return -1;
                 }
-                break;
-            }
-            case WHEELVAL_STRLIST: {
-                struct StrList *list = pkg.data;
-                if (list) {
-                    printf("\n");
-                    for (size_t x = 0; x < strlist_count(list); x++) {
-                        const char *item = strlist_item(list, x);
-                        printf("    %s\n", item);
-                    }
-                } else {
-                    printf("[N/A]\n");
+
+                const struct WheelValue pkg = wheel_get_value_by_id(wheel, WHEEL_FROM_METADATA, i);
+                if (wheel_value_error(&pkg)) {
+                    SYSERROR("wheel_get_value_by_id(%zi) failed", i);
+                    guard_free(optmap);
+                    return -1;
                 }
-                break;
-            }
-            case WHEELVAL_OBJ_EXTRA: {
-                const struct WheelMetadata_ProvidesExtra **extra = pkg.data;
-                printf("\n");
-                if (*extra) {
-                    for (size_t x = 0; extra[x] != NULL; x++) {
-                        printf("    + %s\n", extra[x]->target);
-                        for (size_t z = 0; z < strlist_count(extra[x]->requires_dist); z++) {
-                            const char *item = strlist_item(extra[x]->requires_dist, z);
-                            printf("     `- %s\n", item);
+
+                if (isempty(pkg.data)) {
+                    // skip printing when no value is set
+                    continue;
+                }
+
+                printf("%s: ", key);
+                fflush(stdout);
+                switch (pkg.type) {
+                    case WHEELVAL_STR: {
+                        char *s = pkg.data;
+                        if (s != NULL && !isempty(s)) {
+                            printf("%s\n", s);
+                        } else {
+                            printf("[N/A]\n");
                         }
+                        break;
                     }
-                } else {
-                    printf("[N/A]\n");
+                    case WHEELVAL_STRLIST: {
+                        struct StrList *list = pkg.data;
+                        if (list) {
+                            printf("\n");
+                            for (size_t x = 0; x < strlist_count(list); x++) {
+                                const char *item = strlist_item(list, x);
+                                printf("    %s\n", item);
+                            }
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    case WHEELVAL_OBJ_EXTRA: {
+                        const struct WheelMetadata_ProvidesExtra **extra = pkg.data;
+                        printf("\n");
+                        if (*extra) {
+                            for (size_t x = 0; extra[x] != NULL; x++) {
+                                printf("    + %s\n", extra[x]->target);
+                                for (size_t z = 0; z < strlist_count(extra[x]->requires_dist); z++) {
+                                    const char *item = strlist_item(extra[x]->requires_dist, z);
+                                    printf("     `- %s\n", item);
+                                }
+                            }
+                        } else {
+                            printf("[N/A]\n");
+                        }
+                        break;
+                    }
+                    default:
+                        break;
                 }
-                break;
             }
-            default:
-                break;
         }
+        guard_free(optmap);
     }
     return 0;
 }
@@ -1397,3 +1499,62 @@ int wheel_package(struct Wheel **pkg, const char *filename) {
 }
 
 
+struct Wheel *wheel_search(const char *basepath, const char *name, char *to_match[], unsigned match_mode) {
+    struct dirent *rec;
+    struct Wheel *result = NULL;
+    char package_path[PATH_MAX];
+    char package_name[NAME_MAX];
+
+    safe_strncpy(package_name, name, sizeof(package_name));
+    tolower_s(package_name);
+    snprintf(package_path, sizeof(package_path), "%s/%s", basepath, package_name);
+
+    DIR *dp = opendir(package_path);
+    if (!dp) {
+        return NULL;
+    }
+
+    while ((rec = readdir(dp)) != NULL) {
+        if (!strcmp(rec->d_name, ".") || !strcmp(rec->d_name, "..")) {
+            continue;
+        }
+
+        char filename[NAME_MAX];
+        safe_strncpy(filename, rec->d_name, sizeof(filename));
+
+        char *ext = strstr(filename, ".whl");
+        if (ext) {
+            *ext = '\0';
+        } else {
+            // not a wheel file. nothing to do
+            continue;
+        }
+
+        size_t match = 0;
+        size_t pattern_count = 0;
+        for (; to_match[pattern_count] != NULL; pattern_count++) {
+            if (strstr(filename, to_match[pattern_count])) {
+                match++;
+            }
+        }
+
+        if (!startswith(rec->d_name, name)) {
+            continue;
+        }
+
+        if (match_mode == WHEEL_MATCH_EXACT && match != pattern_count) {
+            continue;
+        }
+
+        char fullpath[PATH_MAX * 2] = {0};
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", package_path, rec->d_name);
+        if (wheel_package(&result, fullpath) < 0) {
+            SYSERROR("Unable to parse wheel package: %s", rec->d_name);
+            closedir(dp);
+            return NULL;
+        }
+        break;
+    }
+    closedir(dp);
+    return result;
+}
