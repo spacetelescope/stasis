@@ -160,7 +160,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (!access(destdir, F_OK)) {
                 msg(STASIS_MSG_L3, "Purging repository %s\n", destdir);
                 if (rmtree(destdir)) {
-                    COE_CHECK_ABORT(1, "Unable to remove repository\n");
+                    COE_CHECK_ABORT(1, "Unable to remove repository");
                 }
             }
             msg(STASIS_MSG_L3, "Cloning repository %s\n", test->repository);
@@ -168,7 +168,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 test->repository_info_tag = strdup(git_describe(destdir));
                 test->repository_info_ref = strdup(git_rev_parse(destdir, "HEAD"));
             } else {
-                COE_CHECK_ABORT(1, "Unable to clone repository\n");
+                COE_CHECK_ABORT(1, "Unable to clone repository");
             }
 
             if (test->repository_remove_tags && strlist_count(test->repository_remove_tags)) {
@@ -176,7 +176,7 @@ void delivery_tests_run(struct Delivery *ctx) {
             }
 
             if (pushd(destdir)) {
-                COE_CHECK_ABORT(1, "Unable to enter repository directory\n");
+                COE_CHECK_ABORT(1, "Unable to enter repository directory");
             } else {
                 const int dep_status = check_python_package_dependencies(".");
                 if (dep_status) {
