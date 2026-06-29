@@ -1078,7 +1078,7 @@ static int read_vcs_records(const size_t line, char **data) {
     // no match, continue
     return 1;
 }
-int check_python_package_dependencies(const char *srcdir) {
+int check_python_package_dependencies(const char *srcdir, struct StrList **out_files, struct StrList **out_matches) {
     const char *configs[] = {
         "pyproject.toml",
         "setup.cfg",
@@ -1103,12 +1103,25 @@ int check_python_package_dependencies(const char *srcdir) {
         }
         const size_t count = strlist_count(data);
         if (count) {
+            if (out_files) {
+                strlist_append(out_files, (char *) configs[i]);
+            }
             printf("\nERROR: VCS requirement(s) detected in %s:\n", configfile);
             for (size_t j = 0; j < count; j++) {
                 char *record = strlist_item(data, j);
                 lstrip(record);
                 strip(record);
-                printf("[%zu] %s\n", j, record);
+                char *match = substring_between(record, "\"\"");
+                if (!match) {
+                    SYSERROR("unable to allocate bytes for matched sub-string");
+                    guard_strlist_free(&data);
+                    return -1;
+                }
+                if (out_matches) {
+                    strlist_append(out_matches, match);
+                }
+                printf("[%zu] %s\n", j, match);
+                guard_free(match);
             }
             guard_strlist_free(&data);
             return 1;

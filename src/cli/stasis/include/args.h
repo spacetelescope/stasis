@@ -21,6 +21,7 @@
 #define OPT_TASK_TIMEOUT 1013
 #define OPT_WHEEL_BUILDER 1014
 #define OPT_WHEEL_BUILDER_MANYLINUX_IMAGE 1015
+#define OPT_FORCE_REPEATABLE 1016
 
 extern struct option long_options[];
 void usage(char *progname);

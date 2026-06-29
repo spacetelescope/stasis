@@ -178,17 +178,69 @@ void delivery_tests_run(struct Delivery *ctx) {
             if (pushd(destdir)) {
                 COE_CHECK_ABORT(1, "Unable to enter repository directory");
             } else {
-                const int dep_status = check_python_package_dependencies(".");
-                if (dep_status) {
-                    SYSERROR("Please replace all occurrences above with standard package specs:\n"
-                                    "\n"
-                                    "    package==x.y.z\n"
-                                    "    package>=x.y.z\n"
-                                    "    package<=x.y.z\n"
-                                    "    ...\n"
-                                    "\n");
-                    COE_CHECK_ABORT(true, "Unreproducible delivery");
+                struct StrList *setup_files = strlist_init();
+                if (!setup_files) {
+                    SYSERROR("unable to to allocate bytes for setup file list");
+                    exit(1);
                 }
+
+                struct StrList *matches = strlist_init();
+                if (!matches) {
+                    SYSERROR("unable to allocate bytes for matches list");
+                    guard_strlist_free(&setup_files);
+                    exit(1);
+                }
+
+                const int dep_status = check_python_package_dependencies(".", &setup_files, &matches);
+                if (dep_status) {
+                    const char *warning_message = "Please replace all occurrences above with standard package specs:\n"
+                                                  "\n"
+                                                  "    package==x.y.z\n"
+                                                  "    package>=x.y.z\n"
+                                                  "    package<=x.y.z\n"
+                                                  "    ...\n"
+                                                  "\n";
+                    if (globals.force_repeatable) {
+                        SYSWARN("--force-repeatable is enabled");
+                        SYSWARN(warning_message);
+                    } else {
+                        SYSERROR(warning_message);
+                        COE_CHECK_ABORT(true, "Unreproducible delivery");
+                    }
+
+                    // VCS records have been found, force_repeatable or COE is enabled, so we don't care about integrity
+                    // Replace the records in the file(s)
+                    if (strlist_count(setup_files) && strlist_count(matches)) {
+                        SYSDEBUG("Will replace %zu string(s) in %zu file(s)...", strlist_count(matches), strlist_count(setup_files));
+                        for (size_t f = 0; f < strlist_count(setup_files); f++) {
+                            const char *setup_file = strlist_item(setup_files, f);
+                            for (size_t m = 0; m < strlist_count(matches); m++) {
+                                const char *match = strlist_item(matches, m);
+
+                                // copy the original match string
+                                char *replacement = strdup(match);
+                                if (!replacement) {
+                                    SYSERROR("unable to allocate bytes for replacement value");
+                                    exit(1);
+                                }
+
+                                // Truncate the replacement string at the first space character or @ symbol
+                                char *stop = strpbrk(replacement, " @");
+                                if (stop) {
+                                    *stop = '\0';
+                                    SYSINFO("%s: replacing '%s' with '%s'", setup_file, match, replacement);
+                                    if (file_replace_text(setup_file, match, replacement, 0)) {
+                                        SYSERROR("%s: replacement failed", setup_file);
+                                        exit(1);
+                                    }
+                                }
+                                guard_free(replacement);
+                            }
+                        }
+                    }
+                }
+                guard_strlist_free(&setup_files);
+                guard_strlist_free(&matches);
 
                 char *cmd = calloc(strlen(test->script) + STASIS_BUFSIZ, sizeof(*cmd));
                 if (!cmd) {
@@ -256,7 +308,6 @@ void delivery_tests_run(struct Delivery *ctx) {
                 guard_free(runner_cmd);
                 guard_free(cmd);
                 popd();
-
             }
         }
 

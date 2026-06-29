@@ -638,6 +638,9 @@ int main(const int argc, char *argv[]) {
             case OPT_WHEEL_BUILDER_MANYLINUX_IMAGE:
                 globals.wheel_builder_manylinux_image = strdup(optarg);
                 break;
+            case OPT_FORCE_REPEATABLE:
+                globals.force_repeatable = true;
+                break;
             case '?':
             default:
                 exit(1);

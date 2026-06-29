@@ -473,7 +473,7 @@ int in_ascii_range(char c, char lower, char upper);
 #define GIT_HASH_LEN 40
 int is_git_sha(char const *hash);
 
-int check_python_package_dependencies(const char *srcdir);
+int check_python_package_dependencies(const char *srcdir, struct StrList **out_files, struct StrList **out_matches);
 
 void seconds_to_human_readable(int v, char *result, size_t maxlen);
 
