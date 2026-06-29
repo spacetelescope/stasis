@@ -1,6 +1,6 @@
 #include "delivery.h"
 #include "conda.h"
-#include "wheelinfo.h"
+#include "wheel.h"
 #include "version_compare.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
@@ -422,7 +422,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         SYSDEBUG("Tokenizing repository info tag: %s", info->repository_info_tag);
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
-                        struct WheelInfo *whl = NULL;
+                        struct Wheel *whl = NULL;
                         char *post_commit = NULL;
                         char *hash = NULL;
                         if (strlist_count(tag_data) > 1) {
@@ -437,7 +437,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         // etc.
                         errno = 0;
                         SYSDEBUG("%s", "Getting wheel information");
-                        whl = wheelinfo_get(ctx->storage.wheel_artifact_dir, info->name,
+                        whl = wheel_search(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
                                                          post_commit, hash,
@@ -451,13 +451,21 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             SYSERROR("No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found, replace the original version with newly detected version
-                            SYSDEBUG("Replacing version: %s", whl->version);
+                            SYSDEBUG("Replacing version: %s", whl->metadata->version);
                             guard_free(info->version);
-                            info->version = strdup(whl->version);
-                            SYSDEBUG("Version replaced with: %s", whl->version);
+                            info->version = strdup(whl->metadata->version);
+                            SYSDEBUG("Version replaced with: %s", info->version);
                         }
                         guard_strlist_free(&tag_data);
-                        wheelinfo_free(&whl);
+                        struct WheelDisplay si_opt;
+                        memset(&si_opt, true, sizeof(si_opt));
+                        // Disable file record overview (too long)
+                        si_opt.dist.record = false;
+                        // Disable package description output (too long)
+                        si_opt.metadata.description = false;
+
+                        wheel_show_info(whl, si_opt);
+                        wheel_package_free(&whl);
                     }
 
                     char req[255] = {0};

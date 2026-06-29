@@ -12,6 +12,9 @@
 #define WHEEL_FROM_DIST 0
 #define WHEEL_FROM_METADATA 1
 
+#define WHEEL_MATCH_EXACT 0 ///< Match when all patterns are present
+#define WHEEL_MATCH_ANY 1 ///< Match when any patterns are present
+
 enum {
     WHEEL_META_METADATA_VERSION=0,
     WHEEL_META_NAME,
@@ -135,6 +138,56 @@ struct Wheel {
     size_t num_entry_point;
 };
 
+#include <stdbool.h>
+struct WheelDisplay {
+    struct WheelDistDisplay {
+        bool _enable;
+        bool _enable_header;
+        bool wheel_version;
+        bool generator;
+        bool root_is_pure_lib;
+        bool tag;
+        bool top_level;
+        bool zip_safe;
+        bool record;
+        bool entry_point;
+    } dist;
+    struct WheelMetadataDisplay {
+        bool _enable;
+        bool _enable_header;
+        bool metadata_version;
+        bool name;
+        bool version;
+        bool summary;
+        bool author;
+        bool author_email;
+        bool maintainer;
+        bool maintainer_email;
+        bool license;
+        bool license_expression;
+        bool home_page;
+        bool download_url;
+        bool project_url;
+        bool classifier;
+        bool requires_python;
+        bool requires_external;
+        bool description_content_type;
+        bool license_file;
+        bool import_name;
+        bool import_namespace;
+        bool requires_dist;
+        bool provides;
+        bool provides_dist;
+        bool obsoletes;
+        bool obsoletes_dist;
+        bool description;
+        bool platform;
+        bool supported_platform;
+        bool keywords;
+        bool dynamic;
+        bool provides_extra;
+    } metadata;
+};
 #define METADATA_MULTILINE_PREFIX "        "
 
 
@@ -249,9 +302,12 @@ int wheel_get_file_contents(const char *wheelfile, const char *filename, char **
 /**
  * Display the values of a `Wheel` structure in human readable format
  *
- * @param wheel
+ * @param wheel pointer to Wheel
+ * @param opt struct containing caller-configured display flags
  * @return 0 on success, -1 on error
  */
-int wheel_show_info(const struct Wheel *wheel);
+int wheel_show_info(const struct Wheel *wheel, struct WheelDisplay opt);
+
+struct Wheel *wheel_search(const char *basepath, const char *name, char *to_match[], unsigned match_mode);
 
 #endif //WHEEL_H
