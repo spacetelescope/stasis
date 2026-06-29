@@ -310,33 +310,6 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         }
     }
 
-    if (status != 0) {
-        SYSERROR("Command exited non-zero (%d)", status);
-        for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
-            const char *stream_name = i == 0 ? "stdout" : "stderr";
-            if (!logfile_st[i].st_size) {
-                continue;
-            }
-            SYSDEBUG("(%s): %s", stream_name, logfile[i]);
-            FILE *fp = fdopen(logfile_fd[i], "r");
-            if (!fp) {
-                remove(logfile[i]);
-                return -1;
-            }
-
-            fflush(stdout);
-            fflush(stderr);
-
-            char line[STASIS_BUFSIZ] = {0};
-            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
-                SYSINFO("(%s): %s", stream_name, strip(line));
-            }
-
-            fflush(stderr);
-            fclose(fp);
-        }
-    }
-
     if (WTERMSIG(proc.returncode)) {
         // This gets its own return value because if the external program
         // received a signal, even its status is zero, it's not reliable
@@ -371,6 +344,34 @@ int pkg_index_provides(int mode, const char *index, const char *spec, const char
         // Unfortunately this applies to botched version specs, too.
         final = PKG_NOT_FOUND;
     }
+
+    if (final != PKG_FOUND && final != PKG_NOT_FOUND) {
+        SYSERROR("Command exited non-zero (%d)", status);
+        for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
+            const char *stream_name = i == 0 ? "stdout" : "stderr";
+            if (!logfile_st[i].st_size) {
+                continue;
+            }
+            SYSDEBUG("(%s): %s", stream_name, logfile[i]);
+            FILE *fp = fdopen(logfile_fd[i], "r");
+            if (!fp) {
+                remove(logfile[i]);
+                return -1;
+            }
+
+            fflush(stdout);
+            fflush(stderr);
+
+            char line[STASIS_BUFSIZ] = {0};
+            while (fgets(line, sizeof(line) - 1, fp) != NULL) {
+                SYSINFO("(%s): %s", stream_name, strip(line));
+            }
+
+            fflush(stderr);
+            fclose(fp);
+        }
+    }
+
 
     // Remove log files
     for (size_t i = 0; i < sizeof(logfile) / sizeof(logfile[0]); i++) {
