@@ -89,7 +89,6 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
 
     const int redirect = dup2(STDOUT_FILENO, STDERR_FILENO);
     if (redirect < 0) {
-        SYSERROR("%s", "Unable to redirect stderr to stdout");
         SYSERROR("Unable to redirect stderr to stdout");
         fclose(fp_log);
         semaphore_post(&pool->semaphore);
