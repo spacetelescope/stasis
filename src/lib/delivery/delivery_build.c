@@ -466,6 +466,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     if (mkdirs(outdir, 0755)) {
                         SYSERROR("failed to create output directory: %s", outdir);
                         guard_strlist_free(&result);
+                        popd();
                         return NULL;
                     }
                     if (use_builder_manylinux) {
@@ -474,18 +475,21 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                                     ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
+                            popd();
                             return NULL;
                         }
                     } else if (use_builder_build || use_builder_cibuildwheel) {
                         if (use_builder_build) {
                             if (asprintf(&cmd, "-m build -w -o %s", outdir) < 0) {
                                 SYSERROR("Unable to allocate memory for build command");
+                                popd();
                                 return NULL;
                             }
                         } else if (use_builder_cibuildwheel) {
                             if (asprintf(&cmd, "-m cibuildwheel --output-dir %s --only cp%s-manylinux_%s",
                                 outdir, ctx->meta.python_compact, ctx->system.arch) < 0) {
                                 SYSERROR("Unable to allocate memory for cibuildwheel command");
+                                popd();
                                 return NULL;
                             }
                         }
@@ -495,10 +499,12 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                                     ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
                             guard_free(cmd);
+                            popd();
                             return NULL;
                         }
                     } else {
                         SYSERROR("unknown wheel builder backend: %s", globals.wheel_builder);
+                        popd();
                         return NULL;
                     }
 

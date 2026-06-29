@@ -217,6 +217,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 if (test->disable) {
                     msg(STASIS_MSG_L2, "Script execution disabled by configuration\n", test->name);
                     guard_free(cmd);
+                    popd();
                     continue;
                 }
 
