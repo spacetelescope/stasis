@@ -102,6 +102,8 @@ install_stasis() {
     popd
 }
 
+STASIS_TEST_ALWAYS_SHOW_OUTPUT=${STASIS_TEST_ALWAYS_SHOW_OUTPUT:-0}
+STASIS_TEST_ALWAYS_SHOW_INDEXER_OUTPUT=${STASIS_TEST_ALWAYS_SHOW_INDEXER_OUTPUT:-0}
 
 STASIS_TEST_RESULT_FAIL=0
 STASIS_TEST_RESULT_PASS=0
@@ -112,8 +114,14 @@ run_command() {
     local lines_on_error=1000
     /bin/echo "Testing: $cmd "
 
-    $cmd &>"$logfile"
-    code=$?
+    if (( STASIS_TEST_ALWAYS_SHOW_OUTPUT )); then
+        $cmd
+        code=$?
+    else
+        $cmd &>"$logfile"
+        code=$?
+    fi
+
     if (( code )); then
         if (( code == 127 )); then
             echo "... SKIP"
@@ -226,7 +234,15 @@ check_output_indexed_dir() {
         echo
         echo "FILENAME: $x"
         echo
-        cat "$x"
+        if (( STASIS_TEST_ALWAYS_SHOW_INDEXER_OUTPUT )); then
+            cat "$x"
+        else
+            head "$x"
+            echo
+            echo '<!-- crunched -->'
+            echo
+            tail "$x"
+        fi
         echo "[EOF]"
         echo
     done
