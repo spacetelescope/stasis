@@ -36,7 +36,9 @@ static void test_wheel_package() {
     STASIS_ASSERT(wheel->metadata->metadata_version != NULL, "Metadata::version (of metadata) cannot be NULL");
 
     // Implied test against key/id getters. If wheel_show_info segfaults, that functionality is broken.
-    STASIS_ASSERT(wheel_show_info(wheel) == 0, "wheel_show_info should never fail. Enum(s) might be out of sync with META_*_KEYS array(s)");
+    struct WheelDisplay si_opt;
+    memset(&si_opt, true, sizeof(si_opt));
+    STASIS_ASSERT(wheel_show_info(wheel, si_opt) == 0, "wheel_show_info should never fail. Enum(s) might be out of sync with META_*_KEYS array(s)");
 
     // Get data from DIST
     const struct WheelValue dist_version = wheel_get_value_by_name(wheel, WHEEL_FROM_DIST, "Wheel-Version");
