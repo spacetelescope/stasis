@@ -448,16 +448,22 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     memset(dname, 0, sizeof(dname));
                     memset(outdir, 0, sizeof(outdir));
 
-                    const int dep_status = check_python_package_dependencies(".");
+                    const int dep_status = check_python_package_dependencies(".", NULL, NULL);
                     if (dep_status) {
-                        SYSERROR("Please replace all occurrences above with standard package specs:\n"
-                                        "\n"
-                                        "    package==x.y.z\n"
-                                        "    package>=x.y.z\n"
-                                        "    package<=x.y.z\n"
-                                        "    ...\n"
-                                        "\n");
-                        COE_CHECK_ABORT(true, "Unreproducible delivery");
+                        const char *warning_message = "Please replace all occurrences above with standard package specs:\n"
+                                          "\n"
+                                          "    package==x.y.z\n"
+                                          "    package>=x.y.z\n"
+                                          "    package<=x.y.z\n"
+                                          "    ...\n"
+                                          "\n";
+                        if (globals.force_repeatable) {
+                            SYSWARN("--force-repeatable is enabled");
+                            SYSWARN(warning_message);
+                        } else {
+                            SYSERROR(warning_message);
+                            COE_CHECK_ABORT(true, "Unreproducible delivery");
+                        }
                     }
 
                     safe_strncpy(dname, ctx->tests->test[i]->name, sizeof(dname));
