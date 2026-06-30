@@ -4,10 +4,7 @@
 #include "str.h"
 #include "wheel.h"
 
-char cwd_start[PATH_MAX];
-char cwd_workspace[PATH_MAX];
 int conda_is_installed = 0;
-static char conda_prefix[PATH_MAX] = {0};
 struct Delivery ctx;
 static const char *testpkg_filename = "testpkg/dist/testpkg-1.0.0-py3-none-any.whl";
 
@@ -113,18 +110,6 @@ int main(int argc, char *argv[]) {
         test_wheel_package,
     };
 
-    char ws[] = "workspace_XXXXXX";
-    if (!mkdtemp(ws)) {
-        SYSERROR("mkdtemp failed: %s, %s", ws, strerror(errno));
-        exit(1);
-    }
-    getcwd(cwd_start, sizeof(cwd_start) - 1);
-    mkdir(ws, 0755);
-    chdir(ws);
-    getcwd(cwd_workspace, sizeof(cwd_workspace) - 1);
-
-    snprintf(conda_prefix, strlen(cwd_workspace) + strlen("conda") + 2, "%s/conda", cwd_workspace);
-
     const char *mockinidata = "[meta]\n"
                               "name = mock\n"
                               "version = 1.0.0\n"
@@ -144,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     const char *sysconfdir = getenv("STASIS_SYSCONFDIR");
     globals.sysconfdir = strdup(sysconfdir ? sysconfdir : STASIS_SYSCONFDIR);
-    ctx.storage.root = strdup(cwd_workspace);
+    ctx.storage.root = strdup(TEST_WORKSPACE_DIR);
     char *cfgfile = join((char *[]) {globals.sysconfdir, "stasis.ini", NULL}, "/");
     if (!cfgfile) {
         SYSERROR("unable to create path to global config");
@@ -188,11 +173,6 @@ int main(int argc, char *argv[]) {
         SYSERROR("conda_exec failed");
         exit(1);
     }
-
-    if (conda_setup_headless(&ctx.conda.capabilities)) {
-        SYSERROR("conda_setup_headless failed");
-        exit(1);
-    }
     if (conda_env_create("testpkg", ctx.meta.python, NULL)) {
         SYSERROR("conda_env_create failed");
         exit(1);
@@ -206,13 +186,6 @@ int main(int argc, char *argv[]) {
 
     STASIS_TEST_RUN(tests);
 
-    if (chdir(cwd_start) < 0) {
-        SYSERROR("chdir failed: %s, %s", cwd_start, strerror(errno));
-        exit(1);
-    }
-    if (rmtree(cwd_workspace)) {
-        SYSERROR("rmtree failed: %s, %s", cwd_workspace, strerror(errno));
-    }
     delivery_free(&ctx);
     globals_free();
 
