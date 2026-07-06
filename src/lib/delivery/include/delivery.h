@@ -30,6 +30,12 @@
 #define DEFER_CONDA 0                       ///< Build conda packages
 #define DEFER_PIP 1                         ///< Build python packages
 
+enum {
+    DM_NONE = 0,
+    DM_VCS_URL_IN_SETUP,
+};
+extern const char *DELIVERY_MESSAGES[];  // see delivery.c
+
 struct Content {
     unsigned type;
     char *filename;
@@ -428,6 +434,8 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode);
 void validate_delivery_ini(struct INIFILE *ini);
 
 int filter_repo_tags(char *repo, struct StrList *patterns);
+
+void delivery_autoresolve_vcs_urls(const char *srcdir);
 
 #define DELIVERY_NOT_FOUND 0
 #define DELIVERY_FOUND 1
