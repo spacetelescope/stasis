@@ -1106,7 +1106,6 @@ int check_python_package_dependencies(const char *srcdir, struct StrList **out_f
             if (out_files) {
                 strlist_append(out_files, (char *) configs[i]);
             }
-            printf("\nERROR: VCS requirement(s) detected in %s:\n", configfile);
             for (size_t j = 0; j < count; j++) {
                 char *record = strlist_item(data, j);
                 lstrip(record);
@@ -1120,7 +1119,6 @@ int check_python_package_dependencies(const char *srcdir, struct StrList **out_f
                 if (out_matches) {
                     strlist_append(out_matches, match);
                 }
-                printf("[%zu] %s\n", j, match);
                 guard_free(match);
             }
             guard_strlist_free(&data);
