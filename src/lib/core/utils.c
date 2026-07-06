@@ -1319,3 +1319,44 @@ int is_file_compressed(const char *filename) {
     return 0;
 }
 
+/**
+ * Check if a file in a git repository is flagged as 'assumed-unchanged'.
+ *
+ * @param filename path to file
+ * @return -1 on error, 0 if
+ */
+int is_git_assumed_unchanged(char *filename) {
+    char *cmd = NULL;
+    if (asprintf(&cmd, "git ls-files -v -- '%s'", filename) < 0) {
+        SYSERROR("unable to allocate memory for file path");
+        return -1;
+    }
+    int status = 0;
+    char *output = shell_output(cmd, &status);
+    if (!output) {
+        SYSERROR("unable to allocate memory for git ls-files output");
+        guard_free(cmd);
+        return -1;
+    }
+    if (status) {
+        SYSERROR("git ls-files command failed to run");
+        guard_free(cmd);
+        guard_free(output);
+        return -1;
+    }
+    guard_free(cmd);
+
+    char *token = NULL;
+    char *data = output;
+    while ((token = strsep(&data, LINE_SEP)) != NULL) {
+        char *bname = path_basename(filename);
+        // "h" indicates assume-unchanged has been applied (see: man git-ls-files and option '-v')
+        if (strstr(token, bname) && startswith(token, "h")) {
+            guard_free(output);
+            return 1;
+        }
+    }
+
+    guard_free(output);
+    return 0;
+}

@@ -180,6 +180,15 @@ char *git_describe(const char *path);
 char *git_rev_parse(const char *path, char *args);
 
 /**
+ * Check if a file in a git repository is flagged with 'assumed-unchanged'.
+ *
+ * @param filename path to file
+ * @return -1 on error, 0 if
+ */
+
+int is_git_assumed_unchanged(char *filename);
+
+/**
  * Helper function to initialize simple STASIS internal path strings
  *
  * ```c
