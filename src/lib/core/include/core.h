@@ -57,6 +57,7 @@ struct STASIS_GLOBAL {
     int task_timeout; ///!< Time in seconds before task is terminated
     char *wheel_builder; ///!< Backend to build wheels (build, cibuildwheel, manylinux)
     char *wheel_builder_manylinux_image; ///!< Image to use for a Manylinux build
+    bool force_repeatable; ///!< Reduces surface area of random changes between builds
     struct {
         char *tox_posargs;
         char *conda_reactivate;

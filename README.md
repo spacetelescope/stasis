@@ -165,6 +165,7 @@ stasis mydelivery.ini
 | --overwrite                         |     n/a      | Overwrite an existing release                                  |
 | --wheel-builder ARG                 |     n/a      | Wheel building backend (build, cibuildwheel, manylinux)        |
 | --wheel-builder-manylinux-image ARG |     n/a      | Manylinux image name                                           |
+| --force-repeatable                  |     n/a      | Adapt package source(s) and settings to reduce changes         |
 | --no-docker                         |     n/a      | Do not build docker images                                     |
 | --no-artifactory                    |     n/a      | Do not upload artifacts to Artifactory                         |
 | --no-artifactory-build-info         |     n/a      | Do not upload build info objects to Artifactory                |

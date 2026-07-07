@@ -1,6 +1,109 @@
 #include "delivery.h"
 #include "conda.h"
 
+
+const char *DELIVERY_MESSAGES[] = {
+    "",
+    "To resolve, please replace all occurrences with standard package specs:\n" \
+        "\n" \
+        "    package==x.y.z\n" \
+        "    package>=x.y.z\n" \
+        "    package<=x.y.z\n" \
+        "    ...\n",
+    NULL
+};
+
+void delivery_autoresolve_vcs_urls(const char *srcdir) {
+    msg(STASIS_MSG_L3, "Checking for VCS requirements in build scripts... ");
+
+    struct StrList *setup_files = strlist_init();
+    if (!setup_files) {
+        SYSERROR("unable to to allocate bytes for setup file list");
+        exit(1);
+    }
+
+    struct StrList *matches = strlist_init();
+    if (!matches) {
+        SYSERROR("unable to allocate bytes for matches list");
+        guard_strlist_free(&setup_files);
+        exit(1);
+    }
+
+    const int dep_status = check_python_package_dependencies(srcdir, &setup_files, &matches);
+    if (dep_status) {
+        fprintf(stdout, STASIS_COLOR_RED "FOUND" STASIS_COLOR_RESET "\n");
+
+        if (strlist_count(setup_files) && strlist_count(matches)) {
+            for (size_t f = 0; f < strlist_count(setup_files); f++) {
+                const char *setup_file = strlist_item(setup_files, f);
+                for (size_t m = 0; m < strlist_count(matches); m++) {
+                    const char *match = strlist_item(matches, m);
+                    fprintf(stdout, "[%s] %s\n", setup_file, match);
+                }
+            }
+        }
+
+        if (globals.force_repeatable) {
+            SYSWARN("%s", DELIVERY_MESSAGES[DM_VCS_URL_IN_SETUP]);
+        } else {
+            // Having VCS URLs in a project's setup files is illegal
+            SYSERROR("%s", DELIVERY_MESSAGES[DM_VCS_URL_IN_SETUP]);
+            COE_CHECK_ABORT(true, "Unreproducible delivery");
+        }
+
+        // VCS records have been found, force_repeatable or COE is enabled, so we don't care about integrity
+        // Replace the records in the file(s)
+        if (strlist_count(setup_files) && strlist_count(matches)) {
+            SYSDEBUG("Replacing VCS URLs");
+            for (size_t f = 0; f < strlist_count(setup_files); f++) {
+                char gitcmd[PATH_MAX] = {0};
+                const char *setup_file = strlist_item(setup_files, f);
+
+                SYSDEBUG("Processing %s", setup_file);
+                if (is_git_assumed_unchanged((char *) setup_file)) {
+                    SYSDEBUG("%s is already marked assume-unchanged, skipping");
+                    continue;
+                }
+
+                SYSDEBUG("Setting assume-unchanged flag");
+                snprintf(gitcmd, sizeof(gitcmd), "git update-index --assume-unchanged -- %s", setup_file);
+                if (shell(NULL, gitcmd)) {
+                    SYSERROR("unable to set assume-unchanged flag on file: %s", setup_file);
+                    exit(1);
+                }
+
+                for (size_t m = 0; m < strlist_count(matches); m++) {
+                    const char *match = strlist_item(matches, m);
+                    // copy the original match string
+                    char *replacement = strdup(match);
+                    if (!replacement) {
+                        SYSERROR("unable to allocate bytes for replacement value");
+                        exit(1);
+                    }
+
+                    // Truncate the replacement string at the first space character or @ symbol
+                    char *stop = strpbrk(replacement, " @");
+                    SYSDEBUG("Found delimiter '%c'", *stop);
+
+                    if (stop) {
+                        *stop = '\0';
+                        printf("[%s] Replacing '%s' with '%s'\n", setup_file, match, replacement);
+                        if (file_replace_text(setup_file, match, replacement, 0)) {
+                            SYSERROR("%s: replacement failed", setup_file);
+                            exit(1);
+                        }
+                    }
+                    guard_free(replacement);
+                }
+            }
+        }
+    } else {
+        fprintf(stdout, STASIS_COLOR_GREEN "NONE" STASIS_COLOR_RESET "\n");
+    }
+    guard_strlist_free(&setup_files);
+    guard_strlist_free(&matches);
+}
+
 struct Delivery *delivery_duplicate(struct Delivery *ctx) {
     struct Delivery *result = calloc(1, sizeof(*result));
     if (!result) {

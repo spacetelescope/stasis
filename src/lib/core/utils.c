@@ -1078,7 +1078,7 @@ static int read_vcs_records(const size_t line, char **data) {
     // no match, continue
     return 1;
 }
-int check_python_package_dependencies(const char *srcdir) {
+int check_python_package_dependencies(const char *srcdir, struct StrList **out_files, struct StrList **out_matches) {
     const char *configs[] = {
         "pyproject.toml",
         "setup.cfg",
@@ -1103,12 +1103,23 @@ int check_python_package_dependencies(const char *srcdir) {
         }
         const size_t count = strlist_count(data);
         if (count) {
-            printf("\nERROR: VCS requirement(s) detected in %s:\n", configfile);
+            if (out_files) {
+                strlist_append(out_files, (char *) configs[i]);
+            }
             for (size_t j = 0; j < count; j++) {
                 char *record = strlist_item(data, j);
                 lstrip(record);
                 strip(record);
-                printf("[%zu] %s\n", j, record);
+                char *match = substring_between(record, "\"\"");
+                if (!match) {
+                    SYSERROR("unable to allocate bytes for matched sub-string");
+                    guard_strlist_free(&data);
+                    return -1;
+                }
+                if (out_matches) {
+                    strlist_append(out_matches, match);
+                }
+                guard_free(match);
             }
             guard_strlist_free(&data);
             return 1;
@@ -1306,3 +1317,44 @@ int is_file_compressed(const char *filename) {
     return 0;
 }
 
+/**
+ * Check if a file in a git repository is flagged as 'assumed-unchanged'.
+ *
+ * @param filename path to file
+ * @return -1 on error, 0 if
+ */
+int is_git_assumed_unchanged(char *filename) {
+    char *cmd = NULL;
+    if (asprintf(&cmd, "git ls-files -v -- '%s'", filename) < 0) {
+        SYSERROR("unable to allocate memory for file path");
+        return -1;
+    }
+    int status = 0;
+    char *output = shell_output(cmd, &status);
+    if (!output) {
+        SYSERROR("unable to allocate memory for git ls-files output");
+        guard_free(cmd);
+        return -1;
+    }
+    if (status) {
+        SYSERROR("git ls-files command failed to run");
+        guard_free(cmd);
+        guard_free(output);
+        return -1;
+    }
+    guard_free(cmd);
+
+    char *token = NULL;
+    char *data = output;
+    while ((token = strsep(&data, LINE_SEP)) != NULL) {
+        char *bname = path_basename(filename);
+        // "h" indicates assume-unchanged has been applied (see: man git-ls-files and option '-v')
+        if (strstr(token, bname) && startswith(token, "h")) {
+            guard_free(output);
+            return 1;
+        }
+    }
+
+    guard_free(output);
+    return 0;
+}
