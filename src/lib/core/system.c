@@ -179,6 +179,7 @@ char *shell_output(const char *command, int *status) {
             current_size += initial_size;
             char *tmp = realloc(result, sizeof(*result) * current_size);
             if (!tmp) {
+                pclose(pp);
                 guard_free(result);
                 return NULL;
             }
