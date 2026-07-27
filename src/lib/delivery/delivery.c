@@ -515,6 +515,8 @@ void delivery_defer_packages(struct Delivery *ctx, int type) {
         // When spec is present in name, set tests->version to the version detected in the name
         for (size_t x = 0; x < ctx->tests->num_used; x++) {
             struct Test *test = ctx->tests->test[x];
+            normalize_namespace_package_name(test->name);
+
             char nametmp[STASIS_NAME_MAX] = {0};
 
             safe_strncpy(nametmp, package_name, sizeof(nametmp));
