@@ -1358,3 +1358,22 @@ int is_git_assumed_unchanged(char *filename) {
     guard_free(output);
     return 0;
 }
+
+size_t normalize_namespace_package_name(char *name) {
+    // "build" produces wheels with dashes and dots in the package name replaced by underscores
+    const char *invalid_chars = ".-";
+    size_t modified = 0;
+    const char *delim = strpbrk(name, "=");
+
+    do {
+        char *bad_char = strpbrk(name, invalid_chars);
+        if ((delim && bad_char) && bad_char > delim) {
+            break;
+        }
+        if (bad_char) {
+            *bad_char = '_';
+            modified++;
+        }
+    } while (strpbrk(name, invalid_chars));
+    return modified;
+}
