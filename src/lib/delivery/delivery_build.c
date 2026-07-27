@@ -442,23 +442,37 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 }
 
                 if (!pushd(srcdir)) {
-                    char dname[NAME_MAX];
-                    char outdir[PATH_MAX];
+                    char dname[NAME_MAX] = {0};
+                    char outdir[PATH_MAX] = {0};
+                    char linkname[PATH_MAX] = {0};
                     char *cmd = NULL;
-                    memset(dname, 0, sizeof(dname));
-                    memset(outdir, 0, sizeof(outdir));
 
                     delivery_autoresolve_vcs_urls(".");
 
                     safe_strncpy(dname, ctx->tests->test[i]->name, sizeof(dname));
                     tolower_s(dname);
                     snprintf(outdir, sizeof(outdir), "%s/%s", ctx->storage.wheel_artifact_dir, dname);
+
+                    // Despite generating packages using underscores in names, the directory name must use dashes
+                    // instead of underscores.
+                    safe_strncpy(linkname, dname, sizeof(linkname));
+                    replace_text(linkname, "_", "-", 0);
+
                     if (mkdirs(outdir, 0755)) {
                         SYSERROR("failed to create output directory: %s", outdir);
                         guard_strlist_free(&result);
                         popd();
                         return NULL;
                     }
+                    if (!pushd(ctx->storage.wheel_artifact_dir)) {
+                        symlink(dname, linkname);
+                        popd();
+                    } else {
+                        SYSERROR("unable to enter wheel storage directory: %s", ctx->storage.wheel_artifact_dir);
+                        guard_strlist_free(&result);
+                        return NULL;
+                    }
+
                     if (use_builder_manylinux) {
                         if (delivery_build_wheels_manylinux(ctx, outdir)) {
                             SYSERROR("failed to generate wheel package for %s-%s", ctx->tests->test[i]->name,

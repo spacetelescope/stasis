@@ -519,4 +519,11 @@ char *center_text(const char *s, size_t maxwidth);
  * @return 1 if compressed
  */
 int is_file_compressed(const char *filename);
+
+/**
+ * Replace invalidated characters in package names with underscore
+ * @param name the package name
+ */
+size_t normalize_namespace_package_name(char *name);
+
 #endif //STASIS_UTILS_H

@@ -285,12 +285,22 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
 
     ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode);
+    for (size_t i = 0; ctx->conda.pip_packages && i < strlist_count(ctx->conda.pip_packages); i++) {
+        char *item = strlist_item(ctx->conda.pip_packages, i);
+        normalize_namespace_package_name(item);
+    }
+
+    // Package specs should test for equality, or nothing at all
     if (check_package_spec_list(ctx->conda.pip_packages, "conda", "pip_packages")) {
         return -1;
     }
 
     ctx->conda.pip_packages_purge = ini_getval_strlist(ini, "conda", "pip_packages_purge", LINE_SEP, render_mode, &err);
     normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
+    for (size_t i = 0; ctx->conda.pip_packages_purge && i < strlist_count(ctx->conda.pip_packages_purge); i++) {
+        char *item = strlist_item(ctx->conda.pip_packages_purge, i);
+        normalize_namespace_package_name(item);
+    }
 
     // Delivery metadata consumed
     if (populate_mission_ini(&ctx, render_mode)) {
