@@ -4,7 +4,7 @@ source $here/setup.sh
 
 TEST_NAME=gbo
 PYTHON_VERSIONS=(
-    3.11
+    3.12
 )
 setup_workspace "$TEST_NAME"
 run_command install_stasis
