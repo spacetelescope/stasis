@@ -1,79 +1,73 @@
-FROM quay.io/centos/centos:stream9
-# Declare build-time environment
-ARG DIST_VERSION={{ conda.installer_version }}
-ARG DIST_PLATFORM={{ conda.installer_platform }}
-ARG DIST_ARCH={{ conda.installer_arch }}
-ARG DIST_URL=https://github.com/conda-forge/miniforge/releases/download/${DIST_VERSION}
+FROM condaforge/miniforge3:{{ conda.installer_version }} AS mf3
+WORKDIR /
+
+FROM ubuntu:24.04
 # Conda root
 ARG CONDA_PACKAGES
 # Pipeline environment snapshot definition
 ARG SNAPSHOT_INPUT
 ARG SNAPSHOT_PKGDIR
 # Declare environment
-ENV OPT=/opt \
-    HOME=/home/developer
-ENV PYTHONUNBUFFERED=1 \
-    DIST_VERSION=${DIST_VERSION} \
-    DIST_PLATFORM=${DIST_PLATFORM} \
-    DIST_ARCH=${DIST_ARCH} \
-    DIST_URL=${DIST_URL} \
-    DIST_INSTALLER={{ conda.installer_name }}-${DIST_VERSION}-${DIST_PLATFORM}-${DIST_ARCH}.sh \
-    DIST_PATH=${OPT}/conda \
-    CONDA_PACKAGES=${CONDA_PACKAGES}
+ENV OPT=/opt
+ENV HOME=/home/developer
+ENV PYTHONUNBUFFERED=1
+ENV DIST_PATH="${OPT}"/conda
+ENV CONDA_PACKAGES="${CONDA_PACKAGES}"
+ENV SNAPSHOT_INPUT="${SNAPSHOT_INPUT}"
+ENV SNAPSHOT_PKGDIR="${SNAPSHOT_PKGDIR}"
+ENV MAMBA_ROOT_PREFIX="${DIST_PATH}"
 # Toolchain
-RUN yum update -y \
-    && yum install -y \
-        bzip2-devel \
-        gcc \
-        gcc-c++ \
-        gcc-gfortran \
-        git \
-        glibc-devel.i686 \
-        glibc-devel \
-        kernel-devel \
-        libX11-devel \
-        mesa-libGL \
-        mesa-libGLU \
-        ncurses-devel \
-        subversion \
-        sudo \
-        wget \
-        zlib-devel \
-    && yum clean all
 # Create 'developer' user
 # Configure sudoers
+RUN apt update \
+    && apt upgrade -y \
+    && apt install -y \
+        bash \
+        sudo \
+        tini \
+    && apt clean
+SHELL ["/bin/bash", "-c"]
 RUN groupadd developer \
-    && useradd -g developer -m -d $HOME -s /bin/bash developer \
+    && useradd -m -d "$HOME" -s /bin/bash -g developer developer \
     && echo "developer:developer" | chpasswd \
     && echo "developer ALL=(ALL)	NOPASSWD: ALL" >> /etc/sudoers
 # Install Miniforge
 # Reset permissions
-RUN curl -q -OSsL ${DIST_URL}/${DIST_INSTALLER} \
-    && bash ${DIST_INSTALLER} -b -p ${DIST_PATH} \
-    && rm -rf ${DIST_INSTALLER} \
-    && echo source ${DIST_PATH}/etc/profile.d/conda.sh > /etc/profile.d/conda.sh \
-    && echo source ${DIST_PATH}/etc/profile.d/mamba.sh > /etc/profile.d/mamba.sh \
-    && source /etc/profile.d/conda.sh \
-    && source /etc/profile.d/mamba.sh \
-    && echo conda activate linux > /etc/profile.d/zconda.sh \
-    && chown -R developer: ${OPT} ${HOME}
+COPY --chown=developer --from=mf3 /opt/conda/ "${OPT}/conda"
 # Configure Conda
 ENV PATH="${DIST_PATH}/bin:${PATH}"
+RUN echo source "${DIST_PATH}"/etc/profile.d/conda.sh > /etc/profile.d/conda.sh \
+    && \
+        if [[ -x "${MAMBA_ROOT_PREFIX}"/bin/mamba ]]; then \
+            "${MAMBA_ROOT_PREFIX}"/bin/mamba shell init --shell bash --dry-run \
+            | (ignore=1; \
+                while read line; do \
+                    if [[ "$line" == "#"* ]]; then ignore=0; fi; \
+                    if (( ignore == 0 )); then echo $line; fi; \
+                done) >> /etc/profile.d/conda.sh; \
+        fi \
+    && source /etc/profile.d/conda.sh \
+    && echo conda activate linux > /etc/profile.d/zconda.sh
 # Get delivery snapshot
-ADD ${SNAPSHOT_INPUT} ${HOME}/SNAPSHOT.yml
-ADD ${SNAPSHOT_PKGDIR} ${HOME}/packages
-RUN chown -R developer: ${HOME}
 USER developer
+WORKDIR "${HOME}"
+ADD --chown=developer "${SNAPSHOT_INPUT}" "${HOME}/SNAPSHOT.yml"
+ADD --chown=developer "${SNAPSHOT_PKGDIR}" "${HOME}/packages"
 RUN conda config --set auto_update_conda false \
+    && conda config --add channels https://prefix.dev/conda-forge \
     && conda config --set always_yes true \
     && conda config --set quiet true \
-    && conda config --set rollback_enabled false
-RUN sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--extra-index-url file://${HOME}/packages/wheels|;" ${HOME}/SNAPSHOT.yml
-RUN mamba install \
-        git \
-        ${CONDA_PACKAGES} \
-    && mamba env create -n linux --file ${HOME}/SNAPSHOT.yml \
-    && conda clean --all \
-    && rm -rf ${HOME}/.cache
-WORKDIR ${HOME}
-CMD ["/bin/bash"]
+    && conda config --set rollback_enabled false \
+    && sed -i -e "s|@CONDA_CHANNEL@|${HOME}/packages/conda|;s|@PIP_ARGUMENTS@|--extra-index-url file://${HOME}/packages/wheels|;" SNAPSHOT.yml \
+    && if [ -n "${CONDA_PACKAGES}" ]; then mamba install ${CONDA_PACKAGES}; fi \
+    && mamba env create -n linux --file SNAPSHOT.yml \
+    && find "${DIST_PATH}" -follow -type f -name '*.a' -delete \
+    && find "${DIST_PATH}" -follow -type f -name '*.pyc' -delete \
+    && conda clean --force-pkgs-dirs --all --yes \
+    && rm -rf ${HOME}/.cache \
+    && rm -rf ${HOME}/packages \
+    && rm -rf /tmp/* \
+    && rm -rf /var/tmp/*
+WORKDIR "${HOME}"
+ENTRYPOINT ["tini", "--"]
+CMD ["/bin/bash", "-l"]
