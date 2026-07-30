@@ -983,6 +983,7 @@ void wheel_metadata_free(struct WheelMetadata *meta) {
     guard_strlist_free(&meta->requires_dist);
     guard_strlist_free(&meta->keywords);
     guard_strlist_free(&meta->license_file);
+    guard_strlist_free(&meta->platform);
     if (meta->provides_extra) {
         for (size_t i = 0; meta->provides_extra[i] != NULL; i++) {
             guard_free(meta->provides_extra[i]->target);
