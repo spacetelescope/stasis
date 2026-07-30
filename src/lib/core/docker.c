@@ -35,7 +35,7 @@ int docker_script(const char *image, char *args, char *data, const unsigned flag
     (void)flags;  // TODO: placeholder
     char cmd[PATH_MAX] = {0};
 
-    snprintf(cmd, sizeof(cmd), "docker run -i %s \"%s\" /bin/sh -", args ? args : "", image);
+    snprintf(cmd, sizeof(cmd), "docker run -i %s \"%s\" /bin/bash -", args ? args : "", image);
 
     FILE *outfile = popen(cmd, "w");
     if (!outfile) {
