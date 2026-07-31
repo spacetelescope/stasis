@@ -54,7 +54,6 @@ WORKDIR "${HOME}"
 ADD --chown=developer "${SNAPSHOT_INPUT}" "${HOME}/SNAPSHOT.yml"
 ADD --chown=developer "${SNAPSHOT_PKGDIR}" "${HOME}/packages"
 RUN conda config --set auto_update_conda false \
-    && conda config --add channels https://prefix.dev/conda-forge \
     && conda config --set always_yes true \
     && conda config --set quiet true \
     && conda config --set rollback_enabled false \
