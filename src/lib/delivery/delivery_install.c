@@ -1,6 +1,6 @@
 #include "delivery.h"
 #include "conda.h"
-#include "wheelinfo.h"
+#include "wheel.h"
 #include "version_compare.h"
 
 static struct Test *requirement_from_test(struct Delivery *ctx, const char *name) {
@@ -399,6 +399,19 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         return -1;
     }
 
+    size_t wheel_count_used = 0;
+    size_t wheel_count_alloc = 0;
+    for (size_t j = 0; manifest[j] != NULL; j++) {
+        wheel_count_alloc += strlist_count(manifest[j]);
+    }
+
+    struct Wheel **wheels = calloc(wheel_count_alloc + 1, sizeof(*wheels));
+    if (!wheels) {
+        SYSERROR("Unable to allocate bytes for wheels array");
+        guard_free(args);
+        return -1;
+    }
+
     for (size_t x = 0; manifest[x] != NULL; x++) {
         char *name = NULL;
         for (size_t p = 0; p < strlist_count(manifest[x]); p++) {
@@ -417,12 +430,13 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         if (!tag_data) {
                             SYSERROR("Unable to allocate memory for tag data");
                             guard_free(args);
+                            guard_array_free(wheels);
                             return -1;
                         }
                         SYSDEBUG("Tokenizing repository info tag: %s", info->repository_info_tag);
                         strlist_append_tokenize(tag_data, info->repository_info_tag, "-");
 
-                        struct WheelInfo *whl = NULL;
+                        struct Wheel *whl = NULL;
                         char *post_commit = NULL;
                         char *hash = NULL;
                         if (strlist_count(tag_data) > 1) {
@@ -437,7 +451,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         // etc.
                         errno = 0;
                         SYSDEBUG("%s", "Getting wheel information");
-                        whl = wheelinfo_get(ctx->storage.wheel_artifact_dir, info->name,
+                        whl = wheel_search(ctx->storage.wheel_artifact_dir, info->name,
                                              (char *[]) {ctx->meta.python_compact, ctx->system.arch,
                                                          "none", "any",
                                                          post_commit, hash,
@@ -446,18 +460,25 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                             // error
                             SYSERROR("Unable to read Python wheel info: %s", strerror(errno));
                             exit(1);
-                        } else if (!whl) {
+                        }
+                        if (!whl) {
                             // not found
                             SYSERROR("No wheel packages found that match the description of '%s'", info->name);
                         } else {
                             // found, replace the original version with newly detected version
-                            SYSDEBUG("Replacing version: %s", whl->version);
+                            SYSDEBUG("Replacing version: %s", info->version);
                             guard_free(info->version);
-                            info->version = strdup(whl->version);
-                            SYSDEBUG("Version replaced with: %s", whl->version);
+                            info->version = strdup(whl->metadata->version);
+                            SYSDEBUG("Version replaced with: %s", info->version);
                         }
                         guard_strlist_free(&tag_data);
-                        wheelinfo_free(&whl);
+                        if (wheel_count_used >= wheel_count_alloc) {
+                            SYSERROR("Appended more wheel records in array than allocated (%zu >= %zu)", wheel_count_used, wheel_count_alloc);
+                            guard_array_free(wheels);
+                            exit(1);
+                        }
+                        wheels[wheel_count_used] = whl;
+                        wheel_count_used++;
                     }
 
                     char req[255] = {0};
@@ -478,6 +499,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         if (grow(required_len, &args_alloc_len, &args)) {
                             SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
                             guard_free(args);
+                            guard_array_free(wheels);
                             return -1;
                         }
                     }
@@ -485,6 +507,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                 } else {
                     SYSERROR("Deferred package '%s' is not present in the tested package list!", name);
                     guard_free(args);
+                    guard_array_free(wheels);
                     return -1;
                 }
             } else {
@@ -496,6 +519,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         if (grow(required_len, &args_alloc_len, &args)) {
                             SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
                             guard_free(args);
+                            guard_array_free(wheels);
                             return -1;
                         }
                     }
@@ -508,6 +532,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
                         if (grow(required_len, &args_alloc_len, &args)) {
                             SYSERROR("Unable to allocate %d bytes for command arguments", required_len);
                             guard_free(args);
+                            guard_array_free(wheels);
                             return -1;
                         }
                     }
@@ -519,6 +544,7 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         if (asprintf(&command, "%s %s", command_base, args) < 0) {
             SYSERROR("Unable to allocate bytes for command");
             guard_free(args);
+            guard_array_free(wheels);
             return -1;
         }
 
@@ -527,9 +553,28 @@ int delivery_install_packages(struct Delivery *ctx, char *conda_install_dir, cha
         guard_free(command);
         if (status) {
             // fail quickly
+            guard_array_free(wheels);
             return status;
         }
     }
+
+    if (wheel_count_used) {
+        msg(STASIS_MSG_L2, "Wheel package summary...\n");
+        for (size_t i = 0; i < wheel_count_used; i++) {
+            struct Wheel *whl = wheels[i];
+            msg(STASIS_MSG_L3, "%s %s\n", whl->metadata->name, whl->metadata->version);
+            struct WheelDisplay si_opt = {0};
+            memset(&si_opt, true, sizeof(si_opt));
+            // Disable file record overview (too long)
+            si_opt.dist.record = false;
+            // Disable package description output (too long)
+            si_opt.metadata.description = false;
+            wheel_show_info(whl, si_opt);
+            wheel_package_free(&whl);
+        }
+    }
+    free(wheels);
+
     guard_free(args);
     return 0;
 }

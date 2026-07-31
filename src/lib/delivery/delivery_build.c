@@ -344,8 +344,6 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
 }
 
 int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
-    msg(STASIS_MSG_L1, "Building wheels\n");
-
     const char *manylinux_image = globals.wheel_builder_manylinux_image;
     if (!manylinux_image) {
         SYSERROR("manylinux_image not initialized");
@@ -392,6 +390,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
     const int use_builder_cibuildwheel = strcmp(globals.wheel_builder, "cibuildwheel") == 0 && on_linux && docker_usable;
     const int use_builder_manylinux = strcmp(globals.wheel_builder, "manylinux") == 0 && on_linux && docker_usable;
 
+    msg(STASIS_MSG_L1, "Building wheels\n");
     if (!use_builder_build && !use_builder_cibuildwheel && !use_builder_manylinux) {
         SYSWARN("Cannot build wheel for platform using: %s", globals.wheel_builder);
         SYSWARN("Falling back to native toolchain.", globals.wheel_builder);
@@ -424,6 +423,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 memset(srcdir, 0, sizeof(srcdir));
                 memset(wheeldir, 0, sizeof(wheeldir));
 
+                msg(STASIS_MSG_L2, "Building %s (%s)\n", ctx->tests->test[i]->name, ctx->tests->test[i]->version);
                 snprintf(srcdir, sizeof(srcdir), "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
                 if (git_clone(&proc, ctx->tests->test[i]->repository, srcdir, ctx->tests->test[i]->version)) {
                     SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'",
