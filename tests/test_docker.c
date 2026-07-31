@@ -36,9 +36,9 @@ void test_docker_sanitize_tag() {
 void test_docker_build_and_script_and_save() {
     STASIS_SKIP_IF(docker_exec("pull alpine:latest", STASIS_DOCKER_QUIET), "unable to pull an image");
 
-    const char *dockerfile_contents = "FROM alpine:latest\nCMD [\"sh\", \"-l\"]\n";
     mkdir("test_docker_build", 0755);
     if (!pushd("test_docker_build")) {
+        const char *dockerfile_contents = "FROM alpine:latest\nRUN apk update && apk upgrade && apk add bash\nCMD [\"bash\", \"-l\"]\n";
         stasis_testing_write_ascii("Dockerfile", dockerfile_contents);
         STASIS_ASSERT(docker_build(".", "-t test_docker_build", cap_suite.build) == 0, "docker build test failed");
         STASIS_ASSERT(docker_script("test_docker_build", "--rm", "uname -a", 0) == 0, "simple docker container script execution failed");
