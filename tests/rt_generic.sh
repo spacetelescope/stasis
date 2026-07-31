@@ -4,7 +4,7 @@ source $here/setup.sh
 
 TEST_NAME=generic
 PYTHON_VERSIONS=(
-    3.11
+    3.12
 )
 
 setup_workspace "$TEST_NAME"
