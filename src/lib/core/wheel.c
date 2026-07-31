@@ -1301,58 +1301,48 @@ int wheel_show_info(const struct Wheel *wheel, struct WheelDisplay opt) {
                     return -1;
                 }
 
-                if (isempty(dist.data)) {
+                if (dist.data == NULL) {
                     // skip printing when no value is set
                     continue;
                 }
 
-                printf("%s: ", key);
                 fflush(stdout);
-
                 switch (dist.type) {
                     case WHEELVAL_STR: {
                         char *s = dist.data;
                         if (s != NULL && !isempty(s)) {
-                            printf("%s\n", s);
-                        } else {
-                            printf("[N/A]\n");
+                            printf("%s: %s\n", key, s);
                         }
                         break;
                     }
                     case WHEELVAL_STRLIST: {
                         struct StrList *list = dist.data;
-                        if (list) {
-                            printf("\n");
+                        if (list && strlist_count(list)) {
+                            printf("%s:\n", key);
                             for (size_t x = 0; x < strlist_count(list); x++) {
                                 const char *item = strlist_item(list, x);
                                 printf("    %s\n", item);
                             }
-                        } else {
-                            printf("[N/A]\n");
                         }
                         break;
                     }
                     case WHEELVAL_OBJ_RECORD: {
                         struct WheelRecord **record = dist.data;
-                        if (record && *record) {
-                            printf("\n");
+                        if (record && *record && dist.count) {
+                            printf("%s:\n", key);
                             for (size_t x = 0; x < dist.count; x++) {
                                 printf("    [%zu] %s (size: %zu bytes, checksum: %s)\n", x, wheel->record[x]->filename, wheel->record[x]->size, strlen(wheel->record[x]->checksum) ? wheel->record[x]->checksum : "N/A");
                             }
-                        } else {
-                            printf("[N/A]\n");
                         }
                         break;
                     }
                     case WHEELVAL_OBJ_ENTRY_POINT: {
                         struct WheelEntryPoint **entry = dist.data;
-                        if (entry && *entry) {
-                            printf("\n");
+                        if (entry && *entry && dist.count) {
+                            printf("%s:\n", key);
                             for (size_t x = 0; x < dist.count; x++) {
                                 printf("    [%zu] type: %s, name: %s, function: %s\n", x, entry[x]->type, entry[x]->name, entry[x]->function);
                             }
-                        } else {
-                            printf("[N/A]\n");
                         }
                         break;
                     }
@@ -1392,53 +1382,47 @@ int wheel_show_info(const struct Wheel *wheel, struct WheelDisplay opt) {
                     return -1;
                 }
 
-                if (isempty(pkg.data)) {
+                if (pkg.data == NULL) {
                     // skip printing when no value is set
                     continue;
                 }
 
-                printf("%s: ", key);
                 fflush(stdout);
                 switch (pkg.type) {
                     case WHEELVAL_STR: {
                         char *s = pkg.data;
                         if (s != NULL && !isempty(s)) {
-                            printf("%s\n", s);
-                        } else {
-                            printf("[N/A]\n");
+                            printf("%s: %s\n", key, s);
                         }
                         break;
                     }
                     case WHEELVAL_STRLIST: {
                         struct StrList *list = pkg.data;
-                        if (list) {
-                            printf("\n");
+                        if (list && strlist_count(list)) {
+                            printf("%s:\n", key);
                             for (size_t x = 0; x < strlist_count(list); x++) {
                                 const char *item = strlist_item(list, x);
                                 printf("    %s\n", item);
                             }
-                        } else {
-                            printf("[N/A]\n");
                         }
                         break;
                     }
                     case WHEELVAL_OBJ_EXTRA: {
                         const struct WheelMetadata_ProvidesExtra **extra = pkg.data;
-                        printf("\n");
-                        if (*extra) {
-                            for (size_t x = 0; extra[x] != NULL; x++) {
+                        if (*extra && extra[0]->count) {
+                            printf("%s:\n", key);
+                            for (size_t x = 0; extra[x] != NULL && extra[x]->count; x++) {
                                 printf("    + %s\n", extra[x]->target);
                                 for (size_t z = 0; z < strlist_count(extra[x]->requires_dist); z++) {
                                     const char *item = strlist_item(extra[x]->requires_dist, z);
                                     printf("     `- %s\n", item);
                                 }
                             }
-                        } else {
-                            printf("[N/A]\n");
                         }
                         break;
                     }
                     default:
+                        printf("[no handler]\n");
                         break;
                 }
             }
