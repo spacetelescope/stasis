@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
                               "version = 1.0.0\n"
                               "rc = 1\n"
                               "mission = generic\n"
-                              "python = 3.11\n"
+                              "python = 3.12\n"
                               "[conda]\n"
                               "installer_name = Miniforge3\n"
                               "installer_version = %s\n"

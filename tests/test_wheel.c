@@ -115,13 +115,13 @@ int main(int argc, char *argv[]) {
                               "version = 1.0.0\n"
                               "rc = 1\n"
                               "mission = generic\n"
-                              "python = 3.11\n"
+                              "python = 3.12\n"
                               "[conda]\n"
                               "installer_name = Miniforge3\n"
-                              "installer_version = 24.3.0-0\n"
+                              "installer_version = 26.3.2-3\n"
                               "installer_platform = {{env:STASIS_CONDA_PLATFORM}}\n"
                               "installer_arch = {{env:STASIS_CONDA_ARCH}}\n"
-                              "installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/24.3.0-0\n";
+                              "installer_baseurl = https://github.com/conda-forge/miniforge/releases/download/26.3.2-3\n";
     stasis_testing_write_ascii("mock.ini", mockinidata);
     struct INIFILE *ini = ini_open("mock.ini");
     ctx._stasis_ini_fp.delivery = ini;
