@@ -1,12 +1,18 @@
+# MINIFORGE3 IMAGE
+
 FROM condaforge/miniforge3:{{ conda.installer_version }} AS mf3
 WORKDIR /
 
-FROM ubuntu:24.04
+# BUILD IMAGE
+
+FROM ubuntu:24.04 AS build
 # Conda root
 ARG CONDA_PACKAGES
+
 # Pipeline environment snapshot definition
 ARG SNAPSHOT_INPUT
 ARG SNAPSHOT_PKGDIR
+
 # Declare environment
 ENV OPT=/opt
 ENV HOME=/home/developer
@@ -16,26 +22,30 @@ ENV CONDA_PACKAGES="${CONDA_PACKAGES}"
 ENV SNAPSHOT_INPUT="${SNAPSHOT_INPUT}"
 ENV SNAPSHOT_PKGDIR="${SNAPSHOT_PKGDIR}"
 ENV MAMBA_ROOT_PREFIX="${DIST_PATH}"
-# Toolchain
-# Create 'developer' user
-# Configure sudoers
 RUN apt update \
     && apt upgrade -y \
     && apt install -y \
         bash \
         sudo \
-        tini \
+        build-essential \
+        gfortran \
+        pkgconf \
     && apt clean
 SHELL ["/bin/bash", "-c"]
 RUN groupadd developer \
     && useradd -m -d "$HOME" -s /bin/bash -g developer developer \
     && echo "developer:developer" | chpasswd \
     && echo "developer ALL=(ALL)	NOPASSWD: ALL" >> /etc/sudoers
-# Install Miniforge
-# Reset permissions
-COPY --chown=developer --from=mf3 /opt/conda/ "${OPT}/conda"
+
 # Configure Conda
+
+# Copy the conda installation out of the official miniforge3 image
+COPY --chown=developer --from=mf3 /opt/conda/ "${DIST_PATH}"
+
+# Ensure the "conda" script can be resolved
 ENV PATH="${DIST_PATH}/bin:${PATH}"
+
+# Enable automatic initialization of the "linux" environment at run-time
 RUN echo source "${DIST_PATH}"/etc/profile.d/conda.sh > /etc/profile.d/conda.sh \
     && \
         if [[ -x "${MAMBA_ROOT_PREFIX}"/bin/mamba ]]; then \
@@ -48,7 +58,8 @@ RUN echo source "${DIST_PATH}"/etc/profile.d/conda.sh > /etc/profile.d/conda.sh 
         fi \
     && source /etc/profile.d/conda.sh \
     && echo conda activate linux > /etc/profile.d/zconda.sh
-# Get delivery snapshot
+
+# Install the delivery snapshot
 USER developer
 WORKDIR "${HOME}"
 ADD --chown=developer "${SNAPSHOT_INPUT}" "${HOME}/SNAPSHOT.yml"
@@ -67,6 +78,30 @@ RUN conda config --set auto_update_conda false \
     && rm -rf ${HOME}/packages \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
+
+# FINAL IMAGE
+
+FROM ubuntu:24.04
+
+# Declare environment
+ENV OPT=/opt
+ENV HOME=/home/developer
+ENV PYTHONUNBUFFERED=1
+ENV DIST_PATH="${OPT}"/conda
+ENV MAMBA_ROOT_PREFIX="${DIST_PATH}"
+
+# Install the bare minimum software required
+RUN apt update \
+    && apt upgrade -y \
+    && apt install -y \
+        bash \
+        sudo \
+        tini \
+    && apt clean
+COPY --chown=root --from=build /etc/ /etc
+COPY --chown=developer --from=build /opt/conda "${DIST_PATH}"
+COPY --chown=developer --from=build /home/developer/ "${HOME}"
+USER developer
 WORKDIR "${HOME}"
 ENTRYPOINT ["tini", "--"]
 CMD ["/bin/bash", "-l"]
