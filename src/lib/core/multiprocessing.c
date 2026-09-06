@@ -27,6 +27,7 @@ static void update_task_interval_start(struct MultiProcessingTask *task) {
         SYSERROR("realtime clock unavailable");
         exit(1);
     }
+    task->interval_data.t_stop = task->interval_data.t_start;
 }
 
 static void update_task_interval_elapsed(struct MultiProcessingTask *task) {
@@ -44,6 +45,7 @@ static void update_task_start(struct MultiProcessingTask *task) {
         SYSERROR("realtime clock unavailable");
         exit(1);
     }
+    task->time_data.t_stop = task->time_data.t_start;
 }
 static void update_task_elapsed(struct MultiProcessingTask *task) {
     // Record the task stop time
@@ -62,10 +64,22 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     (void) pool;
     FILE *fp_log = NULL;
 
-    semaphore_wait(&pool->semaphore);
+    SYSDEBUG("waiting for lock");
+    semaphore_wait(pool->semaphore);
+    SYSDEBUG("aquired lock");
+
+    // Close child file descriptors
+    for (int fd = 3; fd < sysconf(_SC_OPEN_MAX); fd++) {
+        close(fd);
+    }
+
+    SYSDEBUG("is running");
+
     // The task starts inside the requested working directory
+    SYSDEBUG("entering work directory: %s", task->working_dir);
     if (chdir(task->working_dir)) {
-        perror(task->working_dir);
+        SYSERROR("%s: %s", strerror(errno), task->working_dir);
+        semaphore_post(pool->semaphore);
         exit(1);
     }
 
@@ -73,35 +87,23 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     fflush(stdout);
     fflush(stderr);
 
-    // Set log file name
-    if (globals.enable_task_logging) {
-        snprintf(task->log_file + strlen(task->log_file), sizeof(task->log_file) - strlen(task->log_file),
-            "task-%zu-%d.log", mp_global_task_count, task->parent_pid);
-        SYSDEBUG("using log file: %s", task->log_file);
-        semaphore_post(&pool->semaphore);
-    }
+    SYSDEBUG("open log file as stdout");
     fp_log = freopen(task->log_file, "w+", stdout);
     if (!fp_log) {
         SYSERROR("unable to open '%s' for writing: %s", task->log_file, strerror(errno));
-        semaphore_post(&pool->semaphore);
+        semaphore_post(pool->semaphore);
         return -1;
     }
+    SYSDEBUG("opened log file as stdout");
 
     const int redirect = dup2(STDOUT_FILENO, STDERR_FILENO);
     if (redirect < 0) {
         SYSERROR("Unable to redirect stderr to stdout");
         fclose(fp_log);
-        semaphore_post(&pool->semaphore);
+        semaphore_post(pool->semaphore);
         return -1;
     }
-
-    // Close child file descriptors
-    for (int fd = 3; fd < sysconf(_SC_OPEN_MAX); fd++) {
-        if (fd == redirect) {
-            continue;
-        }
-        close(fd);
-    }
+    SYSDEBUG("redirected stderr to stdout");
 
     // Generate timestamp for log header
     const time_t t = time(NULL);
@@ -111,63 +113,58 @@ int child(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
         timebuf[strlen(timebuf) ? strlen(timebuf) - 1 : 0] = 0;
     }
 
+    SYSDEBUG("writing header");
     // Generate log header
     fprintf(fp_log, "# STARTED: %s\n", timebuf ? timebuf : "unknown");
-    fprintf(fp_log, "# PID: %d\n", task->parent_pid);
+    fprintf(fp_log, "# PID: %d\n", task->pid);
     fprintf(fp_log, "# WORKDIR: %s\n", task->working_dir);
     fprintf(fp_log, "# COMMAND:\n%s\n", task->cmd);
     fprintf(fp_log, "# OUTPUT:\n");
     // Commit header to log file / clean up
     fflush(fp_log);
+    SYSDEBUG("wrote header");
 
     // Execute task
     fflush(stdout);
     fflush(stderr);
-    char *args[] = {"bash", "--norc", task->parent_script, (char *) NULL};
-    semaphore_post(&pool->semaphore);
+    semaphore_post(pool->semaphore);
+
+    char *args[] = {"bash", "--noprofile", "--norc", task->parent_script, (char *) NULL};
     execvp("bash", args);
     SYSERROR("execvp failed (%s)", strerror(errno));
     _exit(127);
 }
 
-int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid, int *child_status) {
+int parent(struct MultiProcessingPool *pool, struct MultiProcessingTask *task, pid_t pid) {
     // Record the task start time
     update_task_start(task);
+    update_task_interval_start(task);
+    task->interval_data.t_stop = task->interval_data.t_start;
 
     printf("[%s:%s] Task started (pid: %d)\n", pool->ident, task->ident, pid);
 
     // Give the child process access to our PID value
     task->pid = pid;
-    task->parent_pid = pid;
+    task->parent_pid = getpid();
 
-    semaphore_wait(&pool->semaphore);
+
     mp_global_task_count++;
-    semaphore_post(&pool->semaphore);
 
-    // Check child's status
-    pid_t code = waitpid(pid, child_status, WUNTRACED | WCONTINUED | WNOHANG);
-    if (code < 0) {
-        SYSERROR("waitpid failed");
-        return -1;
-    }
     return 0;
 }
 
 static int mp_task_fork(struct MultiProcessingPool *pool, struct MultiProcessingTask *task) {
     SYSDEBUG("Preparing to fork() child task %s:%s", pool->ident, task->ident);
-    semaphore_wait(&pool->semaphore);
     pid_t pid = fork();
     int parent_status = 0;
-    int child_status = 0;
     if (pid == -1) {
         SYSERROR("fork failed");
         return -1;
     }
     if (pid == 0) {
-        semaphore_post(&pool->semaphore);
         child(pool, task);
     } else {
-        parent_status = parent(pool, task, pid, &child_status);
+        parent_status = parent(pool, task, pid);
         fflush(stdout);
         fflush(stderr);
     }
@@ -195,18 +192,35 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
     // Set log file path
     memset(slot->log_file, 0, sizeof(*slot->log_file));
     if (globals.enable_task_logging) {
+        // root
         snprintf(slot->log_file, sizeof(slot->log_file), "%s", pool->log_root);
-        // FORTIFY_SOURCE won't leave snprintf alone. The chance for truncation is slim anyway.
         safe_strncat(slot->log_file, "/", sizeof(slot->log_file));
+
+        // path
+        snprintf(slot->log_file + strlen(slot->log_file), sizeof(slot->log_file) - strlen(slot->log_file),
+            "task-%s-%s-%zu.log", pool->ident, slot->ident, mp_global_task_count);
     } else {
         snprintf(slot->log_file, sizeof(slot->log_file), "/dev/stdout");
     }
+    SYSDEBUG("using log file: %s", slot->log_file);
 
     // Set working directory
+    char *working_dir_tmp = NULL;
+    int working_dir_tmp_need_free = 0;
     if (isempty(working_dir)) {
-        snprintf(slot->working_dir, sizeof(slot->working_dir), ".");
+        working_dir_tmp_need_free = 1;
+        working_dir_tmp = getcwd(NULL, sizeof(slot->working_dir));
     } else {
-        snprintf(slot->working_dir, sizeof(slot->working_dir), "%s", working_dir);
+        working_dir_tmp = realpath(working_dir, NULL);
+    }
+    if (!working_dir_tmp) {
+        SYSERROR("unable to allocate memory for working directory path: %s", working_dir ? working_dir : ".");
+        return NULL;
+    }
+
+    snprintf(slot->working_dir, sizeof(slot->working_dir), "%s", working_dir_tmp);
+    if (working_dir_tmp_need_free) {
+        guard_free(working_dir_tmp);
     }
 
     // Create a temporary file to act as our intermediate command script
@@ -269,7 +283,7 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
         struct MultiProcessingTask *task = &pool->task[i];
         char status_str[10] = {0};
 
-        if (task->status == MP_POOL_TASK_STATUS_INITIAL && task->pid == MP_POOL_PID_UNUSED) {
+        if (task->status == MP_POOL_TASK_STATUS_INITIAL && !task->done) {
             // You will only see this label if the task pool is killed by
             // MP_POOL_FAIL_FAST and tasks are still queued for execution
             snprintf(status_str, sizeof(status_str), "HOLD");
@@ -283,7 +297,7 @@ void mp_pool_show_summary(struct MultiProcessingPool *pool) {
 
         char duration[255] = {0};
         seconds_to_human_readable(task->time_data.duration, duration, sizeof(duration));
-        printf("%-4s   %10d    %10s     %-10s\n", status_str, task->parent_pid, duration, task->ident) ;
+        printf("%-4s   %10d    %10s     %-10s\n", status_str, task->pid, duration, task->ident) ;
     }
     puts("");
 }
@@ -316,39 +330,31 @@ int mp_pool_kill(struct MultiProcessingPool *pool, int signum) {
         if (slot->pid > 0) {
             int status;
             printf("Sending signal %d to task '%s' (pid: %d)\n", signum, slot->ident, slot->pid);
-            semaphore_wait(&pool->semaphore);
             status = kill(slot->pid, signum);
-            semaphore_post(&pool->semaphore);
             if (status && errno != ESRCH) {
                 SYSERROR("Task '%s' (pid: %d) did not respond: %s", slot->ident, slot->pid, strerror(errno));
             } else {
                 // Wait for process to handle the signal, then set the status accordingly
                 if (waitpid(slot->pid, &status, 0) >= 0) {
                     slot->signaled_by = WTERMSIG(status);
-                    semaphore_wait(&pool->semaphore);
                     update_task_elapsed(slot);
-                    semaphore_post(&pool->semaphore);
                     // We are short-circuiting the normal flow, and the process is now dead, so mark it as such
                     SYSDEBUG("Marking slot %zu: UNUSED", i);
-                    slot->pid = MP_POOL_PID_UNUSED;
+                    slot->done = 1;
                 }
             }
         }
         if (globals.enable_task_logging) {
-            semaphore_wait(&pool->semaphore);
             if (!access(slot->log_file, F_OK)) {
                 SYSDEBUG("Removing log file: %s", slot->log_file);
                 remove(slot->log_file);
             }
-            semaphore_post(&pool->semaphore);
         }
 
-        semaphore_wait(&pool->semaphore);
         if (!access(slot->parent_script, F_OK)) {
             SYSDEBUG("Removing runner script: %s", slot->parent_script);
             remove(slot->parent_script);
         }
-        semaphore_post(&pool->semaphore);
     }
     return 0;
 }
@@ -373,13 +379,16 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
             if (slot->status == MP_POOL_TASK_STATUS_INITIAL) {
                 slot->_startup = time(NULL);
                 if (mp_task_fork(pool, slot)) {
-                    SYSERROR("%s: mp_task_fork failed", slot->ident);
-                    kill(0, SIGTERM);
+                    SYSERROR("%s: mp_task_fork failed, killing pool %s", slot->ident, pool->ident);
+                    if (mp_pool_kill(pool, SIGKILL)) {
+                        SYSERROR("%s: mp_pool_kill failed", pool->ident);
+                    }
+                    return -1;
                 }
             }
 
             // Has the child been processed already?
-            if (slot->pid == MP_POOL_PID_UNUSED) {
+            if (slot->done) {
                 // Child is already used up, skip it
                 hang_check++;
                 if (hang_check >= pool->num_used) {
@@ -457,9 +466,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 if (child_status >> 8 != 0 || (child_status & 0xff) != 0) {
-                    semaphore_wait(&pool->semaphore);
                     update_task_elapsed(slot);
-                    semaphore_post(&pool->semaphore);
                     seconds_to_human_readable(slot->time_data.duration, duration, sizeof(duration));
                     fprintf(stderr, "%s Task failed after %s\n", progress, duration);
                     failures++;
@@ -484,7 +491,7 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 }
 
                 // Update progress and tell the poller to ignore the PID. The process is gone.
-                slot->pid = MP_POOL_PID_UNUSED;
+                slot->done = 1;
             } else if (pid < 0) {
                 SYSERROR("waitpid failed: %s", strerror(errno));
                 return -1;
@@ -492,26 +499,23 @@ int mp_pool_join(struct MultiProcessingPool *pool, size_t jobs, size_t flags) {
                 // Track the number of seconds elapsed for each task.
                 // When a task has executed for longer than status_intervals, print a status update
                 // interval_elapsed represents the time between intervals, not the total runtime of the task
-                semaphore_wait(&pool->semaphore);
-                if (fabs(slot->interval_data.duration) > pool->status_interval) {
-                    slot->interval_data.duration = 0.0;
-                }
-                if (slot->interval_data.duration == 0.0) {
+                if (slot->interval_data.duration >= pool->status_interval) {
                     seconds_to_human_readable(slot->time_data.duration, duration, sizeof(duration));
                     printf("[%s:%s] Task is running (pid: %d, elapsed: %s)\n",
-                        pool->ident, slot->ident, slot->parent_pid, duration);
+                        pool->ident, slot->ident, slot->pid, duration);
                     update_task_interval_start(slot);
+                    slot->interval_data.duration = 0.0;
                 }
-
+#if defined(STASIS_MULTIPROCESSING_DEBUG_CLOCK)
+                SYSDEBUG("slot->ident = %s, slot->interval_data.duration = %lf", slot->ident, slot->interval_data.duration);
+#endif
                 update_task_interval_elapsed(slot);
-                semaphore_post(&pool->semaphore);
             }
 
-            if (!task_ended || !task_ended_by_signal) {
-                semaphore_wait(&pool->semaphore);
-                update_task_elapsed(slot);
-                semaphore_post(&pool->semaphore);
-            }
+#if defined(STASIS_MULTIPROCESSING_DEBUG_CLOCK)
+            SYSDEBUG("slot->ident = %s, slot->time_data.duration = %lf", slot->ident, slot->time_data.duration);
+#endif
+            update_task_elapsed(slot);
         }
 
         if (tasks_complete == pool->num_used) {
@@ -595,8 +599,9 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
     SYSDEBUG("freeing pool");
-    if (!isempty((*pool)->semaphore.name)) {
+    if (!isempty((*pool)->semaphore->name)) {
         semaphore_destroy(&(*pool)->semaphore);
+        (*pool)->semaphore = NULL;
     }
 
     // Free all task commands

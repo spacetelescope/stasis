@@ -1,8 +1,9 @@
 /**
  * @file relocation.c
  */
-#include "relocation.h"
 #include "str.h"
+#include "utils.h"
+#include "relocation.h"
 
 /**
  * Replace all occurrences of `target` with `replacement` in `original`

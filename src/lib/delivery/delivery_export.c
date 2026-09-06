@@ -18,7 +18,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
             exit(1);
         }
         SYSDEBUG("%s: writing", filename);
-        ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_RAW);
+        ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_RAW, ctx->tpl_pool);
         SYSDEBUG("%s: writing done", filename);
         fclose(spec);
         SYSDEBUG("%s: closing", filename);
@@ -36,7 +36,7 @@ static void delivery_export_configuration(const struct Delivery *ctx) {
             exit(1);
         }
         SYSDEBUG("%s: writing", filename);
-        ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_PRESERVE);
+        ini_write(ctx->_stasis_ini_fp.delivery, &spec, INI_WRITE_PRESERVE, ctx->tpl_pool);
         SYSDEBUG("%s: writing done", filename);
         SYSDEBUG("%s: closing", filename);
         fclose(spec);

@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include "core.h"
+#include "utils.h"
 
 #define STASIS_ENVCTL_PASSTHRU 0
 #define STASIS_ENVCTL_REQUIRED 1 << 1

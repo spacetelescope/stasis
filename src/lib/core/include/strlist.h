@@ -8,8 +8,8 @@
 typedef int (ReaderFn)(size_t line, char **);
 
 #include <stdlib.h>
+#include <regex.h>
 #include "core.h"
-#include "utils.h"
 #include "str.h"
 
 
@@ -41,13 +41,12 @@ size_t strlist_count(struct StrList *pStrList);
 void strlist_reverse(struct StrList *pStrList);
 void strlist_sort(struct StrList *pStrList, unsigned int mode);
 int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_of);
+int strlist_contains_regex(struct StrList *pStrList, const char *pattern);
 int strlist_append_file(struct StrList *pStrList, char *path, ReaderFn *readerFn);
 void strlist_append_strlist(struct StrList *pStrList1, struct StrList *pStrList2);
 void strlist_append(struct StrList **pStrList, char *str);
 void strlist_append_array(struct StrList *pStrList, char **arr);
-
 int strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim);
-
 int strlist_append_tokenize_raw(struct StrList *pStrList, char *str, char *delim);
 int strlist_appendf(struct StrList **pStrList, const char *fmt, ...);
 struct StrList *strlist_copy(struct StrList *pStrList);

@@ -22,6 +22,7 @@
 #define OPT_WHEEL_BUILDER 1014
 #define OPT_WHEEL_BUILDER_MANYLINUX_IMAGE 1015
 #define OPT_FORCE_REPEATABLE 1016
+#define OPT_VALIDATE 1017
 
 extern struct option long_options[];
 void usage(char *progname);

@@ -1,19 +1,12 @@
 #include "delivery.h"
+#include "utils.h"
 
-static void ini_has_key_required(struct INIFILE *ini, const char *section_name, char *key) {
-    int status = ini_has_key(ini, section_name, key);
-    if (!status) {
-        SYSERROR("%s:%s key is required but not defined", section_name, key);
-        exit(1);
-    }
-}
-
-static void conv_str(char **x, union INIVal val) {
+static void conv_str(struct tpl_pool **list, char **x, union INIVal val) {
     if (*x) {
         guard_free(*x);
     }
     if (val.as_char_p) {
-        char *tplop = tpl_render(val.as_char_p);
+        char *tplop = tpl_render(list, val.as_char_p);
         if (tplop) {
             *x = tplop;
         } else {
@@ -23,8 +16,6 @@ static void conv_str(char **x, union INIVal val) {
         *x = NULL;
     }
 }
-
-
 
 int populate_info(struct Delivery *ctx) {
     if (!ctx->info.time_str_epoch) {
@@ -59,35 +50,35 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
         return -1;
     }
     int err = 0;
-    ctx->storage.conda_staging_dir = ini_getval_str(cfg, "default", "conda_staging_dir", render_mode, &err);
-    ctx->storage.conda_staging_url = ini_getval_str(cfg, "default", "conda_staging_url", render_mode, &err);
-    ctx->storage.wheel_staging_dir = ini_getval_str(cfg, "default", "wheel_staging_dir", render_mode, &err);
-    ctx->storage.wheel_staging_url = ini_getval_str(cfg, "default", "wheel_staging_url", render_mode, &err);
-    globals.conda_fresh_start = ini_getval_bool(cfg, "default", "conda_fresh_start", render_mode, &err);
+    ctx->storage.conda_staging_dir = ini_getval_str(cfg, "default", "conda_staging_dir", render_mode, &err, &ctx->tpl_pool);
+    ctx->storage.conda_staging_url = ini_getval_str(cfg, "default", "conda_staging_url", render_mode, &err, &ctx->tpl_pool);
+    ctx->storage.wheel_staging_dir = ini_getval_str(cfg, "default", "wheel_staging_dir", render_mode, &err, &ctx->tpl_pool);
+    ctx->storage.wheel_staging_url = ini_getval_str(cfg, "default", "wheel_staging_url", render_mode, &err, &ctx->tpl_pool);
+    globals.conda_fresh_start = ini_getval_bool(cfg, "default", "conda_fresh_start", render_mode, &err, &ctx->tpl_pool);
     if (!globals.continue_on_error) {
-        globals.continue_on_error = ini_getval_bool(cfg, "default", "continue_on_error", render_mode, &err);
+        globals.continue_on_error = ini_getval_bool(cfg, "default", "continue_on_error", render_mode, &err, &ctx->tpl_pool);
     }
     if (!globals.always_update_base_environment) {
-        globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", render_mode, &err);
+        globals.always_update_base_environment = ini_getval_bool(cfg, "default", "always_update_base_environment", render_mode, &err, &ctx->tpl_pool);
     }
     if (globals.conda_install_prefix) {
         guard_free(globals.conda_install_prefix);
     }
-    globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", render_mode, &err);
+    globals.conda_install_prefix = ini_getval_str(cfg, "default", "conda_install_prefix", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.conda_packages) {
         guard_strlist_free(&globals.conda_packages);
     }
-    globals.conda_packages = ini_getval_strlist(cfg, "default", "conda_packages", LINE_SEP, render_mode, &err);
+    globals.conda_packages = ini_getval_strlist(cfg, "default", "conda_packages", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
 
     if (globals.pip_packages) {
         guard_strlist_free(&globals.pip_packages);
     }
-    globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, render_mode, &err);
+    globals.pip_packages = ini_getval_strlist(cfg, "default", "pip_packages", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
 
     err = 0;
     if (!globals.wheel_builder) {
-        globals.wheel_builder = ini_getval_str(cfg, "default", "wheel_builder", render_mode, &err);
+        globals.wheel_builder = ini_getval_str(cfg, "default", "wheel_builder", render_mode, &err, &ctx->tpl_pool);
         if (err) {
             SYSWARN("wheel_builder is undefined. Falling back to system toolchain: 'build'.");
             globals.wheel_builder = strdup("build");
@@ -100,12 +91,12 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
 
     err = 0;
     if (!globals.micromamba_download_url) {
-        globals.micromamba_download_url = ini_getval_str(cfg, "indexer", "micromamba_download_url", render_mode, &err);
+        globals.micromamba_download_url = ini_getval_str(cfg, "indexer", "micromamba_download_url", render_mode, &err, &ctx->tpl_pool);
     }
 
     err = 0;
     if (!globals.wheel_builder_manylinux_image) {
-        globals.wheel_builder_manylinux_image = ini_getval_str(cfg, "default", "wheel_builder_manylinux_image", render_mode, &err);
+        globals.wheel_builder_manylinux_image = ini_getval_str(cfg, "default", "wheel_builder_manylinux_image", render_mode, &err, &ctx->tpl_pool);
     }
 
     if (err && globals.wheel_builder && strcmp(globals.wheel_builder, "manylinux") == 0) {
@@ -132,42 +123,42 @@ int populate_delivery_cfg(struct Delivery *ctx, int render_mode) {
     if (globals.jfrog.jfrog_artifactory_base_url) {
         guard_free(globals.jfrog.jfrog_artifactory_base_url);
     }
-    globals.jfrog.jfrog_artifactory_base_url = ini_getval_str(cfg, "jfrog_cli_download", "url", render_mode, &err);
+    globals.jfrog.jfrog_artifactory_base_url = ini_getval_str(cfg, "jfrog_cli_download", "url", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.jfrog_artifactory_product) {
         guard_free(globals.jfrog.jfrog_artifactory_product);
     }
-    globals.jfrog.jfrog_artifactory_product = ini_getval_str(cfg, "jfrog_cli_download", "product", render_mode, &err);
+    globals.jfrog.jfrog_artifactory_product = ini_getval_str(cfg, "jfrog_cli_download", "product", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.cli_major_ver) {
         guard_free(globals.jfrog.cli_major_ver);
     }
-    globals.jfrog.cli_major_ver = ini_getval_str(cfg, "jfrog_cli_download", "version_series", render_mode, &err);
+    globals.jfrog.cli_major_ver = ini_getval_str(cfg, "jfrog_cli_download", "version_series", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.version) {
         guard_free(globals.jfrog.version);
     }
-    globals.jfrog.version = ini_getval_str(cfg, "jfrog_cli_download", "version", render_mode, &err);
+    globals.jfrog.version = ini_getval_str(cfg, "jfrog_cli_download", "version", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.remote_filename) {
         guard_free(globals.jfrog.remote_filename);
     }
-    globals.jfrog.remote_filename = ini_getval_str(cfg, "jfrog_cli_download", "filename", render_mode, &err);
+    globals.jfrog.remote_filename = ini_getval_str(cfg, "jfrog_cli_download", "filename", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.url) {
         guard_free(globals.jfrog.url);
     }
-    globals.jfrog.url = ini_getval_str(cfg, "deploy:artifactory", "url", render_mode, &err);
+    globals.jfrog.url = ini_getval_str(cfg, "deploy:artifactory", "url", render_mode, &err, &ctx->tpl_pool);
 
     if (globals.jfrog.repo) {
         guard_free(globals.jfrog.repo);
     }
-    globals.jfrog.repo = ini_getval_str(cfg, "deploy:artifactory", "repo", render_mode, &err);
+    globals.jfrog.repo = ini_getval_str(cfg, "deploy:artifactory", "repo", render_mode, &err, &ctx->tpl_pool);
 
     return 0;
 }
 
-static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, char * const section, char * const key, int render_mode) {
+static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, char * const section, char * const key, int render_mode, struct tpl_pool **tpl_pool) {
     struct INIFILE *ini = *inip;
     struct StrList *list = *listp;
     if (!list) {
@@ -186,7 +177,7 @@ static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, ch
         guard_free(replacement);
         guard_strlist_free(&list);
         int err = 0;
-        list = ini_getval_strlist(ini, section, key, LINE_SEP, render_mode, &err);
+        list = ini_getval_strlist(ini, section, key, LINE_SEP, render_mode, &err, tpl_pool);
     }
 
     for (size_t i = 0; i < strlist_count(list); i++) {
@@ -241,7 +232,6 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     struct INIFILE *ini = ctx->_stasis_ini_fp.delivery;
     struct INIData *rtdata;
 
-    validate_delivery_ini(ini);
     // Populate runtime variables first they may be interpreted by other
     // keys in the configuration
     RuntimeEnv *rt = runtime_copy(__environ);
@@ -252,39 +242,39 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
     ctx->runtime.environ = rt;
 
     int err = 0;
-    ctx->meta.mission = ini_getval_str(ini, "meta", "mission", render_mode, &err);
-    ctx->meta.codename = ini_getval_str(ini, "meta", "codename", render_mode, &err);
-    ctx->meta.version = ini_getval_str(ini, "meta", "version", render_mode, &err);
-    ctx->meta.name = ini_getval_str(ini, "meta", "name", render_mode, &err);
-    ctx->meta.rc = ini_getval_int(ini, "meta", "rc", render_mode, &err);
-    ctx->meta.final = ini_getval_bool(ini, "meta", "final", render_mode, &err);
-    ctx->meta.based_on = ini_getval_str(ini, "meta", "based_on", render_mode, &err);
+    ctx->meta.mission = ini_getval_str(ini, "meta", "mission", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.codename = ini_getval_str(ini, "meta", "codename", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.version = ini_getval_str(ini, "meta", "version", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.name = ini_getval_str(ini, "meta", "name", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.rc = ini_getval_int(ini, "meta", "rc", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.final = ini_getval_bool(ini, "meta", "final", render_mode, &err, &ctx->tpl_pool);
+    ctx->meta.based_on = ini_getval_str(ini, "meta", "based_on", render_mode, &err, &ctx->tpl_pool);
 
     if (!ctx->meta.python) {
-        ctx->meta.python = ini_getval_str(ini, "meta", "python", render_mode, &err);
+        ctx->meta.python = ini_getval_str(ini, "meta", "python", render_mode, &err, &ctx->tpl_pool);
         guard_free(ctx->meta.python_compact);
         ctx->meta.python_compact = to_short_version(ctx->meta.python);
     } else {
         ini_setval(&ini, INI_SETVAL_REPLACE, "meta", "python", ctx->meta.python);
     }
 
-    ctx->conda.installer_name = ini_getval_str(ini, "conda", "installer_name", render_mode, &err);
-    ctx->conda.installer_version = ini_getval_str(ini, "conda", "installer_version", render_mode, &err);
-    ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", render_mode, &err);
-    ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err);
-    ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err);
+    ctx->conda.installer_name = ini_getval_str(ini, "conda", "installer_name", render_mode, &err, &ctx->tpl_pool);
+    ctx->conda.installer_version = ini_getval_str(ini, "conda", "installer_version", render_mode, &err, &ctx->tpl_pool);
+    ctx->conda.installer_platform = ini_getval_str(ini, "conda", "installer_platform", render_mode, &err, &ctx->tpl_pool);
+    ctx->conda.installer_arch = ini_getval_str(ini, "conda", "installer_arch", render_mode, &err, &ctx->tpl_pool);
+    ctx->conda.installer_baseurl = ini_getval_str(ini, "conda", "installer_baseurl", render_mode, &err, &ctx->tpl_pool);
 
-    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err);
-    normalize_ini_list(&ini, &ctx->conda.conda_packages, "conda", "conda_packages", render_mode);
+    ctx->conda.conda_packages = ini_getval_strlist(ini, "conda", "conda_packages", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+    normalize_ini_list(&ini, &ctx->conda.conda_packages, "conda", "conda_packages", render_mode, &ctx->tpl_pool);
     if (check_package_spec_list(ctx->conda.conda_packages, "conda", "conda_packages")) {
         return -1;
     }
 
-    ctx->conda.conda_packages_purge = ini_getval_strlist(ini, "conda", "conda_packages_purge", LINE_SEP, render_mode, &err);
-    normalize_ini_list(&ini, &ctx->conda.conda_packages_purge, "conda", "conda_package_purge", render_mode);
+    ctx->conda.conda_packages_purge = ini_getval_strlist(ini, "conda", "conda_packages_purge", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+    normalize_ini_list(&ini, &ctx->conda.conda_packages_purge, "conda", "conda_package_purge", render_mode, &ctx->tpl_pool);
 
-    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err);
-    normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode);
+    ctx->conda.pip_packages = ini_getval_strlist(ini, "conda", "pip_packages", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+    normalize_ini_list(&ini, &ctx->conda.pip_packages, "conda", "pip_packages", render_mode, &ctx->tpl_pool);
     for (size_t i = 0; ctx->conda.pip_packages && i < strlist_count(ctx->conda.pip_packages); i++) {
         char *item = strlist_item(ctx->conda.pip_packages, i);
         normalize_namespace_package_name(item);
@@ -295,8 +285,8 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
         return -1;
     }
 
-    ctx->conda.pip_packages_purge = ini_getval_strlist(ini, "conda", "pip_packages_purge", LINE_SEP, render_mode, &err);
-    normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode);
+    ctx->conda.pip_packages_purge = ini_getval_strlist(ini, "conda", "pip_packages_purge", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+    normalize_ini_list(&ini, &ctx->conda.pip_packages_purge, "conda", "pip_packages_purge", render_mode, &ctx->tpl_pool);
     for (size_t i = 0; ctx->conda.pip_packages_purge && i < strlist_count(ctx->conda.pip_packages_purge); i++) {
         char *item = strlist_item(ctx->conda.pip_packages_purge, i);
         normalize_namespace_package_name(item);
@@ -356,22 +346,22 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             if (val.as_char_p && isempty(val.as_char_p)) {
                 return 1;
             }
-            conv_str(&test->name, val);
+            conv_str(&ctx->tpl_pool, &test->name, val);
 
-            test->version = ini_getval_str(ini, section_name, "version", render_mode, &err);
-            test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err);
-            test->script_setup = ini_getval_str(ini, section_name, "script_setup", INI_READ_RAW, &err);
-            test->script = ini_getval_str(ini, section_name, "script", INI_READ_RAW, &err);
-            test->disable = ini_getval_bool(ini, section_name, "disable", render_mode, &err);
-            test->parallel = ini_getval_bool(ini, section_name, "parallel", render_mode, &err);
+            test->version = ini_getval_str(ini, section_name, "version", render_mode, &err, &ctx->tpl_pool);
+            test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err, &ctx->tpl_pool);
+            test->script_setup = ini_getval_str(ini, section_name, "script_setup", INI_READ_RAW, &err, &ctx->tpl_pool);
+            test->script = ini_getval_str(ini, section_name, "script", INI_READ_RAW, &err, &ctx->tpl_pool);
+            test->disable = ini_getval_bool(ini, section_name, "disable", render_mode, &err, &ctx->tpl_pool);
+            test->parallel = ini_getval_bool(ini, section_name, "parallel", render_mode, &err, &ctx->tpl_pool);
             if (err) {
                 test->parallel = true;
             }
-            test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err);
-            test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err);
+            test->repository_remove_tags = ini_getval_strlist(ini, section_name, "repository_remove_tags", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+            test->build_recipe = ini_getval_str(ini, section_name, "build_recipe", render_mode, &err, &ctx->tpl_pool);
 
-            test->runtime->environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err);
-            const char *timeout_str = ini_getval_str(ini, section_name, "timeout", render_mode, &err);
+            test->runtime->environ = ini_getval_strlist(ini, section_name, "runtime", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+            const char *timeout_str = ini_getval_str(ini, section_name, "timeout", render_mode, &err, &ctx->tpl_pool);
             if (timeout_str) {
                 test->timeout = str_to_timeout((char *) timeout_str);
                 if (test->timeout == STR_TO_TIMEOUT_INVALID_TIME_SCALE) {
@@ -394,20 +384,20 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             struct JFrog *jfrog = &deploy->jfrog[z];
             // Artifactory base configuration
 
-            jfrog->upload_ctx.workaround_parent_only = ini_getval_bool(ini, section_name, "workaround_parent_only", render_mode, &err);
-            jfrog->upload_ctx.exclusions = ini_getval_str(ini, section_name, "exclusions", render_mode, &err);
-            jfrog->upload_ctx.explode = ini_getval_bool(ini, section_name, "explode", render_mode, &err);
-            jfrog->upload_ctx.recursive = ini_getval_bool(ini, section_name, "recursive", render_mode, &err);
-            jfrog->upload_ctx.retries = ini_getval_int(ini, section_name, "retries", render_mode, &err);
-            jfrog->upload_ctx.retry_wait_time = ini_getval_int(ini, section_name, "retry_wait_time", render_mode, &err);
-            jfrog->upload_ctx.detailed_summary = ini_getval_bool(ini, section_name, "detailed_summary", render_mode, &err);
-            jfrog->upload_ctx.quiet = ini_getval_bool(ini, section_name, "quiet", render_mode, &err);
-            jfrog->upload_ctx.regexp = ini_getval_bool(ini, section_name, "regexp", render_mode, &err);
-            jfrog->upload_ctx.spec = ini_getval_str(ini, section_name, "spec", render_mode, &err);
-            jfrog->upload_ctx.flat = ini_getval_bool(ini, section_name, "flat", render_mode, &err);
-            jfrog->repo = ini_getval_str(ini, section_name, "repo", render_mode, &err);
-            jfrog->dest = ini_getval_str(ini, section_name, "dest", render_mode, &err);
-            jfrog->files = ini_getval_strlist(ini, section_name, "files", LINE_SEP, render_mode, &err);
+            jfrog->upload_ctx.workaround_parent_only = ini_getval_bool(ini, section_name, "workaround_parent_only", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.exclusions = ini_getval_str(ini, section_name, "exclusions", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.explode = ini_getval_bool(ini, section_name, "explode", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.recursive = ini_getval_bool(ini, section_name, "recursive", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.retries = ini_getval_int(ini, section_name, "retries", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.retry_wait_time = ini_getval_int(ini, section_name, "retry_wait_time", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.detailed_summary = ini_getval_bool(ini, section_name, "detailed_summary", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.quiet = ini_getval_bool(ini, section_name, "quiet", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.regexp = ini_getval_bool(ini, section_name, "regexp", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.spec = ini_getval_str(ini, section_name, "spec", render_mode, &err, &ctx->tpl_pool);
+            jfrog->upload_ctx.flat = ini_getval_bool(ini, section_name, "flat", render_mode, &err, &ctx->tpl_pool);
+            jfrog->repo = ini_getval_str(ini, section_name, "repo", render_mode, &err, &ctx->tpl_pool);
+            jfrog->dest = ini_getval_str(ini, section_name, "dest", render_mode, &err, &ctx->tpl_pool);
+            jfrog->files = ini_getval_strlist(ini, section_name, "files", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
             z++;
         }
     }
@@ -418,11 +408,11 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
         if (startswith(ini->section[i]->key, "deploy:docker")) {
             struct Docker *docker = &deploy->docker;
 
-            docker->registry = ini_getval_str(ini, section_name, "registry", render_mode, &err);
-            docker->image_compression = ini_getval_str(ini, section_name, "image_compression", render_mode, &err);
-            docker->test_script = ini_getval_str(ini, section_name, "test_script", render_mode, &err);
-            docker->build_args = ini_getval_strlist(ini, section_name, "build_args", LINE_SEP, render_mode, &err);
-            docker->tags = ini_getval_strlist(ini, section_name, "tags", LINE_SEP, render_mode, &err);
+            docker->registry = ini_getval_str(ini, section_name, "registry", render_mode, &err, &ctx->tpl_pool);
+            docker->image_compression = ini_getval_str(ini, section_name, "image_compression", render_mode, &err, &ctx->tpl_pool);
+            docker->test_script = ini_getval_str(ini, section_name, "test_script", render_mode, &err, &ctx->tpl_pool);
+            docker->build_args = ini_getval_strlist(ini, section_name, "build_args", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
+            docker->tags = ini_getval_strlist(ini, section_name, "tags", LINE_SEP, render_mode, &err, &ctx->tpl_pool);
         }
     }
     return 0;
@@ -455,67 +445,12 @@ int populate_mission_ini(struct Delivery **ctx, int render_mode) {
     }
     (*ctx)->_stasis_ini_fp.mission_path = strdup(missionfile);
 
-    (*ctx)->rules.release_fmt = ini_getval_str(ini, "meta", "release_fmt", render_mode, &err);
+    (*ctx)->rules.release_fmt = ini_getval_str(ini, "meta", "release_fmt", render_mode, &err, &(*ctx)->tpl_pool);
 
     // Used for setting artifactory build info
-    (*ctx)->rules.build_name_fmt = ini_getval_str(ini, "meta", "build_name_fmt", render_mode, &err);
+    (*ctx)->rules.build_name_fmt = ini_getval_str(ini, "meta", "build_name_fmt", render_mode, &err, &(*ctx)->tpl_pool);
 
     // Used for setting artifactory build info
-    (*ctx)->rules.build_number_fmt = ini_getval_str(ini, "meta", "build_number_fmt", render_mode, &err);
+    (*ctx)->rules.build_number_fmt = ini_getval_str(ini, "meta", "build_number_fmt", render_mode, &err, &(*ctx)->tpl_pool);
     return 0;
 }
-
-void validate_delivery_ini(struct INIFILE *ini) {
-    if (!ini) {
-        SYSERROR("INIFILE is NULL!");
-        exit(1);
-    }
-    if (ini_section_search(&ini, INI_SEARCH_EXACT, "meta")) {
-        ini_has_key_required(ini, "meta", "name");
-        ini_has_key_required(ini, "meta", "version");
-        ini_has_key_required(ini, "meta", "rc");
-        ini_has_key_required(ini, "meta", "mission");
-        ini_has_key_required(ini, "meta", "python");
-    } else {
-        SYSERROR("[meta] configuration section is required");
-        exit(1);
-    }
-
-    if (ini_section_search(&ini, INI_SEARCH_EXACT, "conda")) {
-        ini_has_key_required(ini, "conda", "installer_name");
-        ini_has_key_required(ini, "conda", "installer_version");
-        ini_has_key_required(ini, "conda", "installer_platform");
-        ini_has_key_required(ini, "conda", "installer_arch");
-    } else {
-        SYSERROR("[conda] configuration section is required");
-        exit(1);
-    }
-
-    for (size_t i = 0; i < ini->section_count; i++) {
-        struct INISection *section = ini->section[i];
-        if (section && startswith(section->key, "test:")) {
-            char *name = strstr(section->key, ":");
-            if (name && strlen(name) > 1) {
-                name = &name[1];
-            }
-            //ini_has_key_required(ini, section->key, "version");
-            //ini_has_key_required(ini, section->key, "repository");
-            if (globals.enable_testing) {
-                ini_has_key_required(ini, section->key, "script");
-            }
-        }
-    }
-
-    if (ini_section_search(&ini, INI_SEARCH_EXACT, "deploy:docker")) {
-        // yeah?
-    }
-
-    for (size_t i = 0; i < ini->section_count; i++) {
-        struct INISection *section = ini->section[i];
-        if (section && startswith(section->key, "deploy:artifactory")) {
-            ini_has_key_required(ini, section->key, "files");
-            ini_has_key_required(ini, section->key, "dest");
-        }
-    }
-}
-

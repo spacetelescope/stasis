@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include "utils.h"
 #include "artifactory.h"
 #include "docker.h"
 #include "environment.h"
@@ -209,6 +210,8 @@ struct Delivery {
         char *build_number_fmt;     ///< Build number format string
         struct Content content[1000];
     } rules;
+
+    struct tpl_pool *tpl_pool;
 };
 
 /**
@@ -431,7 +434,6 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode);
 
 int populate_mission_ini(struct Delivery **ctx, int render_mode);
 
-void validate_delivery_ini(struct INIFILE *ini);
 
 int filter_repo_tags(char *repo, struct StrList *patterns);
 
@@ -509,6 +511,12 @@ void delivery_rewrite_stage2(struct Delivery *ctx, char *specfile);
  * @return a copy
  */
 struct Delivery *delivery_duplicate(struct Delivery *ctx);
+
+/**
+ *
+ * @param ctx
+ */
+void delivery_init_tpl_pool(struct Delivery *ctx);
 
 /**
  * Initialize a `Tests` structure

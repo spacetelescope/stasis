@@ -2,15 +2,16 @@
 #ifndef STASIS_MULTIPROCESSING_H
 #define STASIS_MULTIPROCESSING_H
 
-#include "core.h"
-#include "sem.h"
-#include "timespec.h"
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <math.h>
+#include "core.h"
+#include "sem.h"
+#include "timespec.h"
+#include "utils.h"
 
 struct MultiProcessingTimer {
     struct timespec t_start;
@@ -21,6 +22,7 @@ struct MultiProcessingTimer {
 struct MultiProcessingTask {
     pid_t pid; ///< Program PID
     pid_t parent_pid; ///< Program PID (parent process)
+    int done; ///< Task is complete
     int status; ///< Child process exit status
     int signaled_by; ///< Last signal received, if any
     int timeout; ///< Seconds to elapse before killing the process
@@ -42,7 +44,7 @@ struct MultiProcessingPool {
     char ident[255]; ///< Identity of task pool
     char log_root[PATH_MAX]; ///< Base directory to store stderr/stdout log files
     int status_interval; ///< Report a pooled task is "running" every n seconds
-    struct Semaphore semaphore;
+    struct Semaphore *semaphore;
 };
 
 /// A multiprocessing task's initial state (i.e. "FAIL")

@@ -149,6 +149,7 @@ int main(int argc, char *argv[]) {
     guard_free(cfgfile);
 
     setenv("LANG", "C", 1);
+    delivery_init_tpl_pool(&ctx);
     if (bootstrap_build_info(&ctx)) {
         SYSERROR("bootstrap_build_info failed");
         exit(1);

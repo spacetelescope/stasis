@@ -187,6 +187,37 @@ int strlist_contains(struct StrList *pStrList, const char *value, size_t *index_
 }
 
 /**
+ * Search list using extended regular expressions
+ * @param pStrList
+ * @param pattern
+ * @return
+ */
+int strlist_contains_regex(struct StrList *pStrList, const char *pattern) {
+    int result = false;
+    regex_t re;
+    const int rc = regcomp(&re, pattern, REG_EXTENDED);
+    if (rc != 0) {
+        char errbuf[1024] = {0};
+        regerror(rc, &re, errbuf, sizeof(errbuf));
+        SYSERROR("regex compilation failed: %s", errbuf);
+        goto fail;
+    }
+
+    for (size_t i = 0; i < strlist_count(pStrList); i++) {
+        const char *item = strlist_item(pStrList, i);
+        const int match = regexec(&re, item, 0, NULL, 0);
+        if (match == 0) {
+            result = true;
+            break;
+        }
+    }
+
+    fail:
+    regfree(&re);
+    return result;
+}
+
+/**
  * Append the contents of `pStrList2` to `pStrList1`
  * @param pStrList1 `StrList`
  * @param pStrList2 `StrList`

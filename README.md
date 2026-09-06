@@ -152,6 +152,7 @@ stasis mydelivery.ini
 |:------------------------------------|:------------:|:---------------------------------------------------------------|
 | --help                              |      -h      | Display usage statement                                        |
 | --version                           |      -V      | Display program version                                        |
+| --validate                          |     n/a      | Verify delivery configuration                                  |
 | --continue-on-error                 |      -C      | Allow tests to fail                                            |
 | --config ARG                        |    -c ARG    | Read STASIS configuration file                                 |
 | --cpu-limit ARG                     |    -l ARG    | Number of processes to spawn concurrently (default: cpus - 1)  |

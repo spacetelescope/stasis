@@ -237,6 +237,7 @@ int main(int argc, char *argv[]) {
     ctx.storage.root = strdup(TEST_WORKSPACE_DIR);
 
     setenv("LANG", "C", 1);
+    delivery_init_tpl_pool(&ctx);
     bootstrap_build_info(&ctx);
     delivery_init(&ctx, INI_READ_RENDER);
 

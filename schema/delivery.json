@@ -1,0 +1,256 @@
+{
+  "section": [
+    {
+      "name": "default",
+      "required": true,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^default$"
+    },
+    {
+      "name": "meta",
+      "required": true,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^meta$",
+      "key": [
+        {
+          "name": "mission",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9]+$"
+        },
+        {
+          "name": "name",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9]+$"
+        },
+        {
+          "name": "version",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9\\.]+$"
+        },
+        {
+          "name": "rc",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_INT",
+          "regex": "[0-9]+$"
+        },
+        {
+          "name": "python",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+        },
+        {
+          "name": "final",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_BOOL",
+          "regex": "(([Yy]es|[Nn]o)|([Tt]rue|[Ff]alse)|([0-1]))$"
+        },
+        {
+          "name": "based_on",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "^([A-Za-z][A-Za-z0-9+.-]*://.+|/.*)$"
+        }
+      ]
+    },
+    {
+      "name": "conda",
+      "required": true,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^conda$",
+      "key": [
+        {
+          "name": "installer_name",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9]+$"
+        },
+        {
+          "name": "installer_version",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[0-9.-]+$"
+        },
+        {
+          "name": "installer_platform",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9]+$"
+        },
+        {
+          "name": "installer_arch",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9_]+$"
+        },
+        {
+          "name": "installer_baseurl",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "^(.+:\\/)?\\/([a-zA-Z0-9_\\:\\-\\+\\%]+)"
+        },
+        {
+          "name": "conda_packages",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "([a-zA-Z0-9_-]+)((=.+)?)$"
+        },
+        {
+          "name": "conda_packages_purge",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "[a-zA-Z0-9_]+$"
+        },
+        {
+          "name": "pip_packages",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "([a-zA-Z0-9_-]+)((==.+)?)$"
+        },
+        {
+          "name": "pip_packages_purge",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "[a-zA-Z0-9_-]+$"
+        }
+      ]
+    },
+    {
+      "name": "runtime",
+      "required": false,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^runtime$",
+      "key": [
+        {
+          "name": null,
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "^[A-Za-z_][A-Za-z0-9_]*=(.+)$"
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "required": false,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^test:([a-zA-Z0-9\\-\\_\\.]+)$",
+      "key": [
+        {
+          "name": "disable",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_BOOL",
+          "regex": "(([Yy]es|[Nn]o)|([Tt]rue|[Ff]alse)|([0-1]))$"
+        },
+        {
+          "name": "parallel",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_BOOL",
+          "regex": "(([Yy]es|[Nn]o)|([Tt]rue|[Ff]alse)|([0-1]))$"
+        },
+        {
+          "name": "timeout",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[0-9]+[hms]$"
+        },
+        {
+          "name": "build_recipe",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "^(.+:\\/)?\\/([a-zA-Z0-9_\\:\\-\\+\\%]+)"
+        },
+        {
+          "name": "repository",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "^(.+:\\/)?\\/([a-zA-Z0-9_\\:\\-\\+\\%]+)"
+        },
+        {
+          "name": "version",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "[a-zA-Z0-9\\.]+$"
+        },
+        {
+          "name": "runtime",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "^[A-Za-z_][A-Za-z0-9_]*=(.+)$"
+        },
+        {
+          "name": "script_setup",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "script",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        }
+      ]
+    },
+    {
+      "name": "deploy:artifactory",
+      "required": false,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^deploy:artifactory:([a-zA-Z0-9_\\-\\ ]+)$",
+      "key": [
+        {
+          "name": "files",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "dest",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "(.+)$"
+        }
+      ]
+    },
+    {
+      "name": "deploy:docker",
+      "required": false,
+      "expect_type": "INIVAL_TYPE_STR",
+      "regex": "^deploy:docker$",
+      "key": [
+        {
+          "name": "registry",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "image_compression",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "build_args",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "tags",
+          "required": true,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        },
+        {
+          "name": "test_script",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "(.+)$"
+        }
+      ]
+    }
+  ]
+}

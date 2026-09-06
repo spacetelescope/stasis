@@ -67,8 +67,9 @@ void test_mp_task() {
             char task_name[100] = {0};
             snprintf(task_name, sizeof(task_name), "mytask%zu", i);
             STASIS_ASSERT_FATAL((task = mp_pool_task(pool, task_name, NULL, commands[i])) != NULL, "Task should not be NULL");
-            STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "PID should be non-zero at this point");
-            STASIS_ASSERT(task->parent_pid == MP_POOL_PID_UNUSED, "Parent PID should be non-zero");
+            STASIS_ASSERT(task->pid == 0, "PID should't be non-zero at this point");
+            STASIS_ASSERT(task->parent_pid == 0, "Parent PID shouldn't be non-zero at this point");
+            STASIS_ASSERT(task->done == 0, "Cannot be done yet");
             STASIS_ASSERT(task->status == -1, "Status should be -1 (not started yet)");
             STASIS_ASSERT(strcmp(task->ident, task_name) == 0, "Wrong task identity");
             STASIS_ASSERT(strstr(task->log_file, pool->log_root) != NULL, "Log file path must be in log_root");
@@ -80,7 +81,7 @@ void test_mp_pool_join() {
     STASIS_ASSERT(mp_pool_join(pool, get_cpu_count(), 0) == 0, "Pool tasks should have not have failed");
     for (size_t i = 0; i < pool->num_used; i++) {
         struct MultiProcessingTask *task = &pool->task[i];
-        STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "Task should be marked as unused");
+        STASIS_ASSERT(task->done, "Task should be marked as unused");
         STASIS_ASSERT(task->status == 0, "Task status should be zero (success)");
     }
 }
@@ -113,7 +114,7 @@ void test_mp_pool_workflow() {
         STASIS_ASSERT(mp_pool_join(p, get_cpu_count(), test->input_join_flags) == test->expected_result, "Unexpected result");
         STASIS_ASSERT(task->status == test->expected_status, "Unexpected status");
         STASIS_ASSERT(task->signaled_by == test->expected_signal, "Unexpected signal");
-        STASIS_ASSERT(task->pid == MP_POOL_PID_UNUSED, "Unexpected PID. Should be marked UNUSED.");
+        STASIS_ASSERT(task->done, "Unexpected state. Should be marked done.");
         mp_pool_show_summary(p);
         mp_pool_free(&p);
     }
@@ -159,14 +160,14 @@ void test_mp_fail_fast() {
         if (task->signaled_by) result.total_signaled++;
         if (task->status > 0) result.total_status_fail++;
         if (task->status == 0) result.total_status_success++;
-        if (task->pid == MP_POOL_PID_UNUSED && task->status == MP_POOL_TASK_STATUS_INITIAL) result.total_unused++;
+        if (task->done == 1 && task->done) result.total_unused++;
     }
     STASIS_TEST_MSG("\ntotal_status_fail = %d\ntotal_status_success = %d\ntotal_signaled = %d\ntotal_unused = %d",
             result.total_status_fail, result.total_status_success, result.total_signaled, result.total_unused);
     STASIS_ASSERT(result.total_status_fail, "Should have failures");
     STASIS_ASSERT(result.total_status_success, "Should have successes");
     STASIS_ASSERT(result.total_signaled, "Should have signaled PIDs");
-    STASIS_ASSERT(result.total_unused, "Should have PIDs marked UNUSED.");
+    STASIS_ASSERT(result.total_unused, "Should have tasks marked done.");
     mp_pool_show_summary(p);
     mp_pool_free(&p);
 }
@@ -179,7 +180,7 @@ static void test_mp_timeout() {
     int timeout = 3;
     task->timeout = timeout;
     mp_pool_join(p, 1, 0);
-    STASIS_ASSERT((task->time_data.duration >= (double) timeout && task->time_data.duration < (double) timeout + 1), "Timeout occurred out of desired range");
+    STASIS_ASSERT(fabs(task->time_data.duration) >= timeout && task->time_data.duration < (double) timeout + 1, "Timeout occurred out of desired range");
     mp_pool_show_summary(p);
     mp_pool_free(&p);
 }
@@ -230,7 +231,7 @@ void test_mp_stop_continue() {
     pthread_t th;
     pthread_create(&th, NULL, pool_container, &p);
     sleep(2);
-    if (p->task[0].pid != MP_POOL_PID_UNUSED) {
+    if (p->task[0].done != true) {
         STASIS_ASSERT(kill(p->task[0].pid, SIGSTOP) == 0, "SIGSTOP failed");
         sleep(2);
         STASIS_ASSERT(kill(p->task[0].pid, SIGCONT) == 0, "SIGCONT failed");

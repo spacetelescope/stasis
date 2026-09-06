@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <ctype.h>
+#include <errno.h>
 #include "core.h"
 #include "log.h"
 #include "relocation.h"

@@ -3,6 +3,7 @@
 #define STASIS_DOCKER_H
 
 #include "core.h"
+#include "utils.h"
 
 //! Flag to squelch output from docker_exec()
 #define STASIS_DOCKER_QUIET 1 << 1

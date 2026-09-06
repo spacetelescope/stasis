@@ -1,5 +1,6 @@
 #include "system.h"
 #include "core.h"
+#include "utils.h"
 
 int shell(struct Process *proc, char *args) {
     struct Process selfproc;

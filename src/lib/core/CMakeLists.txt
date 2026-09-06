@@ -5,6 +5,7 @@ add_library(stasis_core STATIC
         str.c
         strlist.c
         ini.c
+        ini_validate.c
         conda.c
         environment.c
         utils.c
@@ -27,10 +28,11 @@ add_library(stasis_core STATIC
         version_compare.c
 )
 target_include_directories(stasis_core PRIVATE
+        ${extern_parson_INCLUDE}
         ${core_INCLUDE}
         ${delivery_INCLUDE}
         ${ZIP_INCLUDEDIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(stasis_core PRIVATE
-        ${ZIP_LIBRARIES})
+        ${ZIP_LIBRARIES} parson)

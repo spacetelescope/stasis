@@ -1,6 +1,7 @@
 #ifndef STASIS_TESTING_H
 #define STASIS_TESTING_H
 #include "core.h"
+#include "utils.h"
 #define STASIS_TEST_RUN_MAX 10000
 #define STASIS_TEST_SUITE_FATAL 1
 #define STASIS_TEST_SUITE_SKIP 127

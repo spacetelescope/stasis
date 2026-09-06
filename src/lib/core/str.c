@@ -4,8 +4,6 @@
 #include <unistd.h>
 #include "str.h"
 
-
-
 char *strdup_maybe_entry(const char * restrict s, const struct ExecPoint ep, const int exit_code) {
     // USE MACRO FROM str.h: strdup_maybe()
     if (s != NULL) {

@@ -13,7 +13,7 @@
 #include "copy.h"
 #include "system.h"
 #include "strlist.h"
-#include "utils.h"
+#include "template.h"
 #include "ini.h"
 
 #if defined(STASIS_OS_WINDOWS)
@@ -306,7 +306,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  * @param maxlen
  * @return 0 on success, -1 on error
  */
-int fix_tox_conf(const char *filename, char **result, size_t maxlen);
+int fix_tox_conf(const char *filename, char **result, size_t maxlen, struct tpl_pool **tpl);
 
 char *collapse_whitespace(char **s);
 
@@ -355,7 +355,7 @@ char *collapse_whitespace(char **s);
 int redact_sensitive(const char **to_redact, size_t to_redact_size, char *src, char *dest, size_t maxlen);
 
 /**
- * Given a directory path, return a list of files
+ * Given a directory path, return a data of files
  *
  * ~~~{.c}
  * struct StrList *files;

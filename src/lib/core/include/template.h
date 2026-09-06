@@ -2,7 +2,34 @@
 #ifndef STASIS_TEMPLATE_H
 #define STASIS_TEMPLATE_H
 
-#include "core.h"
+#include <string.h>
+#include "core_message.h"
+#include "log.h"
+#include "str.h"
+
+struct tpl_item {
+    char *key;
+    char **ptr;
+};
+
+struct tpl_pool {
+    struct tpl_item **data;
+    size_t used;
+    size_t allocated;
+};
+
+/**
+ *
+ * @return
+ */
+struct tpl_pool *tpl_init();
+
+/**
+ *
+ * @param tpl_pool
+ * @return
+ */
+struct tpl_pool *tpl_copy(struct tpl_pool *tpl_pool);
 
 /**
  * Map a text value to a pointer in memory
@@ -10,19 +37,25 @@
  * @param key in-text variable name
  * @param ptr pointer to string
  */
-void tpl_register(char *key, char **ptr);
+void tpl_register(struct tpl_pool **list, char *key, char **ptr);
+
+/**
+ * Free the global template function pool
+ */
+void tpl_free_func_pool();
 
 /**
  * Free the template engine
  */
-void tpl_free();
+void tpl_free(struct tpl_pool **list);
 
 /**
  * Retrieve the value of a key mapped by the template engine
+ * @param list
  * @param key string registered by `tpl_register`
  * @return a pointer to value, or NULL if the key is not present
  */
-char *tpl_getval(char *key);
+char *tpl_getval(struct tpl_pool **list, char *key);
 
 /**
  * Replaces occurrences of all registered key value pairs in `str`
@@ -30,7 +63,7 @@ char *tpl_getval(char *key);
  * @return a rendered copy of `str`, or NULL.
  * The caller is responsible for free()ing memory allocated by this function
  */
-char *tpl_render(char *str);
+char *tpl_render(struct tpl_pool **list, char *str);
 
 /**
  * Write tpl_render() output to a file
@@ -38,7 +71,7 @@ char *tpl_render(char *str);
  * @param filename the output file name
  * @return 0 on success, <0 on error
  */
-int tpl_render_to_file(char *str, const char *filename);
+int tpl_render_to_file(struct tpl_pool **list, char *str, const char *filename);
 
 struct tplfunc_frame;
 

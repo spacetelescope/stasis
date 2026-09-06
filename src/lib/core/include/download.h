@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+#include "utils.h"
 
 size_t download_writer(void *fp, size_t size, size_t nmemb, void *stream);
 long download(char *url, const char *filename, char **errmsg);

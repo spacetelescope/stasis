@@ -8,22 +8,43 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
+#include "utils.h"
 
-
-struct tpl_item {
-    char *key;
-    char **ptr;
-};
-struct tpl_item *tpl_pool[1024] = {0};
-unsigned tpl_pool_used = 0;
 struct tplfunc_frame *tpl_pool_func[1024] = {0};
 unsigned tpl_pool_func_used = 0;
 
-extern void tpl_reset() {
+extern void tpl_reset(struct tpl_pool **list) {
     SYSDEBUG("Resetting template engine");
-    tpl_free();
-    tpl_pool_used = 0;
-    tpl_pool_func_used = 0;
+    tpl_free(list);
+}
+
+struct tpl_pool *tpl_init() {
+    struct tpl_pool *list = calloc(1, sizeof(*list));
+    if (!list) {
+        SYSERROR("Unable to allocate memory for tpl pool");
+        return NULL;
+    }
+    list->data = calloc(1, sizeof(**list->data));
+    if (!list->data) {
+        SYSERROR("unable to allocate memory for tpl data");
+        return NULL;
+    }
+    return list;
+}
+
+struct tpl_pool *tpl_copy(struct tpl_pool *src) {
+    struct tpl_pool *list = tpl_init();
+    if (!list) {
+        SYSERROR("Unable to allocate memory for tpl pool");
+        return NULL;
+    }
+    for (size_t i = 0; i < src->used; i++) {
+        const struct tpl_item *item = src->data[i];
+        tpl_register(&list, item->key, item->ptr);
+    }
+
+    return list;
 }
 
 void tpl_register_func(char *key, tplfunc *tplfunc_ptr, int argc, void *data_in) {
@@ -47,38 +68,32 @@ void tpl_register_func(char *key, tplfunc *tplfunc_ptr, int argc, void *data_in)
     tpl_pool_func_used++;
 }
 
-int tpl_key_exists(char *key) {
-    SYSDEBUG("Key '%s' exists?", key);
-    for (size_t i = 0; i < tpl_pool_used; i++) {
-        if (tpl_pool[i]->key) {
-            if (!strcmp(tpl_pool[i]->key, key)) {
-                SYSDEBUG("YES");
+int tpl_key_exists(struct tpl_pool **list, char *key) {
+    for (size_t i = 0; i < (*list)->used; i++) {
+        if ((*list)->data[i]->key) {
+            if (!strcmp((*list)->data[i]->key, key)) {
                 return true;
             }
         }
     }
-    SYSDEBUG("NO");
     return false;
 }
 
-void tpl_register(char *key, char **ptr) {
+void tpl_register(struct tpl_pool **list, char *key, char **ptr) {
     struct tpl_item *item = NULL;
     int replacing = 0;
 
-    SYSDEBUG("Registering string:\n\tkey=%s\n\tptr=%s", key, *ptr ? *ptr : "NOT SET");
-    if (tpl_key_exists(key)) {
-        for (size_t i = 0; i < tpl_pool_used; i++) {
-            if (tpl_pool[i]->key) {
-                if (!strcmp(tpl_pool[i]->key, key)) {
-                    item = tpl_pool[i];
+    if (tpl_key_exists(list, key)) {
+        for (size_t i = 0; i < (*list)->used; i++) {
+            if ((*list)->data[i] && (*list)->data[i]->key) {
+                if (!strcmp((*list)->data[i]->key, key)) {
+                    item = (*list)->data[i];
                     break;
                 }
             }
         }
         replacing = 1;
-        SYSDEBUG("Item will be replaced");
     } else {
-        SYSDEBUG("Creating new item");
         item = calloc(1, sizeof(*item));
         if (!item) {
             SYSERROR("unable to allocate memory for new item");
@@ -98,41 +113,49 @@ void tpl_register(char *key, char **ptr) {
 
     item->ptr = ptr;
     if (!replacing) {
-        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", tpl_pool_used, item->key, *item->ptr ? *item->ptr : "NULL");
-        tpl_pool[tpl_pool_used] = item;
-        tpl_pool_used++;
+        SYSDEBUG("Registered tpl_item at index %u:\n\tkey=%s\n\tptr=%s", (*list)->used, item->key, *item->ptr ? *item->ptr : "NULL");
+        (*list)->allocated++;
+        const size_t newsize = sizeof((*list)->data) * (*list)->allocated;
+        struct tpl_item **tmp = realloc((*list)->data, newsize);
+        if (!tmp) {
+            SYSERROR("unable to extend tpl_pool record count to %zu", (*list)->allocated);
+            exit(1);
+        }
+        (*list)->data = tmp;
+        (*list)->data[(*list)->used] = item;
+        (*list)->used++;
     }
 }
 
-void tpl_free() {
-    for (unsigned i = 0; i < tpl_pool_used; i++) {
-        struct tpl_item *item = tpl_pool[i];
-        if (item) {
-            if (item->key) {
-                SYSDEBUG("freeing template item key: %s", item->key);
-                guard_free(item->key);
-            }
-            SYSDEBUG("freeing template item: %p", item);
-            item->ptr = NULL;
-        }
-        guard_free(item);
-    }
+void tpl_free_func_pool() {
     for (unsigned i = 0; i < tpl_pool_func_used; i++) {
         struct tplfunc_frame *item = tpl_pool_func[i];
-        SYSDEBUG("freeing template function key: %s", item->key);
         guard_free(item->key);
-        SYSDEBUG("freeing template item: %p", item);
         guard_free(item);
     }
 }
 
-char *tpl_getval(char *key) {
+void tpl_free(struct tpl_pool **list) {
+    struct tpl_pool *x = *list;
+    if (!x) {
+        return;
+    }
+    if (!x->data) {
+        return;
+    }
+    for (size_t i = 0; i < (*list)->used; i++) {
+        guard_free((*list)->data[i]->key);
+    }
+    guard_array_n_free(x->data, (*list)->used);
+    guard_free(x);
+}
+
+char *tpl_getval(struct tpl_pool **list, char *key) {
     char *result = NULL;
-    SYSDEBUG("Getting value of template string: %s", key);
-    for (size_t i = 0; i < tpl_pool_used; i++) {
-        if (tpl_pool[i]->key) {
-            if (!strcmp(tpl_pool[i]->key, key)) {
-                result = *tpl_pool[i]->ptr;
+    for (size_t i = 0; i < (*list)->used; i++) {
+        if ((*list)->data[i]->key) {
+            if (!strcmp((*list)->data[i]->key, key)) {
+                result = *(*list)->data[i]->ptr;
                 break;
             }
         }
@@ -141,7 +164,6 @@ char *tpl_getval(char *key) {
 }
 
 struct tplfunc_frame *tpl_getfunc(char *key) {
-    SYSDEBUG("Getting function frame: %s", key);
     struct tplfunc_frame *result = NULL;
     for (size_t i = 0; i < tpl_pool_func_used; i++) {
         if (tpl_pool_func[i]->key) {
@@ -154,7 +176,7 @@ struct tplfunc_frame *tpl_getfunc(char *key) {
     return result;
 }
 
-char *tpl_render(char *str) {
+char *tpl_render(struct tpl_pool **list, char *str) {
     if (!str) {
         return NULL;
     } else if (!strlen(str)) {
@@ -186,7 +208,6 @@ char *tpl_render(char *str) {
             }
 
             // Read key name
-            SYSDEBUG("Reading key");
             size_t key_len = 0;
             while (isalnum(pos[off]) || pos[off] != '}') {
                 if (isspace(pos[off]) || isblank(pos[off])) {
@@ -198,7 +219,6 @@ char *tpl_render(char *str) {
                 key_len++;
                 off++;
             }
-            SYSDEBUG("Key is %s", key);
 
             char *type_stop = NULL;
             type_stop = strchr(key, ':');
@@ -207,10 +227,8 @@ char *tpl_render(char *str) {
             int do_func = 0;
             if (type_stop) {
                 if (!strncmp(key, "env", type_stop - key)) {
-                    SYSDEBUG("Will render as value of environment variable");
                     do_env = 1;
                 } else if (!strncmp(key, "func", type_stop - key)) {
-                    SYSDEBUG("Will render as output from function");
                     do_func = 1;
                 }
             }
@@ -278,14 +296,12 @@ char *tpl_render(char *str) {
                         SYSERROR("%s returned non-zero status: %d", frame->key, func_status);
                     }
                     value = strdup(func_result ? func_result : "");
-                    SYSDEBUG("Returned from function: %s (status: %d)\nData OUT\n--------\n'%s'", k, func_status, value);
                     guard_free(func_result);
                 }
                 guard_array_free(params);
             } else {
                 // Read replacement value
-                value = strdup(tpl_getval(key) ? tpl_getval(key) : "");
-                SYSDEBUG("Rendered:\nData\n----\n'%s'", value);
+                value = strdup(tpl_getval(list, key) ? tpl_getval(list, key) : "");
             }
         }
 
@@ -308,9 +324,9 @@ char *tpl_render(char *str) {
     return output;
 }
 
-int tpl_render_to_file(char *str, const char *filename) {
+int tpl_render_to_file(struct tpl_pool **list, char *str, const char *filename) {
     // Render the input string
-    char *result = tpl_render(str);
+    char *result = tpl_render(list, str);
     if (!result) {
         return -1;
     }

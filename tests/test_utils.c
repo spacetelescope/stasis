@@ -58,6 +58,7 @@ void test_fix_tox_conf() {
                        "key_after = 2\n";
     const char *expected = "{posargs}\n";
     char *result = NULL;
+    struct tpl_pool *tpl = tpl_init();
     FILE *fp;
 
     remove(filename);
@@ -65,7 +66,7 @@ void test_fix_tox_conf() {
     if (fp) {
         fprintf(fp, "%s", data);
         fclose(fp);
-        STASIS_ASSERT(fix_tox_conf(filename, &result, PATH_MAX) == 0, "fix_tox_conf failed");
+        STASIS_ASSERT(fix_tox_conf(filename, &result, PATH_MAX, &tpl) == 0, "fix_tox_conf failed");
     } else {
         STASIS_ASSERT(false, "writing mock tox.ini failed");
     }
@@ -78,6 +79,7 @@ void test_fix_tox_conf() {
 
     remove(result);
     guard_free(result);
+    tpl_free(&tpl);
 }
 
 void test_xml_pretty_print_in_place() {

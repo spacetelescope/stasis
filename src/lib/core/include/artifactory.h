@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "core.h"
+#include "utils.h"
 #include "download.h"
 
 //! JFrog Artifactory Authentication struct

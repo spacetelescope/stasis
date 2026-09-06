@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/utsname.h>
 #include "core.h"
+#include "utils.h"
 #include "download.h"
 
 #define CONDA_INSTALL_PREFIX "conda"

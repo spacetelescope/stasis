@@ -4,6 +4,7 @@
 struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
     {"version", no_argument, 0, 'V'},
+    {"validate", no_argument, 0, OPT_VALIDATE},
     {"continue-on-error", no_argument, 0, 'C'},
     {"config", required_argument, 0, 'c'},
     {"cpu-limit", required_argument, 0, 'l'},
@@ -32,6 +33,7 @@ struct option long_options[] = {
 const char *long_options_help[] = {
     "Display this usage statement",
     "Display program version",
+    "Verify delivery configuration",
     "Allow tests to fail",
     "Read configuration file",
     "Number of processes to spawn concurrently (default: cpus - 1)",

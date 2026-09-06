@@ -1,5 +1,6 @@
 #include "core.h"
 #include "log.h"
+#include "utils.h"
 
 enum LogLevel LOG_LEVEL = LOG_LEVEL_WARN;
 

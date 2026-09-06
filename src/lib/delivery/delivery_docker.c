@@ -1,4 +1,6 @@
+#include "copy.h"
 #include "delivery.h"
+#include "utils.h"
 
 int delivery_docker(struct Delivery *ctx) {
     if (!docker_capable(&ctx->deploy.docker.capabilities)) {

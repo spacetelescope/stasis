@@ -18,7 +18,9 @@ int pushd(const char *path) {
 
     dirstack[dirstack_len] = realpath(".", NULL);
     dirstack_len++;
-    return chdir(path);
+    const int r = chdir(path);
+    SYSDEBUG("entering directory '%s'", path);
+    return r;
 }
 
 int popd() {
@@ -26,8 +28,10 @@ int popd() {
     if (dirstack_len - 1 < 0) {
         return result;
     }
+    SYSDEBUG("returning from directory '%s'", dirstack[dirstack_len]);
     dirstack_len--;
     result = chdir(dirstack[dirstack_len]);
+    SYSDEBUG("current directory is now '%s'", dirstack[dirstack_len]);
     guard_free(dirstack[dirstack_len]);
     return result;
 }
@@ -672,7 +676,7 @@ int xml_pretty_print_in_place(const char *filename, const char *pretty_print_pro
  * @param maxlen
  * @return 0 on success, -1 on error
  */
-int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
+int fix_tox_conf(const char *filename, char **result, size_t maxlen, struct tpl_pool **tpl) {
     struct INIFILE *toxini;
     FILE *fptemp = NULL;
 
@@ -720,7 +724,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
                 if (data) {
                     int err = 0;
                     char *key = data->key;
-                    char *value = ini_getval_str(toxini, section->key, data->key, INI_READ_RENDER, &err);
+                    char *value = ini_getval_str(toxini, section->key, data->key, INI_READ_RENDER, &err, tpl);
                     if (key && value) {
                         if (startswith(value, "pytest") && !strstr(value, "{posargs}")) {
                             const char *with_posargs = " \\\n    {posargs}\n";
@@ -746,7 +750,7 @@ int fix_tox_conf(const char *filename, char **result, size_t maxlen) {
     }
 
     // Save modified configuration
-    ini_write(toxini, &fptemp, INI_WRITE_RAW);
+    ini_write(toxini, &fptemp, INI_WRITE_RAW, (*tpl));
     fclose(fptemp);
 
     // Store path to modified config

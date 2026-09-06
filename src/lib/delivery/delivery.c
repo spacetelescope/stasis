@@ -393,6 +393,7 @@ void delivery_free(struct Delivery *ctx) {
         ini_free(&ctx->_stasis_ini_fp.mission);
     }
     guard_free(ctx->_stasis_ini_fp.mission_path);
+    tpl_free(&ctx->tpl_pool);
 }
 
 int delivery_format_str(struct Delivery *ctx, char **dest, size_t maxlen, const char *fmt) {

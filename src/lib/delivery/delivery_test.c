@@ -175,14 +175,13 @@ void delivery_tests_run(struct Delivery *ctx) {
                 filter_repo_tags(destdir, test->repository_remove_tags);
             }
 
-            if (pushd(destdir)) {
-                COE_CHECK_ABORT(1, "Unable to enter repository directory");
-            } else {
+            if (!pushd(destdir)) {
                 delivery_autoresolve_vcs_urls(".");
 
                 char *cmd = calloc(strlen(test->script) + STASIS_BUFSIZ, sizeof(*cmd));
                 if (!cmd) {
                     SYSERROR("Unable to allocate test script buffer: %s", strerror(errno));
+                    popd();
                     exit(1);
                 }
 
@@ -190,7 +189,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                 memset(&proc, 0, sizeof(proc));
 
                 safe_strncpy(cmd, test->script, strlen(test->script) + STASIS_BUFSIZ);
-                char *cmd_rendered = tpl_render(cmd);
+                char *cmd_rendered = tpl_render(&ctx->tpl_pool, cmd);
                 if (cmd_rendered) {
                     if (strcmp(cmd_rendered, cmd) != 0) {
                         safe_strncpy(cmd, cmd_rendered, strlen(test->script) + STASIS_BUFSIZ);
@@ -198,6 +197,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     guard_free(cmd_rendered);
                 } else {
                     SYSERROR("An error occurred while rendering the following:\n%s", cmd);
+                    popd();
                     exit(1);
                 }
                 // Move indents
@@ -223,6 +223,7 @@ void delivery_tests_run(struct Delivery *ctx) {
 
                 if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
                     SYSERROR("Unable to allocate memory for runner command: %s", strerror(errno));
+                    popd();
                     exit(1);
                 }
                 task = mp_pool_task(pool[selected], test->name, destdir, runner_cmd);
@@ -231,7 +232,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     popd();
                     if (!globals.continue_on_error) {
                         guard_free(runner_cmd);
-                        tpl_free();
+                        tpl_free(&ctx->tpl_pool);
                         delivery_free(ctx);
                         globals_free();
                     }
@@ -246,6 +247,8 @@ void delivery_tests_run(struct Delivery *ctx) {
                 guard_free(runner_cmd);
                 guard_free(cmd);
                 popd();
+            } else {
+                COE_CHECK_ABORT(1, "Unable to enter repository directory");
             }
         }
 
@@ -265,12 +268,13 @@ void delivery_tests_run(struct Delivery *ctx) {
                     char *cmd = calloc(cmd_len, sizeof(*cmd));
                     if (!cmd) {
                         SYSERROR("Unable to allocate test script_setup buffer: %s", strerror(errno));
+                        popd();
                         exit(1);
                     }
 
                     safe_strncpy(cmd, test->script_setup, cmd_len);
 
-                    char *cmd_rendered = tpl_render(cmd);
+                    char *cmd_rendered = tpl_render(&ctx->tpl_pool, cmd);
                     if (cmd_rendered) {
                         if (strcmp(cmd_rendered, cmd) != 0) {
                             safe_strncpy(cmd, cmd_rendered, cmd_len);
@@ -278,6 +282,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                         guard_free(cmd_rendered);
                     } else {
                         SYSERROR("An error occurred while rendering the following:\n%s", cmd);
+                        popd();
                         exit(1);
                     }
                     unindent(cmd);
@@ -286,6 +291,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                     char *runner_cmd = NULL;
                     if (asprintf(&runner_cmd, runner_cmd_fmt, cmd) < 0) {
                         SYSERROR("Unable to allocate memory for runner command: %s", strerror(errno));
+                        popd();
                         exit(1);
                     }
 
@@ -295,7 +301,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                         popd();
                         if (!globals.continue_on_error) {
                             guard_free(runner_cmd);
-                            tpl_free();
+                            tpl_free(&ctx->tpl_pool);
                             delivery_free(ctx);
                             globals_free();
                         }

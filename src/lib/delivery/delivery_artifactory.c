@@ -144,7 +144,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         msg(STASIS_MSG_L2, "%s\n", data.src);
 
         int err = 0;
-        data.dest = ini_getval_str(cfg, section_name, "destination", INI_READ_RENDER, &err);
+        data.dest = ini_getval_str(cfg, section_name, "destination", INI_READ_RENDER, &err, &ctx->tpl_pool);
 
         struct stat st;
         if (lstat(data.src, &st)) {
@@ -178,7 +178,7 @@ int delivery_mission_render_files(struct Delivery *ctx) {
         fclose(fp);
 
         msg(STASIS_MSG_L3, "Writing %s\n", data.dest);
-        if (tpl_render_to_file(contents, data.dest)) {
+        if (tpl_render_to_file(&ctx->tpl_pool, contents, data.dest)) {
             guard_free(contents);
             guard_free(data.dest);
             continue;

@@ -194,26 +194,30 @@ int delivery_init_platform(struct Delivery *ctx) {
         return -1;
     }
 
-    ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX + 1, sizeof(*ctx->system.platform));
     if (!ctx->system.platform) {
-        SYSERROR("Unable to allocate %d records for platform array", DELIVERY_PLATFORM_MAX);
-        return -1;
-    }
-    for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
-        ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
-        if (!ctx->system.platform[i]) {
-            SYSERROR("Unable to allocate record %zu in platform array", i);
-            guard_array_n_free(ctx->system.platform, i);
+        ctx->system.platform = calloc(DELIVERY_PLATFORM_MAX + 1, sizeof(*ctx->system.platform));
+        if (!ctx->system.platform) {
+            SYSERROR("Unable to allocate %d records for platform array", DELIVERY_PLATFORM_MAX);
             return -1;
+        }
+        for (size_t i = 0; i < DELIVERY_PLATFORM_MAX; i++) {
+            ctx->system.platform[i] = calloc(DELIVERY_PLATFORM_MAXLEN, sizeof(*ctx->system.platform[0]));
+            if (!ctx->system.platform[i]) {
+                SYSERROR("Unable to allocate record %zu in platform array", i);
+                guard_array_n_free(ctx->system.platform, i);
+                return -1;
+            }
         }
     }
 
-    ctx->system.arch = strdup(uts.machine);
     if (!ctx->system.arch) {
-        // memory error
-        guard_array_n_free(ctx->system.platform, DELIVERY_PLATFORM_MAX);
-        ctx->system.platform = NULL;
-        return -1;
+        ctx->system.arch = strdup(uts.machine);
+        if (!ctx->system.arch) {
+            // memory error
+            guard_array_n_free(ctx->system.platform, DELIVERY_PLATFORM_MAX);
+            ctx->system.platform = NULL;
+            return -1;
+        }
     }
 
     if (!strcmp(ctx->system.arch, "x86_64")) {
@@ -258,18 +262,18 @@ int delivery_init_platform(struct Delivery *ctx) {
     setenv("STASIS_CONDA_PLATFORM", ctx->system.platform[DELIVERY_PLATFORM_CONDA_INSTALLER], 1);
     setenv("STASIS_CONDA_PLATFORM_SUBDIR", ctx->system.platform[DELIVERY_PLATFORM_CONDA_SUBDIR], 1);
 
-    // Register template variables
-    // These were moved out of main() because we can't take the address of system.platform[x]
-    // _before_ the array has been initialized.
-    tpl_register("system.arch", &ctx->system.arch);
-    tpl_register("system.platform", &ctx->system.platform[DELIVERY_PLATFORM_RELEASE]);
-
     return 0;
 }
 
 int delivery_init(struct Delivery *ctx, int render_mode) {
     populate_info(ctx);
     populate_delivery_cfg(ctx, INI_READ_RENDER);
+
+    if (delivery_init_platform(ctx)) {
+        SYSDEBUG("delivery_init_platform failed");
+        delivery_free(ctx);
+        return -1;
+    }
 
     // Set artifactory URL via environment variable if possible
     char *jfurl = getenv("STASIS_JF_ARTIFACTORY_URL");
@@ -287,12 +291,6 @@ int delivery_init(struct Delivery *ctx, int render_mode) {
             guard_free(globals.jfrog.repo);
         }
         globals.jfrog.repo = strdup(jfrepo);
-    }
-
-    // Configure architecture and platform information
-    if (delivery_init_platform(ctx)) {
-        // memory error
-        return -1;
     }
 
     // Create STASIS directory structure
@@ -349,11 +347,14 @@ int bootstrap_build_info(struct Delivery *ctx) {
     SYSDEBUG("ini_open(%s)", ctx->_stasis_ini_fp.delivery_path);
     local._stasis_ini_fp.delivery = ini_open(ctx->_stasis_ini_fp.delivery_path);
 
+    local.tpl_pool = tpl_copy(ctx->tpl_pool);
+
     if (delivery_init_platform(&local)) {
         SYSDEBUG("delivery_init_platform failed");
-        delivery_free(&local);
+        delivery_free(ctx);
         return -1;
     }
+
     if (populate_delivery_cfg(&local, INI_READ_RENDER)) {
         SYSDEBUG("populate_delivery_cfg failed");
         delivery_free(&local);
@@ -423,4 +424,14 @@ int delivery_exists(struct Delivery *ctx) {
     }
 
     return release_exists;
+}
+
+void delivery_init_tpl_pool(struct Delivery *ctx) {
+    if (!ctx->tpl_pool) {
+        ctx->tpl_pool = tpl_init();
+        if (!ctx->tpl_pool) {
+            SYSERROR("tpl_init failed");
+            exit(1);
+        }
+    }
 }

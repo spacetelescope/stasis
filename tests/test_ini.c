@@ -77,23 +77,25 @@ void test_ini_setval_getval() {
     const char *filename = "ini_open.ini";
     const char *data = "[default]\na=1\nb=2\nc=3\n[section name here]\ntest=true\n";
     struct INIFILE *ini;
+    struct tpl_pool *tpl = tpl_init();
 
     stasis_testing_write_ascii(filename, data);
 
     ini = ini_open(filename);
     union INIVal val;
     STASIS_ASSERT(ini_setval(&ini, INI_SETVAL_REPLACE, "default", "a", "changed") == 0, "failed to set value");
-    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
+    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val, &tpl) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "a") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") == 0, "unexpected value loaded from modified variable");
     guard_free(val.as_char_p);
 
     STASIS_ASSERT(ini_setval(&ini, INI_SETVAL_APPEND, "default", "a", " twice") == 0, "failed to set value");
-    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val) == 0, "failed to get value");
+    STASIS_ASSERT(ini_getval(ini, "default", "a", INIVAL_TYPE_STR, render_mode, &val, &tpl) == 0, "failed to get value");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed") != 0, "unexpected value loaded from modified variable");
     STASIS_ASSERT(strcmp(val.as_char_p, "changed twice") == 0, "unexpected value loaded from modified variable");
     guard_free(val.as_char_p);
     ini_free(&ini);
+    tpl_free(&tpl);
     remove(filename);
 }
 
@@ -126,72 +128,74 @@ void test_ini_getval_wrappers() {
                        "double_01a=-1.5\n"
                        "double_01b=1.5\n";
     struct INIFILE *ini = NULL;
+    struct tpl_pool *tpl = tpl_init();
     int err = 0;
 
     stasis_testing_write_ascii(filename, data);
     ini = ini_open(filename);
     STASIS_ASSERT_FATAL(ini != NULL, "could not open test data");
 
-    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01a", render_mode, &err, &tpl) == -1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: char");
-    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01b", render_mode, &err) == 127, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_char(ini, "default", "char_01b", render_mode, &err, &tpl) == 127, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: char");
 
-    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01a", render_mode, &err, &tpl) == 0, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: uchar");
-    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01b", render_mode, &err) == 255, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_uchar(ini, "default", "uchar_01b", render_mode, &err, &tpl) == 255, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: uchar");
 
-    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01a", render_mode, &err, &tpl) == -1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: short");
-    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_short(ini, "default", "short_01b", render_mode, &err, &tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: short");
 
-    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01a", render_mode, &err, &tpl) == 0, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ushort");
-    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ushort(ini, "default", "ushort_01b", render_mode, &err, &tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ushort");
 
-    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01a", render_mode, &err,&tpl) == -1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: int");
-    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_int(ini, "default", "int_01b", render_mode, &err,&tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: int");
 
-    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01a", render_mode, &err,&tpl) == 0, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: uint");
-    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_uint(ini, "default", "uint_01b", render_mode, &err,&tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: uint");
 
-    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01a", render_mode, &err,&tpl) == -1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: long");
-    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_long(ini, "default", "long_01b", render_mode, &err,&tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: long");
 
-    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01a", render_mode, &err,&tpl) == 0, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ulong");
-    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ulong(ini, "default", "ulong_01b", render_mode, &err,&tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ulong");
 
-    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01a", render_mode, &err) == -1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01a", render_mode, &err, &tpl) == -1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: llong");
-    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_llong(ini, "default", "llong_01b", render_mode, &err, &tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: llong");
 
-    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01a", render_mode, &err) == 0, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01a", render_mode, &err, &tpl) == 0, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ullong");
-    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01b", render_mode, &err) == 1, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_ullong(ini, "default", "ullong_01b", render_mode, &err, &tpl) == 1, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: ullong");
 
-    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01a", render_mode, &err) == -1.5F, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01a", render_mode, &err, &tpl) == -1.5F, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: float");
-    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01b", render_mode, &err) == 1.5F, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_float(ini, "default", "float_01b", render_mode, &err, &tpl) == 1.5F, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: float");
 
-    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01a", render_mode, &err) == -1.5L, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01a", render_mode, &err, &tpl) == -1.5L, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: double");
-    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01b", render_mode, &err) == 1.5L, "returned unexpected value");
+    STASIS_ASSERT(ini_getval_double(ini, "default", "double_01b", render_mode, &err, &tpl) == 1.5L, "returned unexpected value");
     STASIS_ASSERT(err == 0, "failed to convert type: double");
 
+    tpl_free(&tpl);
     ini_free(&ini);
 }
 

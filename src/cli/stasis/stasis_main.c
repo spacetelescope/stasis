@@ -8,6 +8,7 @@
 // local includes
 #include "args.h"
 #include "conda.h"
+#include "ini_validate.h"
 #include "system_requirements.h"
 #include "tpl.h"
 
@@ -82,6 +83,20 @@ static void configure_delivery_ini(struct Delivery *ctx, char **delivery_input) 
         exit(1);
     }
     ctx->_stasis_ini_fp.delivery_path = strdup(*delivery_input);
+
+    char *schema_filename = NULL;
+    if (asprintf(&schema_filename, "%s/%s", globals.sysconfdir, STASIS_VALIDATION_SCHEMA_DELIVERY) < 0) {
+        SYSERROR("Unable to allocate memory for path to schema file: %s", STASIS_VALIDATION_SCHEMA_DELIVERY);
+        exit(1);
+    }
+
+    msg(STASIS_MSG_L2, "Validating STASIS delivery configuration: %s\n", *delivery_input);
+    if (ini_validate_schema_delivery(schema_filename, ctx->_stasis_ini_fp.delivery, &ctx->tpl_pool)) {
+        SYSERROR("Failed to validate delivery configuration");
+        guard_free(schema_filename);
+        exit(1);
+    }
+    guard_free(schema_filename);
 }
 
 static void configure_delivery_context(struct Delivery *ctx) {
@@ -641,6 +656,10 @@ int main(const int argc, char *argv[]) {
             case OPT_FORCE_REPEATABLE:
                 globals.force_repeatable = true;
                 break;
+            case OPT_VALIDATE:
+                LOG_LEVEL = LOG_LEVEL_INFO;
+                globals.validate = true;
+                break;
             case '?':
             default:
                 exit(1);
@@ -681,10 +700,21 @@ int main(const int argc, char *argv[]) {
 
     msg(STASIS_MSG_L1, "Setup\n");
 
+    delivery_init_tpl_pool(&ctx);
+    if (delivery_init_platform(&ctx)) {
+        SYSDEBUG("delivery_init_platform failed");
+        delivery_free(&ctx);
+        exit(1);
+    }
     tpl_setup_vars(&ctx);
     tpl_setup_funcs(&ctx);
 
     configure_delivery_ini(&ctx, &delivery_input);
+    if (globals.validate) {
+        printf("OK");
+        delivery_free(&ctx);
+        exit(0);
+    }
     configure_delivery_context(&ctx);
     check_requirements(&ctx);
 
@@ -725,7 +755,7 @@ int main(const int argc, char *argv[]) {
     msg(STASIS_MSG_L1, "Cleaning up\n");
     delivery_free(&ctx);
     globals_free();
-    tpl_free();
+    tpl_free_func_pool();
 
     msg(STASIS_MSG_L1, "Done!\n");
     return 0;

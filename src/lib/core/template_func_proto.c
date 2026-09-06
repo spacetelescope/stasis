@@ -1,6 +1,7 @@
 #include "template_func_proto.h"
 #include "delivery.h"
 #include "github.h"
+#include "utils.h"
 
 int get_github_release_notes_tplfunc_entrypoint(struct tplfunc_frame *frame, void *data_out) {
     char **output = (char **) data_out;
@@ -89,7 +90,9 @@ int get_junitxml_file_entrypoint(struct tplfunc_frame *frame, void *data_out) {
         SYSERROR("failed to allocate output string: %s", strerror(errno));
         return -1;
     }
-    snprintf(*output, PATH_MAX, "%s/results-%s-%s.xml", ctx->storage.results_dir, name, ctx->info.release_name);
+    snprintf(*output, PATH_MAX, "%s/results-%s-%s.xml",
+        ctx->storage.results_dir ? ctx->storage.results_dir : "",
+        name, ctx->info.release_name ? ctx->info.release_name : "");
 
     return result;
 }
@@ -114,7 +117,10 @@ int get_basetemp_dir_entrypoint(struct tplfunc_frame *frame, void *data_out) {
         SYSERROR("failed to allocate output string: %s", strerror(errno));
         return -1;
     }
-    snprintf(*output, PATH_MAX, "%s/truth-%s-%s", ctx->storage.tmpdir, name, ctx->info.release_name);
+    snprintf(*output, PATH_MAX, "%s/truth-%s-%s",
+        ctx->storage.tmpdir ? ctx->storage.tmpdir : "",
+        name,
+        ctx->info.release_name ? ctx->info.release_name : "");
 
     return result;
 }
@@ -123,11 +129,12 @@ int tox_run_entrypoint(struct tplfunc_frame *frame, void *data_out) {
     char **output = (char **) data_out;
     struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
     const struct Delivery *ctx = (const struct Delivery *) f->data_in;
+    struct tpl_pool **tpl = (struct tpl_pool **) ctx->tpl_pool;
 
     // Apply workaround for tox positional arguments
     char *toxconf = NULL;
     if (!access("tox.ini", F_OK)) {
-        if (!fix_tox_conf("tox.ini", &toxconf, PATH_MAX)) {
+        if (!fix_tox_conf("tox.ini", &toxconf, PATH_MAX, tpl)) {
             msg(STASIS_MSG_L3, "Fixing tox positional arguments\n");
             *output = calloc(STASIS_BUFSIZ, sizeof(**output));
             if (!*output) {
