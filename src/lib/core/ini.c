@@ -117,8 +117,6 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
 
 int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int flags, union INIVal *result, struct tpl_pool **tpl) {
     char *token = NULL;
-    char tbuf[STASIS_BUFSIZ];
-    char *tbufp = tbuf;
     struct INIData *data = ini_data_get(ini, section_name, key);
     if (!data) {
         result->as_char_p = NULL;
