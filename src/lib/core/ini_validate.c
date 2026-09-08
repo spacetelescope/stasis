@@ -319,6 +319,8 @@ int ini_validate_schema_delivery(const char *filename, struct INIFILE *ini, stru
 
                     bool do_all_section_keys = false;
                     union INIVal value;
+                    value.as_char_p = NULL;
+
                     if (key_name) {
                         if (ini_getval(ini, (char *) cur_section->key, (char *) key_name, type_hint, INI_READ_RENDER, &value, tpl_pool)) {
                             status_text_update(status_text, sizeof(status_text), STASIS_COLOR_BLUE, "undefined");
