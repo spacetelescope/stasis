@@ -22,7 +22,7 @@ set(ASAN_OPTIONS "-fsanitize=address,null,undefined")
 message(CHECK_START "Enable Address Analyzer (ASAN)")
 if (ASAN)
 	message(CHECK_PASS "Yes")
-	add_compile_options(${ASAN_OPTIONS} -fno-omit-frame-pointer -g -O0)
+	add_compile_options(${ASAN_OPTIONS} -fno-omit-frame-pointer -g)
 	add_link_options(${ASAN_OPTIONS})
 else()
 	message(CHECK_FAIL "No")
@@ -42,7 +42,7 @@ link_libraries(LibXml2::LibXml2)
 
 option(FORTIFY_SOURCE OFF)
 if (FORTIFY_SOURCE)
-	set(nix_cflags ${nix_cflags} -O -D_FORTIFY_SOURCE=1)
+	set(nix_cflags ${nix_cflags} -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong)
 endif ()
 
 # Toggle extremely verbose output

@@ -17,6 +17,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         build_type: [RelWithDebInfo]
         c_compiler: [gcc, clang]
+        asan: ["ON", "OFF"]
         include:
           - os: macos-latest
             c_compiler: clang
@@ -62,16 +63,25 @@ jobs:
         libzip
 
     - name: Configure CMake
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DASAN=ON
-        -DTESTS=ON
-        -DTESTS_RT=ON
-        -DTESTS_VERBOSE=ON
-        -DDEBUG_MESSAGES=ON
-        -S ${{ github.workspace }}
+      run: |
+        if [[ "${{ matrix.asan }}" == "OFF" ]]; then
+            # Check for buffer overflows
+            export CFLAGS="-D_FORTIFY_SOURCE=3 -fstack-protector-strong -O3"
+        fi
+        
+        TESTS_RT_CMAKE_OPTIONS="-DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DASAN=${{ matrix.asan }} \
+            -DTESTS=ON \
+            -DTESTS_RT=ON \
+            -DTESTS_VERBOSE=ON \
+            -DDEBUG_MESSAGES=ON"
+        echo "TESTS_RT_CMAKE_OPTIONS=$TESTS_RT_CMAKE_OPTIONS" >> $GITHUB_ENV
+        
+        cmake ${TESTS_RT_CMAKE_OPTIONS} \
+            -B ${{ steps.strings.outputs.build-output-dir }} \
+            -S ${{ github.workspace }}
+
 
     - name: Build
       env:
