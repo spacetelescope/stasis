@@ -711,7 +711,7 @@ int main(const int argc, char *argv[]) {
 
     configure_delivery_ini(&ctx, &delivery_input);
     if (globals.validate) {
-        printf("OK");
+        printf("OK\n");
         delivery_free(&ctx);
         exit(0);
     }

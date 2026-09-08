@@ -96,25 +96,25 @@
           "name": "conda_packages",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "([a-zA-Z0-9_-]+)((=.+)?)$"
+          "regex": "^$|([a-zA-Z0-9_-]+)((=.+)?)$"
         },
         {
           "name": "conda_packages_purge",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "[a-zA-Z0-9_]+$"
+          "regex": "^$|[a-zA-Z0-9_]+$"
         },
         {
           "name": "pip_packages",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "([a-zA-Z0-9_-]+)((==.+)?)$"
+          "regex": "^$|([a-zA-Z0-9_-]+)((==.+)?)$"
         },
         {
           "name": "pip_packages_purge",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "[a-zA-Z0-9_-]+$"
+          "regex": "^$|[a-zA-Z0-9_-]+$"
         }
       ]
     },
@@ -128,7 +128,7 @@
           "name": null,
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "^[A-Za-z_][A-Za-z0-9_]*=(.+)$"
+          "regex": "^$|^[A-Za-z_][A-Za-z0-9_]*=(.+)$"
         }
       ]
     },
@@ -178,19 +178,19 @@
           "name": "runtime",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "^[A-Za-z_][A-Za-z0-9_]*=(.+)$"
+          "regex": "^$|([A-Za-z_][A-Za-z0-9_]*=(.+)$"
         },
         {
           "name": "script_setup",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         },
         {
           "name": "script",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         }
       ]
     },
@@ -204,7 +204,7 @@
           "name": "files",
           "required": true,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         },
         {
           "name": "dest",
@@ -236,19 +236,19 @@
           "name": "build_args",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         },
         {
           "name": "tags",
           "required": true,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         },
         {
           "name": "test_script",
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
-          "regex": "(.+)$"
+          "regex": "^$|(.+)$"
         }
       ]
     }

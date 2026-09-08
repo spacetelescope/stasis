@@ -211,6 +211,7 @@ struct MultiProcessingTask *mp_pool_task(struct MultiProcessingPool *pool, const
         working_dir_tmp_need_free = 1;
         working_dir_tmp = getcwd(NULL, sizeof(slot->working_dir));
     } else {
+        working_dir_tmp_need_free = 1;
         working_dir_tmp = realpath(working_dir, NULL);
     }
     if (!working_dir_tmp) {

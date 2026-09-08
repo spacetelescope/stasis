@@ -117,8 +117,6 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
 
 int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int flags, union INIVal *result, struct tpl_pool **tpl) {
     char *token = NULL;
-    char tbuf[STASIS_BUFSIZ];
-    char *tbufp = tbuf;
     struct INIData *data = ini_data_get(ini, section_name, key);
     if (!data) {
         result->as_char_p = NULL;
@@ -175,32 +173,15 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
         case INIVAL_TYPE_FLOAT:
             result->as_float = strtof(data_copy, NULL);
             break;
+        case INIVAL_TYPE_STR_ARRAY:
+            // ... special type. The caller should tokenize on linefeed characters
         case INIVAL_TYPE_STR:
             result->as_char_p = strdup(data_copy);
             if (!result->as_char_p) {
                 return -1;
             }
             break;
-        case INIVAL_TYPE_STR_ARRAY:
-            // TODO: data_copy should be at least equal to the length of the data. The use of STASIS_BUFSIZ below is
-            // the root cause of crashes when stasis reads long arrays.
-            safe_strncpy(tbufp, data_copy, sizeof(tbuf));
-            guard_free(data_copy);
 
-            data_copy = calloc(STASIS_BUFSIZ, sizeof(*data_copy));
-            if (!data_copy) {
-                return -1;
-            }
-            while ((token = strsep(&tbufp, "\n")) != NULL) {
-                //lstrip(token);
-                if (!isempty(token)) {
-                    safe_strncat(data_copy, token, STASIS_BUFSIZ);
-                    safe_strncat(data_copy, "\n", STASIS_BUFSIZ);
-                }
-            }
-            strip(data_copy);
-            result->as_char_p = strdup(data_copy);
-            break;
         case INIVAL_TYPE_BOOL:
             result->as_bool = false;
             if ((!strcmp(data_copy, "true") || !strcmp(data_copy, "True")) ||

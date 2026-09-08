@@ -136,7 +136,7 @@ int ini_validate_str_regex(const void *data, const char *pattern, ini_verify_reg
 
 int ini_validate_str_array_regex(const void *data, const char *pattern, ini_verify_regex_callback *fn[]) {
     int result = 0;
-    char **arr = split((char *) data, LINE_SEP, 1);
+    char **arr = split((char *) data, LINE_SEP, 0);
     for (size_t i = 0; arr[i]!= NULL; i++) {
         for (size_t x = 0; fn && fn[x] != NULL; x++) {
             result += fn[x](arr[i], pattern);
