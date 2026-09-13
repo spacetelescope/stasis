@@ -113,17 +113,16 @@ int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, c
         return -1;
     }
 
-    char *data_copy = strdup(data->value);
-
+    char *data_copy = NULL;
     if (flags == INI_READ_RENDER) {
-        char *render = tpl_render(tpl, data_copy);
-        if (render && strcmp(render, data_copy) != 0) {
-            guard_free(data_copy);
-            data_copy = render;
-        } else {
-            guard_free(render);
+        data_copy = tpl_render(tpl, data->value);
+        if (!data_copy) {
+            return -2;
         }
+    } else {
+        data_copy = strdup(data->value);
     }
+
     lstrip(data_copy);
 
     switch (type) {
