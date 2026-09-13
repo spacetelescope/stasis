@@ -575,18 +575,19 @@ struct INIFILE *ini_open(const char *filename) {
         // Find pointer to first comment character
         char *comment = strpbrk(line, ";#");
         if (comment) {
-            if (!reading_value || line - comment == 0) {
+            const size_t comment_offset = comment - line;
+            if (!reading_value || !comment_offset) {
                 // Remove comment from line (standalone and inline comments)
-                if (!((comment - line > 0 && (*(comment - 1) == '\\')) || (*comment - 1) == '#')) {
-                    *comment = '\0';
-                } else {
+                if (comment > line && *(comment - 1) == '\\') {
                     // Handle escaped comment characters. Remove the escape character '\'
                     memmove(comment - 1, comment, strlen(comment));
                     if (strlen(comment)) {
                         comment[strlen(comment) - 1] = '\0';
                     } else {
-                        comment[0] = '\0';
+                        *comment = '\0';
                     }
+                } else {
+                    *comment = '\0';
                 }
             }
         }
