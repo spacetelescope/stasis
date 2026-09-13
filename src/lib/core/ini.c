@@ -167,6 +167,7 @@ int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, c
         case INIVAL_TYPE_STR:
             result->as_char_p = strdup(data_copy);
             if (!result->as_char_p) {
+                guard_free(data_copy);
                 return -1;
             }
             break;
