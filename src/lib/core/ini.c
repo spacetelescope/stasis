@@ -5,7 +5,7 @@
 #include "core.h"
 #include "ini.h"
 
-struct INIFILE *ini_init() {
+static struct INIFILE *ini_init() {
     struct INIFILE *ini = calloc(1, sizeof(*ini));
     if (!ini) {
         return NULL;
@@ -14,7 +14,7 @@ struct INIFILE *ini_init() {
     return ini;
 }
 
-struct INISection **ini_section_init(struct INIFILE **ini) {
+static struct INISection **ini_section_init(struct INIFILE **ini) {
     struct INISection **section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
     return section;
 }
@@ -72,7 +72,7 @@ int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key) 
     return 0;
 }
 
-struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key) {
+static struct INIData *ini_data_get(struct INIFILE *ini, const char *section_name, const char *key) {
     struct INISection *section = NULL;
 
     section = ini_section_search(&ini, INI_SEARCH_EXACT, section_name);
@@ -300,7 +300,7 @@ struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char
     return list;
 }
 
-int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value, unsigned int hint) {
+static int ini_data_append(struct INIFILE **ini, char *section_name, char *key, const char *value, const unsigned int hint) {
     struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         return 1;
@@ -487,7 +487,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool
     return 0;
 }
 
-char *unquote(char *s) {
+static char *unquote(char *s) {
     if ((startswith(s, "'") && endswith(s, "'"))
         || (startswith(s, "\"") && endswith(s, "\""))) {
         memmove(s, s + 1, strlen(s));
