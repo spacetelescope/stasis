@@ -280,6 +280,7 @@ char *tpl_render(struct tpl_pool **list, char *str) {
                 struct tplfunc_frame *frame = tpl_getfunc(k);
                 if (!frame) {
                     SYSERROR("no function named '%s'", k);
+                    guard_free(output);
                     guard_array_n_free(params, (size_t) params_count);
                     return NULL;
                 }
