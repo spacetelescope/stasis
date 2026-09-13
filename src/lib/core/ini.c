@@ -145,19 +145,19 @@ int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, c
             result->as_uint = (unsigned int) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LONG:
-            result->as_long = (long) strtol(data_copy, NULL, 10);
+            result->as_long = strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULONG:
-            result->as_ulong = (unsigned long) strtoul(data_copy, NULL, 10);
+            result->as_ulong = strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LLONG:
-            result->as_llong = (long long) strtoll(data_copy, NULL, 10);
+            result->as_llong = strtoll(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULLONG:
-            result->as_ullong = (unsigned long long) strtoull(data_copy, NULL, 10);
+            result->as_ullong = strtoull(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_DOUBLE:
-            result->as_double = (double) strtod(data_copy, NULL);
+            result->as_double = strtod(data_copy, NULL);
             break;
         case INIVAL_TYPE_FLOAT:
             result->as_float = strtof(data_copy, NULL);
