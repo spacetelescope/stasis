@@ -174,8 +174,8 @@ int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, c
 
         case INIVAL_TYPE_BOOL:
             result->as_bool = false;
-            if ((!strcmp(data_copy, "true") || !strcmp(data_copy, "True")) ||
-                    (!strcmp(data_copy, "yes") || !strcmp(data_copy, "Yes")) ||
+            if (!strcmp(data_copy, "true") || !strcmp(data_copy, "True") ||
+                    !strcmp(data_copy, "yes") || !strcmp(data_copy, "Yes") ||
                     strtol(data_copy, NULL, 10)) {
                 result->as_bool = true;
             }
