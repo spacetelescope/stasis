@@ -1003,6 +1003,7 @@ int grow(const size_t size_new, size_t *size_orig, char **data) {
             return -1;
         }
         *data = tmp;
+        memset(*data + *size_orig, 0, new_size - size_new);
         *size_orig = new_size;
     }
     return 0;
