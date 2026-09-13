@@ -302,10 +302,10 @@ static int ini_data_append(struct INIFILE **ini, char *section_name, char *key, 
     struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
     if (tmp == NULL) {
         return 1;
-    } else {
-        section->data = tmp;
     }
-    if (!ini_data_get((*ini), section_name, key)) {
+
+    section->data = tmp;
+    if (!ini_data_get(*ini, section_name, key)) {
         struct INIData **data = section->data;
         data[section->data_count] = calloc(1, sizeof(*data[0]));
         if (!data[section->data_count]) {
