@@ -498,7 +498,7 @@ static char *unquote(char *s) {
 }
 
 void ini_free(struct INIFILE **ini) {
-    if (!(*ini)) {
+    if (!*ini) {
         return;
     }
     for (size_t section = 0; section < (*ini)->section_count; section++) {
@@ -628,6 +628,10 @@ struct INIFILE *ini_open(const char *filename) {
             continue;
         }
 
+        // value in data must begin with leading space
+        if (multiline_data && reading_value && !isspace(*line)) {
+            reading_value = 0;
+        }
         // no data, skip
         if (!reading_value && isempty(line)) {
             continue;
@@ -647,6 +651,12 @@ struct INIFILE *ini_open(const char *filename) {
             safe_strncpy(key, line, key_len + 1);
             lstrip(key);
             strip(key);
+
+            if (isempty(key) || strpbrk(key, " \t")) {
+                SYSERROR("invalid key syntax, line %zu: '%s'", i + 1, line);
+                ini_free(&ini);
+                return NULL;
+            }
 
             memset(key_last, 0, key_last_size);
             safe_strncpy(key_last, key, key_last_size + 1);
