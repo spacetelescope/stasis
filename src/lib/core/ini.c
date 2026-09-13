@@ -400,7 +400,15 @@ int ini_section_create(struct INIFILE **ini, char *key) {
     return 0;
 }
 
-int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool *tpl) {
+static size_t get_leading_spaces(const char *s) {
+    const char *x = s;
+    while (isspace(*x)) {
+        x++;
+    }
+    return x - s;
+}
+
+int ini_write(struct INIFILE *ini, FILE **stream, const unsigned mode, struct tpl_pool *tpl) {
     if (!*stream) {
         return -1;
     }
