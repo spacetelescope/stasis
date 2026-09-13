@@ -9,8 +9,8 @@
 
 #define INI_WRITE_RAW 0             ///< Dump INI data. Contents are not modified.
 #define INI_WRITE_PRESERVE 1        ///< Dump INI data. Template strings are
-#define INI_READ_RAW 0             ///< Dump INI data. Contents are not modified.
-#define INI_READ_RENDER 1        ///< Dump INI data. Template strings are
+#define INI_READ_RAW 0              ///< Dump INI data. Contents are not modified.
+#define INI_READ_RENDER 1           ///< Dump INI data. Template strings are
 #define INI_SETVAL_APPEND 0
 #define INI_SETVAL_REPLACE 1
 #define INI_SEARCH_EXACT 0
@@ -119,16 +119,16 @@ struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const
  * @param key
  * @return
  */
-int ini_section_create(struct INIFILE **ini, char *key);
+int ini_section_create(struct INIFILE **ini, const char *key);
 
 /**
  * 
  * @param ini 
- * @param section 
+ * @param section_name
  * @param key 
  * @return 
  */
-int ini_has_key(struct INIFILE *ini, const char *section, const char *key);
+int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key);
 
 /**
  * Assign value to a section key
@@ -139,7 +139,7 @@ int ini_has_key(struct INIFILE *ini, const char *section, const char *key);
  * @param value
  * @return
  */
-int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value);
+int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, const char *value);
 
 /**
  * Retrieve all data records in an INI section
@@ -174,7 +174,7 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
  * @param section_name to read
  * @return pointer to INIData
  */
-struct INIData *ini_getall(struct INIFILE *ini, char *section_name);
+struct INIData *ini_getall(struct INIFILE *ini, const char *section_name);
 
 /**
  * Retrieve a single record from a section key
@@ -223,7 +223,7 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name);
  * @return 0 on success
  * @return Non-zero on error
  */
-int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int flags, union INIVal *result, struct tpl_pool **tpl_pool);
+int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, int type, int flags, union INIVal *result, struct tpl_pool **tpl);
 
 /**
  * Write INIFILE sections and data to a file stream
@@ -239,22 +239,22 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool
  */
 void ini_free(struct INIFILE **ini);
 
-int ini_getval_int(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-unsigned int ini_getval_uint(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-long ini_getval_long(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-unsigned long ini_getval_ulong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-long long ini_getval_llong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-unsigned long long ini_getval_ullong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-float ini_getval_float(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-double ini_getval_double(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-bool ini_getval_bool(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-short ini_getval_short(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-unsigned short ini_getval_ushort(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl);
-struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state, struct tpl_pool **tpl);
+int ini_getval_int(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+unsigned int ini_getval_uint(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+long ini_getval_long(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+unsigned long ini_getval_ulong(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+long long ini_getval_llong(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+unsigned long long ini_getval_ullong(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+float ini_getval_float(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+double ini_getval_double(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+bool ini_getval_bool(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+short ini_getval_short(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+unsigned short ini_getval_ushort(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+char ini_getval_char(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+unsigned char ini_getval_uchar(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+char *ini_getval_char_p(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+char *ini_getval_str(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+char *ini_getval_char_array_p(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+char *ini_getval_str_array(struct INIFILE *ini, const char *section_name, const char *key, int flags, int *state, struct tpl_pool **tpl);
+struct StrList *ini_getval_strlist(struct INIFILE *ini, const char *section_name, const char *key, char *tok, int flags, int *state, struct tpl_pool **tpl);
 #endif //STASIS_INI_H

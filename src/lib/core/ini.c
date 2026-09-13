@@ -19,7 +19,7 @@ static struct INISection **ini_section_init(struct INIFILE **ini) {
     return section;
 }
 
-struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value) {
+struct INISection *ini_section_search(struct INIFILE **ini, const unsigned mode, const char *value) {
     struct INISection *result = NULL;
     for (size_t i = 0; i < (*ini)->section_count; i++) {
         if ((*ini)->section[i]->key != NULL) {
@@ -82,7 +82,7 @@ static struct INIData *ini_data_get(struct INIFILE *ini, const char *section_nam
     return NULL;
 }
 
-struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
+struct INIData *ini_getall(struct INIFILE *ini, const char *section_name) {
     struct INISection *section = NULL;
     struct INIData *result = NULL;
     static size_t i = 0;
@@ -330,9 +330,9 @@ static int ini_data_append(struct INIFILE **ini, char *section_name, char *key, 
             SYSERROR("%s:%s: key does not exist", section_name, key);
             return -1;
         }
-        size_t value_len_old = strlen(data->value);
-        size_t value_len = strlen(value);
-        size_t value_len_new = value_len_old + value_len + 1;
+        const size_t value_len_old = strlen(data->value);
+        const size_t value_len = strlen(value);
+        const size_t value_len_new = value_len_old + value_len + 1;
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
@@ -346,8 +346,8 @@ static int ini_data_append(struct INIFILE **ini, char *section_name, char *key, 
     return 0;
 }
 
-int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value) {
-    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
+int ini_setval(struct INIFILE **ini, const unsigned type, char *section_name, char *key, const char *value) {
+    const struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         // no section
         return -1;
@@ -376,7 +376,7 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
     return 0;
 }
 
-int ini_section_create(struct INIFILE **ini, char *key) {
+int ini_section_create(struct INIFILE **ini, const char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof (*(*ini)->section));
     if (!tmp) {
         ini_free(ini);
@@ -413,19 +413,18 @@ int ini_write(struct INIFILE *ini, FILE **stream, const unsigned mode, struct tp
         return -1;
     }
     for (size_t x = 0; x < ini->section_count; x++) {
-        struct INISection *section = ini->section[x];
+        const struct INISection *section = ini->section[x];
         char *section_name = section->key;
 
         fprintf(*stream, "[%s]" LINE_SEP, section_name);
 
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
-            struct INIData *data = section->data[y];
-            char outvalue[STASIS_BUFSIZ];
-            char *key = data->key;
+            const struct INIData *data = section->data[y];
+            const char *key = data->key;
             char *value = data->value;
-            unsigned *hint = &data->type_hint;
+            const unsigned *hint = &data->type_hint;
+            size_t buf_size = 0;
 
-            memset(outvalue, 0, sizeof(outvalue));
 
             if (key && value) {
                 int err = 0;
@@ -438,38 +437,55 @@ int ini_write(struct INIFILE *ini, FILE **stream, const unsigned mode, struct tp
                     value = xvalue;
                 }
 
-                const size_t buf_size = sizeof(outvalue);
-                size_t buf_len = 0;
-                char **parts = split(value, LINE_SEP, 0);
-                for (size_t p = 0; parts && parts[p] != NULL; p++) {
-                    char *render = NULL;
-                    if (mode == INI_WRITE_PRESERVE) {
-                        render = tpl_render(&tpl, parts[p]);
-                    } else {
-                        render = parts[p];
-                    }
+                if (err && !value) {
+                    SYSERROR("Invalid value for key '%s'", key);
+                    guard_free(xvalue);
+                    return -1;
+                }
 
-                    if (!render) {
-                        SYSERROR("rendered string value can never be NULL!");
+                size_t buf_len = 0;
+                buf_size = strlen(value) + 1024;
+                char *outvalue = calloc(buf_size, sizeof(char));
+                if (!outvalue) {
+                    SYSERROR("Unable to allocate %zu bytes for section data", strlen(data->value));
+                    guard_free(value);
+                    return -1;
+                }
+                //char **parts = split(value, LINE_SEP, 0);
+                struct StrList *parts = strlist_init();
+                if (!parts) {
+                    SYSERROR("Unable to allocate memory for line list");
+                    guard_free(value);
+                    guard_free(outvalue);
+                    return -1;
+                }
+                strlist_append_tokenize_raw(parts, value, LINE_SEP);
+                guard_free(value);
+
+                for (size_t p = 0; p < strlist_count(parts); p++) {
+                    const char *item = strlist_item(parts, p);
+                    if (!item) {
+                        SYSERROR("Invalid line list item");
+                        strlist_free(&parts);
+                        guard_free(value);
+                        guard_free(outvalue);
                         return -1;
                     }
 
                     buf_len = strlen(outvalue);
-                    if (*hint == INIVAL_TYPE_STR_ARRAY) {
-                        const int leading_space = isspace(*render);
-                        if (leading_space) {
-                            snprintf(outvalue + buf_len, buf_size - buf_len, "%s" LINE_SEP, render);
-                        } else {
-                            snprintf(outvalue + buf_len, buf_size - buf_len, "    %s" LINE_SEP, render);
-                        }
+                    const size_t new_size = buf_len + strlen(item) + 4 + strlen(LINE_SEP) + strlen(outvalue);
+                    grow(new_size, &buf_size, &outvalue);
+
+                    const size_t leading_space = get_leading_spaces(item);
+                    if (p == 0 && !leading_space && *hint == INIVAL_TYPE_STR_ARRAY) {
+                        // indent first line if not already
+                        snprintf(outvalue + buf_len, buf_size - buf_len, "    %s" LINE_SEP, item);
                     } else {
-                        snprintf(outvalue + buf_len, buf_size - buf_len, "%s", render);
-                    }
-                    if (mode == INI_WRITE_PRESERVE) {
-                        guard_free(render);
+                        snprintf(outvalue + buf_len, buf_size - buf_len, "%s" LINE_SEP, item);
                     }
                 }
-                guard_array_free(parts);
+
+                guard_strlist_free(&parts);
                 strip(outvalue);
 
                 // update length of outvalue
@@ -478,7 +494,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, const unsigned mode, struct tp
                 snprintf(outvalue + buf_len, buf_size - buf_len, "%s", LINE_SEP);
 
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
-                guard_free(value);
+                guard_free(outvalue);
             } else {
                 fprintf(*stream, "%s = %s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
             }
