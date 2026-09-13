@@ -44,15 +44,6 @@ struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const
     return result;
 }
 
-int ini_data_init(struct INIFILE **ini, char *section_name) {
-    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
-    if (section == NULL) {
-        return 1;
-    }
-    section->data = calloc(section->data_count + 1, sizeof(**section->data));
-    return 0;
-}
-
 int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key) {
     if (!ini || !section_name || !key) {
         return 0;
