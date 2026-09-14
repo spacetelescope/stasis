@@ -179,7 +179,9 @@ struct tplfunc_frame *tpl_getfunc(char *key) {
 char *tpl_render(struct tpl_pool **list, char *str) {
     if (!str) {
         return NULL;
-    } else if (!strlen(str)) {
+    }
+
+    if (!strlen(str)) {
         return strdup("");
     }
     size_t output_bytes = 1024 + strlen(str); // TODO: Is grow working correctly?
@@ -278,6 +280,7 @@ char *tpl_render(struct tpl_pool **list, char *str) {
                 struct tplfunc_frame *frame = tpl_getfunc(k);
                 if (!frame) {
                     SYSERROR("no function named '%s'", k);
+                    guard_free(output);
                     guard_array_n_free(params, (size_t) params_count);
                     return NULL;
                 }

@@ -5,7 +5,7 @@
 #include "core.h"
 #include "ini.h"
 
-struct INIFILE *ini_init() {
+static struct INIFILE *ini_init() {
     struct INIFILE *ini = calloc(1, sizeof(*ini));
     if (!ini) {
         return NULL;
@@ -14,12 +14,12 @@ struct INIFILE *ini_init() {
     return ini;
 }
 
-struct INISection **ini_section_init(struct INIFILE **ini) {
+static struct INISection **ini_section_init(struct INIFILE **ini) {
     struct INISection **section = calloc((*ini)->section_count + 1, sizeof(**(*ini)->section));
     return section;
 }
 
-struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const char *value) {
+struct INISection *ini_section_search(struct INIFILE **ini, const unsigned mode, const char *value) {
     struct INISection *result = NULL;
     for (size_t i = 0; i < (*ini)->section_count; i++) {
         if ((*ini)->section[i]->key != NULL) {
@@ -44,15 +44,6 @@ struct INISection *ini_section_search(struct INIFILE **ini, unsigned mode, const
     return result;
 }
 
-int ini_data_init(struct INIFILE **ini, char *section_name) {
-    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
-    if (section == NULL) {
-        return 1;
-    }
-    section->data = calloc(section->data_count + 1, sizeof(**section->data));
-    return 0;
-}
-
 int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key) {
     if (!ini || !section_name || !key) {
         return 0;
@@ -72,7 +63,7 @@ int ini_has_key(struct INIFILE *ini, const char *section_name, const char *key) 
     return 0;
 }
 
-struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key) {
+static struct INIData *ini_data_get(struct INIFILE *ini, const char *section_name, const char *key) {
     struct INISection *section = NULL;
 
     section = ini_section_search(&ini, INI_SEARCH_EXACT, section_name);
@@ -91,7 +82,7 @@ struct INIData *ini_data_get(struct INIFILE *ini, char *section_name, char *key)
     return NULL;
 }
 
-struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
+struct INIData *ini_getall(struct INIFILE *ini, const char *section_name) {
     struct INISection *section = NULL;
     struct INIData *result = NULL;
     static size_t i = 0;
@@ -115,25 +106,23 @@ struct INIData *ini_getall(struct INIFILE *ini, char *section_name) {
     return result;
 }
 
-int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int flags, union INIVal *result, struct tpl_pool **tpl) {
-    char *token = NULL;
+int ini_getval(struct INIFILE *ini, const char *section_name, const char *key, const int type, const int flags, union INIVal *result, struct tpl_pool **tpl) {
     struct INIData *data = ini_data_get(ini, section_name, key);
     if (!data) {
         result->as_char_p = NULL;
         return -1;
     }
 
-    char *data_copy = strdup(data->value);
-
+    char *data_copy = NULL;
     if (flags == INI_READ_RENDER) {
-        char *render = tpl_render(tpl, data_copy);
-        if (render && strcmp(render, data_copy) != 0) {
-            guard_free(data_copy);
-            data_copy = render;
-        } else {
-            guard_free(render);
+        data_copy = tpl_render(tpl, data->value);
+        if (!data_copy) {
+            return -2;
         }
+    } else {
+        data_copy = strdup(data->value);
     }
+
     lstrip(data_copy);
 
     switch (type) {
@@ -156,19 +145,19 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
             result->as_uint = (unsigned int) strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LONG:
-            result->as_long = (long) strtol(data_copy, NULL, 10);
+            result->as_long = strtol(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULONG:
-            result->as_ulong = (unsigned long) strtoul(data_copy, NULL, 10);
+            result->as_ulong = strtoul(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_LLONG:
-            result->as_llong = (long long) strtoll(data_copy, NULL, 10);
+            result->as_llong = strtoll(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_ULLONG:
-            result->as_ullong = (unsigned long long) strtoull(data_copy, NULL, 10);
+            result->as_ullong = strtoull(data_copy, NULL, 10);
             break;
         case INIVAL_TYPE_DOUBLE:
-            result->as_double = (double) strtod(data_copy, NULL);
+            result->as_double = strtod(data_copy, NULL);
             break;
         case INIVAL_TYPE_FLOAT:
             result->as_float = strtof(data_copy, NULL);
@@ -178,14 +167,15 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
         case INIVAL_TYPE_STR:
             result->as_char_p = strdup(data_copy);
             if (!result->as_char_p) {
+                guard_free(data_copy);
                 return -1;
             }
             break;
 
         case INIVAL_TYPE_BOOL:
             result->as_bool = false;
-            if ((!strcmp(data_copy, "true") || !strcmp(data_copy, "True")) ||
-                    (!strcmp(data_copy, "yes") || !strcmp(data_copy, "Yes")) ||
+            if (!strcmp(data_copy, "true") || !strcmp(data_copy, "True") ||
+                    !strcmp(data_copy, "yes") || !strcmp(data_copy, "Yes") ||
                     strtol(data_copy, NULL, 10)) {
                 result->as_bool = true;
             }
@@ -198,109 +188,112 @@ int ini_getval(struct INIFILE *ini, char *section_name, char *key, int type, int
     return 0;
 }
 
-#define getval_returns(t) return result.t
-#define getval_setup(t, f) \
-    union INIVal result = {0}; \
-    do {\
-    int state_local = 0; \
-    state_local = ini_getval(ini, section_name, key, t, f, &result, tpl); \
+
+static inline union INIVal getval_setup(struct INIFILE *ini, const char *section_name, const char *key, const int flags, struct tpl_pool **tpl, const int type, int *state) {
+    union INIVal result = {0};
+    if (state != NULL) {
+        *state = 0;
+    }
+
+    const int state_local = ini_getval(ini, section_name, key, type, flags, &result, tpl); \
     if (state != NULL) { \
         *state = state_local; \
-    } \
-} while (0)
-
-int ini_getval_int(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_INT, flags);
-    getval_returns(as_int);
+    }
+    return result;
 }
 
-unsigned int ini_getval_uint(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_UINT, flags);
-    getval_returns(as_uint);
+int ini_getval_int(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_INT, state);
+    return result.as_int;
 }
 
-long ini_getval_long(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_LONG, flags);
-    getval_returns(as_long);
+unsigned int ini_getval_uint(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_UINT, state);
+    return result.as_uint;
 }
 
-unsigned long ini_getval_ulong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_ULONG, flags);
-    getval_returns(as_ulong);
+long ini_getval_long(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_LONG, state);
+    return result.as_long;
 }
 
-long long ini_getval_llong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_LLONG, flags);
-    getval_returns(as_llong);
+unsigned long ini_getval_ulong(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_ULONG, state);
+    return result.as_ulong;
 }
 
-unsigned long long ini_getval_ullong(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_ULLONG, flags);
-    getval_returns(as_ullong);
+long long ini_getval_llong(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_LLONG, state);
+    return result.as_llong;
 }
 
-float ini_getval_float(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_FLOAT, flags);
-    getval_returns(as_float);
+unsigned long long ini_getval_ullong(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_ULLONG, state);
+    return result.as_ullong;
 }
 
-double ini_getval_double(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_DOUBLE, flags);
-    getval_returns(as_double);
+float ini_getval_float(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_FLOAT, state);
+    return result.as_float;
 }
 
-bool ini_getval_bool(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_BOOL, flags);
-    getval_returns(as_bool);
+double ini_getval_double(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_DOUBLE, state);
+    return result.as_double;
 }
 
-short ini_getval_short(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_SHORT, flags);
-    getval_returns(as_short);
+bool ini_getval_bool(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_BOOL, state);
+    return result.as_bool;
 }
 
-unsigned short ini_getval_ushort(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_USHORT, flags);
-    getval_returns(as_ushort);
+short ini_getval_short(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_SHORT, state);
+    return result.as_short;
 }
 
-char ini_getval_char(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_CHAR, flags);
-    getval_returns(as_char);
+unsigned short ini_getval_ushort(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_USHORT, state);
+    return result.as_ushort;
 }
 
-unsigned char ini_getval_uchar(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_UCHAR, flags);
-    getval_returns(as_uchar);
+char ini_getval_char(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_CHAR, state);
+    return result.as_char;
 }
 
-char *ini_getval_char_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_STR, flags);
-    getval_returns(as_char_p);
+unsigned char ini_getval_uchar(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_UCHAR, state);
+    return result.as_uchar;
 }
 
-char *ini_getval_str(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
+char *ini_getval_char_p(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_STR, state);
+    return result.as_char_p;
+}
+
+char *ini_getval_str(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
     return ini_getval_char_p(ini, section_name, key, flags, state, tpl);
 }
 
-char *ini_getval_char_array_p(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
-    getval_returns(as_char_p);
+char *ini_getval_char_array_p(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
+    const union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_STR_ARRAY, state);
+    return result.as_char_p;
 }
 
-char *ini_getval_str_array(struct INIFILE *ini, char *section_name, char *key, int flags, int *state, struct tpl_pool **tpl) {
+char *ini_getval_str_array(struct INIFILE *ini, const char *section_name, const char *key, const int flags, int *state, struct tpl_pool **tpl) {
     return ini_getval_char_array_p(ini, section_name, key, flags, state, tpl);
 }
 
-struct StrList *ini_getval_strlist(struct INIFILE *ini, char *section_name, char *key, char *tok, int flags, int *state, struct tpl_pool **tpl) {
-    getval_setup(INIVAL_TYPE_STR_ARRAY, flags);
+struct StrList *ini_getval_strlist(struct INIFILE *ini, const char *section_name, const char *key, char *tok, const int flags, int *state, struct tpl_pool **tpl) {
+    union INIVal result = getval_setup(ini, section_name, key, flags, tpl, INIVAL_TYPE_STR_ARRAY, state);
     struct StrList *list = strlist_init();
     strlist_append_tokenize(list, result.as_char_p, tok);
     guard_free(result.as_char_p);
     return list;
 }
 
-int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *value, unsigned int hint) {
+static int ini_data_append(struct INIFILE **ini, char *section_name, char *key, const char *value, const unsigned int hint) {
     struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         return 1;
@@ -309,10 +302,10 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
     struct INIData **tmp = realloc(section->data, (section->data_count + 1) * sizeof(**section->data));
     if (tmp == NULL) {
         return 1;
-    } else {
-        section->data = tmp;
     }
-    if (!ini_data_get((*ini), section_name, key)) {
+
+    section->data = tmp;
+    if (!ini_data_get(*ini, section_name, key)) {
         struct INIData **data = section->data;
         data[section->data_count] = calloc(1, sizeof(*data[0]));
         if (!data[section->data_count]) {
@@ -337,9 +330,9 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
             SYSERROR("%s:%s: key does not exist", section_name, key);
             return -1;
         }
-        size_t value_len_old = strlen(data->value);
-        size_t value_len = strlen(value);
-        size_t value_len_new = value_len_old + value_len + 1;
+        const size_t value_len_old = strlen(data->value);
+        const size_t value_len = strlen(value);
+        const size_t value_len_new = value_len_old + value_len + 1;
         char *value_tmp = NULL;
         value_tmp = realloc(data->value, value_len_new + 2);
         if (!value_tmp) {
@@ -353,8 +346,8 @@ int ini_data_append(struct INIFILE **ini, char *section_name, char *key, char *v
     return 0;
 }
 
-int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *key, char *value) {
-    struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
+int ini_setval(struct INIFILE **ini, const unsigned type, char *section_name, char *key, const char *value) {
+    const struct INISection *section = ini_section_search(ini, INI_SEARCH_EXACT, section_name);
     if (section == NULL) {
         // no section
         return -1;
@@ -383,7 +376,7 @@ int ini_setval(struct INIFILE **ini, unsigned type, char *section_name, char *ke
     return 0;
 }
 
-int ini_section_create(struct INIFILE **ini, char *key) {
+int ini_section_create(struct INIFILE **ini, const char *key) {
     struct INISection **tmp = realloc((*ini)->section, ((*ini)->section_count + 1) * sizeof (*(*ini)->section));
     if (!tmp) {
         ini_free(ini);
@@ -407,24 +400,31 @@ int ini_section_create(struct INIFILE **ini, char *key) {
     return 0;
 }
 
-int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool *tpl) {
+static size_t get_leading_spaces(const char *s) {
+    const char *x = s;
+    while (isspace(*x)) {
+        x++;
+    }
+    return x - s;
+}
+
+int ini_write(struct INIFILE *ini, FILE **stream, const unsigned mode, struct tpl_pool *tpl) {
     if (!*stream) {
         return -1;
     }
     for (size_t x = 0; x < ini->section_count; x++) {
-        struct INISection *section = ini->section[x];
+        const struct INISection *section = ini->section[x];
         char *section_name = section->key;
 
         fprintf(*stream, "[%s]" LINE_SEP, section_name);
 
         for (size_t y = 0; y < ini->section[x]->data_count; y++) {
-            struct INIData *data = section->data[y];
-            char outvalue[STASIS_BUFSIZ];
-            char *key = data->key;
+            const struct INIData *data = section->data[y];
+            const char *key = data->key;
             char *value = data->value;
-            unsigned *hint = &data->type_hint;
+            const unsigned *hint = &data->type_hint;
+            size_t buf_size = 0;
 
-            memset(outvalue, 0, sizeof(outvalue));
 
             if (key && value) {
                 int err = 0;
@@ -437,38 +437,55 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool
                     value = xvalue;
                 }
 
-                const size_t buf_size = sizeof(outvalue);
-                size_t buf_len = 0;
-                char **parts = split(value, LINE_SEP, 0);
-                for (size_t p = 0; parts && parts[p] != NULL; p++) {
-                    char *render = NULL;
-                    if (mode == INI_WRITE_PRESERVE) {
-                        render = tpl_render(&tpl, parts[p]);
-                    } else {
-                        render = parts[p];
-                    }
+                if (err && !value) {
+                    SYSERROR("Invalid value for key '%s'", key);
+                    guard_free(xvalue);
+                    return -1;
+                }
 
-                    if (!render) {
-                        SYSERROR("rendered string value can never be NULL!");
+                size_t buf_len = 0;
+                buf_size = strlen(value) + 1024;
+                char *outvalue = calloc(buf_size, sizeof(char));
+                if (!outvalue) {
+                    SYSERROR("Unable to allocate %zu bytes for section data", strlen(data->value));
+                    guard_free(value);
+                    return -1;
+                }
+                //char **parts = split(value, LINE_SEP, 0);
+                struct StrList *parts = strlist_init();
+                if (!parts) {
+                    SYSERROR("Unable to allocate memory for line list");
+                    guard_free(value);
+                    guard_free(outvalue);
+                    return -1;
+                }
+                strlist_append_tokenize_raw(parts, value, LINE_SEP);
+                guard_free(value);
+
+                for (size_t p = 0; p < strlist_count(parts); p++) {
+                    const char *item = strlist_item(parts, p);
+                    if (!item) {
+                        SYSERROR("Invalid line list item");
+                        strlist_free(&parts);
+                        guard_free(value);
+                        guard_free(outvalue);
                         return -1;
                     }
 
                     buf_len = strlen(outvalue);
-                    if (*hint == INIVAL_TYPE_STR_ARRAY) {
-                        const int leading_space = isspace(*render);
-                        if (leading_space) {
-                            snprintf(outvalue + buf_len, buf_size - buf_len, "%s" LINE_SEP, render);
-                        } else {
-                            snprintf(outvalue + buf_len, buf_size - buf_len, "    %s" LINE_SEP, render);
-                        }
+                    const size_t new_size = buf_len + strlen(item) + 4 + strlen(LINE_SEP) + strlen(outvalue);
+                    grow(new_size, &buf_size, &outvalue);
+
+                    const size_t leading_space = get_leading_spaces(item);
+                    if (p == 0 && !leading_space && *hint == INIVAL_TYPE_STR_ARRAY) {
+                        // indent first line if not already
+                        snprintf(outvalue + buf_len, buf_size - buf_len, "    %s" LINE_SEP, item);
                     } else {
-                        snprintf(outvalue + buf_len, buf_size - buf_len, "%s", render);
-                    }
-                    if (mode == INI_WRITE_PRESERVE) {
-                        guard_free(render);
+                        snprintf(outvalue + buf_len, buf_size - buf_len, "%s" LINE_SEP, item);
                     }
                 }
-                guard_array_free(parts);
+
+                guard_strlist_free(&parts);
                 strip(outvalue);
 
                 // update length of outvalue
@@ -477,7 +494,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool
                 snprintf(outvalue + buf_len, buf_size - buf_len, "%s", LINE_SEP);
 
                 fprintf(*stream, "%s = %s%s", ini->section[x]->data[y]->key, *hint == INIVAL_TYPE_STR_ARRAY ? LINE_SEP : "", outvalue);
-                guard_free(value);
+                guard_free(outvalue);
             } else {
                 fprintf(*stream, "%s = %s", ini->section[x]->data[y]->key, ini->section[x]->data[y]->value);
             }
@@ -487,7 +504,7 @@ int ini_write(struct INIFILE *ini, FILE **stream, unsigned mode, struct tpl_pool
     return 0;
 }
 
-char *unquote(char *s) {
+static char *unquote(char *s) {
     if ((startswith(s, "'") && endswith(s, "'"))
         || (startswith(s, "\"") && endswith(s, "\""))) {
         memmove(s, s + 1, strlen(s));
@@ -497,7 +514,7 @@ char *unquote(char *s) {
 }
 
 void ini_free(struct INIFILE **ini) {
-    if (!(*ini)) {
+    if (!*ini) {
         return;
     }
     for (size_t section = 0; section < (*ini)->section_count; section++) {
@@ -574,18 +591,19 @@ struct INIFILE *ini_open(const char *filename) {
         // Find pointer to first comment character
         char *comment = strpbrk(line, ";#");
         if (comment) {
-            if (!reading_value || line - comment == 0) {
+            const size_t comment_offset = comment - line;
+            if (!reading_value || !comment_offset) {
                 // Remove comment from line (standalone and inline comments)
-                if (!((comment - line > 0 && (*(comment - 1) == '\\')) || (*comment - 1) == '#')) {
-                    *comment = '\0';
-                } else {
+                if (comment > line && *(comment - 1) == '\\') {
                     // Handle escaped comment characters. Remove the escape character '\'
                     memmove(comment - 1, comment, strlen(comment));
                     if (strlen(comment)) {
                         comment[strlen(comment) - 1] = '\0';
                     } else {
-                        comment[0] = '\0';
+                        *comment = '\0';
                     }
+                } else {
+                    *comment = '\0';
                 }
             }
         }
@@ -626,6 +644,10 @@ struct INIFILE *ini_open(const char *filename) {
             continue;
         }
 
+        // value in data must begin with leading space
+        if (multiline_data && reading_value && !isspace(*line)) {
+            reading_value = 0;
+        }
         // no data, skip
         if (!reading_value && isempty(line)) {
             continue;
@@ -645,6 +667,12 @@ struct INIFILE *ini_open(const char *filename) {
             safe_strncpy(key, line, key_len + 1);
             lstrip(key);
             strip(key);
+
+            if (isempty(key) || strpbrk(key, " \t")) {
+                SYSERROR("invalid key syntax, line %zu: '%s'", i + 1, line);
+                ini_free(&ini);
+                return NULL;
+            }
 
             memset(key_last, 0, key_last_size);
             safe_strncpy(key_last, key, key_last_size + 1);
