@@ -745,7 +745,7 @@ long long strlist_item_as_long_long(struct StrList *pStrList, size_t index) {
     char *item = strlist_item(pStrList, index);
     if (!item) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
-        return LONG_LONG_MAX;
+        return LLONG_MAX;
     }
 
     long long result = (long long) strtoll(item, &error_p, 10);
@@ -770,7 +770,7 @@ unsigned long long strlist_item_as_ulong_long(struct StrList *pStrList, size_t i
     char *item = strlist_item(pStrList, index);
     if (!item) {
         strlist_set_error(STRLIST_E_INVALID_VALUE);
-        return ULONG_LONG_MAX;
+        return ULLONG_MAX;
     }
 
     unsigned long long result = (unsigned long long) strtol(item, &error_p, 10);
