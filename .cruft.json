@@ -1,0 +1,19 @@
+{
+  "template": "https://github.com/spacetelescope/stsci-package-template",
+  "commit": "e9df785e23884c9ba118e8f7a792e3dbbad3bfcb",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "stasis",
+      "package_name": "stasis",
+      "repository_url": "https://github.com/spacetelescope/stasis",
+      "git_username": "spacetelescope/stasis-maintainers",
+      "project_description": "STASIS consolidates the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.",
+      "manage_changelog_with_towncrier": false,
+      "publish_docs_to": "readthedocs.io",
+      "_template": "https://github.com/spacetelescope/stsci-package-template",
+      "_commit": "e9df785e23884c9ba118e8f7a792e3dbbad3bfcb"
+    }
+  },
+  "directory": "other-package"
+}
