@@ -83,7 +83,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         char spec_name[255] = {0};
         char *op = find_version_spec(spec);
         if (op) {
-            safe_strncpy(spec_name, spec, op - spec);
+            safe_strncpy(spec_name, spec, op - spec + 1);
         } else {
             safe_strncpy(spec_name, spec, sizeof(spec_name));
         }
@@ -104,7 +104,7 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
         char *op = find_version_spec(frozen_spec);
         // we only care about packages with specs here. if something else arrives, ignore it
         if (op) {
-            safe_strncpy(frozen_name, frozen_spec, op - frozen_spec);
+            safe_strncpy(frozen_name, frozen_spec, op - frozen_spec + 1);
         } else {
             safe_strncpy(frozen_name, frozen_spec, sizeof(frozen_name));
         }
