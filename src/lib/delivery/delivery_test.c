@@ -345,6 +345,9 @@ void delivery_tests_run(struct Delivery *ctx) {
             // On error show a summary of the current pool, and die
             if (pool_status != 0) {
                 mp_pool_show_summary(pool[p]);
+                for (size_t i = 0; i < sizeof(pool) / sizeof(*pool); i++) {
+                    mp_pool_free(&pool[p]);
+                }
                 COE_CHECK_ABORT(true, "Task failure");
             }
         }
