@@ -599,6 +599,9 @@ struct MultiProcessingPool *mp_pool_init(const char *ident, const char *log_root
 }
 
 void mp_pool_free(struct MultiProcessingPool **pool) {
+    if (!*pool) {
+        return;
+    }
     SYSDEBUG("freeing pool");
     if (!isempty((*pool)->semaphore->name)) {
         semaphore_destroy(&(*pool)->semaphore);
