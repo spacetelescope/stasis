@@ -15,6 +15,13 @@ long download(char *url, const char *filename, char **errmsg) {
     SYSDEBUG("url=%s", url);
     SYSDEBUG("filename=%s", filename);
     SYSDEBUG("errmsg=%s (NULL is OK)", *errmsg);
+
+    // Received a relative path with file://
+    if (startswith(url, "file://") && strstr(url, "..")) {
+        SYSERROR("%s must be an absolute path!", url);
+        return -1;
+    }
+
     long http_code = -1;
     char user_agent[STASIS_NAME_MAX] = {0};
     snprintf(user_agent, sizeof(user_agent), "stasis/%s", STASIS_VERSION);
