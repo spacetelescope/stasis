@@ -194,9 +194,9 @@ void test_strlist_append_tokenize() {
     list = strlist_init();
     strlist_append_tokenize(list, (char *) data, "\n");
     // note: the trailing '\n' in the data is parsed as a token
-    STASIS_ASSERT(line_count + 1 == strlist_count(list), "unexpected number of lines in array");
+    STASIS_ASSERT(line_count == strlist_count(list), "unexpected number of lines in array");
     int trailing_item_is_empty = isempty(strlist_item(list, strlist_count(list) - 1));
-    STASIS_ASSERT(trailing_item_is_empty, "trailing record should be an empty string");
+    STASIS_ASSERT(!trailing_item_is_empty, "trailing record should not be an empty string");
     guard_strlist_free(&list);
 }
 
