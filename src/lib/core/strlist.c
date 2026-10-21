@@ -273,6 +273,10 @@ int strlist_append_tokenize(struct StrList *pStrList, char *str, char *delim) {
     }
     for (size_t i = 0; token[i] != NULL; i++) {
         lstrip(token[i]);
+        if (isempty(token[i]) && token[i + 1] == NULL) {
+            // Skip final token if was just a delimiter
+            continue;
+        }
         strlist_append(&pStrList, token[i]);
     }
     guard_array_free(token);
