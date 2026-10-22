@@ -304,6 +304,7 @@ void delivery_tests_run(struct Delivery *ctx) {
                             tpl_free(&ctx->tpl_pool);
                             delivery_free(ctx);
                             globals_free();
+                            exit(1);
                         }
                         exit(1);
                     }
