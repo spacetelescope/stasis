@@ -96,7 +96,7 @@ void delivery_tests_run(struct Delivery *ctx) {
     }
     // Test blocks always run with xtrace enabled. Disable, and reenable it. Conda's wrappers produce an incredible
     // amount of debug information.
-    snprintf(globals.workaround.conda_reactivate, PATH_MAX - 1, "\nset +x; mamba activate ${CONDA_DEFAULT_ENV}; set -x\n");
+    snprintf(globals.workaround.conda_reactivate, PATH_MAX, "\nset +x; mamba activate ${CONDA_DEFAULT_ENV}; set -x\n");
 
     if (!ctx->tests || !ctx->tests->num_used) {
         SYSWARN("no tests are defined!");
@@ -304,8 +304,8 @@ void delivery_tests_run(struct Delivery *ctx) {
                             tpl_free(&ctx->tpl_pool);
                             delivery_free(ctx);
                             globals_free();
+                            exit(1);
                         }
-                        exit(1);
                     }
                     guard_free(runner_cmd);
                     guard_free(cmd);
@@ -345,6 +345,9 @@ void delivery_tests_run(struct Delivery *ctx) {
             // On error show a summary of the current pool, and die
             if (pool_status != 0) {
                 mp_pool_show_summary(pool[p]);
+                for (size_t i = 0; i < sizeof(pool) / sizeof(*pool); i++) {
+                    mp_pool_free(&pool[p]);
+                }
                 COE_CHECK_ABORT(true, "Task failure");
             }
         }

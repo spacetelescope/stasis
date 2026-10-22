@@ -30,6 +30,7 @@ RUN apt update \
         build-essential \
         gfortran \
         pkgconf \
+        git \
     && apt clean
 SHELL ["/bin/bash", "-c"]
 RUN groupadd developer \

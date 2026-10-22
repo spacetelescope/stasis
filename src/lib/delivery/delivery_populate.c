@@ -184,6 +184,7 @@ static void normalize_ini_list(struct INIFILE **inip, struct StrList **listp, ch
         char *pkg = strlist_item(list, i);
         if (strpbrk(pkg, ";#") || isempty(pkg)) {
             strlist_remove(list, i);
+            i = 0; // restart from beginning
         }
     }
     (*inip) = ini;
