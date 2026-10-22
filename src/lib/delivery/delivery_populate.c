@@ -348,6 +348,7 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
                 return 1;
             }
             conv_str(&ctx->tpl_pool, &test->name, val);
+            normalize_namespace_package_name(test->name);
 
             test->version = ini_getval_str(ini, section_name, "version", render_mode, &err, &ctx->tpl_pool);
             test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err, &ctx->tpl_pool);
