@@ -306,7 +306,6 @@ void delivery_tests_run(struct Delivery *ctx) {
                             globals_free();
                             exit(1);
                         }
-                        exit(1);
                     }
                     guard_free(runner_cmd);
                     guard_free(cmd);
