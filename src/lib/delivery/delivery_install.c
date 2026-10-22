@@ -34,7 +34,7 @@ static char *have_spec_in_config(const struct Delivery *ctx, const char *name) {
         char *op = find_version_spec(config_spec);
         char package[255] = {0};
         if (op) {
-            safe_strncpy(package, config_spec, op - config_spec);
+            safe_strncpy(package, config_spec, op - config_spec + 1);
         } else {
             safe_strncpy(package, config_spec, sizeof(package));
         }
