@@ -418,7 +418,7 @@ int jfrog_cli_rt_upload(struct JFRT_Auth *auth, struct JFRT_Upload *ctx, char *s
     if (ctx->workaround_parent_only) {
         struct StrList *components = strlist_init();
 
-        strlist_append_tokenize(components, src, "/");
+        strlist_append_tokenize_raw(components, src, "/");
         int max_components = (int) strlist_count(components);
         for (int i = 0; i < max_components; i++) {
             if (strstr(components->data[i], "*")) {
