@@ -81,6 +81,8 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     for (size_t i = 0; i < strlist_count(ctx->conda.pip_packages); i++) {
         char *spec = strlist_item(ctx->conda.pip_packages, i);
         char spec_name[255] = {0};
+
+        normalize_namespace_package_name(spec);
         char *op = find_version_spec(spec);
         if (op) {
             safe_strncpy(spec_name, spec, op - spec + 1);
@@ -101,13 +103,16 @@ int delivery_overlay_packages_from_env(struct Delivery *ctx, const char *env_nam
     for (size_t i = 0; i < strlist_count(frozen_list); i++) {
         char *frozen_spec = strlist_item(frozen_list, i);
         char frozen_name[255] = {0};
-        char *op = find_version_spec(frozen_spec);
+
+        normalize_namespace_package_name(frozen_spec);
         // we only care about packages with specs here. if something else arrives, ignore it
+        char *op = find_version_spec(frozen_spec);
         if (op) {
             safe_strncpy(frozen_name, frozen_spec, op - frozen_spec + 1);
         } else {
             safe_strncpy(frozen_name, frozen_spec, sizeof(frozen_name));
         }
+
         struct Test *test = requirement_from_test(ctx, frozen_name);
         if (test && strcmp(test->name, frozen_name) == 0) {
             char *config_spec = have_spec_in_config(ctx, frozen_name);
