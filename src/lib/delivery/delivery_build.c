@@ -424,7 +424,9 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                 memset(wheeldir, 0, sizeof(wheeldir));
 
                 msg(STASIS_MSG_L2, "Building %s (%s)\n", ctx->tests->test[i]->name, ctx->tests->test[i]->version);
-                snprintf(srcdir, sizeof(srcdir), "%s/%s", ctx->storage.build_sources_dir, ctx->tests->test[i]->name);
+
+                char *repository_basename = path_basename(ctx->tests->test[i]->repository);
+                snprintf(srcdir, sizeof(srcdir), "%s/%s", ctx->storage.build_sources_dir, repository_basename);
                 if (git_clone(&proc, ctx->tests->test[i]->repository, srcdir, ctx->tests->test[i]->version)) {
                     SYSERROR("Unable to checkout tag '%s' for package '%s' from repository '%s'",
                     ctx->tests->test[i]->version, ctx->tests->test[i]->name, ctx->tests->test[i]->repository);
