@@ -297,7 +297,6 @@ int get_git_release_notes(const char *repo_path, const char *tag, const char *ta
 
         }
 
-
         char *release_notes = NULL;
         char *head = target_commitish_as_tag;
         if (use_head) {
@@ -320,7 +319,7 @@ int get_git_release_notes(const char *repo_path, const char *tag, const char *ta
         }
 
         if (release_notes_failed || !release_notes) {
-            fprintf(stderr, "failed to allocate memory for release notes\n");
+            SYSERROR("unable to allocate memory for release notes output string\n");
             guard_free(target_commitish_as_tag);
             guard_free(log_output);
             popd();
