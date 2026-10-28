@@ -28,7 +28,14 @@ int popd() {
     if (dirstack_len - 1 < 0) {
         return result;
     }
-    SYSDEBUG("returning from directory '%s'", dirstack[dirstack_len]);
+    char cwd[PATH_MAX] = {0};
+    if (!getcwd(cwd, sizeof(cwd) - 1)) {
+        SYSWARN("getcwd() failed, returning anyway");
+        goto bad;
+    }
+    SYSDEBUG("returning from directory '%s'", cwd);
+
+    bad:
     dirstack_len--;
     result = chdir(dirstack[dirstack_len]);
     SYSDEBUG("current directory is now '%s'", dirstack[dirstack_len]);
