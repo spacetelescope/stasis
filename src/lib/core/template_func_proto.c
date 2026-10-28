@@ -85,11 +85,6 @@ int get_git_release_notes_auto_tplfunc_entrypoint(struct tplfunc_frame *frame, v
     int result = 0;
     char **output = (char **) data_out;
     struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
-    char *api_token = getenv("STASIS_GH_TOKEN");
-    if (!api_token) {
-        api_token = getenv("GITHUB_TOKEN");
-    }
-
     const struct Delivery *ctx = (struct Delivery *) f->data_in;
     struct StrList *notes_list = strlist_init();
 
