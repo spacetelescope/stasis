@@ -230,8 +230,12 @@ char *get_git_commit_root(const char *repo_path, const char *ref) {
 #define CMD_FMT_GIT_LOG "git log --pretty=format:'- %%s by %%aN'"
 #define CMD_FMT_GIT_LOG_ADDENDUM_PR "--notes -E --grep='\\(#[0-9]+\\)'"
 int get_git_release_notes(const char *repo_path, const char *tag, const char *target_commitish, char **output) {
+    if (!target_commitish) {
+        SYSERROR("target_commitish cannot be NULL");
+        return -1;
+    }
     if (!pushd(repo_path)) {
-        char cmd[8192] = {0};
+        char cmd[STASIS_BUFSIZ] = {0};
         int cmd_status = 0;
         char *target_commitish_as_tag = NULL;
         if (strcmp(target_commitish, "HEAD") != 0) {
@@ -256,9 +260,9 @@ int get_git_release_notes(const char *repo_path, const char *tag, const char *ta
         // clutter added by merge commits, etc.
         snprintf(cmd, sizeof(cmd), CMD_FMT_GIT_LOG " " CMD_FMT_GIT_LOG_ADDENDUM_PR);
         if (tag) {
-            snprintf(cmd + strlen(cmd), sizeof(cmd), " %s..%s", tag, target_commitish_as_tag);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), " %s..%s", tag, target_commitish_as_tag);
         } else {
-            snprintf(cmd + strlen(cmd), sizeof(cmd), " %s", target_commitish_as_tag);
+            snprintf(cmd + strlen(cmd), sizeof(cmd) - strlen(cmd), " %s", target_commitish_as_tag);
         }
         SYSDEBUG("Executing: %s", cmd);
         char *log_output = shell_output(cmd, &cmd_status);
@@ -275,9 +279,9 @@ int get_git_release_notes(const char *repo_path, const char *tag, const char *ta
         if (!num_chars(log_output, '\n')) {
             guard_free(log_output);
             if (tag) {
-                snprintf(cmd, sizeof(cmd), CMD_FMT_GIT_LOG " %s..%s", tag, target_commitish_as_tag);
+                snprintf(cmd, sizeof(cmd) - strlen(cmd), CMD_FMT_GIT_LOG " %s..%s", tag, target_commitish_as_tag);
             } else {
-                snprintf(cmd, sizeof(cmd), CMD_FMT_GIT_LOG " %s", target_commitish_as_tag);
+                snprintf(cmd, sizeof(cmd) - strlen(cmd), CMD_FMT_GIT_LOG " %s", target_commitish_as_tag);
             }
             SYSDEBUG("No commits? Trying again.");
             SYSDEBUG("Executing: %s", cmd);
@@ -301,20 +305,21 @@ int get_git_release_notes(const char *repo_path, const char *tag, const char *ta
         }
 
         const char *release_notes_fmt = NULL;
+        int release_notes_failed = 0;
         if (tag) {
             release_notes_fmt = "%s\n\n**Range:** %s..%s";
-            asprintf(&release_notes, release_notes_fmt, log_output, tag, head);
+            release_notes_failed = asprintf(&release_notes, release_notes_fmt, log_output, tag, head) < 0;
         } else {
             // Because we're printing the ENTIRE history up to target_commitish_as_tag...
             release_notes_fmt = "%s\n\n**Up to:** %s";
-            asprintf(&release_notes, release_notes_fmt, log_output, head);
+            release_notes_failed = asprintf(&release_notes, release_notes_fmt, log_output, head) < 0;
         }
 
         if (use_head) {
             guard_free(head);
         }
 
-        if (!release_notes) {
+        if (release_notes_failed || !release_notes) {
             fprintf(stderr, "failed to allocate memory for release notes\n");
             guard_free(target_commitish_as_tag);
             guard_free(log_output);
