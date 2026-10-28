@@ -43,6 +43,7 @@ void tpl_setup_funcs(struct Delivery *ctx) {
     // Prototypes can be found in template_func_proto.h
     tpl_register_func("get_github_release_notes", &get_github_release_notes_tplfunc_entrypoint, 3, NULL);
     tpl_register_func("get_github_release_notes_auto", &get_github_release_notes_auto_tplfunc_entrypoint, 1, ctx);
+    tpl_register_func("get_git_release_notes_auto", &get_git_release_notes_auto_tplfunc_entrypoint, 1, ctx);
     tpl_register_func("junitxml_file", &get_junitxml_file_entrypoint, 1, ctx);
     tpl_register_func("basetemp_dir", &get_basetemp_dir_entrypoint, 1, ctx);
     tpl_register_func("tox_run", &tox_run_entrypoint, 2, ctx);

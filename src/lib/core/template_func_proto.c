@@ -69,6 +69,111 @@ int get_github_release_notes_auto_tplfunc_entrypoint(struct tplfunc_frame *frame
     return result;
 }
 
+static int sort_test_by_name(const void *aa, const void *bb) {
+    const struct Test *a = aa;
+    if (!a) {
+        return -1;
+    }
+    const struct Test *b = bb;
+    if (!b) {
+        return 1;
+    }
+    return strcmp(a->name, b->name);
+}
+
+int get_git_release_notes_auto_tplfunc_entrypoint(struct tplfunc_frame *frame, void *data_out) {
+    int result = 0;
+    char **output = (char **) data_out;
+    struct tplfunc_frame *f = (struct tplfunc_frame *) frame;
+    char *api_token = getenv("STASIS_GH_TOKEN");
+    if (!api_token) {
+        api_token = getenv("GITHUB_TOKEN");
+    }
+
+    const struct Delivery *ctx = (struct Delivery *) f->data_in;
+    struct StrList *notes_list = strlist_init();
+
+    qsort(ctx->tests->test, ctx->tests->num_used, sizeof(struct Test *), sort_test_by_name);
+
+    for (size_t i = 0; i < ctx->tests->num_used; i++) {
+        // Get test context
+        struct Test *test = ctx->tests->test[i];
+        if (test->name && test->version && test->repository) {
+            // Record release notes for version relative to HEAD
+            // Using HEAD, GitHub returns the previous tag
+            char *note = NULL;
+            char h1_title[NAME_MAX] = {0};
+            snprintf(h1_title, sizeof(h1_title), "# %s", test->name);
+            strlist_append(&notes_list, h1_title);
+
+            char *repository_url = strdup(test->repository);
+            if (!repository_url) {
+                SYSERROR("unable to allocate repository url: %s", strerror(errno));
+                guard_strlist_free(&notes_list);
+            }
+            replace_text(repository_url, ".git", "", 0);
+            char *repository_basename = path_basename(repository_url);
+
+            char repository_path[PATH_MAX] = {0};
+            snprintf(repository_path, sizeof(repository_path),"%s/%s", ctx->storage.build_sources_dir, repository_basename);
+
+            // is this a git-describe long format string?
+            int use_head = 0;
+            if (num_chars(test->version, '-') > 1) {
+                const char *hash = strrchr(test->version, 'g') + 1;
+                const char *post_commit_s = strrchr(hash - 2, '-') + 1;
+                const size_t post_commit_num = strtoul(post_commit_s, NULL, 0);
+                if (post_commit_num) {
+                    use_head = 1;
+                }
+            }
+
+            // is this a setuptool_scm style long format string?
+            if (strstr(test->version, ".dev") && strrchr(test->version, '+')) {
+                const char *post_commit_s = strstr(test->version, ".dev") + 4;
+                const size_t post_commit_num = strtoul(post_commit_s, NULL, 0);
+                if (post_commit_num) {
+                    use_head = 1;
+                }
+            }
+
+            if (!test->repository_info_tag) {
+                struct Process proc;
+                if (git_clone(&proc, repository_url, repository_path, test->version)) {
+                    SYSERROR("clone failed: %s", repository_url);
+                    guard_free(repository_url);
+                    continue;
+                }
+            }
+            if (!test->repository_info_tag) {
+                const char *tmp = git_describe(repository_path);
+                test->repository_info_tag = tmp ? strdup(tmp) : NULL;
+            }
+            if (!test->repository_info_ref) {
+                const char *tmp = git_rev_parse(repository_path, test->repository_info_tag);
+                test->repository_info_ref = tmp ? strdup(tmp) : NULL;
+            }
+            guard_free(repository_url);
+
+            char *last_tag = get_git_tag(repository_path, test->repository_info_tag, use_head ? 0 : 1);
+            if (last_tag) {
+                result += get_git_release_notes(
+                    repository_path,
+                    last_tag,
+                    use_head ? "HEAD" : test->repository_info_tag,
+                    &note);
+                guard_free(last_tag);
+            }
+            if (note) {
+                strlist_append(&notes_list, note);
+                guard_free(note);
+            }
+        }
+    }
+    // Return all notes as a single string
+    if (strlist_count(notes_list)) {
+        *output = join(notes_list->data, "\n\n");
+    }
     guard_strlist_free(&notes_list);
 
     return result;
