@@ -59,4 +59,4 @@ Each new delivery iteration will need to be installed using one of the above com
 
 # Software Release Notes
 
-{{ func:get_github_release_notes_auto() }}
+{{ func:get_git_release_notes_auto() }}

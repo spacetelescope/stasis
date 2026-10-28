@@ -28,7 +28,14 @@ int popd() {
     if (dirstack_len - 1 < 0) {
         return result;
     }
-    SYSDEBUG("returning from directory '%s'", dirstack[dirstack_len]);
+    char cwd[PATH_MAX] = {0};
+    if (!getcwd(cwd, sizeof(cwd) - 1)) {
+        SYSWARN("getcwd() failed, returning anyway");
+        goto bad;
+    }
+    SYSDEBUG("returning from directory '%s'", cwd);
+
+    bad:
     dirstack_len--;
     result = chdir(dirstack[dirstack_len]);
     SYSDEBUG("current directory is now '%s'", dirstack[dirstack_len]);
@@ -383,6 +390,7 @@ char *git_describe(const char *path) {
     // TODO: Use `-C [path]` if the version of git installed supports it
     FILE *pp = popen("git describe --first-parent --long --always --tags", "r");
     if (!pp) {
+        popd();
         return NULL;
     }
     if (fgets(version, sizeof(version) - 1, pp) == NULL) {
@@ -414,6 +422,7 @@ char *git_rev_parse(const char *path, char *args) {
     snprintf(cmd, sizeof(cmd), "git rev-parse %s", args);
     FILE *pp = popen(cmd, "r");
     if (!pp) {
+        popd();
         return NULL;
     }
     if (fgets(version, sizeof(version) - 1, pp) == NULL) {
