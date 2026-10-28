@@ -69,6 +69,11 @@ int get_github_release_notes_auto_tplfunc_entrypoint(struct tplfunc_frame *frame
     return result;
 }
 
+    guard_strlist_free(&notes_list);
+
+    return result;
+}
+
 int get_junitxml_file_entrypoint(struct tplfunc_frame *frame, void *data_out) {
     int result = 0;
     char **output = (char **) data_out;
