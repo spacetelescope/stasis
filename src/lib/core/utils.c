@@ -390,6 +390,7 @@ char *git_describe(const char *path) {
     // TODO: Use `-C [path]` if the version of git installed supports it
     FILE *pp = popen("git describe --first-parent --long --always --tags", "r");
     if (!pp) {
+        popd();
         return NULL;
     }
     if (fgets(version, sizeof(version) - 1, pp) == NULL) {
@@ -421,6 +422,7 @@ char *git_rev_parse(const char *path, char *args) {
     snprintf(cmd, sizeof(cmd), "git rev-parse %s", args);
     FILE *pp = popen(cmd, "r");
     if (!pp) {
+        popd();
         return NULL;
     }
     if (fgets(version, sizeof(version) - 1, pp) == NULL) {
