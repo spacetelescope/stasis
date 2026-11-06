@@ -62,6 +62,8 @@ void test_free(struct Test **x) {
     guard_strlist_free(&test->repository_remove_tags);
     guard_free(test->script);
     guard_free(test->script_setup);
+    guard_free(test->script_builder_manylinux_pre);
+    guard_free(test->script_builder_manylinux_post);
     guard_free(test->build_recipe);
     // test-specific runtime variables
     guard_runtime_free(test->runtime->environ);

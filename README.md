@@ -293,17 +293,20 @@ Environment variables exported are _global_ to all programs executed by stasis. 
 
 Sections starting with `test:` will be used during the testing phase of the stasis pipeline. Where the value of `name` following the colon is an arbitrary value, and only used for reporting which test-run is executing. Section names must be unique.
 
-| Key          | Type    | Purpose                                                     | Required |
-|--------------|---------|-------------------------------------------------------------|----------|
-| disable      | Boolean | Disable `script` execution (`script_setup` always executes) | N        |
-| parallel     | Boolean | Execute test block in parallel (default) or sequentially    | N        |
-| timeout      | String  | Kill test script after `n[hms]`                             | N        |
-| build_recipe | String  | Git repository path to package's conda recipe               | N        |
-| repository   | String  | Git repository path or URL to clone                         | Y        |
-| version      | String  | Git commit or tag to check out                              | Y        |
-| runtime      | List    | Export environment variables specific to test context       | Y        |
-| script_setup | List    | Body of a shell script that will install dependencies       | N        |
-| script       | List    | Body of a shell script that will execute the tests          | Y        |
+| Key                           | Type    | Purpose                                                     | Required |
+|-------------------------------|---------|-------------------------------------------------------------|----------|
+| disable                       | Boolean | Disable `script` execution (`script_setup` always executes) | N        |
+| parallel                      | Boolean | Execute test block in parallel (default) or sequentially    | N        |
+| timeout                       | String  | Kill test script after `n[hms]`                             | N        |
+| build_recipe                  | String  | Git repository path to package's conda recipe               | N        |
+| repository                    | String  | Git repository path or URL to clone                         | Y        |
+| version                       | String  | Git commit or tag to check out                              | Y        |
+| runtime                       | List    | Export environment variables specific to test context       | Y        |
+| script_setup                  | List    | Body of a shell script that will install dependencies       | N        |
+| script                        | List    | Body of a shell script that will execute the tests          | Y        |
+| script_builder_manylinux_pre  | List    | Commands to execute prior to `python -m build`              | N        |
+| script_builder_manylinux_post | List    | Commands to execute after `auditwheel`                      | N        |
+
 
 ### deploy:artifactory:_name_
 

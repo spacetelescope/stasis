@@ -343,7 +343,7 @@ int manylinux_exec(const char *image, const char *script, const char *copy_to_co
     return result;
 }
 
-int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
+int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *script_pre, const char *script_post, const char *outdir) {
     const char *manylinux_image = globals.wheel_builder_manylinux_image;
     if (!manylinux_image) {
         SYSERROR("manylinux_image not initialized");
@@ -358,12 +358,14 @@ int delivery_build_wheels_manylinux(struct Delivery *ctx, const char *outdir) {
         "set -e -x\n"
         "git config --global --add safe.directory /build\n"
         "python%s -m pip install auditwheel build\n"
+        "%s\n"
         "python%s -m build -w .\n"
         "auditwheel show --allow-pure-python-wheel dist/*.whl\n"
-        "auditwheel repair --allow-pure-python-wheel dist/*.whl\n";
+        "auditwheel repair --allow-pure-python-wheel dist/*.whl\n"
+        "%s\n";
     char *script = NULL;
     if (asprintf(&script, script_fmt,
-        meta->python, meta->python) < 0) {
+        meta->python, script_pre ? script_pre : "", meta->python, script_post ? script_post : "") < 0) {
         SYSERROR("unable to allocate memory for build script");
         return -1;
     }
@@ -476,7 +478,7 @@ struct StrList *delivery_build_wheels(struct Delivery *ctx) {
                     }
 
                     if (use_builder_manylinux) {
-                        if (delivery_build_wheels_manylinux(ctx, outdir)) {
+                        if (delivery_build_wheels_manylinux(ctx, ctx->tests->test[i]->script_builder_manylinux_pre, ctx->tests->test[i]->script_builder_manylinux_post, outdir)) {
                             SYSERROR("failed to generate wheel package for %s-%s", ctx->tests->test[i]->name,
                                     ctx->tests->test[i]->version);
                             guard_strlist_free(&result);
