@@ -54,6 +54,8 @@ struct Test {
     char *version;                  ///< Version of package
     char *repository;               ///< Git repository of package
     char *script_setup;             ///< Commands to execute before the main script
+    char *script_builder_manylinux_pre; ///< Commands to execute before building a wheel inside of manylinux
+    char *script_builder_manylinux_post; ///< Commands to execute after building a wheel inside of manylinux
     char *script;                   ///< Commands to execute
     bool disable;                   ///< Toggle a test block
     bool parallel;                  ///< Toggle parallel or serial execution

@@ -354,6 +354,8 @@ int populate_delivery_ini(struct Delivery *ctx, int render_mode) {
             test->repository = ini_getval_str(ini, section_name, "repository", render_mode, &err, &ctx->tpl_pool);
             test->script_setup = ini_getval_str(ini, section_name, "script_setup", INI_READ_RAW, &err, &ctx->tpl_pool);
             test->script = ini_getval_str(ini, section_name, "script", INI_READ_RAW, &err, &ctx->tpl_pool);
+            test->script_builder_manylinux_pre = ini_getval_str(ini, section_name, "script_builder_manylinux_pre", INI_READ_RAW, &err, &ctx->tpl_pool);
+            test->script_builder_manylinux_post = ini_getval_str(ini, section_name, "script_builder_manylinux_post", INI_READ_RAW, &err, &ctx->tpl_pool);
             test->disable = ini_getval_bool(ini, section_name, "disable", render_mode, &err, &ctx->tpl_pool);
             test->parallel = ini_getval_bool(ini, section_name, "parallel", render_mode, &err, &ctx->tpl_pool);
             if (err) {
