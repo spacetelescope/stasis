@@ -204,8 +204,6 @@
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
           "regex": "^$|(.+)$"
         }
-
-
       ]
     },
     {
