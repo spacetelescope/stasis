@@ -191,6 +191,18 @@
           "required": false,
           "expect_type": "INIVAL_TYPE_STR_ARRAY",
           "regex": "^$|(.+)$"
+        },
+        {
+          "name": "script_builder_manylinux_pre",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "^$|(.+)$"
+        },
+        {
+          "name": "script_builder_manylinux_post",
+          "required": false,
+          "expect_type": "INIVAL_TYPE_STR_ARRAY",
+          "regex": "^$|(.+)$"
         }
       ]
     },
