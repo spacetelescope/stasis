@@ -1,3 +1,7 @@
+<a href="https://stsci.edu">
+  <img src="docs/stsci_pri_combo_mark_horizonal_white_bkgd.png" alt="Space Telescope Science Institute" width="83%" style="margin-left: auto;"/>
+</a>
+
 [![CMake on multiple platforms](https://github.com/spacetelescope/stasis/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/spacetelescope/stasis/actions/workflows/cmake-multi-platform.yml) [![Documentation Status](https://readthedocs.org/projects/stasis-docs/badge/?version=latest)](https://stasis-docs.readthedocs.io/en/latest/?badge=latest)
 
 STASIS consolidates the steps required to build, test, and deploy calibration pipelines and other software suites maintained by engineers at the Space Telescope Science Institute.
