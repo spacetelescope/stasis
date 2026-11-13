@@ -5,7 +5,7 @@ WORKDIR /
 
 # BUILD IMAGE
 
-FROM ubuntu:24.04 AS build
+FROM quay.io/centos/centos:stream9 AS build
 # Conda root
 ARG CONDA_PACKAGES
 
@@ -22,16 +22,18 @@ ENV CONDA_PACKAGES="${CONDA_PACKAGES}"
 ENV SNAPSHOT_INPUT="${SNAPSHOT_INPUT}"
 ENV SNAPSHOT_PKGDIR="${SNAPSHOT_PKGDIR}"
 ENV MAMBA_ROOT_PREFIX="${DIST_PATH}"
-RUN apt update \
-    && apt upgrade -y \
-    && apt install -y \
+RUN dnf update -y \
+    && dnf install -y \
         bash \
-        sudo \
-        build-essential \
-        gfortran \
-        pkgconf \
+        binutils \
+        gcc \
+        gcc-c++ \
+        gcc-gfortran \
         git \
-    && apt clean
+        make \
+        pkgconf \
+        sudo \
+    && dnf clean all
 SHELL ["/bin/bash", "-c"]
 RUN groupadd developer \
     && useradd -m -d "$HOME" -s /bin/bash -g developer developer \
@@ -82,7 +84,7 @@ RUN conda config --set auto_update_conda false \
 
 # FINAL IMAGE
 
-FROM ubuntu:24.04
+FROM quay.io/centos/centos:stream9
 
 # Declare environment
 ENV OPT=/opt
@@ -92,13 +94,14 @@ ENV DIST_PATH="${OPT}"/conda
 ENV MAMBA_ROOT_PREFIX="${DIST_PATH}"
 
 # Install the bare minimum software required
-RUN apt update \
-    && apt upgrade -y \
-    && apt install -y \
+RUN dnf config-manager --set-enabled crb \
+    && dnf install -y https://dl.fedoraproject.org/pub/epel/epel{,-next}-release-latest-9.noarch.rpm \
+    && dnf update -y \
+    && dnf install -y \
         bash \
         sudo \
         tini \
-    && apt clean
+    && dnf clean all
 COPY --chown=root --from=build /etc/ /etc
 COPY --chown=developer --from=build /opt/conda "${DIST_PATH}"
 COPY --chown=developer --from=build /home/developer/ "${HOME}"
